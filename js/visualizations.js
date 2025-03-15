@@ -86,48 +86,41 @@ function updateConfidenceIntervals(challenge) {
         const container = document.getElementById(containerId);
         if (!container) return;
 
+        // Get elements
+        const rangeBar = container.querySelector(`.bg-${color}-200`);
+        const marker = container.querySelector(`.bg-${color}-600`);
+        const lowLabel = document.getElementById(`${containerId}-low`);
+        const pointLabel = document.getElementById(`${containerId}-point`);
+        const highLabel = document.getElementById(`${containerId}-high`);
+
+        // Calculate positions within CI bar (0-100%)
         const range = high - low;
-        const lowPercent = 0;
-        const highPercent = 100;
         const meanPercent = ((mean - low) / range) * 100;
 
-
-        // Update the colored range bar
-        const rangeBar = container.querySelector(`.bg-${color}-200`);
+        // Update visual elements
         if (rangeBar) {
             rangeBar.style.left = '0%';
             rangeBar.style.width = '100%';
         }
 
-        // Update the point estimate marker
-        const marker = container.querySelector(`.bg-${color}-600`);
         if (marker) {
             marker.style.left = `${meanPercent}%`;
         }
 
         // Update labels
-        function updateLabel(id, value, position) {
-            const label = document.getElementById(id);
-            if (label) {
-                label.textContent = formatPercent(value);
-                label.style.left = `${position}%`;
-                label.style.top = '-20px';  // Position above the bar
-            }
+        if (lowLabel) {
+            lowLabel.textContent = formatPercent(low);
+            lowLabel.style.left = '0%';
         }
 
-        // Update bounds and point estimate labels
-        updateLabel(`${containerId}-low`, low, 0);
-        updateLabel(`${containerId}-point`, mean, meanPercent);
-        updateLabel(`${containerId}-high`, high, 100);
+        if (pointLabel) {
+            pointLabel.textContent = formatPercent(mean);
+            pointLabel.style.left = `${meanPercent}%`;
+        }
 
-        // Add point estimate label above the marker (from original code)
-        const pointEstimate = container.querySelector('.point-estimate') || document.createElement('div');
-        pointEstimate.className = `point-estimate absolute transform -translate-x-1/2 text-sm font-medium text-${color}-600`;
-        pointEstimate.style.left = `${meanPercent}%`;
-        pointEstimate.style.top = '-24px';  // Position above the CI bar
-        pointEstimate.textContent = formatPercent(mean);
-        if (!container.querySelector('.point-estimate')) {
-            container.appendChild(pointEstimate);
+        if (highLabel) {
+            highLabel.textContent = formatPercent(high);
+            highLabel.style.left = '100%';
         }
     }
 
