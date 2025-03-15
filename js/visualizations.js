@@ -31,39 +31,13 @@ function formatDecimal(value) {
 }
 
 function updateConfidenceIntervals(challenge) {
-    // Helper functions to format numbers
+    // Helper functions remain unchanged
     function formatPercent(value) {
         const percentage = value * 100;
         if (Math.round(percentage) === percentage) {
             return Math.round(percentage) + '%';
         }
         return percentage.toFixed(2).replace(/\.?0+$/, '') + '%';
-    }
-
-    function formatDecimal(value) {
-        return value.toFixed(4);
-    }
-
-    // Display p-value
-    const pValueElement = document.getElementById('p-value-display');
-    if (pValueElement) {
-        pValueElement.textContent = formatDecimal(challenge.simulation.pValue);
-        if (challenge.simulation.pValue < 0.05) {
-            pValueElement.classList.add('text-green-600');
-            pValueElement.classList.remove('text-red-600');
-        } else {
-            pValueElement.classList.add('text-red-600');
-            pValueElement.classList.remove('text-green-600');
-        }
-    }
-
-    // Display difference in conversion rate
-    const diffValue = challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate;
-    const differenceDisplay = document.getElementById('difference-display');
-    const differenceCI = document.getElementById('difference-ci');
-    if (differenceDisplay && differenceCI) {
-        differenceDisplay.textContent = formatPercent(diffValue);
-        differenceCI.textContent = `[${formatPercent(challenge.simulation.confidenceIntervalDifference[0])} to ${formatPercent(challenge.simulation.confidenceIntervalDifference[1])}]`;
     }
 
     // Find the range for conversion rate intervals
@@ -86,7 +60,7 @@ function updateConfidenceIntervals(challenge) {
     const toViewPercent = (value) => ((value - conversionViewMin) / conversionViewRange) * 100;
 
     // Helper function to set CI visualization
-    function updateCIVisualization(containerId, low, high, mean, color) {
+    function updateCIVisualization(containerId, low, high, mean, color, showBounds = true) {
         const container = document.getElementById(containerId);
         if (!container) return;
 
@@ -94,7 +68,6 @@ function updateConfidenceIntervals(challenge) {
         const rangeBar = container.querySelector(`.bg-${color}-200`);
         const marker = container.querySelector(`.bg-${color}-600`);
         const lowLabel = document.getElementById(`${containerId}-low`);
-        const pointLabel = document.getElementById(`${containerId}-point`);
         const highLabel = document.getElementById(`${containerId}-high`);
 
         // Calculate positions within the view range
@@ -118,41 +91,39 @@ function updateConfidenceIntervals(challenge) {
             lowLabel.style.left = `${lowPercent}%`;
         }
 
-        if (pointLabel) {
-            pointLabel.textContent = formatPercent(mean);
-            pointLabel.style.left = `${meanPercent}%`;
-        }
-
         if (highLabel) {
             highLabel.textContent = formatPercent(high);
             highLabel.style.left = `${highPercent}%`;
         }
 
-        // Add or update view range bounds
-        const minBound = container.querySelector('.view-min') || document.createElement('span');
-        minBound.className = 'view-min absolute text-sm font-medium transform -translate-x-1/2 -translate-y-1/2 text-gray-400 top-1/2';
-        minBound.style.left = '2%';  // Move slightly inside from the left edge
-        minBound.textContent = formatPercent(conversionViewMin);
-        if (!container.querySelector('.view-min')) {
-            container.appendChild(minBound);
-        }
+        // Add or update view range bounds only if showBounds is true
+        if (showBounds) {
+            const minBound = container.querySelector('.view-min') || document.createElement('span');
+            minBound.className = 'view-min absolute text-xs font-medium transform -translate-x-1/2 -translate-y-1/2 text-gray-400 top-1/2';
+            minBound.style.left = '2%';  // Move slightly inside from the left edge
+            minBound.textContent = formatPercent(conversionViewMin);
+            if (!container.querySelector('.view-min')) {
+                container.appendChild(minBound);
+            }
 
-        const maxBound = container.querySelector('.view-max') || document.createElement('span');
-        maxBound.className = 'view-max absolute text-sm font-medium transform -translate-x-1/2 -translate-y-1/2 text-gray-400 top-1/2';
-        maxBound.style.left = '98%';  // Move slightly inside from the right edge
-        maxBound.textContent = formatPercent(conversionViewMax);
-        if (!container.querySelector('.view-max')) {
-            container.appendChild(maxBound);
+            const maxBound = container.querySelector('.view-max') || document.createElement('span');
+            maxBound.className = 'view-max absolute text-xs font-medium transform -translate-x-1/2 -translate-y-1/2 text-gray-400 top-1/2';
+            maxBound.style.left = '98%';  // Move slightly inside from the right edge
+            maxBound.textContent = formatPercent(conversionViewMax);
+            if (!container.querySelector('.view-max')) {
+                container.appendChild(maxBound);
+            }
         }
     }
 
-    // Update base and variant CIs
+    // Update base and variant CIs with bounds
     updateCIVisualization(
         'base-ci',
         challenge.simulation.confidenceIntervalBase[0],
         challenge.simulation.confidenceIntervalBase[1],
         challenge.simulation.actualBaseConversionRate,
-        'blue'
+        'blue',
+        true
     );
 
     updateCIVisualization(
@@ -160,7 +131,8 @@ function updateConfidenceIntervals(challenge) {
         challenge.simulation.confidenceIntervalVariant[0],
         challenge.simulation.confidenceIntervalVariant[1],
         challenge.simulation.variantConversionRate,
-        'green'
+        'green',
+        true
     );
 
     // For difference CI, calculate a view range centered around zero
@@ -174,13 +146,10 @@ function updateConfidenceIntervals(challenge) {
     const diffViewMin = -maxAbsDiff * 1.2;  // Add 20% padding
     const diffViewMax = maxAbsDiff * 1.2;
 
-    const toDiffViewPercent = (value) => ((value - diffViewMin) / (diffViewMax - diffViewMin)) * 100;
-
-    // Difference CI
-    const diffMean = challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate;
     const container = document.getElementById('diff-ci');
-
     if (container) {
+        const toDiffViewPercent = (value) => ((value - diffViewMin) / (diffViewMax - diffViewMin)) * 100;
+
         const rangeBar = container.querySelector('.bg-purple-200');
         const marker = container.querySelector('.bg-purple-600');
         const lowLabel = document.getElementById('diff-ci-low');
@@ -188,7 +157,7 @@ function updateConfidenceIntervals(challenge) {
 
         const lowPercent = toDiffViewPercent(challenge.simulation.confidenceIntervalDifference[0]);
         const highPercent = toDiffViewPercent(challenge.simulation.confidenceIntervalDifference[1]);
-        const meanPercent = toDiffViewPercent(diffMean);
+        const meanPercent = toDiffViewPercent(challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate);
         const zeroPercent = toDiffViewPercent(0);
 
         if (rangeBar) {
@@ -220,7 +189,7 @@ function updateConfidenceIntervals(challenge) {
 
         // Add or update zero label
         const zeroLabel = container.querySelector('.zero-label') || document.createElement('span');
-        zeroLabel.className = 'zero-label absolute text-xs font-medium transform -translate-x-1/2 text-gray-400 top-6';
+        zeroLabel.className = 'zero-label absolute text-xs font-medium transform -translate-x-1/2 text-gray-400 top-1/2 -translate-y-1/2';
         zeroLabel.style.left = `${zeroPercent}%`;
         zeroLabel.textContent = '0%';
         if (!container.querySelector('.zero-label')) {
