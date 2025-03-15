@@ -111,6 +111,23 @@ function updateConfidenceIntervals(challenge) {
             highLabel.textContent = formatPercent(high);
             highLabel.style.left = `${highPercent}%`;
         }
+
+        // Add or update view range bounds
+        const minBound = container.querySelector('.view-min') || document.createElement('span');
+        minBound.className = 'view-min absolute text-sm font-medium transform -translate-x-1/2 text-gray-500 top-20';
+        minBound.style.left = '0%';
+        minBound.textContent = formatPercent(conversionViewMin);
+        if (!container.querySelector('.view-min')) {
+            container.appendChild(minBound);
+        }
+
+        const maxBound = container.querySelector('.view-max') || document.createElement('span');
+        maxBound.className = 'view-max absolute text-sm font-medium transform -translate-x-1/2 text-gray-500 top-20';
+        maxBound.style.left = '100%';
+        maxBound.textContent = formatPercent(conversionViewMax);
+        if (!container.querySelector('.view-max')) {
+            container.appendChild(maxBound);
+        }
     }
 
     // Base variant CI
