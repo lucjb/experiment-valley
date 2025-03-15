@@ -16,8 +16,8 @@ function initializeCharts(challenge) {
 }
 
 function updateConfidenceIntervals(challenge) {
-    // Helper function to format percentage
-    const formatPercent = (value) => (value * 100).toFixed(2) + '%';
+    // Helper function to format decimal
+    const formatDecimal = (value) => value.toFixed(4);
 
     // Find the range for conversion rate intervals
     const conversionValues = [
@@ -67,8 +67,8 @@ function updateConfidenceIntervals(challenge) {
     const differenceDisplay = document.getElementById('difference-display');
     const differenceCI = document.getElementById('difference-ci');
     if (differenceDisplay && differenceCI) {
-        differenceDisplay.textContent = formatPercent(diffValue);
-        differenceCI.textContent = `[${formatPercent(challenge.simulation.confidenceIntervalDifference[0])} to ${formatPercent(challenge.simulation.confidenceIntervalDifference[1])}]`;
+        differenceDisplay.textContent = formatDecimal(diffValue);
+        differenceCI.textContent = `[${formatDecimal(challenge.simulation.confidenceIntervalDifference[0])} to ${formatDecimal(challenge.simulation.confidenceIntervalDifference[1])}]`;
     }
 
     // Helper functions to convert actual values to view percentages
@@ -103,7 +103,7 @@ function updateConfidenceIntervals(challenge) {
         const meanLabel = container.querySelector('.mean-value') || document.createElement('div');
         meanLabel.className = `mean-value absolute -top-6 transform -translate-x-1/2 text-sm font-bold text-${color}-600`;
         meanLabel.style.left = `${meanPercent}%`;
-        meanLabel.textContent = `${formatPercent(mean)}`;
+        meanLabel.textContent = formatDecimal(mean);
         if (!container.querySelector('.mean-value')) {
             container.appendChild(meanLabel);
         }
@@ -112,7 +112,7 @@ function updateConfidenceIntervals(challenge) {
         const container_parent = container.parentElement;
         const rangeLabel = container_parent.querySelector('.view-range-label');
         if (rangeLabel) {
-            rangeLabel.textContent = `View range: ${formatPercent(viewMin)} to ${formatPercent(viewMax)}`;
+            rangeLabel.textContent = `View range: ${formatDecimal(viewMin)} to ${formatDecimal(viewMax)}`;
         }
 
         // Update low/high labels
@@ -120,8 +120,8 @@ function updateConfidenceIntervals(challenge) {
         const highLabel = document.getElementById(`${containerId}-high`);
 
         if (lowLabel && highLabel) {
-            lowLabel.textContent = formatPercent(low);
-            highLabel.textContent = formatPercent(high);
+            lowLabel.textContent = formatDecimal(low);
+            highLabel.textContent = formatDecimal(high);
             lowLabel.style.left = `${lowPercent}%`;
             highLabel.style.left = `${highPercent}%`;
         }
@@ -175,7 +175,7 @@ function updateConfidenceIntervals(challenge) {
         const zeroLabel = diffContainer.querySelector('.zero-label') || document.createElement('div');
         zeroLabel.className = 'zero-label absolute -bottom-6 transform -translate-x-1/2 text-sm font-medium text-gray-600';
         zeroLabel.style.left = `${zeroPercent}%`;
-        zeroLabel.textContent = '0%';
+        zeroLabel.textContent = '0';
         if (!diffContainer.querySelector('.zero-label')) {
             diffContainer.appendChild(zeroLabel);
         }
@@ -225,7 +225,7 @@ function renderConversionChart(challenge) {
                     intersect: false,
                     callbacks: {
                         label: function(context) {
-                            return `${context.dataset.label}: ${(context.raw * 100).toFixed(2)}%`;
+                            return `${context.dataset.label}: ${context.raw.toFixed(4)}`;
                         }
                     }
                 }
@@ -235,11 +235,11 @@ function renderConversionChart(challenge) {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Conversion Rate (%)'
+                        text: 'Conversion Rate'
                     },
                     ticks: {
                         callback: function(value) {
-                            return (value * 100).toFixed(1) + '%';
+                            return value.toFixed(4);
                         }
                     }
                 }
