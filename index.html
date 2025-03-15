@@ -101,7 +101,22 @@
                                         <span id="variant-ci-high" class="absolute text-xs font-medium transform -translate-x-1/2 text-green-900 top-1/2 -translate-y-1/2 drop-shadow-sm"></span>
                                     </div>
                                 </td>
-
+                            </tr>
+                            <!-- Delta Row -->
+                            <tr class="bg-gray-50">
+                                <td class="border px-4 py-1 font-semibold min-w-[6rem]">Delta</td>
+                                <td class="border px-4 py-1 min-w-[6rem]" id="delta-visitors"></td>
+                                <td class="border px-4 py-1 min-w-[6rem]" id="delta-conversions"></td>
+                                <td class="border px-4 py-1 min-w-[7rem]" id="delta-rate"></td>
+                                <td class="border px-2 py-1">
+                                    <div id="diff-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
+                                        <div class="absolute h-full bg-purple-200 rounded-md"></div>
+                                        <div class="absolute w-0.5 h-full bg-purple-600 rounded-sm"></div>
+                                        <div class="absolute w-px h-full bg-gray-400" style="left: 50%"></div>
+                                        <span id="diff-ci-low" class="absolute text-xs font-medium transform -translate-x-1/2 text-purple-900 top-1/2 -translate-y-1/2 drop-shadow-sm"></span>
+                                        <span id="diff-ci-high" class="absolute text-xs font-medium transform -translate-x-1/2 text-purple-900 top-1/2 -translate-y-1/2 drop-shadow-sm"></span>
+                                    </div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -124,18 +139,6 @@
                                 <p id="difference-display" class="text-2xl font-bold text-purple-600"></p>
                                 <p class="text-sm text-gray-600">95% CI: <span id="difference-ci"></span></p>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Difference CI -->
-                    <div class="relative mt-8">
-                        <p class="font-semibold mb-2">Difference in Conversion Rates (95% CI)</p>
-                        <div id="diff-ci" class="h-12 bg-gray-100 rounded-lg relative overflow-visible">
-                            <div class="absolute h-full bg-purple-200 rounded-lg"></div>
-                            <div class="absolute w-1 h-full bg-purple-600 rounded-sm"></div>
-                            <span id="diff-ci-low" class="absolute text-sm font-medium transform -translate-x-1/2 text-purple-600 top-14"></span>
-                            <span id="diff-ci-point" class="absolute text-sm font-medium transform -translate-x-1/2 text-purple-600 top-14"></span>
-                            <span id="diff-ci-high" class="absolute text-sm font-medium transform -translate-x-1/2 text-purple-600 top-14"></span>
                         </div>
                     </div>
 
@@ -252,14 +255,41 @@
             </div>
         `;
 
-        // Update result cells
-        document.getElementById('base-visitors').textContent = challenge.simulation.actualVisitorsBase;
-        document.getElementById('base-conversions').textContent = challenge.simulation.actualConversionsBase;
-        document.getElementById('base-rate').textContent = `${(challenge.simulation.actualBaseConversionRate * 100).toFixed(2)}%`;
+        // Calculate deltas
+        const deltaVisitors = challenge.simulation.actualVisitorsVariant - challenge.simulation.actualVisitorsBase;
+        const deltaConversions = challenge.simulation.actualConversionsVariant - challenge.simulation.actualConversionsBase;
+        const deltaRate = challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate;
 
-        document.getElementById('variant-visitors').textContent = challenge.simulation.actualVisitorsVariant;
-        document.getElementById('variant-conversions').textContent = challenge.simulation.actualConversionsVariant;
-        document.getElementById('variant-rate').textContent = `${(challenge.simulation.variantConversionRate * 100).toFixed(2)}%`;
+        // Format delta values with + or - sign
+        const formatDelta = (value, isPercentage = false) => {
+            const sign = value > 0 ? '+' : '';
+            return isPercentage ? 
+                `${sign}${(value * 100).toFixed(2)}%` :
+                `${sign}${value}`;
+        };
+
+        // Update delta row with color coding
+        const applyDeltaColor = (element, value) => {
+            if (value > 0) {
+                element.classList.add('text-green-600');
+            } else if (value < 0) {
+                element.classList.add('text-red-600');
+            }
+        };
+
+        // Update delta row
+        const deltaVisitorsElement = document.getElementById('delta-visitors');
+        const deltaConversionsElement = document.getElementById('delta-conversions');
+        const deltaRateElement = document.getElementById('delta-rate');
+
+        deltaVisitorsElement.textContent = formatDelta(deltaVisitors);
+        deltaConversionsElement.textContent = formatDelta(deltaConversions);
+        deltaRateElement.textContent = formatDelta(deltaRate, true);
+
+        applyDeltaColor(deltaVisitorsElement, deltaVisitors);
+        applyDeltaColor(deltaConversionsElement, deltaConversions);
+        applyDeltaColor(deltaRateElement, deltaRate);
+
 
         initializeCharts(challenge);
     }
