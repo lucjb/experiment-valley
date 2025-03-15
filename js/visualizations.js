@@ -16,7 +16,14 @@ function initializeCharts(challenge) {
 }
 
 function formatPercent(value) {
-    return (value * 100).toFixed(2) + '%';
+    // Convert to percentage and round to 2 decimal places
+    const percentage = value * 100;
+    // If it's a whole number, don't show decimals
+    if (Math.round(percentage) === percentage) {
+        return Math.round(percentage) + '%';
+    }
+    // Otherwise, show up to 2 decimal places, but trim trailing zeros
+    return percentage.toFixed(2).replace(/\.?0+$/, '') + '%';
 }
 
 function formatDecimal(value) {
@@ -25,8 +32,8 @@ function formatDecimal(value) {
 
 function updateConfidenceIntervals(challenge) {
     // Helper functions
-    const formatPercent = (value) => (value * 100).toFixed(2) + '%';
-    const formatDecimal = (value) => value.toFixed(4);
+    //const formatPercent = (value) => (value * 100).toFixed(2) + '%';
+    //const formatDecimal = (value) => value.toFixed(4);
 
     // Display p-value
     const pValueElement = document.getElementById('p-value-display');
@@ -115,7 +122,7 @@ function updateConfidenceIntervals(challenge) {
         // Add or update view range bounds
         const minBound = container.querySelector('.view-min') || document.createElement('span');
         minBound.className = 'view-min absolute text-sm font-medium transform -translate-x-1/2 -translate-y-1/2 text-gray-400 top-1/2';
-        minBound.style.left = '0%';
+        minBound.style.left = '5%';  // Move slightly inside from the left edge
         minBound.textContent = formatPercent(conversionViewMin);
         if (!container.querySelector('.view-min')) {
             container.appendChild(minBound);
@@ -123,7 +130,7 @@ function updateConfidenceIntervals(challenge) {
 
         const maxBound = container.querySelector('.view-max') || document.createElement('span');
         maxBound.className = 'view-max absolute text-sm font-medium transform -translate-x-1/2 -translate-y-1/2 text-gray-400 top-1/2';
-        maxBound.style.left = '100%';
+        maxBound.style.left = '95%';  // Move slightly inside from the right edge
         maxBound.textContent = formatPercent(conversionViewMax);
         if (!container.querySelector('.view-max')) {
             container.appendChild(maxBound);
