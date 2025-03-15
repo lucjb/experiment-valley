@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive A/B Testing educational platform. Practice statistical analysis and decision making with simulated experiments.">
+    <title>A/B Testing Gym - Learn Statistical Analysis</title>
+
+    <!-- CDN Resources -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Application Scripts -->
+    <script src="js/challenge-generator.js"></script>
+    <script src="js/visualizations.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div class="max-w-6xl mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-blue-600 mb-3">A/B Testing Gym</h1>
+            <p class="text-lg text-gray-700">Master statistical analysis through hands-on practice</p>
+        </header>
+
+        <!-- Progress Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-semibold">Level</h3>
+                <p id="current-level" class="text-2xl text-blue-600">1</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-semibold">Score</h3>
+                <p id="score" class="text-2xl text-green-600">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-semibold">Streak</h3>
+                <p id="streak" class="text-2xl text-orange-600">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-semibold">Accuracy</h3>
+                <p id="accuracy" class="text-2xl text-purple-600">0%</p>
+            </div>
+        </div>
+
+        <div class="flex justify-center mb-6">
+            <button id="start-btn" class="px-6 py-3 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition">
+                Start Challenge
+            </button>
+        </div>
+
+        <div id="challenge-container" class="hidden">
+            <!-- Experiment Design Section -->
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-6 mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Experiment Design</h2>
+                <div id="experiment-card" class="grid grid-cols-1 gap-2"></div>
+            </div>
+
+            <!-- Results Analysis Section -->
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-6 mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Results Analysis</h2>
+                <div id="result-card" class="grid grid-cols-1 gap-2 mb-4"></div>
+
+                <!-- Statistical Analysis Section -->
+                <div class="mt-6">
+                    <h3 class="text-xl font-semibold mb-4">Statistical Analysis</h3>
+
+                    <!-- P-value and Difference display -->
+                    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <div class="mb-4">
+                            <p class="text-lg mb-2">P-value:</p>
+                            <p id="p-value-display" class="text-2xl font-bold"></p>
+                        </div>
+                        <div>
+                            <p class="text-lg mb-2">Difference in Conversion Rate:</p>
+                            <p id="difference-display" class="text-2xl font-bold text-purple-600"></p>
+                            <p class="text-sm text-gray-600">95% CI: <span id="difference-ci"></span></p>
+                        </div>
+                    </div>
+
+                    <!-- Confidence Intervals -->
+                    <div class="space-y-8">
+                        <!-- Base Variant CI -->
+                        <div class="relative mt-8">
+                            <p class="font-semibold mb-2">Base Variant Conversion Rate (95% CI)</p>
+                            <div id="base-ci" class="h-12 bg-gray-100 rounded-lg relative overflow-visible mb-8">
+                                <div class="absolute h-full bg-blue-200 rounded-lg"></div>
+                                <div class="absolute w-1 h-full bg-blue-600 rounded-sm"></div>
+                                <span id="base-ci-low" class="absolute text-sm font-medium transform -translate-x-1/2 text-blue-600 top-14"></span>
+                                <span id="base-ci-point" class="absolute text-sm font-medium transform -translate-x-1/2 text-blue-600 top-14"></span>
+                                <span id="base-ci-high" class="absolute text-sm font-medium transform -translate-x-1/2 text-blue-600 top-14"></span>
+                            </div>
+                        </div>
+
+                        <!-- Test Variant CI -->
+                        <div class="relative mt-8">
+                            <p class="font-semibold mb-2">Test Variant Conversion Rate (95% CI)</p>
+                            <div id="variant-ci" class="h-12 bg-gray-100 rounded-lg relative overflow-visible mb-8">
+                                <div class="absolute h-full bg-green-200 rounded-lg"></div>
+                                <div class="absolute w-1 h-full bg-green-600 rounded-sm"></div>
+                                <span id="variant-ci-low" class="absolute text-sm font-medium transform -translate-x-1/2 text-green-600 top-14"></span>
+                                <span id="variant-ci-point" class="absolute text-sm font-medium transform -translate-x-1/2 text-green-600 top-14"></span>
+                                <span id="variant-ci-high" class="absolute text-sm font-medium transform -translate-x-1/2 text-green-600 top-14"></span>
+                            </div>
+                        </div>
+
+                        <!-- Difference CI -->
+                        <div class="relative mt-8">
+                            <p class="font-semibold mb-2">Difference in Conversion Rates (95% CI)</p>
+                            <div id="diff-ci" class="h-12 bg-gray-100 rounded-lg relative overflow-visible">
+                                <div class="absolute h-full bg-purple-200 rounded-lg"></div>
+                                <div class="absolute w-1 h-full bg-purple-600 rounded-sm"></div>
+                                <span id="diff-ci-low" class="absolute text-sm font-medium transform -translate-x-1/2 text-purple-600 top-14"></span>
+                                <span id="diff-ci-point" class="absolute text-sm font-medium transform -translate-x-1/2 text-purple-600 top-14"></span>
+                                <span id="diff-ci-high" class="absolute text-sm font-medium transform -translate-x-1/2 text-purple-600 top-14"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Daily Conversion Rates Chart -->
+                    <div class="mt-8">
+                        <h3 class="text-xl font-semibold mb-3">Daily Conversion Rates</h3>
+                        <canvas id="conversion-chart"></canvas>
+                    </div>
+                </div>
+                <!-- Make Your Decision Section -->
+                <div class="text-center mt-8">
+                    <h2 class="text-xl font-semibold mb-4">Make Your Decision</h2>
+                    <p class="text-gray-700 mb-4">Based on these results, should we implement Variant B?</p>
+                    <div class="flex justify-center space-x-4">
+                        <button id="decision-yes" class="px-6 py-3 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition">
+                            Yes, Implement
+                        </button>
+                        <button id="decision-no" class="px-6 py-3 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition">
+                            No, Keep Original
+                        </button>
+                    </div>
+                </div>
+
+                <div id="feedback" class="hidden mt-6 p-4 rounded-lg"></div>
+
+                <div class="flex justify-center mt-6">
+                    <button id="next-btn" class="hidden px-6 py-3 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition">
+                        Next Challenge
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        </div>
+    </div>
+
+    <script>
+        let score = 0;
+        let streak = 0;
+        let totalAttempts = 0;
+        let challenge = null;
+
+        document.getElementById('start-btn').addEventListener('click', function(event) {
+            event.preventDefault();
+            document.getElementById('challenge-container').classList.remove('hidden');
+            document.getElementById('start-btn').classList.add('hidden');
+            loadChallenge();
+        });
+
+        document.getElementById('decision-yes').addEventListener('click', function() {
+            evaluateDecision(true);
+        });
+
+        document.getElementById('decision-no').addEventListener('click', function() {
+            evaluateDecision(false);
+        });
+
+        document.getElementById('next-btn').addEventListener('click', function() {
+            loadChallenge();
+            document.getElementById('feedback').classList.add('hidden');
+            document.getElementById('next-btn').classList.add('hidden');
+        });
+
+        function evaluateDecision(userChoice) {
+            if (!challenge) {
+                console.error("No challenge loaded");
+                alert("No challenge available. Try reloading.");
+                return;
+            }
+
+            totalAttempts++;
+            const correctDecision = challenge.simulation.variantConversionRate > challenge.simulation.actualBaseConversionRate;
+            if (userChoice === correctDecision) {
+                score++;
+                streak++;
+                document.getElementById('score').textContent = score;
+                document.getElementById('streak').textContent = streak;
+                document.getElementById('feedback').textContent = "✅ Correct! Your score has increased.";
+                document.getElementById('feedback').className = "mt-6 p-4 rounded-lg bg-green-100 text-green-800";
+            } else {
+                streak = 0;
+                document.getElementById('streak').textContent = streak;
+                document.getElementById('feedback').textContent = "❌ Incorrect. Review the results carefully.";
+                document.getElementById('feedback').className = "mt-6 p-4 rounded-lg bg-red-100 text-red-800";
+            }
+            document.getElementById('accuracy').textContent = `${Math.round((score / totalAttempts) * 100)}%`;
+            document.getElementById('feedback').classList.remove('hidden');
+            document.getElementById('next-btn').classList.remove('hidden');
+        }
+
+        function loadChallenge() {
+            if (typeof generateABTestChallenge !== 'function') {
+                console.error("Challenge generator not found");
+                alert("Error: Challenge generator not found");
+                return;
+            }
+
+            challenge = generateABTestChallenge();
+
+            // Update experiment card
+            document.getElementById('experiment-card').innerHTML = `
+                <div class="grid grid-cols-1 gap-2">
+                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Alpha:</span> ${challenge.experiment.alpha}</div>
+                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Beta:</span> ${challenge.experiment.beta}</div>
+                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Base Conversion Rate:</span> ${(challenge.experiment.baseConversionRate * 100).toFixed(2)}%</div>
+                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Minimum Relevant Effect:</span> ${(challenge.experiment.minimumRelevantEffect * 100).toFixed(2)}%</div>
+                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Visitors per Day:</span> ${challenge.experiment.visitorsPerDay}</div>
+                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Business Cycle Days:</span> ${challenge.experiment.businessCycleDays}</div>
+                </div>
+            `;
+
+            // Update result card
+            document.getElementById('result-card').innerHTML = `
+                <div class="grid grid-cols-3 border rounded">
+                    <div class="px-4 py-2 bg-gray-100 font-semibold">Metric</div>
+                    <div class="px-4 py-2 bg-gray-100 font-semibold">Base</div>
+                    <div class="px-4 py-2 bg-gray-100 font-semibold">Variant</div>
+                </div>
+                <div class="grid grid-cols-3 border rounded">
+                    <div class="px-4 py-2">Conversion Rate</div>
+                    <div class="px-4 py-2">${(challenge.simulation.actualBaseConversionRate * 100).toFixed(2)}%</div>
+                    <div class="px-4 py-2">${(challenge.simulation.variantConversionRate * 100).toFixed(2)}%</div>
+                </div>
+                <div class="grid grid-cols-3 border rounded">
+                    <div class="px-4 py-2">95% CI</div>
+                    <div class="px-4 py-2">[${(challenge.simulation.confidenceIntervalBase[0] * 100).toFixed(2)}% to ${(challenge.simulation.confidenceIntervalBase[1] * 100).toFixed(2)}%]</div>
+                    <div class="px-4 py-2">[${(challenge.simulation.confidenceIntervalVariant[0] * 100).toFixed(2)}% to ${(challenge.simulation.confidenceIntervalVariant[1] * 100).toFixed(2)}%]</div>
+                </div>
+                <div class="grid grid-cols-3 border rounded">
+                    <div class="px-4 py-2">Total Visitors</div>
+                    <div class="px-4 py-2">${challenge.simulation.actualVisitorsBase}</div>
+                    <div class="px-4 py-2">${challenge.simulation.actualVisitorsVariant}</div>
+                </div>
+                <div class="grid grid-cols-3 border rounded">
+                    <div class="px-4 py-2">Total Conversions</div>
+                    <div class="px-4 py-2">${challenge.simulation.actualConversionsBase}</div>
+                    <div class="px-4 py-2">${challenge.simulation.actualConversionsVariant}</div>
+                </div>
+            `;
+
+            initializeCharts(challenge);
+        }
+    </script>
+</body>
+</html>
