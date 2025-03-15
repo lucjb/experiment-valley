@@ -25,26 +25,24 @@ function sampleBinomial(n, p) {
 
 function computeTTest(conversionsA, visitorsA, conversionsB, visitorsB) {
     if (visitorsA === 0 || visitorsB === 0) {
-        return { tStatistic: NaN, pValue: NaN };
+        return NaN;
     }
 
     const epsilon = 1e-10;
     const pA = Math.max(epsilon, Math.min(1 - epsilon, conversionsA / visitorsA));
     const pB = Math.max(epsilon, Math.min(1 - epsilon, conversionsB / visitorsB));
-    
+
     const varA = (pA * (1 - pA)) / visitorsA;
     const varB = (pB * (1 - pB)) / visitorsB;
     const se = Math.sqrt(varA + varB);
-    
+
     if (se === 0) {
-        return { tStatistic: NaN, pValue: NaN };
+        return NaN;
     }
-    
+
     const tStatistic = (pB - pA) / se;
     const degreesOfFreedom = Math.max(1, visitorsA + visitorsB - 2);
-    const pValue = 2 * (1 - jStat.studentt.cdf(Math.abs(tStatistic), degreesOfFreedom));
-    
-    return { tStatistic, pValue };
+    return 2 * (1 - jStat.studentt.cdf(Math.abs(tStatistic), degreesOfFreedom));
 }
 
 function computeConfidenceInterval(conversionRate, visitors, alpha) {
@@ -67,7 +65,7 @@ function generateABTestChallenge(level = 1) {
     };
 
     const settings = difficultySettings[level] || difficultySettings[1];
-    
+
     const ALPHA = 0.05;
     const BETA = 0.2;
     const BASE_CONVERSION_RATE = 0.12;
@@ -90,8 +88,8 @@ function generateABTestChallenge(level = 1) {
     const actualConversionsBase = sampleBinomial(actualVisitorsBase, actualBaseConversionRate);
     const actualConversionsVariant = sampleBinomial(actualVisitorsVariant, variantConversionRate);
 
-    const tTestResult = computeTTest(actualConversionsBase, actualVisitorsBase, actualConversionsVariant, actualVisitorsVariant);
-    
+    const pValue = computeTTest(actualConversionsBase, actualVisitorsBase, actualConversionsVariant, actualVisitorsVariant);
+
     const ciBase = computeConfidenceInterval(actualConversionsBase / actualVisitorsBase, actualVisitorsBase, ALPHA);
     const ciVariant = computeConfidenceInterval(actualConversionsVariant / actualVisitorsVariant, actualVisitorsVariant, ALPHA);
     const ciDifference = [ciVariant[0] - ciBase[1], ciVariant[1] - ciBase[0]];
@@ -120,7 +118,7 @@ function generateABTestChallenge(level = 1) {
             actualVisitorsVariant: actualVisitorsVariant,
             actualConversionsBase: actualConversionsBase,
             actualConversionsVariant: actualConversionsVariant,
-            pValue: tTestResult.pValue,
+            pValue: pValue,
             confidenceIntervalBase: ciBase,
             confidenceIntervalVariant: ciVariant,
             confidenceIntervalDifference: ciDifference,
