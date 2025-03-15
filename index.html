@@ -10,39 +10,130 @@
     <meta property="og:type" content="website">
     <title>A/B Testing Gym - Learn Statistical Analysis</title>
 
-    <!-- CDN Resources with Error Handling -->
+    <!-- CDN Resources -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
-    <script>
-        function loadScript(src, callback) {
-            const script = document.createElement('script');
-            script.src = src;
-            script.onload = callback;
-            script.onerror = () => {
-                console.error(`Failed to load script: ${src}`);
-                alert(`Failed to load required resource: ${src}. Please check your internet connection.`);
-            };
-            document.head.appendChild(script);
-        }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tippy.js@6/dist/tippy-bundle.umd.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tippy.js@6/themes/light.css"/>
 
-        // Load dependencies in sequence
-        loadScript("https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js", () => {
-            loadScript("https://cdn.jsdelivr.net/npm/chart.js", () => {
-                loadScript("https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js", () => {
-                    loadScript("https://cdn.jsdelivr.net/npm/tippy.js@6/dist/tippy-bundle.umd.js", () => {
-                        // Load application scripts after dependencies
-                        loadScript("js/challenge-generator.js", () => {
-                            loadScript("js/visualizations.js", () => {
-                                loadScript("js/progress-tracker.js", () => {
-                                    loadScript("js/tooltips.js", null);
-                                });
-                            });
-                        });
-                    });
-                });
+    <!-- Application Scripts -->
+    <script src="js/challenge-generator.js" defer></script>
+    <script src="js/visualizations.js" defer></script>
+    <script src="js/progress-tracker.js" defer></script>
+    <script src="js/tooltips.js" defer></script>
+
+    <script>
+        // Initialize the application when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            let score = 0;
+            let challenge = null;
+
+            // Initialize event listeners
+            document.getElementById('start-btn').addEventListener('click', function(event) {
+                event.preventDefault();
+                try {
+                    document.getElementById('challenge-container').classList.remove('hidden');
+                    document.getElementById('start-btn').classList.add('hidden');
+                    loadChallenge();
+                } catch (error) {
+                    console.error('Error starting challenge:', error);
+                    alert('Failed to start challenge. Please refresh the page and try again.');
+                }
             });
+
+            document.getElementById('decision-yes').addEventListener('click', function() {
+                evaluateDecision(true);
+            });
+
+            document.getElementById('decision-no').addEventListener('click', function() {
+                evaluateDecision(false);
+            });
+
+            document.getElementById('next-btn').addEventListener('click', function() {
+                loadChallenge();
+                document.getElementById('feedback').classList.add('hidden');
+                document.getElementById('next-btn').classList.add('hidden');
+            });
+
+            function loadChallenge() {
+                try {
+                    if (typeof generateABTestChallenge !== 'function') {
+                        throw new Error("Challenge generator not found");
+                    }
+
+                    challenge = generateABTestChallenge();
+                    updateExperimentCard(challenge);
+                    updateResultCard(challenge);
+                    initializeCharts(challenge);
+                } catch (error) {
+                    console.error("Error loading challenge:", error);
+                    alert("Failed to load challenge. Please refresh the page.");
+                }
+            }
+
+            function updateExperimentCard(challenge) {
+                document.getElementById('experiment-card').innerHTML = `
+                    <div class="grid grid-cols-1 gap-2">
+                        <div class="border px-4 py-2 rounded"><span class="font-semibold">Alpha:</span> ${challenge.experiment.alpha}</div>
+                        <div class="border px-4 py-2 rounded"><span class="font-semibold">Beta:</span> ${challenge.experiment.beta}</div>
+                        <div class="border px-4 py-2 rounded"><span class="font-semibold">Base Conversion Rate:</span> ${challenge.experiment.baseConversionRate}</div>
+                        <div class="border px-4 py-2 rounded"><span class="font-semibold">Minimum Relevant Effect:</span> ${challenge.experiment.minimumRelevantEffect}</div>
+                        <div class="border px-4 py-2 rounded"><span class="font-semibold">Visitors per Day:</span> ${challenge.experiment.visitorsPerDay}</div>
+                        <div class="border px-4 py-2 rounded"><span class="font-semibold">Business Cycle Days:</span> ${challenge.experiment.businessCycleDays}</div>
+                    </div>
+                `;
+            }
+
+            function updateResultCard(challenge) {
+                document.getElementById('result-card').innerHTML = `
+                    <h3 class='text-xl font-semibold mt-4 mb-2'>Conversion Performance</h3>
+                    <div class="grid grid-cols-1 gap-2 mb-4">
+                        <div class="grid grid-cols-3 border rounded">
+                            <div class="px-4 py-2 bg-gray-100 font-semibold">Metric</div>
+                            <div class="px-4 py-2 bg-gray-100 font-semibold">Base</div>
+                            <div class="px-4 py-2 bg-gray-100 font-semibold">Variant</div>
+                        </div>
+                        <div class="grid grid-cols-3 border rounded">
+                            <div class="px-4 py-2">Conversion Rate</div>
+                            <div class="px-4 py-2">${(challenge.simulation.actualBaseConversionRate * 100).toFixed(2)}%</div>
+                            <div class="px-4 py-2">${(challenge.simulation.variantConversionRate * 100).toFixed(2)}%</div>
+                        </div>
+                        <div class="grid grid-cols-3 border rounded">
+                            <div class="px-4 py-2">Total Visitors</div>
+                            <div class="px-4 py-2">${challenge.simulation.actualVisitorsBase}</div>
+                            <div class="px-4 py-2">${challenge.simulation.actualVisitorsVariant}</div>
+                        </div>
+                        <div class="grid grid-cols-3 border rounded">
+                            <div class="px-4 py-2">Total Conversions</div>
+                            <div class="px-4 py-2">${challenge.simulation.actualConversionsBase}</div>
+                            <div class="px-4 py-2">${challenge.simulation.actualConversionsVariant}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function evaluateDecision(userChoice) {
+                if (!challenge) {
+                    console.error("No challenge loaded");
+                    alert("No challenge available. Try reloading.");
+                    return;
+                }
+
+                const correctDecision = challenge.simulation.variantConversionRate > challenge.simulation.actualBaseConversionRate;
+                if (userChoice === correctDecision) {
+                    score++;
+                    document.getElementById('score').textContent = score;
+                    document.getElementById('feedback').textContent = "✅ Correct! Your score has increased.";
+                } else {
+                    document.getElementById('feedback').textContent = "❌ Incorrect. Review the results carefully.";
+                }
+                document.getElementById('feedback').classList.remove('hidden');
+                document.getElementById('next-btn').classList.remove('hidden');
+            }
         });
     </script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tippy.js@6/themes/light.css"/>
 </head>
 <body class="bg-gray-50 text-gray-900">
     <div class="max-w-6xl mx-auto p-4 md:p-8">
