@@ -1,57 +1,21 @@
 # A/B Testing Gym
 
-An interactive educational platform for learning A/B testing concepts through hands-on practice.
+An interactive educational platform for learning A/B testing concepts through hands-on practice. This is a static web application that makes it easy to understand statistical analysis and experimental design.
 
-## Requirements
+## Local Development
 
-- Python 3.11 or higher
-- Flask
-
-## Installation
-
-1. Clone this repository to your local machine:
-```bash
-git clone <your-repo-url>
-cd ab-testing-gym
-```
-
-2. Create a virtual environment and activate it:
-```bash
-python -m venv venv
-# On Windows
-venv\Scripts\activate
-# On macOS/Linux
-source venv/bin/activate
-```
-
-3. Install the required packages:
-```bash
-pip install flask
-```
-
-## Running the Application
-
-1. Start the Flask server:
-```bash
-python main.py
-```
-
-2. Open your web browser and navigate to:
-```
-http://localhost:5000
-```
+Simply open `index.html` in your web browser - no server required! The application is completely static and runs entirely in your browser.
 
 ## Project Structure
 
 ```
 .
-├── README.md
-├── main.py              # Flask server
-├── index.html          # Main application page
-└── js/                 # JavaScript files
-    ├── challenge-generator.js
-    ├── visualizations.js
-    └── progress-tracker.js
+├── index.html           # Main application page
+├── js/                 # JavaScript files
+│   ├── challenge-generator.js  # Generates A/B test scenarios
+│   ├── visualizations.js      # Handles CI and chart visualizations
+│   └── progress-tracker.js    # Tracks user progress and scoring
+└── README.md           # This file
 ```
 
 ## Features
@@ -62,10 +26,22 @@ http://localhost:5000
 - Progress tracking
 - Multiple difficulty levels
 
-## Development
+## Deploying to GitHub Pages
 
-The application is built using:
-- Flask for serving static files
-- Chart.js for data visualization
+1. Fork or clone this repository
+2. Enable GitHub Pages in your repository settings:
+   - Go to Settings > Pages
+   - Select Source: "Deploy from a branch"
+   - Branch: "main" (or your preferred branch)
+   - Click Save
+
+Your site will be live at `https://<your-username>.github.io/<repository-name>/`
+
+## Dependencies
+
+All dependencies are loaded via CDN:
 - Tailwind CSS for styling
+- Chart.js for data visualization
 - jStat for statistical computations
+
+Since everything is loaded from CDNs, you don't need to install anything locally to run or develop the application.
