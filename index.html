@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive A/B Testing educational platform. Practice statistical analysis and decision making with simulated experiments.">
+    <meta name="keywords" content="A/B Testing, Statistics, Data Analysis, Educational Platform">
+    <meta property="og:title" content="A/B Testing Gym - Learn Statistical Analysis">
+    <meta property="og:description" content="Master A/B testing concepts through hands-on practice with simulated experiments.">
+    <meta property="og:type" content="website">
+    <title>A/B Testing Gym - Learn Statistical Analysis</title>
+
+    <!-- CDN Resources with Error Handling -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+    <script>
+        function loadScript(src, callback) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = callback;
+            script.onerror = () => {
+                console.error(`Failed to load script: ${src}`);
+                alert(`Failed to load required resource: ${src}. Please check your internet connection.`);
+            };
+            document.head.appendChild(script);
+        }
+
+        // Load dependencies in sequence
+        loadScript("https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js", () => {
+            loadScript("https://cdn.jsdelivr.net/npm/chart.js", () => {
+                loadScript("https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js", () => {
+                    loadScript("https://cdn.jsdelivr.net/npm/tippy.js@6/dist/tippy-bundle.umd.js", () => {
+                        // Load application scripts after dependencies
+                        loadScript("js/challenge-generator.js", () => {
+                            loadScript("js/visualizations.js", () => {
+                                loadScript("js/progress-tracker.js", () => {
+                                    loadScript("js/tooltips.js", null);
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tippy.js@6/themes/light.css"/>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div class="max-w-6xl mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-blue-600 mb-3" id="page-title">A/B Testing Gym</h1>
+            <p class="text-lg text-gray-700">Master statistical analysis through hands-on practice</p>
+        </header>
+
+        <!-- Progress Stats with ARIA labels -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-lg shadow" role="status" aria-label="Current Level Status">
+                <h3 class="font-semibold">Level</h3>
+                <p id="current-level" class="text-2xl text-blue-600">1</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow" role="status" aria-label="Score Status">
+                <h3 class="font-semibold">Score</h3>
+                <p id="score" class="text-2xl text-green-600">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow" role="status" aria-label="Streak Status">
+                <h3 class="font-semibold">Streak</h3>
+                <p id="streak" class="text-2xl text-orange-600">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow" role="status" aria-label="Accuracy Status">
+                <h3 class="font-semibold">Accuracy</h3>
+                <p id="accuracy" class="text-2xl text-purple-600">0%</p>
+            </div>
+        </div>
+
+        <div class="flex justify-center mb-6">
+            <button id="start-btn" 
+                    class="px-6 py-3 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition"
+                    aria-label="Start Challenge">
+                Start Challenge
+            </button>
+        </div>
+
+        <div id="challenge-container" class="hidden" aria-live="polite">
+            <!-- Challenge Content -->
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-6 mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Experiment Design</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="experiment-card"></div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-6 mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Results Analysis</h2>
+                <div id="result-card"></div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-3">Conversion Rates</h3>
+                        <div class="relative" aria-label="Conversion rates chart">
+                            <div id="chart-loading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 hidden">
+                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                            </div>
+                            <canvas id="conversion-chart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold mb-3">Statistical Significance</h3>
+                        <div class="relative" aria-label="Statistical significance chart">
+                            <div id="significance-loading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 hidden">
+                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                            </div>
+                            <canvas id="significance-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <h2 class="text-xl font-semibold mb-4">Make Your Decision</h2>
+                <p class="text-gray-700 mb-4">Based on the data, should we implement Variant B?</p>
+                <div class="flex justify-center space-x-4">
+                    <button id="decision-yes" 
+                            class="px-6 py-3 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition"
+                            aria-label="Yes, implement variant B">
+                        Yes, Implement
+                    </button>
+                    <button id="decision-no" 
+                            class="px-6 py-3 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition"
+                            aria-label="No, keep original variant">
+                        No, Keep Original
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="feedback" class="hidden mt-6 p-4 rounded-lg" role="alert" aria-live="polite"></div>
+
+        <div class="flex justify-center mt-6">
+            <button id="next-btn" 
+                    class="hidden px-6 py-3 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition"
+                    aria-label="Proceed to next challenge">
+                Next Challenge
+            </button>
+        </div>
+    </div>
+
+    <noscript>
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div class="bg-white p-6 rounded-lg max-w-md mx-4">
+                <h2 class="text-xl font-bold mb-4">JavaScript Required</h2>
+                <p>This application requires JavaScript to function. Please enable JavaScript in your browser settings to continue.</p>
+            </div>
+        </div>
+    </noscript>
+</body>
+</html>
