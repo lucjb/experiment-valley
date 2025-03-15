@@ -64,20 +64,20 @@
                     <table class="w-full border-collapse border">
                         <thead>
                             <tr class="bg-gray-100">
-                                <th class="border px-4 py-2 text-left">Variant</th>
-                                <th class="border px-4 py-2 text-left">Visitors</th>
-                                <th class="border px-4 py-2 text-left">Conversions</th>
-                                <th class="border px-4 py-2 text-left">Rate</th>
-                                <th class="border px-4 py-2 text-left w-1/3">95% Confidence Interval</th>
+                                <th class="border px-4 py-2 text-left w-24">Variant</th>
+                                <th class="border px-4 py-2 text-left w-24">Visitors</th>
+                                <th class="border px-4 py-2 text-left w-24">Conversions</th>
+                                <th class="border px-4 py-2 text-left w-28">Rate</th>
+                                <th class="border px-4 py-2 text-left">95% Confidence Interval</th>
                             </tr>
                         </thead>
                         <tbody>
                             <!-- Base Variant -->
                             <tr>
-                                <td class="border px-4 py-6 font-semibold">Base</td>
-                                <td class="border px-4 py-6" id="base-visitors"></td>
-                                <td class="border px-4 py-6" id="base-conversions"></td>
-                                <td class="border px-4 py-6" id="base-rate"></td>
+                                <td class="border px-4 py-6 font-semibold min-w-[6rem]">Base</td>
+                                <td class="border px-4 py-6 min-w-[6rem]" id="base-visitors"></td>
+                                <td class="border px-4 py-6 min-w-[6rem]" id="base-conversions"></td>
+                                <td class="border px-4 py-6 min-w-[7rem]" id="base-rate"></td>
                                 <td class="border px-4 py-6">
                                     <div id="base-ci" class="h-4 bg-gray-100 rounded-lg relative overflow-visible mt-2">
                                         <div class="absolute h-full bg-blue-200 rounded-lg"></div>
@@ -90,10 +90,10 @@
                             </tr>
                             <!-- Test Variant -->
                             <tr>
-                                <td class="border px-4 py-6 font-semibold">Variant</td>
-                                <td class="border px-4 py-6" id="variant-visitors"></td>
-                                <td class="border px-4 py-6" id="variant-conversions"></td>
-                                <td class="border px-4 py-6" id="variant-rate"></td>
+                                <td class="border px-4 py-6 font-semibold min-w-[6rem]">Variant</td>
+                                <td class="border px-4 py-6 min-w-[6rem]" id="variant-visitors"></td>
+                                <td class="border px-4 py-6 min-w-[6rem]" id="variant-conversions"></td>
+                                <td class="border px-4 py-6 min-w-[7rem]" id="variant-rate"></td>
                                 <td class="border px-4 py-6">
                                     <div id="variant-ci" class="h-4 bg-gray-100 rounded-lg relative overflow-visible mt-2">
                                         <div class="absolute h-full bg-green-200 rounded-lg"></div>
