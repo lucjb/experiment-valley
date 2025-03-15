@@ -31,9 +31,18 @@ function formatDecimal(value) {
 }
 
 function updateConfidenceIntervals(challenge) {
-    // Helper functions
-    //const formatPercent = (value) => (value * 100).toFixed(2) + '%';
-    //const formatDecimal = (value) => value.toFixed(4);
+    // Helper functions to format numbers
+    function formatPercent(value) {
+        const percentage = value * 100;
+        if (Math.round(percentage) === percentage) {
+            return Math.round(percentage) + '%';
+        }
+        return percentage.toFixed(2).replace(/\.?0+$/, '') + '%';
+    }
+
+    function formatDecimal(value) {
+        return value.toFixed(4);
+    }
 
     // Display p-value
     const pValueElement = document.getElementById('p-value-display');
@@ -122,7 +131,7 @@ function updateConfidenceIntervals(challenge) {
         // Add or update view range bounds
         const minBound = container.querySelector('.view-min') || document.createElement('span');
         minBound.className = 'view-min absolute text-sm font-medium transform -translate-x-1/2 -translate-y-1/2 text-gray-400 top-1/2';
-        minBound.style.left = '5%';  // Move slightly inside from the left edge
+        minBound.style.left = '2%';  // Move slightly inside from the left edge
         minBound.textContent = formatPercent(conversionViewMin);
         if (!container.querySelector('.view-min')) {
             container.appendChild(minBound);
@@ -130,14 +139,14 @@ function updateConfidenceIntervals(challenge) {
 
         const maxBound = container.querySelector('.view-max') || document.createElement('span');
         maxBound.className = 'view-max absolute text-sm font-medium transform -translate-x-1/2 -translate-y-1/2 text-gray-400 top-1/2';
-        maxBound.style.left = '95%';  // Move slightly inside from the right edge
+        maxBound.style.left = '98%';  // Move slightly inside from the right edge
         maxBound.textContent = formatPercent(conversionViewMax);
         if (!container.querySelector('.view-max')) {
             container.appendChild(maxBound);
         }
     }
 
-    // Base variant CI
+    // Update base and variant CIs
     updateCIVisualization(
         'base-ci',
         challenge.simulation.confidenceIntervalBase[0],
@@ -146,7 +155,6 @@ function updateConfidenceIntervals(challenge) {
         'blue'
     );
 
-    // Test variant CI
     updateCIVisualization(
         'variant-ci',
         challenge.simulation.confidenceIntervalVariant[0],
@@ -210,7 +218,7 @@ function updateConfidenceIntervals(challenge) {
             highLabel.style.left = `${highPercent}%`;
         }
 
-        // Add zero line for difference CI
+        // Add zero line and label for difference CI
         const zeroPercent = toDiffViewPercent(0);
 
         // Add or update zero line
@@ -219,6 +227,32 @@ function updateConfidenceIntervals(challenge) {
         zeroLine.style.left = `${zeroPercent}%`;
         if (!container.querySelector('.zero-line')) {
             container.appendChild(zeroLine);
+        }
+
+        // Add or update zero label
+        const zeroLabel = container.querySelector('.zero-label') || document.createElement('span');
+        zeroLabel.className = 'zero-label absolute text-sm font-medium transform -translate-x-1/2 text-gray-400 top-14';
+        zeroLabel.style.left = `${zeroPercent}%`;
+        zeroLabel.textContent = '0%';
+        if (!container.querySelector('.zero-label')) {
+            container.appendChild(zeroLabel);
+        }
+
+        // Add view range bounds
+        const minBound = container.querySelector('.view-min') || document.createElement('span');
+        minBound.className = 'view-min absolute text-sm font-medium transform -translate-x-1/2 -translate-y-1/2 text-gray-400 top-1/2';
+        minBound.style.left = '2%';
+        minBound.textContent = formatPercent(diffViewMin);
+        if (!container.querySelector('.view-min')) {
+            container.appendChild(minBound);
+        }
+
+        const maxBound = container.querySelector('.view-max') || document.createElement('span');
+        maxBound.className = 'view-max absolute text-sm font-medium transform -translate-x-1/2 -translate-y-1/2 text-gray-400 top-1/2';
+        maxBound.style.left = '98%';
+        maxBound.textContent = formatPercent(diffViewMax);
+        if (!container.querySelector('.view-max')) {
+            container.appendChild(maxBound);
         }
     }
 }
