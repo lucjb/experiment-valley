@@ -40,12 +40,15 @@ function updateConfidenceIntervals(challenge) {
         const highPercent = Math.min(100, high * 100);
         const meanPercent = Math.max(0, Math.min(100, mean * 100));
 
-        // Update range and marker positions
-        range.style.left = lowPercent + '%';
-        range.style.width = (highPercent - lowPercent) + '%';
-        marker.style.left = meanPercent + '%';
+        // Update range and marker positions with a transition
+        range.style.transition = 'all 0.3s ease-in-out';
+        marker.style.transition = 'all 0.3s ease-in-out';
 
-        // Update labels
+        range.style.left = `${lowPercent}%`;
+        range.style.width = `${highPercent - lowPercent}%`;
+        marker.style.left = `${meanPercent}%`;
+
+        // Update labels with formatted values
         const lowLabel = document.getElementById(`${containerId}-low`);
         const highLabel = document.getElementById(`${containerId}-high`);
 
