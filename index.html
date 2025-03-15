@@ -188,13 +188,13 @@
                         </div>
                         <div class="grid grid-cols-3 border rounded">
                             <div class="px-4 py-2">Conversion Rate</div>
-                            <div class="px-4 py-2">${challenge.simulation.actualBaseConversionRate.toFixed(4)}</div>
-                            <div class="px-4 py-2">${challenge.simulation.variantConversionRate.toFixed(4)}</div>
+                            <div class="px-4 py-2">${(challenge.simulation.actualBaseConversionRate * 100).toFixed(2)}%</div>
+                            <div class="px-4 py-2">${(challenge.simulation.variantConversionRate * 100).toFixed(2)}%</div>
                         </div>
                         <div class="grid grid-cols-3 border rounded">
                             <div class="px-4 py-2">95% CI</div>
-                            <div class="px-4 py-2">[${challenge.simulation.confidenceIntervalBase[0].toFixed(4)} to ${challenge.simulation.confidenceIntervalBase[1].toFixed(4)}]</div>
-                            <div class="px-4 py-2">[${challenge.simulation.confidenceIntervalVariant[0].toFixed(4)} to ${challenge.simulation.confidenceIntervalVariant[1].toFixed(4)}]</div>
+                            <div class="px-4 py-2">[${(challenge.simulation.confidenceIntervalBase[0] * 100).toFixed(2)}% to ${(challenge.simulation.confidenceIntervalBase[1] * 100).toFixed(2)}%]</div>
+                            <div class="px-4 py-2">[${(challenge.simulation.confidenceIntervalVariant[0] * 100).toFixed(2)}% to ${(challenge.simulation.confidenceIntervalVariant[1] * 100).toFixed(2)}%]</div>
                         </div>
                         <div class="grid grid-cols-3 border rounded">
                             <div class="px-4 py-2">Total Visitors</div>
