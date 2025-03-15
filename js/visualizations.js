@@ -19,6 +19,26 @@ function updateConfidenceIntervals(challenge) {
     // Helper function to format percentage
     const formatPercent = (value) => (value * 100).toFixed(2) + '%';
 
+    // Find the range for all intervals to determine view bounds
+    const allValues = [
+        ...challenge.simulation.confidenceIntervalBase,
+        ...challenge.simulation.confidenceIntervalVariant,
+        ...challenge.simulation.confidenceIntervalDifference,
+        challenge.simulation.actualBaseConversionRate,
+        challenge.simulation.variantConversionRate
+    ];
+
+    const minValue = Math.min(...allValues);
+    const maxValue = Math.max(...allValues);
+    const padding = (maxValue - minValue) * 0.2; // Add 20% padding
+
+    const viewMin = Math.max(0, minValue - padding);
+    const viewMax = Math.min(1, maxValue + padding);
+    const viewRange = viewMax - viewMin;
+
+    // Helper function to convert actual value to view percentage
+    const toViewPercent = (value) => ((value - viewMin) / viewRange) * 100;
+
     // Helper function to set CI visualization
     function updateCIVisualization(containerId, low, high, mean, color) {
         const container = document.getElementById(containerId);
@@ -35,10 +55,10 @@ function updateConfidenceIntervals(challenge) {
             return;
         }
 
-        // Calculate positions (assume 0-100% range)
-        const lowPercent = Math.max(0, low * 100);
-        const highPercent = Math.min(100, high * 100);
-        const meanPercent = Math.max(0, Math.min(100, mean * 100));
+        // Calculate positions in view space
+        const lowPercent = toViewPercent(low);
+        const highPercent = toViewPercent(high);
+        const meanPercent = toViewPercent(mean);
 
         // Update range and marker positions with a transition
         range.style.transition = 'all 0.3s ease-in-out';
@@ -48,6 +68,13 @@ function updateConfidenceIntervals(challenge) {
         range.style.width = `${highPercent - lowPercent}%`;
         marker.style.left = `${meanPercent}%`;
 
+        // Add view range labels
+        const container_parent = container.parentElement;
+        const rangeLabel = container_parent.querySelector('.view-range-label');
+        if (rangeLabel) {
+            rangeLabel.textContent = `View range: ${formatPercent(viewMin)} - ${formatPercent(viewMax)}`;
+        }
+
         // Update labels with formatted values
         const lowLabel = document.getElementById(`${containerId}-low`);
         const highLabel = document.getElementById(`${containerId}-high`);
@@ -55,6 +82,9 @@ function updateConfidenceIntervals(challenge) {
         if (lowLabel && highLabel) {
             lowLabel.textContent = formatPercent(low);
             highLabel.textContent = formatPercent(high);
+            // Position labels relative to the colored bar
+            lowLabel.style.left = `${lowPercent}%`;
+            highLabel.style.left = `${highPercent}%`;
         }
     }
 
