@@ -66,14 +66,17 @@
 
                     <!-- P-value and Difference display -->
                     <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-                        <div class="mb-4">
-                            <p class="text-lg mb-2">P-value:</p>
-                            <p id="p-value-display" class="text-2xl font-bold"></p>
-                        </div>
-                        <div>
-                            <p class="text-lg mb-2">Difference in Conversion Rate:</p>
-                            <p id="difference-display" class="text-2xl font-bold text-purple-600"></p>
-                            <p class="text-sm text-gray-600">95% CI: <span id="difference-ci"></span></p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-lg mb-2">P-value:</p>
+                                <p id="p-value-display" class="text-2xl font-bold"></p>
+                                <p class="text-sm text-gray-600">Significance threshold: 0.05</p>
+                            </div>
+                            <div>
+                                <p class="text-lg mb-2">Difference in Conversion Rate:</p>
+                                <p id="difference-display" class="text-2xl font-bold text-purple-600"></p>
+                                <p class="text-sm text-gray-600">95% CI: <span id="difference-ci"></span></p>
+                            </div>
                         </div>
                     </div>
 
