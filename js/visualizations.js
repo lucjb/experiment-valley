@@ -19,28 +19,40 @@ function updateConfidenceIntervals(challenge) {
     // Helper function to format percentage
     const formatPercent = (value) => (value * 100).toFixed(2) + '%';
 
-    // Find the range for all intervals to determine view bounds
-    const allValues = [
+    // Find the range for conversion rate intervals
+    const conversionValues = [
         ...challenge.simulation.confidenceIntervalBase,
         ...challenge.simulation.confidenceIntervalVariant,
-        ...challenge.simulation.confidenceIntervalDifference,
         challenge.simulation.actualBaseConversionRate,
         challenge.simulation.variantConversionRate
     ];
 
-    const minValue = Math.min(...allValues);
-    const maxValue = Math.max(...allValues);
-    const padding = (maxValue - minValue) * 0.2; // Add 20% padding
+    const minConversionValue = Math.min(...conversionValues);
+    const maxConversionValue = Math.max(...conversionValues);
+    const conversionPadding = (maxConversionValue - minConversionValue) * 0.2;
 
-    const viewMin = Math.max(0, minValue - padding);
-    const viewMax = Math.min(1, maxValue + padding);
-    const viewRange = viewMax - viewMin;
+    const conversionViewMin = Math.max(0, minConversionValue - conversionPadding);
+    const conversionViewMax = Math.min(1, maxConversionValue + conversionPadding);
+    const conversionViewRange = conversionViewMax - conversionViewMin;
+
+    // Separate range for difference CI
+    const diffValues = [
+        ...challenge.simulation.confidenceIntervalDifference,
+        challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate
+    ];
+
+    const minDiffValue = Math.min(...diffValues);
+    const maxDiffValue = Math.max(...diffValues);
+    const diffPadding = (maxDiffValue - minDiffValue) * 0.2;
+
+    const diffViewMin = minDiffValue - diffPadding;
+    const diffViewMax = maxDiffValue + diffPadding;
+    const diffViewRange = diffViewMax - diffViewMin;
 
     // Display p-value
     const pValueElement = document.getElementById('p-value-display');
     if (pValueElement) {
         pValueElement.textContent = challenge.simulation.pValue.toFixed(4);
-        // Color p-value based on significance
         if (challenge.simulation.pValue < 0.05) {
             pValueElement.classList.add('text-green-600');
             pValueElement.classList.remove('text-red-600');
@@ -50,27 +62,25 @@ function updateConfidenceIntervals(challenge) {
         }
     }
 
-    // Helper function to convert actual value to view percentage
-    const toViewPercent = (value) => ((value - viewMin) / viewRange) * 100;
+    // Helper functions to convert actual values to view percentages
+    const toConversionViewPercent = (value) => ((value - conversionViewMin) / conversionViewRange) * 100;
+    const toDiffViewPercent = (value) => ((value - diffViewMin) / diffViewRange) * 100;
 
     // Helper function to set CI visualization
-    function updateCIVisualization(containerId, low, high, mean, color) {
+    function updateCIVisualization(containerId, low, high, mean, color, viewType = 'conversion') {
         const container = document.getElementById(containerId);
-        if (!container) {
-            console.error(`Container ${containerId} not found`);
-            return;
-        }
+        if (!container) return;
+
+        const toViewPercent = viewType === 'conversion' ? toConversionViewPercent : toDiffViewPercent;
+        const viewMin = viewType === 'conversion' ? conversionViewMin : diffViewMin;
+        const viewMax = viewType === 'conversion' ? conversionViewMax : diffViewMax;
 
         const range = container.querySelector(`.bg-${color}-200`);
         const marker = container.querySelector(`.bg-${color}-600`);
-        const meanLabel = container.querySelector('.mean-value');
 
-        if (!range || !marker) {
-            console.error(`Required elements not found in ${containerId}`);
-            return;
-        }
+        if (!range || !marker) return;
 
-        // Calculate positions in view space
+        // Calculate positions
         const lowPercent = toViewPercent(low);
         const highPercent = toViewPercent(high);
         const meanPercent = toViewPercent(mean);
@@ -80,20 +90,16 @@ function updateConfidenceIntervals(challenge) {
         range.style.width = `${highPercent - lowPercent}%`;
         marker.style.left = `${meanPercent}%`;
 
-        // Add mean value label
-        if (!meanLabel) {
-            const label = document.createElement('div');
-            label.className = 'mean-value absolute -top-6 transform -translate-x-1/2 text-sm font-medium';
-            label.style.left = `${meanPercent}%`;
-            label.style.color = `var(--${color}-600)`;
-            label.textContent = `Mean: ${formatPercent(mean)}`;
-            container.appendChild(label);
-        } else {
-            meanLabel.style.left = `${meanPercent}%`;
-            meanLabel.textContent = `Mean: ${formatPercent(mean)}`;
+        // Add or update mean value label
+        const meanLabel = container.querySelector('.mean-value') || document.createElement('div');
+        meanLabel.className = `mean-value absolute -top-6 transform -translate-x-1/2 text-sm font-bold text-${color}-600`;
+        meanLabel.style.left = `${meanPercent}%`;
+        meanLabel.textContent = `${formatPercent(mean)}`;
+        if (!container.querySelector('.mean-value')) {
+            container.appendChild(meanLabel);
         }
 
-        // Add view range labels
+        // Update view range label
         const container_parent = container.parentElement;
         const rangeLabel = container_parent.querySelector('.view-range-label');
         if (rangeLabel) {
@@ -118,7 +124,8 @@ function updateConfidenceIntervals(challenge) {
         challenge.simulation.confidenceIntervalBase[0],
         challenge.simulation.confidenceIntervalBase[1],
         challenge.simulation.actualBaseConversionRate,
-        'blue'
+        'blue',
+        'conversion'
     );
 
     // Test variant CI
@@ -127,7 +134,8 @@ function updateConfidenceIntervals(challenge) {
         challenge.simulation.confidenceIntervalVariant[0],
         challenge.simulation.confidenceIntervalVariant[1],
         challenge.simulation.variantConversionRate,
-        'green'
+        'green',
+        'conversion'
     );
 
     // Difference CI
@@ -137,26 +145,31 @@ function updateConfidenceIntervals(challenge) {
         challenge.simulation.confidenceIntervalDifference[0],
         challenge.simulation.confidenceIntervalDifference[1],
         diffMean,
-        'purple'
+        'purple',
+        'difference'
     );
 
     // Add zero line marker for difference CI
     const diffContainer = document.getElementById('diff-ci');
-    const zeroPercent = toViewPercent(0);
-    const zeroLine = diffContainer.querySelector('.zero-line') || document.createElement('div');
-    zeroLine.className = 'zero-line absolute h-full w-0.5 bg-gray-600';
-    zeroLine.style.left = `${zeroPercent}%`;
-    if (!diffContainer.querySelector('.zero-line')) {
-        diffContainer.appendChild(zeroLine);
-    }
+    if (diffContainer) {
+        const zeroPercent = toDiffViewPercent(0);
 
-    // Add zero label
-    const zeroLabel = diffContainer.querySelector('.zero-label') || document.createElement('div');
-    zeroLabel.className = 'zero-label absolute -bottom-6 transform -translate-x-1/2 text-sm font-medium text-gray-600';
-    zeroLabel.style.left = `${zeroPercent}%`;
-    zeroLabel.textContent = '0';
-    if (!diffContainer.querySelector('.zero-label')) {
-        diffContainer.appendChild(zeroLabel);
+        // Add or update zero line
+        const zeroLine = diffContainer.querySelector('.zero-line') || document.createElement('div');
+        zeroLine.className = 'zero-line absolute h-full w-1 bg-gray-400';
+        zeroLine.style.left = `${zeroPercent}%`;
+        if (!diffContainer.querySelector('.zero-line')) {
+            diffContainer.appendChild(zeroLine);
+        }
+
+        // Add or update zero label
+        const zeroLabel = diffContainer.querySelector('.zero-label') || document.createElement('div');
+        zeroLabel.className = 'zero-label absolute -bottom-6 transform -translate-x-1/2 text-sm font-medium text-gray-600';
+        zeroLabel.style.left = `${zeroPercent}%`;
+        zeroLabel.textContent = '0%';
+        if (!diffContainer.querySelector('.zero-label')) {
+            diffContainer.appendChild(zeroLabel);
+        }
     }
 }
 
