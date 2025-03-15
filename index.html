@@ -80,41 +80,44 @@
                     </div>
 
                     <!-- Confidence Intervals -->
-                    <div class="space-y-6">
+                    <div class="space-y-8">
+                        <!-- Base Variant CI -->
                         <div class="relative">
                             <p class="font-semibold mb-2">Base Variant Conversion Rate (95% CI)</p>
-                            <div id="base-ci" class="h-8 bg-gray-200 rounded-full relative">
-                                <div class="absolute h-full bg-blue-200 rounded-full"></div>
-                                <div class="absolute w-1 h-8 bg-blue-600"></div>
+                            <div id="base-ci" class="h-10 bg-gray-200 rounded-lg relative">
+                                <div class="absolute h-full bg-blue-200 rounded-lg"></div>
+                                <div class="absolute w-2 h-10 bg-blue-600 -translate-x-1 rounded-sm"></div>
                             </div>
-                            <div class="flex justify-between mt-1">
-                                <span id="base-ci-low" class="text-sm"></span>
-                                <span id="base-ci-high" class="text-sm"></span>
+                            <div class="flex justify-between mt-2">
+                                <span id="base-ci-low" class="text-sm font-medium"></span>
+                                <span id="base-ci-high" class="text-sm font-medium"></span>
                             </div>
                         </div>
 
+                        <!-- Test Variant CI -->
                         <div class="relative">
                             <p class="font-semibold mb-2">Test Variant Conversion Rate (95% CI)</p>
-                            <div id="variant-ci" class="h-8 bg-gray-200 rounded-full relative">
-                                <div class="absolute h-full bg-green-200 rounded-full"></div>
-                                <div class="absolute w-1 h-8 bg-green-600"></div>
+                            <div id="variant-ci" class="h-10 bg-gray-200 rounded-lg relative">
+                                <div class="absolute h-full bg-green-200 rounded-lg"></div>
+                                <div class="absolute w-2 h-10 bg-green-600 -translate-x-1 rounded-sm"></div>
                             </div>
-                            <div class="flex justify-between mt-1">
-                                <span id="variant-ci-low" class="text-sm"></span>
-                                <span id="variant-ci-high" class="text-sm"></span>
+                            <div class="flex justify-between mt-2">
+                                <span id="variant-ci-low" class="text-sm font-medium"></span>
+                                <span id="variant-ci-high" class="text-sm font-medium"></span>
                             </div>
                         </div>
 
+                        <!-- Difference CI -->
                         <div class="relative">
                             <p class="font-semibold mb-2">Difference in Conversion Rates (95% CI)</p>
-                            <div id="diff-ci" class="h-8 bg-gray-200 rounded-full relative">
-                                <div class="absolute h-full bg-purple-200 rounded-full"></div>
-                                <div class="absolute w-1 h-8 bg-purple-600"></div>
-                                <div class="absolute h-full w-px bg-gray-400 left-1/2"></div>
+                            <div id="diff-ci" class="h-10 bg-gray-200 rounded-lg relative">
+                                <div class="absolute h-full bg-purple-200 rounded-lg"></div>
+                                <div class="absolute w-2 h-10 bg-purple-600 -translate-x-1 rounded-sm"></div>
+                                <div class="absolute h-full w-0.5 bg-gray-400 left-1/2"></div>
                             </div>
-                            <div class="flex justify-between mt-1">
-                                <span id="diff-ci-low" class="text-sm"></span>
-                                <span id="diff-ci-high" class="text-sm"></span>
+                            <div class="flex justify-between mt-2">
+                                <span id="diff-ci-low" class="text-sm font-medium"></span>
+                                <span id="diff-ci-high" class="text-sm font-medium"></span>
                             </div>
                         </div>
                     </div>
