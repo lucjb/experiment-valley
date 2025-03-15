@@ -132,9 +132,9 @@ function generateABTestChallenge(level = 1) {
             businessCycleDays: BUSINESS_CYCLE_DAYS
         },
         simulation: {
-            actualBaseConversionRate: actualBaseConversionRate,
+            actualBaseConversionRate: observedBaseRate,
             actualEffectSize: actualEffectSize,
-            variantConversionRate: variantConversionRate,
+            variantConversionRate: observedVariantRate,
             actualVisitorsBase: actualVisitorsBase,
             actualVisitorsVariant: actualVisitorsVariant,
             actualConversionsBase: actualConversionsBase,
