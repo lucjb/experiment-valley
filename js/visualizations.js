@@ -130,15 +130,16 @@ function updateConfidenceIntervals(challenge) {
         marker.style.left = `${meanPercent}%`;
 
         // Add or update mean value label
-        const meanLabel = container.querySelector('.mean-value') || document.createElement('div');
-        meanLabel.className = `mean-value absolute -top-6 transform -translate-x-1/2 text-sm font-bold text-${color}-600`;
+        const meanLabel = container.querySelector('.mean-label') || document.createElement('div');
+        meanLabel.className = `mean-label absolute transform -translate-x-1/2 text-sm font-medium text-${color}-600`;
         meanLabel.style.left = `${meanPercent}%`;
-        meanLabel.textContent = `Point estimate: ${formatPercent(mean)}`;
-        if (!container.querySelector('.mean-value')) {
+        meanLabel.style.bottom = '-24px';  // Position below the CI bar
+        meanLabel.textContent = formatPercent(mean);
+        if (!container.querySelector('.mean-label')) {
             container.appendChild(meanLabel);
         }
 
-        // Add low/high labels
+        // Update low/high labels
         const lowLabel = document.getElementById(`${containerId}-low`);
         const highLabel = document.getElementById(`${containerId}-high`);
 
