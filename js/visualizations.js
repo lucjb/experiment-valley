@@ -30,10 +30,10 @@ function updateConfidenceIntervals(challenge) {
 
     const minConversionValue = Math.min(...conversionValues);
     const maxConversionValue = Math.max(...conversionValues);
-    const conversionPadding = (maxConversionValue - minConversionValue) * 0.2;
 
-    const conversionViewMin = Math.max(0, minConversionValue - conversionPadding);
-    const conversionViewMax = Math.min(1, maxConversionValue + conversionPadding);
+    // Round to nice intervals (multiples of 0.05)
+    const conversionViewMin = Math.floor(minConversionValue * 20) / 20;
+    const conversionViewMax = Math.ceil(maxConversionValue * 20) / 20;
     const conversionViewRange = conversionViewMax - conversionViewMin;
 
     // Separate range for difference CI
@@ -46,8 +46,9 @@ function updateConfidenceIntervals(challenge) {
     const maxDiffValue = Math.max(...diffValues);
     const diffPadding = (maxDiffValue - minDiffValue) * 0.2;
 
-    const diffViewMin = minDiffValue - diffPadding;
-    const diffViewMax = maxDiffValue + diffPadding;
+    // Round difference view range to nice intervals
+    const diffViewMin = Math.floor((minDiffValue - diffPadding) * 100) / 100;
+    const diffViewMax = Math.ceil((maxDiffValue + diffPadding) * 100) / 100;
     const diffViewRange = diffViewMax - diffViewMin;
 
     // Display p-value (keep as decimal)
@@ -85,6 +86,23 @@ function updateConfidenceIntervals(challenge) {
         const viewMin = viewType === 'conversion' ? conversionViewMin : diffViewMin;
         const viewMax = viewType === 'conversion' ? conversionViewMax : diffViewMax;
 
+        // Add view range bounds
+        const minBound = container.querySelector('.min-bound') || document.createElement('div');
+        minBound.className = 'min-bound absolute -bottom-6 transform -translate-x-1/2 text-sm font-medium text-gray-600';
+        minBound.style.left = '0%';
+        minBound.textContent = formatPercent(viewMin);
+        if (!container.querySelector('.min-bound')) {
+            container.appendChild(minBound);
+        }
+
+        const maxBound = container.querySelector('.max-bound') || document.createElement('div');
+        maxBound.className = 'max-bound absolute -bottom-6 transform -translate-x-1/2 text-sm font-medium text-gray-600';
+        maxBound.style.left = '100%';
+        maxBound.textContent = formatPercent(viewMax);
+        if (!container.querySelector('.max-bound')) {
+            container.appendChild(maxBound);
+        }
+
         const range = container.querySelector(`.bg-${color}-200`);
         const marker = container.querySelector(`.bg-${color}-600`);
 
@@ -104,19 +122,12 @@ function updateConfidenceIntervals(challenge) {
         const meanLabel = container.querySelector('.mean-value') || document.createElement('div');
         meanLabel.className = `mean-value absolute -top-6 transform -translate-x-1/2 text-sm font-bold text-${color}-600`;
         meanLabel.style.left = `${meanPercent}%`;
-        meanLabel.textContent = formatPercent(mean);
+        meanLabel.textContent = `Point estimate: ${formatPercent(mean)}`;
         if (!container.querySelector('.mean-value')) {
             container.appendChild(meanLabel);
         }
 
-        // Update view range label
-        const container_parent = container.parentElement;
-        const rangeLabel = container_parent.querySelector('.view-range-label');
-        if (rangeLabel) {
-            rangeLabel.textContent = `View range: ${formatPercent(viewMin)} to ${formatPercent(viewMax)}`;
-        }
-
-        // Update low/high labels
+        // Add low/high labels
         const lowLabel = document.getElementById(`${containerId}-low`);
         const highLabel = document.getElementById(`${containerId}-high`);
 
@@ -174,7 +185,7 @@ function updateConfidenceIntervals(challenge) {
 
         // Add or update zero label
         const zeroLabel = diffContainer.querySelector('.zero-label') || document.createElement('div');
-        zeroLabel.className = 'zero-label absolute -bottom-6 transform -translate-x-1/2 text-sm font-medium text-gray-600';
+        zeroLabel.className = 'zero-label absolute -top-6 transform -translate-x-1/2 text-sm font-medium text-gray-600';
         zeroLabel.style.left = `${zeroPercent}%`;
         zeroLabel.textContent = '0%';
         if (!diffContainer.querySelector('.zero-label')) {
