@@ -122,29 +122,30 @@
                         <canvas id="conversion-chart"></canvas>
                     </div>
                 </div>
-            </div>
+                <!-- Make Your Decision Section -->
+                <div class="text-center mt-8">
+                    <h2 class="text-xl font-semibold mb-4">Make Your Decision</h2>
+                    <p class="text-gray-700 mb-4">Based on these results, should we implement Variant B?</p>
+                    <div class="flex justify-center space-x-4">
+                        <button id="decision-yes" class="px-6 py-3 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition">
+                            Yes, Implement
+                        </button>
+                        <button id="decision-no" class="px-6 py-3 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition">
+                            No, Keep Original
+                        </button>
+                    </div>
+                </div>
 
-            <!-- Make Your Decision Section -->
-            <div class="text-center mt-8">
-                <h2 class="text-xl font-semibold mb-4">Make Your Decision</h2>
-                <p class="text-gray-700 mb-4">Based on these results, should we implement Variant B?</p>
-                <div class="flex justify-center space-x-4">
-                    <button id="decision-yes" class="px-6 py-3 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition">
-                        Yes, Implement
-                    </button>
-                    <button id="decision-no" class="px-6 py-3 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition">
-                        No, Keep Original
+                <div id="feedback" class="hidden mt-6 p-4 rounded-lg"></div>
+
+                <div class="flex justify-center mt-6">
+                    <button id="next-btn" class="hidden px-6 py-3 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition">
+                        Next Challenge
                     </button>
                 </div>
             </div>
         </div>
 
-        <div id="feedback" class="hidden mt-6 p-4 rounded-lg"></div>
-
-        <div class="flex justify-center mt-6">
-            <button id="next-btn" class="hidden px-6 py-3 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition">
-                Next Challenge
-            </button>
         </div>
     </div>
 
