@@ -25,7 +25,7 @@ function sampleBinomial(n, p) {
 
 function computeTTest(conversionsA, visitorsA, conversionsB, visitorsB) {
     if (visitorsA === 0 || visitorsB === 0) {
-        return NaN;
+        return { tStatistic: NaN, pValue: NaN };
     }
 
     const epsilon = 1e-10;
@@ -37,18 +37,24 @@ function computeTTest(conversionsA, visitorsA, conversionsB, visitorsB) {
     const se = Math.sqrt(varA + varB);
 
     if (se === 0) {
-        return NaN;
+        return { tStatistic: NaN, pValue: NaN };
     }
 
     const tStatistic = (pB - pA) / se;
     const degreesOfFreedom = Math.max(1, visitorsA + visitorsB - 2);
-    return 2 * (1 - jStat.studentt.cdf(Math.abs(tStatistic), degreesOfFreedom));
+    const pValue = 2 * (1 - jStat.studentt.cdf(Math.abs(tStatistic), degreesOfFreedom));
+
+    return { tStatistic, pValue };
 }
 
 function computeConfidenceInterval(conversionRate, visitors, alpha) {
+    // Standard error calculation for proportion
     const se = Math.sqrt((conversionRate * (1 - conversionRate)) / visitors);
+    // Z-score for the given alpha (e.g., 1.96 for 95% CI)
     const zScore = jStat.normal.inv(1 - alpha / 2, 0, 1);
     const marginOfError = zScore * se;
+
+    // Return symmetric bounds around the conversion rate
     return [
         Math.max(0, conversionRate - marginOfError),
         Math.min(1, conversionRate + marginOfError)
@@ -88,11 +94,26 @@ function generateABTestChallenge(level = 1) {
     const actualConversionsBase = sampleBinomial(actualVisitorsBase, actualBaseConversionRate);
     const actualConversionsVariant = sampleBinomial(actualVisitorsVariant, variantConversionRate);
 
-    const pValue = computeTTest(actualConversionsBase, actualVisitorsBase, actualConversionsVariant, actualVisitorsVariant);
+    const { pValue } = computeTTest(actualConversionsBase, actualVisitorsBase, actualConversionsVariant, actualVisitorsVariant);
 
-    const ciBase = computeConfidenceInterval(actualConversionsBase / actualVisitorsBase, actualVisitorsBase, ALPHA);
-    const ciVariant = computeConfidenceInterval(actualConversionsVariant / actualVisitorsVariant, actualVisitorsVariant, ALPHA);
-    const ciDifference = [ciVariant[0] - ciBase[1], ciVariant[1] - ciBase[0]];
+    const observedBaseRate = actualConversionsBase / actualVisitorsBase;
+    const observedVariantRate = actualConversionsVariant / actualVisitorsVariant;
+
+    const ciBase = computeConfidenceInterval(observedBaseRate, actualVisitorsBase, ALPHA);
+    const ciVariant = computeConfidenceInterval(observedVariantRate, actualVisitorsVariant, ALPHA);
+
+    // Calculate difference CI directly using pooled standard error
+    const observedDifference = observedVariantRate - observedBaseRate;
+    const pooledSE = Math.sqrt(
+        (observedBaseRate * (1 - observedBaseRate)) / actualVisitorsBase +
+        (observedVariantRate * (1 - observedVariantRate)) / actualVisitorsVariant
+    );
+    const zScore = jStat.normal.inv(1 - ALPHA / 2, 0, 1);
+    const diffMarginOfError = zScore * pooledSE;
+    const ciDifference = [
+        observedDifference - diffMarginOfError,
+        observedDifference + diffMarginOfError
+    ];
 
     // Generate daily data for time series visualization
     const dailyData = Array.from({ length: BUSINESS_CYCLE_DAYS }, () => ({
