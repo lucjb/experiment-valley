@@ -79,44 +79,38 @@
                     <!-- Confidence Intervals -->
                     <div class="space-y-8">
                         <!-- Base Variant CI -->
-                        <div class="relative">
+                        <div class="relative mt-8">
                             <p class="font-semibold mb-2">Base Variant Conversion Rate (95% CI)</p>
-                            <p class="text-sm text-gray-600 mb-2 view-range-label"></p>
-                            <div id="base-ci" class="h-12 bg-gray-100 rounded-lg relative overflow-hidden">
-                                <div class="absolute h-full bg-blue-200 rounded-lg transition-all duration-300"></div>
-                                <div class="absolute w-2 h-12 bg-blue-600 -translate-x-1 rounded-sm transition-all duration-300"></div>
-                            </div>
-                            <div class="relative h-8">
-                                <span id="base-ci-low" class="absolute text-sm font-medium transform -translate-x-1/2 text-blue-600 transition-all duration-300"></span>
-                                <span id="base-ci-high" class="absolute text-sm font-medium transform -translate-x-1/2 text-blue-600 transition-all duration-300"></span>
+                            <div id="base-ci" class="h-12 bg-gray-100 rounded-lg relative overflow-visible">
+                                <div class="absolute h-full bg-blue-200 rounded-lg"></div>
+                                <div class="absolute w-1 h-full bg-blue-600 rounded-sm"></div>
+                                <span id="base-ci-low" class="absolute text-sm font-medium transform -translate-x-1/2 text-blue-600"></span>
+                                <span id="base-ci-point" class="absolute text-sm font-medium transform -translate-x-1/2 text-blue-600"></span>
+                                <span id="base-ci-high" class="absolute text-sm font-medium transform -translate-x-1/2 text-blue-600"></span>
                             </div>
                         </div>
 
                         <!-- Test Variant CI -->
                         <div class="relative mt-8">
                             <p class="font-semibold mb-2">Test Variant Conversion Rate (95% CI)</p>
-                            <p class="text-sm text-gray-600 mb-2 view-range-label"></p>
-                            <div id="variant-ci" class="h-12 bg-gray-100 rounded-lg relative overflow-hidden">
-                                <div class="absolute h-full bg-green-200 rounded-lg transition-all duration-300"></div>
-                                <div class="absolute w-2 h-12 bg-green-600 -translate-x-1 rounded-sm transition-all duration-300"></div>
-                            </div>
-                            <div class="relative h-8">
-                                <span id="variant-ci-low" class="absolute text-sm font-medium transform -translate-x-1/2 text-green-600 transition-all duration-300"></span>
-                                <span id="variant-ci-high" class="absolute text-sm font-medium transform -translate-x-1/2 text-green-600 transition-all duration-300"></span>
+                            <div id="variant-ci" class="h-12 bg-gray-100 rounded-lg relative overflow-visible">
+                                <div class="absolute h-full bg-green-200 rounded-lg"></div>
+                                <div class="absolute w-1 h-full bg-green-600 rounded-sm"></div>
+                                <span id="variant-ci-low" class="absolute text-sm font-medium transform -translate-x-1/2 text-green-600"></span>
+                                <span id="variant-ci-point" class="absolute text-sm font-medium transform -translate-x-1/2 text-green-600"></span>
+                                <span id="variant-ci-high" class="absolute text-sm font-medium transform -translate-x-1/2 text-green-600"></span>
                             </div>
                         </div>
 
                         <!-- Difference CI -->
                         <div class="relative mt-8">
                             <p class="font-semibold mb-2">Difference in Conversion Rates (95% CI)</p>
-                            <p class="text-sm text-gray-600 mb-2 view-range-label"></p>
-                            <div id="diff-ci" class="h-12 bg-gray-100 rounded-lg relative overflow-hidden">
-                                <div class="absolute h-full bg-purple-200 rounded-lg transition-all duration-300"></div>
-                                <div class="absolute w-2 h-12 bg-purple-600 -translate-x-1 rounded-sm transition-all duration-300"></div>
-                            </div>
-                            <div class="relative h-8">
-                                <span id="diff-ci-low" class="absolute text-sm font-medium transform -translate-x-1/2 text-purple-600 transition-all duration-300"></span>
-                                <span id="diff-ci-high" class="absolute text-sm font-medium transform -translate-x-1/2 text-purple-600 transition-all duration-300"></span>
+                            <div id="diff-ci" class="h-12 bg-gray-100 rounded-lg relative overflow-visible">
+                                <div class="absolute h-full bg-purple-200 rounded-lg"></div>
+                                <div class="absolute w-1 h-full bg-purple-600 rounded-sm"></div>
+                                <span id="diff-ci-low" class="absolute text-sm font-medium transform -translate-x-1/2 text-purple-600"></span>
+                                <span id="diff-ci-point" class="absolute text-sm font-medium transform -translate-x-1/2 text-purple-600"></span>
+                                <span id="diff-ci-high" class="absolute text-sm font-medium transform -translate-x-1/2 text-purple-600"></span>
                             </div>
                         </div>
                     </div>
