@@ -86,7 +86,14 @@ function updateConfidenceIntervals(challenge) {
         const viewMin = viewType === 'conversion' ? conversionViewMin : diffViewMin;
         const viewMax = viewType === 'conversion' ? conversionViewMax : diffViewMax;
 
-        // Add view range bounds
+        // Add view range bounds to the container parent's label
+        const container_parent = container.parentElement;
+        const rangeLabel = container_parent.querySelector('.view-range-label');
+        if (rangeLabel) {
+            rangeLabel.textContent = `View range: ${formatPercent(viewMin)} to ${formatPercent(viewMax)}`;
+        }
+
+        // Add bounds to the bar
         const minBound = container.querySelector('.min-bound') || document.createElement('div');
         minBound.className = 'min-bound absolute -bottom-6 transform -translate-x-1/2 text-sm font-medium text-gray-600';
         minBound.style.left = '0%';
