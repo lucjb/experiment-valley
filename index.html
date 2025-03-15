@@ -192,6 +192,11 @@
                             <div class="px-4 py-2">${(challenge.simulation.variantConversionRate * 100).toFixed(2)}%</div>
                         </div>
                         <div class="grid grid-cols-3 border rounded">
+                            <div class="px-4 py-2">95% CI</div>
+                            <div class="px-4 py-2">[${(challenge.simulation.confidenceIntervalBase[0] * 100).toFixed(2)}% - ${(challenge.simulation.confidenceIntervalBase[1] * 100).toFixed(2)}%]</div>
+                            <div class="px-4 py-2">[${(challenge.simulation.confidenceIntervalVariant[0] * 100).toFixed(2)}% - ${(challenge.simulation.confidenceIntervalVariant[1] * 100).toFixed(2)}%]</div>
+                        </div>
+                        <div class="grid grid-cols-3 border rounded">
                             <div class="px-4 py-2">Total Visitors</div>
                             <div class="px-4 py-2">${challenge.simulation.actualVisitorsBase}</div>
                             <div class="px-4 py-2">${challenge.simulation.actualVisitorsVariant}</div>
