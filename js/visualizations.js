@@ -87,67 +87,39 @@ function updateConfidenceIntervals(challenge) {
         if (!container) return;
 
         const toViewPercent = viewType === 'conversion' ? toConversionViewPercent : toDiffViewPercent;
-        const viewMin = viewType === 'conversion' ? conversionViewMin : diffViewMin;
-        const viewMax = viewType === 'conversion' ? conversionViewMax : diffViewMax;
-
-        // Add view range bounds to the container parent's label
-        const container_parent = container.parentElement;
-        const rangeLabel = container_parent.querySelector('.view-range-label');
-        if (rangeLabel) {
-            rangeLabel.textContent = `View range: ${formatPercent(viewMin)} to ${formatPercent(viewMax)}`;
-        }
-
-        // Add bounds to the bar
-        const minBound = container.querySelector('.min-bound') || document.createElement('div');
-        minBound.className = 'min-bound absolute -bottom-6 transform -translate-x-1/2 text-sm font-medium text-gray-600';
-        minBound.style.left = '0%';
-        minBound.textContent = formatPercent(viewMin);
-        if (!container.querySelector('.min-bound')) {
-            container.appendChild(minBound);
-        }
-
-        const maxBound = container.querySelector('.max-bound') || document.createElement('div');
-        maxBound.className = 'max-bound absolute -bottom-6 transform -translate-x-1/2 text-sm font-medium text-gray-600';
-        maxBound.style.left = '100%';
-        maxBound.textContent = formatPercent(viewMax);
-        if (!container.querySelector('.max-bound')) {
-            container.appendChild(maxBound);
-        }
-
-        const range = container.querySelector(`.bg-${color}-200`);
-        const marker = container.querySelector(`.bg-${color}-600`);
-
-        if (!range || !marker) return;
 
         // Calculate positions
         const lowPercent = toViewPercent(low);
         const highPercent = toViewPercent(high);
         const meanPercent = toViewPercent(mean);
 
-        // Update range and marker positions
+        // Update range and marker
+        const range = container.querySelector(`.bg-${color}-200`);
+        const marker = container.querySelector(`.bg-${color}-600`);
+        if (!range || !marker) return;
+
         range.style.left = `${lowPercent}%`;
         range.style.width = `${highPercent - lowPercent}%`;
         marker.style.left = `${meanPercent}%`;
 
-        // Add or update mean value label
-        const meanLabel = container.querySelector('.mean-label') || document.createElement('div');
-        meanLabel.className = `mean-label absolute transform -translate-x-1/2 text-sm font-medium text-${color}-600`;
-        meanLabel.style.left = `${meanPercent}%`;
-        meanLabel.style.bottom = '-24px';  // Position below the CI bar
-        meanLabel.textContent = formatPercent(mean);
-        if (!container.querySelector('.mean-label')) {
-            container.appendChild(meanLabel);
-        }
-
         // Update low/high labels
         const lowLabel = document.getElementById(`${containerId}-low`);
         const highLabel = document.getElementById(`${containerId}-high`);
-
         if (lowLabel && highLabel) {
             lowLabel.textContent = formatPercent(low);
             highLabel.textContent = formatPercent(high);
             lowLabel.style.left = `${lowPercent}%`;
             highLabel.style.left = `${highPercent}%`;
+        }
+
+        // Add point estimate label above the marker
+        const pointEstimate = container.querySelector('.point-estimate') || document.createElement('div');
+        pointEstimate.className = `point-estimate absolute transform -translate-x-1/2 text-sm font-medium text-${color}-600`;
+        pointEstimate.style.left = `${meanPercent}%`;
+        pointEstimate.style.top = '-24px';  // Position above the CI bar
+        pointEstimate.textContent = formatPercent(mean);
+        if (!container.querySelector('.point-estimate')) {
+            container.appendChild(pointEstimate);
         }
     }
 
