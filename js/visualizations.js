@@ -62,6 +62,15 @@ function updateConfidenceIntervals(challenge) {
         }
     }
 
+    // Display difference in conversion rate
+    const diffValue = challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate;
+    const differenceDisplay = document.getElementById('difference-display');
+    const differenceCI = document.getElementById('difference-ci');
+    if (differenceDisplay && differenceCI) {
+        differenceDisplay.textContent = formatPercent(diffValue);
+        differenceCI.textContent = `[${formatPercent(challenge.simulation.confidenceIntervalDifference[0])} to ${formatPercent(challenge.simulation.confidenceIntervalDifference[1])}]`;
+    }
+
     // Helper functions to convert actual values to view percentages
     const toConversionViewPercent = (value) => ((value - conversionViewMin) / conversionViewRange) * 100;
     const toDiffViewPercent = (value) => ((value - diffViewMin) / diffViewRange) * 100;
@@ -103,7 +112,7 @@ function updateConfidenceIntervals(challenge) {
         const container_parent = container.parentElement;
         const rangeLabel = container_parent.querySelector('.view-range-label');
         if (rangeLabel) {
-            rangeLabel.textContent = `View range: ${formatPercent(viewMin)} - ${formatPercent(viewMax)}`;
+            rangeLabel.textContent = `View range: ${formatPercent(viewMin)} to ${formatPercent(viewMax)}`;
         }
 
         // Update low/high labels
