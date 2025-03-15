@@ -214,13 +214,19 @@
 
             // Update experiment card
             document.getElementById('experiment-card').innerHTML = `
-                <div class="grid grid-cols-1 gap-2">
-                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Alpha:</span> ${challenge.experiment.alpha}</div>
-                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Beta:</span> ${challenge.experiment.beta}</div>
-                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Base Conversion Rate:</span> ${(challenge.experiment.baseConversionRate * 100).toFixed(2)}%</div>
-                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Minimum Relevant Effect:</span> ${(challenge.experiment.minimumRelevantEffect * 100).toFixed(2)}%</div>
-                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Visitors per Day:</span> ${challenge.experiment.visitorsPerDay}</div>
-                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Business Cycle Days:</span> ${challenge.experiment.businessCycleDays}</div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="border px-4 py-2 rounded">
+                        <span class="font-semibold">Alpha:</span> ${challenge.experiment.alpha}<br>
+                        <span class="font-semibold">Beta:</span> ${challenge.experiment.beta}
+                    </div>
+                    <div class="border px-4 py-2 rounded">
+                        <span class="font-semibold">Base Rate:</span> ${(challenge.experiment.baseConversionRate * 100).toFixed(2)}%<br>
+                        <span class="font-semibold">Min Effect:</span> ${(challenge.experiment.minimumRelevantEffect * 100).toFixed(2)}%
+                    </div>
+                    <div class="border px-4 py-2 rounded">
+                        <span class="font-semibold">Daily Visitors:</span> ${challenge.experiment.visitorsPerDay}<br>
+                        <span class="font-semibold">Days:</span> ${challenge.experiment.businessCycleDays}
+                    </div>
                 </div>
             `;
 
