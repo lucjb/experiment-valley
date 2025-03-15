@@ -15,11 +15,15 @@ function initializeCharts(challenge) {
     }
 }
 
-function updateConfidenceIntervals(challenge) {
-    // Helper function to format decimal as percentage
-    const formatPercent = (value) => (value * 100).toFixed(2) + '%';
-    const formatDecimal = (value) => value.toFixed(4); // Keep this for p-value
+function formatPercent(value) {
+    return (value * 100).toFixed(2) + '%';
+}
 
+function formatDecimal(value) {
+    return value.toFixed(4);
+}
+
+function updateConfidenceIntervals(challenge) {
     // Find the range for conversion rate intervals
     const conversionValues = [
         ...challenge.simulation.confidenceIntervalBase,
@@ -31,7 +35,7 @@ function updateConfidenceIntervals(challenge) {
     const minConversionValue = Math.min(...conversionValues);
     const maxConversionValue = Math.max(...conversionValues);
 
-    // Round to nice intervals (multiples of 0.05)
+    // Round to nice intervals (multiples of 0.05 or 5%)
     const conversionViewMin = Math.floor(minConversionValue * 20) / 20;
     const conversionViewMax = Math.ceil(maxConversionValue * 20) / 20;
     const conversionViewRange = conversionViewMax - conversionViewMin;
