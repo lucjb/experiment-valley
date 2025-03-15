@@ -9,7 +9,7 @@ function hideLoading(chartId) {
 function initializeCharts(challenge) {
     try {
         updateConfidenceIntervals(challenge);
-        renderConversionChart(challenge);
+        renderChart(challenge);
     } catch (error) {
         console.error('Error initializing visualizations:', error);
     }
@@ -27,6 +27,28 @@ function updateConfidenceIntervals(challenge) {
     // Helper functions
     const formatPercent = (value) => (value * 100).toFixed(2) + '%';
     const formatDecimal = (value) => value.toFixed(4);
+
+    // Display p-value
+    const pValueElement = document.getElementById('p-value-display');
+    if (pValueElement) {
+        pValueElement.textContent = formatDecimal(challenge.simulation.pValue);
+        if (challenge.simulation.pValue < 0.05) {
+            pValueElement.classList.add('text-green-600');
+            pValueElement.classList.remove('text-red-600');
+        } else {
+            pValueElement.classList.add('text-red-600');
+            pValueElement.classList.remove('text-green-600');
+        }
+    }
+
+    // Display difference in conversion rate
+    const diffValue = challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate;
+    const differenceDisplay = document.getElementById('difference-display');
+    const differenceCI = document.getElementById('difference-ci');
+    if (differenceDisplay && differenceCI) {
+        differenceDisplay.textContent = formatPercent(diffValue);
+        differenceCI.textContent = `[${formatPercent(challenge.simulation.confidenceIntervalDifference[0])} to ${formatPercent(challenge.simulation.confidenceIntervalDifference[1])}]`;
+    }
 
     // Find the range for conversion rate intervals
     const conversionValues = [
@@ -177,7 +199,7 @@ function updateConfidenceIntervals(challenge) {
     }
 }
 
-function renderConversionChart(challenge) {
+function renderChart(challenge) {
     const ctx = document.getElementById('conversion-chart');
     if (!ctx) {
         console.error('Conversion chart canvas not found');
