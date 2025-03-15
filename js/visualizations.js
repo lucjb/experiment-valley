@@ -14,7 +14,7 @@ function initializeCharts(challenge) {
         const conversionCtx = document.getElementById('conversion-chart').getContext('2d');
         const significanceCtx = document.getElementById('significance-chart').getContext('2d');
 
-        // Conversion rates over time
+        // Conversion rates over time chart
         new Chart(conversionCtx, {
             type: 'line',
             data: {
@@ -68,7 +68,7 @@ function initializeCharts(challenge) {
             }
         });
 
-        // Statistical significance visualization
+        // P-value visualization with scalar value
         new Chart(significanceCtx, {
             type: 'bar',
             data: {
