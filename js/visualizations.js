@@ -82,37 +82,45 @@ function updateConfidenceIntervals(challenge) {
     const toDiffViewPercent = (value) => ((value - diffViewMin) / diffViewRange) * 100;
 
     // Helper function to set CI visualization
-    function updateCIVisualization(containerId, low, high, mean, color, viewType = 'conversion') {
+    function updateCIVisualization(containerId, low, high, mean, color) {
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        const toViewPercent = viewType === 'conversion' ? toConversionViewPercent : toDiffViewPercent;
+        const range = high - low;
+        const lowPercent = 0;
+        const highPercent = 100;
+        const meanPercent = ((mean - low) / range) * 100;
 
-        // Calculate positions
-        const lowPercent = toViewPercent(low);
-        const highPercent = toViewPercent(high);
-        const meanPercent = toViewPercent(mean);
 
-        // Update range and marker
-        const range = container.querySelector(`.bg-${color}-200`);
-        const marker = container.querySelector(`.bg-${color}-600`);
-        if (!range || !marker) return;
-
-        range.style.left = `${lowPercent}%`;
-        range.style.width = `${highPercent - lowPercent}%`;
-        marker.style.left = `${meanPercent}%`;
-
-        // Update low/high labels
-        const lowLabel = document.getElementById(`${containerId}-low`);
-        const highLabel = document.getElementById(`${containerId}-high`);
-        if (lowLabel && highLabel) {
-            lowLabel.textContent = formatPercent(low);
-            highLabel.textContent = formatPercent(high);
-            lowLabel.style.left = `${lowPercent}%`;
-            highLabel.style.left = `${highPercent}%`;
+        // Update the colored range bar
+        const rangeBar = container.querySelector(`.bg-${color}-200`);
+        if (rangeBar) {
+            rangeBar.style.left = '0%';
+            rangeBar.style.width = '100%';
         }
 
-        // Add point estimate label above the marker
+        // Update the point estimate marker
+        const marker = container.querySelector(`.bg-${color}-600`);
+        if (marker) {
+            marker.style.left = `${meanPercent}%`;
+        }
+
+        // Update labels
+        function updateLabel(id, value, position) {
+            const label = document.getElementById(id);
+            if (label) {
+                label.textContent = formatPercent(value);
+                label.style.left = `${position}%`;
+                label.style.top = '-20px';  // Position above the bar
+            }
+        }
+
+        // Update bounds and point estimate labels
+        updateLabel(`${containerId}-low`, low, 0);
+        updateLabel(`${containerId}-point`, mean, meanPercent);
+        updateLabel(`${containerId}-high`, high, 100);
+
+        // Add point estimate label above the marker (from original code)
         const pointEstimate = container.querySelector('.point-estimate') || document.createElement('div');
         pointEstimate.className = `point-estimate absolute transform -translate-x-1/2 text-sm font-medium text-${color}-600`;
         pointEstimate.style.left = `${meanPercent}%`;
@@ -129,8 +137,7 @@ function updateConfidenceIntervals(challenge) {
         challenge.simulation.confidenceIntervalBase[0],
         challenge.simulation.confidenceIntervalBase[1],
         challenge.simulation.actualBaseConversionRate,
-        'blue',
-        'conversion'
+        'blue'
     );
 
     // Test variant CI
@@ -139,8 +146,7 @@ function updateConfidenceIntervals(challenge) {
         challenge.simulation.confidenceIntervalVariant[0],
         challenge.simulation.confidenceIntervalVariant[1],
         challenge.simulation.variantConversionRate,
-        'green',
-        'conversion'
+        'green'
     );
 
     // Difference CI
@@ -150,8 +156,7 @@ function updateConfidenceIntervals(challenge) {
         challenge.simulation.confidenceIntervalDifference[0],
         challenge.simulation.confidenceIntervalDifference[1],
         diffMean,
-        'purple',
-        'difference'
+        'purple'
     );
 
     // Add zero line marker for difference CI
