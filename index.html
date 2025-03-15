@@ -255,10 +255,14 @@
             </div>
         `;
 
-        // Calculate deltas
-        const deltaVisitors = challenge.simulation.actualVisitorsVariant - challenge.simulation.actualVisitorsBase;
-        const deltaConversions = challenge.simulation.actualConversionsVariant - challenge.simulation.actualConversionsBase;
-        const deltaRate = challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate;
+        // Update result cells
+        document.getElementById('base-visitors').textContent = challenge.simulation.actualVisitorsBase;
+        document.getElementById('base-conversions').textContent = challenge.simulation.actualConversionsBase;
+        document.getElementById('base-rate').textContent = `${(challenge.simulation.actualBaseConversionRate * 100).toFixed(2)}%`;
+
+        document.getElementById('variant-visitors').textContent = challenge.simulation.actualVisitorsVariant;
+        document.getElementById('variant-conversions').textContent = challenge.simulation.actualConversionsVariant;
+        document.getElementById('variant-rate').textContent = `${(challenge.simulation.variantConversionRate * 100).toFixed(2)}%`;
 
         // Format delta values with + or - sign
         const formatDelta = (value, isPercentage = false) => {
@@ -268,27 +272,10 @@
                 `${sign}${value}`;
         };
 
-        // Update delta row with color coding
-        const applyDeltaColor = (element, value) => {
-            if (value > 0) {
-                element.classList.add('text-green-600');
-            } else if (value < 0) {
-                element.classList.add('text-red-600');
-            }
-        };
-
-        // Update delta row
-        const deltaVisitorsElement = document.getElementById('delta-visitors');
-        const deltaConversionsElement = document.getElementById('delta-conversions');
-        const deltaRateElement = document.getElementById('delta-rate');
-
-        deltaVisitorsElement.textContent = formatDelta(deltaVisitors);
-        deltaConversionsElement.textContent = formatDelta(deltaConversions);
-        deltaRateElement.textContent = formatDelta(deltaRate, true);
-
-        applyDeltaColor(deltaVisitorsElement, deltaVisitors);
-        applyDeltaColor(deltaConversionsElement, deltaConversions);
-        applyDeltaColor(deltaRateElement, deltaRate);
+        // Update delta row - without color coding
+        document.getElementById('delta-visitors').textContent = formatDelta(challenge.simulation.actualVisitorsVariant - challenge.simulation.actualVisitorsBase);
+        document.getElementById('delta-conversions').textContent = formatDelta(challenge.simulation.actualConversionsVariant - challenge.simulation.actualConversionsBase);
+        document.getElementById('delta-rate').textContent = formatDelta(challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate, true);
 
 
         initializeCharts(challenge);
