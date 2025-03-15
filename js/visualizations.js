@@ -24,6 +24,10 @@ function formatDecimal(value) {
 }
 
 function updateConfidenceIntervals(challenge) {
+    // Helper functions
+    const formatPercent = (value) => (value * 100).toFixed(2) + '%';
+    const formatDecimal = (value) => value.toFixed(4);
+
     // Find the range for conversion rate intervals
     const conversionValues = [
         ...challenge.simulation.confidenceIntervalBase,
@@ -40,46 +44,8 @@ function updateConfidenceIntervals(challenge) {
     const conversionViewMax = Math.ceil(maxConversionValue * 20) / 20;
     const conversionViewRange = conversionViewMax - conversionViewMin;
 
-    // Separate range for difference CI
-    const diffValues = [
-        ...challenge.simulation.confidenceIntervalDifference,
-        challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate
-    ];
-
-    const minDiffValue = Math.min(...diffValues);
-    const maxDiffValue = Math.max(...diffValues);
-    const diffPadding = (maxDiffValue - minDiffValue) * 0.2;
-
-    // Round difference view range to nice intervals
-    const diffViewMin = Math.floor((minDiffValue - diffPadding) * 100) / 100;
-    const diffViewMax = Math.ceil((maxDiffValue + diffPadding) * 100) / 100;
-    const diffViewRange = diffViewMax - diffViewMin;
-
-    // Display p-value (keep as decimal)
-    const pValueElement = document.getElementById('p-value-display');
-    if (pValueElement) {
-        pValueElement.textContent = formatDecimal(challenge.simulation.pValue);
-        if (challenge.simulation.pValue < 0.05) {
-            pValueElement.classList.add('text-green-600');
-            pValueElement.classList.remove('text-red-600');
-        } else {
-            pValueElement.classList.add('text-red-600');
-            pValueElement.classList.remove('text-green-600');
-        }
-    }
-
-    // Display difference in conversion rate (as percentage)
-    const diffValue = challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate;
-    const differenceDisplay = document.getElementById('difference-display');
-    const differenceCI = document.getElementById('difference-ci');
-    if (differenceDisplay && differenceCI) {
-        differenceDisplay.textContent = formatPercent(diffValue);
-        differenceCI.textContent = `[${formatPercent(challenge.simulation.confidenceIntervalDifference[0])} to ${formatPercent(challenge.simulation.confidenceIntervalDifference[1])}]`;
-    }
-
-    // Helper functions to convert actual values to view percentages
-    const toConversionViewPercent = (value) => ((value - conversionViewMin) / conversionViewRange) * 100;
-    const toDiffViewPercent = (value) => ((value - diffViewMin) / diffViewRange) * 100;
+    // Helper function to convert actual values to view percentages
+    const toViewPercent = (value) => ((value - conversionViewMin) / conversionViewRange) * 100;
 
     // Helper function to set CI visualization
     function updateCIVisualization(containerId, low, high, mean, color) {
@@ -93,14 +59,15 @@ function updateConfidenceIntervals(challenge) {
         const pointLabel = document.getElementById(`${containerId}-point`);
         const highLabel = document.getElementById(`${containerId}-high`);
 
-        // Calculate positions within CI bar (0-100%)
-        const range = high - low;
-        const meanPercent = ((mean - low) / range) * 100;
+        // Calculate positions within the view range
+        const lowPercent = toViewPercent(low);
+        const highPercent = toViewPercent(high);
+        const meanPercent = toViewPercent(mean);
 
         // Update visual elements
         if (rangeBar) {
-            rangeBar.style.left = '0%';
-            rangeBar.style.width = '100%';
+            rangeBar.style.left = `${lowPercent}%`;
+            rangeBar.style.width = `${highPercent - lowPercent}%`;
         }
 
         if (marker) {
@@ -110,7 +77,7 @@ function updateConfidenceIntervals(challenge) {
         // Update labels
         if (lowLabel) {
             lowLabel.textContent = formatPercent(low);
-            lowLabel.style.left = '0%';
+            lowLabel.style.left = `${lowPercent}%`;
         }
 
         if (pointLabel) {
@@ -120,7 +87,7 @@ function updateConfidenceIntervals(challenge) {
 
         if (highLabel) {
             highLabel.textContent = formatPercent(high);
-            highLabel.style.left = '100%';
+            highLabel.style.left = `${highPercent}%`;
         }
     }
 
@@ -142,36 +109,70 @@ function updateConfidenceIntervals(challenge) {
         'green'
     );
 
+    // For difference CI, calculate a separate view range
+    const diffValues = [
+        ...challenge.simulation.confidenceIntervalDifference,
+        challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate
+    ];
+
+    const minDiffValue = Math.min(...diffValues);
+    const maxDiffValue = Math.max(...diffValues);
+    const diffPadding = (maxDiffValue - minDiffValue) * 0.2;
+
+    // Round to nice intervals
+    const diffViewMin = Math.floor((minDiffValue - diffPadding) * 100) / 100;
+    const diffViewMax = Math.ceil((maxDiffValue + diffPadding) * 100) / 100;
+
+    const toDiffViewPercent = (value) => ((value - diffViewMin) / (diffViewMax - diffViewMin)) * 100;
+
     // Difference CI
     const diffMean = challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate;
-    updateCIVisualization(
-        'diff-ci',
-        challenge.simulation.confidenceIntervalDifference[0],
-        challenge.simulation.confidenceIntervalDifference[1],
-        diffMean,
-        'purple'
-    );
+    const container = document.getElementById('diff-ci');
 
-    // Add zero line marker for difference CI
-    const diffContainer = document.getElementById('diff-ci');
-    if (diffContainer) {
+    if (container) {
+        const rangeBar = container.querySelector('.bg-purple-200');
+        const marker = container.querySelector('.bg-purple-600');
+        const lowLabel = document.getElementById('diff-ci-low');
+        const pointLabel = document.getElementById('diff-ci-point');
+        const highLabel = document.getElementById('diff-ci-high');
+
+        const lowPercent = toDiffViewPercent(challenge.simulation.confidenceIntervalDifference[0]);
+        const highPercent = toDiffViewPercent(challenge.simulation.confidenceIntervalDifference[1]);
+        const meanPercent = toDiffViewPercent(diffMean);
+
+        if (rangeBar) {
+            rangeBar.style.left = `${lowPercent}%`;
+            rangeBar.style.width = `${highPercent - lowPercent}%`;
+        }
+
+        if (marker) {
+            marker.style.left = `${meanPercent}%`;
+        }
+
+        if (lowLabel) {
+            lowLabel.textContent = formatPercent(challenge.simulation.confidenceIntervalDifference[0]);
+            lowLabel.style.left = `${lowPercent}%`;
+        }
+
+        if (pointLabel) {
+            pointLabel.textContent = formatPercent(diffMean);
+            pointLabel.style.left = `${meanPercent}%`;
+        }
+
+        if (highLabel) {
+            highLabel.textContent = formatPercent(challenge.simulation.confidenceIntervalDifference[1]);
+            highLabel.style.left = `${highPercent}%`;
+        }
+
+        // Add zero line for difference CI
         const zeroPercent = toDiffViewPercent(0);
 
         // Add or update zero line
-        const zeroLine = diffContainer.querySelector('.zero-line') || document.createElement('div');
+        const zeroLine = container.querySelector('.zero-line') || document.createElement('div');
         zeroLine.className = 'zero-line absolute h-full w-1 bg-gray-400';
         zeroLine.style.left = `${zeroPercent}%`;
-        if (!diffContainer.querySelector('.zero-line')) {
-            diffContainer.appendChild(zeroLine);
-        }
-
-        // Add or update zero label
-        const zeroLabel = diffContainer.querySelector('.zero-label') || document.createElement('div');
-        zeroLabel.className = 'zero-label absolute -top-6 transform -translate-x-1/2 text-sm font-medium text-gray-600';
-        zeroLabel.style.left = `${zeroPercent}%`;
-        zeroLabel.textContent = '0%';
-        if (!diffContainer.querySelector('.zero-label')) {
-            diffContainer.appendChild(zeroLabel);
+        if (!container.querySelector('.zero-line')) {
+            container.appendChild(zeroLine);
         }
     }
 }
