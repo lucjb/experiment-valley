@@ -337,61 +337,30 @@ function renderChart(challenge) {
         existingChart.destroy();
     }
 
-    const dailyConversionRates = challenge.simulation.dailyData.map(day => ({
-        base: day.base.conversions / day.base.visitors,
-        variant: day.variant.conversions / day.variant.visitors
-    }));
-
-    const cumulativeConversionRates = challenge.simulation.dailyData.map(day => ({
-        base: day.cumulative.base.conversions / day.cumulative.base.visitors,
-        variant: day.cumulative.variant.conversions / day.cumulative.variant.visitors
-    }));
-
     new Chart(ctx, {
         type: 'line',
         data: {
             labels: Array.from({length: challenge.experiment.businessCycleDays}, (_, i) => `Day ${i + 1}`),
-            datasets: [
-                {
-                    label: 'Base Daily',
-                    data: dailyConversionRates.map(d => d.base),
-                    borderColor: 'rgb(147, 51, 234)',
-                    backgroundColor: 'rgba(147, 51, 234, 0.1)',
-                    borderDash: [],
-                    fill: false
-                },
-                {
-                    label: 'Base Cumulative',
-                    data: cumulativeConversionRates.map(d => d.base),
-                    borderColor: 'rgb(147, 51, 234)',
-                    backgroundColor: 'rgba(147, 51, 234, 0.1)',
-                    borderDash: [5, 5],
-                    fill: false
-                },
-                {
-                    label: 'Variant Daily',
-                    data: dailyConversionRates.map(d => d.variant),
-                    borderColor: 'rgb(59, 130, 246)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    borderDash: [],
-                    fill: false
-                },
-                {
-                    label: 'Variant Cumulative',
-                    data: cumulativeConversionRates.map(d => d.variant),
-                    borderColor: 'rgb(59, 130, 246)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    borderDash: [5, 5],
-                    fill: false
-                }
-            ]
+            datasets: [{
+                label: 'Base Variant',
+                data: challenge.simulation.dailyData.map(d => d.base),
+                borderColor: 'rgb(147, 51, 234)',
+                backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                fill: true
+            }, {
+                label: 'Test Variant',
+                data: challenge.simulation.dailyData.map(d => d.variant),
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true
+            }]
         },
         options: {
             responsive: true,
             plugins: {
                 title: {
                     display: true,
-                    text: 'Daily and Cumulative Conversion Rates'
+                    text: 'Daily Conversion Rates'
                 },
                 tooltip: {
                     mode: 'index',
