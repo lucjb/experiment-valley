@@ -1,3 +1,5 @@
+const computeConfidenceInterval = window.computeConfidenceInterval;
+
 function aggregateData(dailyData, aggregationType = 'week') {
     const periodLength = aggregationType === 'week' ? 7 : 30;
     const numPeriods = Math.ceil(dailyData.length / periodLength);
@@ -394,114 +396,60 @@ function renderChart(challenge) {
     const aggregatedData = aggregateData(challenge.simulation.dailyData, aggregationType);
     const periodName = aggregationType === 'week' ? 'Week' : 'Month';
 
-    // Create datasets based on the view type
-    function createDatasets(viewType) {
-        let datasets = viewType === 'daily' ? [
-            {
-                label: 'Base Rate',
-                data: aggregatedData.map(d => d.base.rate),
-                borderColor: 'rgb(147, 51, 234)',
-                backgroundColor: 'transparent',
-                fill: false,
-                tension: 0.4,
-                pointRadius: 2
-            }, {
-                label: 'Base CI Lower',
-                data: aggregatedData.map(d => d.base.rateCI[0]),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(147, 51, 234, 0.1)',
-                fill: '+1',
-                tension: 0.4,
-                pointRadius: 0
-            }, {
-                label: 'Base CI Upper',
-                data: aggregatedData.map(d => d.base.rateCI[1]),
-                borderColor: 'transparent',
-                fill: false,
-                tension: 0.4,
-                pointRadius: 0
-            }, {
-                label: 'Test Rate',
-                data: aggregatedData.map(d => d.variant.rate),
-                borderColor: 'rgb(59, 130, 246)',
-                backgroundColor: 'transparent',
-                fill: false,
-                tension: 0.4,
-                pointRadius: 2
-            }, {
-                label: 'Test CI Lower',
-                data: aggregatedData.map(d => d.variant.rateCI[0]),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: '+1',
-                tension: 0.4,
-                pointRadius: 0
-            }, {
-                label: 'Test CI Upper',
-                data: aggregatedData.map(d => d.variant.rateCI[1]),
-                borderColor: 'transparent',
-                fill: false,
-                tension: 0.4,
-                pointRadius: 0
-            }
-        ] : [
-            {
-                label: 'Base Cumulative Rate',
-                data: challenge.simulation.dailyData.map(d => d.base.cumulativeRate),
-                borderColor: 'rgb(107, 11, 194)',
-                backgroundColor: 'transparent',
-                borderDash: [5, 5],
-                fill: false,
-                tension: 0.4,
-                pointRadius: 2
-            }, {
-                label: 'Base CI Lower',
-                data: challenge.simulation.dailyData.map(d => d.base.cumulativeRateCI[0]),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(107, 11, 194, 0.1)',
-                fill: '+1',
-                tension: 0.4,
-                pointRadius: 0
-            }, {
-                label: 'Base CI Upper',
-                data: challenge.simulation.dailyData.map(d => d.base.cumulativeRateCI[1]),
-                borderColor: 'transparent',
-                fill: false,
-                tension: 0.4,
-                pointRadius: 0
-            }, {
-                label: 'Test Cumulative Rate',
-                data: challenge.simulation.dailyData.map(d => d.variant.cumulativeRate),
-                borderColor: 'rgb(19, 90, 206)',
-                backgroundColor: 'transparent',
-                borderDash: [5, 5],
-                fill: false,
-                tension: 0.4,
-                pointRadius: 2
-            }, {
-                label: 'Test CI Lower',
-                data: challenge.simulation.dailyData.map(d => d.variant.cumulativeRateCI[0]),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(19, 90, 206, 0.1)',
-                fill: '+1',
-                tension: 0.4,
-                pointRadius: 0
-            }, {
-                label: 'Test CI Upper',
-                data: challenge.simulation.dailyData.map(d => d.variant.cumulativeRateCI[1]),
-                borderColor: 'transparent',
-                fill: false,
-                tension: 0.4,
-                pointRadius: 0
-            }
-        ];
-
-        // Calculate y-axis range based on the datasets
-        const yAxisRange = calculateYAxisRange(datasets);
-        datasets.yAxisRange = yAxisRange;
-
-        return datasets;
-    }
+    const datasets = [
+        {
+            label: 'Base Rate',
+            data: aggregatedData.map(d => d.base.rate),
+            borderColor: 'rgb(147, 51, 234)',
+            backgroundColor: 'transparent',
+            fill: false,
+            tension: 0.4,
+            pointRadius: 2
+        },
+        {
+            label: 'Base CI Lower',
+            data: aggregatedData.map(d => d.base.rateCI[0]),
+            borderColor: 'transparent',
+            backgroundColor: 'rgba(147, 51, 234, 0.1)',
+            fill: '+1',
+            tension: 0.4,
+            pointRadius: 0
+        },
+        {
+            label: 'Base CI Upper',
+            data: aggregatedData.map(d => d.base.rateCI[1]),
+            borderColor: 'transparent',
+            fill: false,
+            tension: 0.4,
+            pointRadius: 0
+        },
+        {
+            label: 'Test Rate',
+            data: aggregatedData.map(d => d.variant.rate),
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'transparent',
+            fill: false,
+            tension: 0.4,
+            pointRadius: 2
+        },
+        {
+            label: 'Test CI Lower',
+            data: aggregatedData.map(d => d.variant.rateCI[0]),
+            borderColor: 'transparent',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            fill: '+1',
+            tension: 0.4,
+            pointRadius: 0
+        },
+        {
+            label: 'Test CI Upper',
+            data: aggregatedData.map(d => d.variant.rateCI[1]),
+            borderColor: 'transparent',
+            fill: false,
+            tension: 0.4,
+            pointRadius: 0
+        }
+    ];
 
     let chart = new Chart(ctx, {
         type: 'line',
@@ -510,7 +458,7 @@ function renderChart(challenge) {
                 { length: aggregatedData.length },
                 (_, i) => `${periodName} ${i + 1}`
             ),
-            datasets: createDatasets('daily')
+            datasets: datasets
         },
         options: {
             responsive: true,
@@ -581,7 +529,7 @@ function renderChart(challenge) {
         }
     });
 
-    // Add reset zoom button with better styling
+    // Add reset zoom button
     const chartContainer = ctx.parentElement;
     const resetZoomButton = document.createElement('button');
     resetZoomButton.className = 'mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm font-medium transition-colors';
@@ -729,12 +677,6 @@ function renderVisitorsChart(challenge) {
 
 function initializeCharts(challenge) {
     try {
-        // Reset view toggle to 'daily' first
-        const viewToggle = document.getElementById('chart-view-toggle');
-        if (viewToggle) {
-            viewToggle.value = 'daily';
-        }
-
         updateConfidenceIntervals(challenge);
         renderChart(challenge);
         renderVisitorsChart(challenge);
@@ -751,3 +693,7 @@ window.addEventListener('resize', function() {
     const visitorsChart = Chart.getChart('visitors-chart');
     if (visitorsChart) visitorsChart.resize();
 });
+
+// Make functions available globally
+window.initializeCharts = initializeCharts;
+window.updateConfidenceIntervals = updateConfidenceIntervals;
