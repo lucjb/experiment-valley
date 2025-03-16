@@ -571,6 +571,131 @@ function renderChart(challenge) {
     return chart;
 }
 
+function renderVisitorsChart(challenge) {
+    const ctx = document.getElementById('visitors-chart');
+    if (!ctx) {
+        console.error('Visitors chart canvas not found');
+        return;
+    }
+
+    // Clear any existing chart
+    const existingChart = Chart.getChart(ctx);
+    if (existingChart) {
+        existingChart.destroy();
+    }
+
+    // Limit data to last 28 days
+    const maxDays = 28;
+    const totalDays = challenge.experiment.requiredRuntimeDays;
+    const startDay = Math.max(0, totalDays - maxDays);
+    const days = Array.from(
+        {length: Math.min(maxDays, totalDays)}, 
+        (_, i) => `Day ${startDay + i + 1}`
+    );
+
+    // Get the sliced data
+    const slicedData = challenge.simulation.dailyData.slice(startDay);
+
+    // Create datasets
+    const datasets = [
+        {
+            label: 'Base Visitors',
+            data: slicedData.map(d => d.base.visitors),
+            borderColor: 'rgb(147, 51, 234)',
+            backgroundColor: 'rgba(147, 51, 234, 0.1)',
+            fill: true
+        },
+        {
+            label: 'Test Visitors',
+            data: slicedData.map(d => d.variant.visitors),
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            fill: true
+        }
+    ];
+
+    let chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: days,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                zoom: {
+                    pan: {
+                        enabled: true,
+                        mode: 'x',
+                        modifierKey: 'ctrl',
+                    },
+                    zoom: {
+                        wheel: {
+                            enabled: true,
+                            modifierKey: 'ctrl',
+                        },
+                        pinch: {
+                            enabled: true
+                        },
+                        mode: 'x',
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Daily Visitors'
+                },
+                tooltip: {
+                    mode: 'point',
+                    intersect: true,
+                    position: 'nearest',
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed.y;
+                            return `${context.dataset.label}: ${value.toLocaleString()}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Visitors'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Add reset zoom button
+    const chartContainer = ctx.parentElement;
+    const resetZoomButton = document.createElement('button');
+    resetZoomButton.className = 'mt-2 px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm';
+    resetZoomButton.textContent = 'Reset Zoom';
+    resetZoomButton.style.display = 'none';
+    chartContainer.appendChild(resetZoomButton);
+
+    resetZoomButton.addEventListener('click', () => {
+        chart.resetZoom();
+    });
+
+    chart.options.plugins.zoom.zoom.onZoomComplete = function() {
+        resetZoomButton.style.display = 'block';
+    };
+
+    chart.options.plugins.zoom.zoom.onResetZoom = function() {
+        resetZoomButton.style.display = 'none';
+    };
+
+    return chart;
+}
+
 function initializeCharts(challenge) {
     try {
         // Reset view toggle to 'daily' first
@@ -581,6 +706,7 @@ function initializeCharts(challenge) {
 
         updateConfidenceIntervals(challenge);
         renderChart(challenge);
+        renderVisitorsChart(challenge);
     } catch (error) {
         console.error('Error initializing visualizations:', error);
     }
@@ -588,6 +714,9 @@ function initializeCharts(challenge) {
 
 // Make sure charts resize properly
 window.addEventListener('resize', function() {
-    const chart = Chart.getChart('conversion-chart');
-    if (chart) chart.resize();
+    const conversionChart = Chart.getChart('conversion-chart');
+    if (conversionChart) conversionChart.resize();
+
+    const visitorsChart = Chart.getChart('visitors-chart');
+    if (visitorsChart) visitorsChart.resize();
 });
