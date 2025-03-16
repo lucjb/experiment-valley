@@ -162,6 +162,12 @@
 
                     <div class="mt-4">
                         <h3 class="text-xl font-semibold mb-2">Daily Conversion Rates</h3>
+                        <div id="chart-loading" class="hidden">
+                            <div class="animate-pulse space-y-4">
+                                <div class="h-48 bg-gray-200 rounded"></div>
+                                <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                        </div>
                         <canvas id="conversion-chart"></canvas>
                     </div>
                 </div>
@@ -185,6 +191,20 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+        <div class="relative mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="animate-pulse flex space-x-4">
+                <div class="flex-1 space-y-4 py-1">
+                    <div class="h-4 bg-blue-200 rounded w-3/4"></div>
+                    <div class="space-y-2">
+                        <div class="h-4 bg-blue-200 rounded"></div>
+                        <div class="h-4 bg-blue-200 rounded w-5/6"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 text-center text-gray-600">Loading challenge data...</div>
         </div>
     </div>
     <div id="feedback-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -219,6 +239,124 @@
     let totalAttempts = 0;
     let challenge = null;
 
+    function showLoading(id) {
+        document.getElementById(id).classList.remove('hidden');
+    }
+
+    function hideLoading(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+
+    async function loadChallenge() {
+        showLoading('loading-overlay');
+
+        try {
+            if (typeof generateABTestChallenge !== 'function') {
+                console.error("Challenge generator not found");
+                alert("Error: Challenge generator not found");
+                return;
+            }
+
+            challenge = generateABTestChallenge();
+
+            document.getElementById('exp-alpha').textContent = challenge.experiment.alpha;
+            document.getElementById('exp-beta').textContent = challenge.experiment.beta;
+            document.getElementById('exp-base-rate').textContent = `${(challenge.experiment.baseConversionRate * 100).toFixed(2)}%`;
+            document.getElementById('exp-min-effect').textContent = `${(challenge.experiment.minimumRelevantEffect * 100).toFixed(2)}%`;
+            document.getElementById('exp-visitors').textContent = challenge.experiment.visitorsPerDay.toLocaleString();
+            document.getElementById('exp-required-sample').textContent = challenge.experiment.requiredSampleSizePerVariant.toLocaleString();
+            document.getElementById('exp-cycle-days').textContent = challenge.experiment.businessCycleDays;
+            document.getElementById('exp-required-days').textContent = challenge.experiment.requiredRuntimeDays;
+
+
+            document.getElementById('base-visitors').textContent = challenge.simulation.actualVisitorsBase;
+            document.getElementById('base-conversions').textContent = challenge.simulation.actualConversionsBase;
+            document.getElementById('base-rate').textContent = `${(challenge.simulation.actualBaseConversionRate * 100).toFixed(2)}%`;
+
+            document.getElementById('variant-visitors').textContent = challenge.simulation.actualVisitorsVariant;
+            document.getElementById('variant-conversions').textContent = challenge.simulation.actualConversionsVariant;
+            document.getElementById('variant-rate').textContent = `${(challenge.simulation.variantConversionRate * 100).toFixed(2)}%`;
+
+            const formatDelta = (value, isPercentage = false) => {
+                const sign = value > 0 ? '+' : '';
+                return isPercentage ?
+                    `${sign}${(value * 100).toFixed(2)}%` :
+                    `${sign}${value}`;
+            };
+
+            document.getElementById('delta-visitors').textContent = formatDelta(challenge.simulation.actualVisitorsVariant - challenge.simulation.actualVisitorsBase);
+            document.getElementById('delta-conversions').textContent = formatDelta(challenge.simulation.actualConversionsVariant - challenge.simulation.actualConversionsBase);
+            document.getElementById('delta-rate').textContent = formatDelta(challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate, true);
+
+            const formatUplift = (value) => {
+                const sign = value > 0 ? '+' : '';
+                return `${sign}${(value * 100).toFixed(2)}%`;
+            };
+
+            document.getElementById('uplift-value').textContent = formatUplift(challenge.simulation.uplift);
+
+            showLoading('chart-loading');
+
+            setTimeout(() => {
+                hideLoading('chart-loading');
+                initializeCharts(challenge);
+            }, 500);
+
+        } catch (error) {
+            console.error('Error loading challenge:', error);
+        } finally {
+            hideLoading('loading-overlay');
+        }
+    }
+
+    async function evaluateDecision(userChoice) {
+        if (!challenge) {
+            console.error("No challenge loaded");
+            alert("No challenge available. Try reloading.");
+            return;
+        }
+
+        showLoading('loading-overlay');
+
+        try {
+            document.getElementById('decision-yes').disabled = true;
+            document.getElementById('decision-no').disabled = true;
+            document.getElementById('decision-yes').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('decision-no').classList.add('opacity-50', 'cursor-not-allowed');
+
+            totalAttempts++;
+            const correctDecision = challenge.simulation.variantConversionRate > challenge.simulation.actualBaseConversionRate;
+
+            if (userChoice === correctDecision) {
+                score++;
+                streak++;
+                document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';
+                document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                document.getElementById('feedback-title').textContent = 'Correct!';
+                document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-green-900 mt-4';
+            } else {
+                streak = 0;
+                document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100';
+                document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+                document.getElementById('feedback-title').textContent = 'Incorrect';
+                document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-red-900 mt-4';
+            }
+
+            const accuracy = Math.round((score / totalAttempts) * 100);
+            document.getElementById('score').textContent = score;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('accuracy').textContent = `${accuracy}%`;
+
+            document.getElementById('modal-score').textContent = score;
+            document.getElementById('modal-streak').textContent = streak;
+            document.getElementById('modal-accuracy').textContent = `${accuracy}%`;
+
+        } finally {
+            hideLoading('loading-overlay');
+            document.getElementById('feedback-modal').classList.remove('hidden');
+        }
+    }
+
     document.getElementById('start-btn').addEventListener('click', function(event) {
         event.preventDefault();
         document.getElementById('challenge-container').classList.remove('hidden');
@@ -242,99 +380,5 @@
         document.getElementById('decision-no').classList.remove('opacity-50', 'cursor-not-allowed');
         loadChallenge();
     });
-
-    function evaluateDecision(userChoice) {
-        if (!challenge) {
-            console.error("No challenge loaded");
-            alert("No challenge available. Try reloading.");
-            return;
-        }
-
-        document.getElementById('decision-yes').disabled = true;
-        document.getElementById('decision-no').disabled = true;
-        document.getElementById('decision-yes').classList.add('opacity-50', 'cursor-not-allowed');
-        document.getElementById('decision-no').classList.add('opacity-50', 'cursor-not-allowed');
-
-        totalAttempts++;
-        const correctDecision = challenge.simulation.variantConversionRate > challenge.simulation.actualBaseConversionRate;
-
-        if (userChoice === correctDecision) {
-            score++;
-            streak++;
-            document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';
-            document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-            document.getElementById('feedback-title').textContent = 'Correct!';
-            document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-green-900 mt-4';
-        } else {
-            streak = 0;
-            document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100';
-            document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
-            document.getElementById('feedback-title').textContent = 'Incorrect';
-            document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-red-900 mt-4';
-        }
-
-        const accuracy = Math.round((score / totalAttempts) * 100);
-        document.getElementById('score').textContent = score;
-        document.getElementById('streak').textContent = streak;
-        document.getElementById('accuracy').textContent = `${accuracy}%`;
-
-        document.getElementById('modal-score').textContent = score;
-        document.getElementById('modal-streak').textContent = streak;
-        document.getElementById('modal-accuracy').textContent = `${accuracy}%`;
-
-        document.getElementById('feedback-modal').classList.remove('hidden');
-    }
-
-    function loadChallenge() {
-        if (typeof generateABTestChallenge !== 'function') {
-            console.error("Challenge generator not found");
-            alert("Error: Challenge generator not found");
-            return;
-        }
-
-        challenge = generateABTestChallenge();
-
-        document.getElementById('exp-alpha').textContent = challenge.experiment.alpha;
-        document.getElementById('exp-beta').textContent = challenge.experiment.beta;
-        document.getElementById('exp-base-rate').textContent = `${(challenge.experiment.baseConversionRate * 100).toFixed(2)}%`;
-        document.getElementById('exp-min-effect').textContent = `${(challenge.experiment.minimumRelevantEffect * 100).toFixed(2)}%`;
-        document.getElementById('exp-visitors').textContent = challenge.experiment.visitorsPerDay.toLocaleString();
-        document.getElementById('exp-required-sample').textContent = challenge.experiment.requiredSampleSizePerVariant.toLocaleString();
-        document.getElementById('exp-cycle-days').textContent = challenge.experiment.businessCycleDays;
-        document.getElementById('exp-required-days').textContent = challenge.experiment.requiredRuntimeDays;
-
-
-        document.getElementById('base-visitors').textContent = challenge.simulation.actualVisitorsBase;
-        document.getElementById('base-conversions').textContent = challenge.simulation.actualConversionsBase;
-        document.getElementById('base-rate').textContent = `${(challenge.simulation.actualBaseConversionRate * 100).toFixed(2)}%`;
-
-        document.getElementById('variant-visitors').textContent = challenge.simulation.actualVisitorsVariant;
-        document.getElementById('variant-conversions').textContent = challenge.simulation.actualConversionsVariant;
-        document.getElementById('variant-rate').textContent = `${(challenge.simulation.variantConversionRate * 100).toFixed(2)}%`;
-
-        const formatDelta = (value, isPercentage = false) => {
-            const sign = value > 0 ? '+' : '';
-            return isPercentage ?
-                `${sign}${(value * 100).toFixed(2)}%` :
-                `${sign}${value}`;
-        };
-
-        document.getElementById('delta-visitors').textContent = formatDelta(challenge.simulation.actualVisitorsVariant - challenge.simulation.actualVisitorsBase);
-        document.getElementById('delta-conversions').textContent = formatDelta(challenge.simulation.actualConversionsVariant - challenge.simulation.actualConversionsBase);
-        document.getElementById('delta-rate').textContent = formatDelta(challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate, true);
-
-        // Format uplift values with + or - sign and percentage
-        const formatUplift = (value) => {
-            const sign = value > 0 ? '+' : '';
-            return `${sign}${(value * 100).toFixed(2)}%`;
-        };
-
-        // Update uplift row
-        document.getElementById('uplift-value').textContent = formatUplift(challenge.simulation.uplift);
-
-        // The visualization.js will handle the confidence interval visualization
-        initializeCharts(challenge);
-    }
-
 </script>
 </html>
