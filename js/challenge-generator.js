@@ -74,12 +74,12 @@ function computeUpliftConfidenceInterval(baseRate, variantRate, baseVisitors, va
     const cvVariant = seVariant / variantRate;
 
     // Calculate percent difference
-    const pctDiff = (variantRate - baseRate) / baseRate;
+    const pctDiff = (variantRate / baseRate) - 1;
 
     // Get z-score for the given alpha
     const zScore = jStat.normal.inv(1 - alpha / 2, 0, 1);
 
-    // Calculate the confidence interval using the formula
+    // Calculate the confidence interval using the formula from the image
     const term = Math.sqrt(
         (cvBase * cvBase + cvVariant * cvVariant -
             (zScore * zScore) * cvBase * cvBase * cvVariant * cvVariant) /
@@ -150,16 +150,19 @@ function generateABTestChallenge() {
         observedDifference + diffMarginOfError
     ];
 
-    // Generate daily data for time series visualization
     const dailyData = Array.from({ length: BUSINESS_CYCLE_DAYS }, () => ({
         base: sampleBinomial(VISITORS_PER_DAY / 2, actualBaseConversionRate) / (VISITORS_PER_DAY / 2),
         variant: sampleBinomial(VISITORS_PER_DAY / 2, variantConversionRate) / (VISITORS_PER_DAY / 2)
     }));
 
-    const uplift = (actualConversionsVariant / actualVisitorsVariant) - (actualConversionsBase / actualVisitorsBase);
+    // Calculate uplift as relative percentage change
+    const actualBaseRate = actualConversionsBase / actualVisitorsBase;
+    const actualVariantRate = actualConversionsVariant / actualVisitorsVariant;
+    const uplift = (actualVariantRate / actualBaseRate) - 1;
+
     const upliftCI = computeUpliftConfidenceInterval(
-        actualConversionsBase / actualVisitorsBase,
-        actualConversionsVariant / actualVisitorsVariant,
+        actualBaseRate,
+        actualVariantRate,
         actualVisitorsBase,
         actualVisitorsVariant,
         ALPHA
@@ -177,9 +180,9 @@ function generateABTestChallenge() {
             requiredRuntimeDays: requiredRuntimeDays
         },
         simulation: {
-            actualBaseConversionRate: actualConversionsBase / actualVisitorsBase,
+            actualBaseConversionRate: actualBaseRate,
             actualEffectSize: actualEffectSize,
-            variantConversionRate: actualConversionsVariant / actualVisitorsVariant,
+            variantConversionRate: actualVariantRate,
             actualVisitorsBase: actualVisitorsBase,
             actualVisitorsVariant: actualVisitorsVariant,
             actualConversionsBase: actualConversionsBase,
