@@ -210,7 +210,7 @@ function generateABTestChallenge() {
         const baseCumulativeRate = cumulativeBaseConversions / cumulativeBaseVisitors;
         const variantCumulativeRate = cumulativeVariantConversions / cumulativeVariantVisitors;
 
-        // Calculate confidence intervals
+        // Calculate confidence intervals using experiment's alpha
         const baseDailyCI = computeConfidenceInterval(baseRate, baseVisitors, ALPHA);
         const variantDailyCI = computeConfidenceInterval(variantRate, variantVisitors, ALPHA);
         const baseCumulativeCI = computeConfidenceInterval(baseCumulativeRate, cumulativeBaseVisitors, ALPHA);
