@@ -366,7 +366,6 @@ function renderChart(challenge) {
 
     // Create datasets based on the view type
     function createDatasets(viewType) {
-        // Create base datasets as before
         let datasets = viewType === 'daily' ? [
             {
                 label: 'Base Daily Rate',
@@ -374,9 +373,7 @@ function renderChart(challenge) {
                 borderColor: 'rgb(147, 51, 234)',
                 backgroundColor: 'transparent',
                 fill: false,
-                tension: 0.4,
-                confidenceIntervalLow: challenge.simulation.dailyData.slice(startDay).map(d => d.base.rateCI[0]),
-                confidenceIntervalHigh: challenge.simulation.dailyData.slice(startDay).map(d => d.base.rateCI[1])
+                tension: 0.4
             }, {
                 label: 'Base CI Lower',
                 data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.rateCI[0]),
@@ -396,9 +393,7 @@ function renderChart(challenge) {
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'transparent',
                 fill: false,
-                tension: 0.4,
-                confidenceIntervalLow: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.rateCI[0]),
-                confidenceIntervalHigh: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.rateCI[1])
+                tension: 0.4
             }, {
                 label: 'Test CI Lower',
                 data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.rateCI[0]),
@@ -421,9 +416,7 @@ function renderChart(challenge) {
                 backgroundColor: 'transparent',
                 borderDash: [5, 5],
                 fill: false,
-                tension: 0.4,
-                confidenceIntervalLow: challenge.simulation.dailyData.slice(startDay).map(d => d.base.cumulativeRateCI[0]),
-                confidenceIntervalHigh: challenge.simulation.dailyData.slice(startDay).map(d => d.base.cumulativeRateCI[1])
+                tension: 0.4
             }, {
                 label: 'Base CI Lower',
                 data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.cumulativeRateCI[0]),
@@ -444,9 +437,7 @@ function renderChart(challenge) {
                 backgroundColor: 'transparent',
                 borderDash: [5, 5],
                 fill: false,
-                tension: 0.4,
-                confidenceIntervalLow: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.cumulativeRateCI[0]),
-                confidenceIntervalHigh: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.cumulativeRateCI[1])
+                tension: 0.4
             }, {
                 label: 'Test CI Lower',
                 data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.cumulativeRateCI[0]),
