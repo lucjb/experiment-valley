@@ -6,15 +6,6 @@ function hideLoading(chartId) {
     document.getElementById(`${chartId}-loading`).classList.add('hidden');
 }
 
-function initializeCharts(challenge) {
-    try {
-        updateConfidenceIntervals(challenge);
-        renderChart(challenge);
-    } catch (error) {
-        console.error('Error initializing visualizations:', error);
-    }
-}
-
 function formatPercent(value) {
     const percentage = value * 100;
     if (Math.round(percentage) === percentage) {
@@ -42,8 +33,10 @@ function updateConfidenceIntervals(challenge) {
         }
     }
 
-    // Display difference in conversion rate
+    // Calculate the difference in conversion rate
     const diffValue = challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate;
+
+    // Display difference in conversion rate
     const differenceDisplay = document.getElementById('difference-display');
     if (differenceDisplay) {
         differenceDisplay.textContent = formatPercent(diffValue);
@@ -188,17 +181,23 @@ function updateConfidenceIntervals(challenge) {
         true
     );
 
+    // For difference CI, calculate a view range centered around zero
+    const diffValues = [
+        ...challenge.simulation.confidenceIntervalDifference,
+        diffValue
+    ];
+    const maxAbsDiff = Math.max(Math.abs(Math.min(...diffValues)), Math.abs(Math.max(...diffValues)));
+    const diffViewMin = -maxAbsDiff * 1.2;  // Add 20% padding
+    const diffViewMax = maxAbsDiff * 1.2;   // Add 20% padding
+    const toDiffViewPercent = (value) => ((value - diffViewMin) / (diffViewMax - diffViewMin)) * 100;
+
     // Update difference CI
     const container = document.getElementById('diff-ci');
     if (container) {
-        const toDiffViewPercent = (value) => ((value - diffViewMin) / (diffViewMax - diffViewMin)) * 100;
-
         const diffCIBar = document.getElementById('diff-ci-bar');
         const diffCIMarker = document.getElementById('diff-ci-marker');
         const lowLabel = document.getElementById('diff-ci-low');
         const highLabel = document.getElementById('diff-ci-high');
-        const zeroLine = container.querySelector('.zero-line') || document.createElement('div');
-        const zeroLabel = container.querySelector('.zero-label') || document.createElement('span');
 
         // Calculate positions
         const lowPercent = toDiffViewPercent(lowDiff);
@@ -233,13 +232,16 @@ function updateConfidenceIntervals(challenge) {
             highLabel.style.left = `${highPercent}%`;
         }
 
-        // Update zero line and label
+        // Update zero line
+        const zeroLine = container.querySelector('.zero-line') || document.createElement('div');
         zeroLine.className = 'zero-line absolute h-full w-px bg-gray-400';
         zeroLine.style.left = `${zeroPercent}%`;
         if (!container.querySelector('.zero-line')) {
             container.appendChild(zeroLine);
         }
 
+        // Update zero label
+        const zeroLabel = container.querySelector('.zero-label') || document.createElement('span');
         zeroLabel.className = 'zero-label absolute text-xs font-medium transform -translate-x-1/2 text-gray-400 top-1/2 -translate-y-1/2';
         zeroLabel.style.left = `${zeroPercent}%`;
         zeroLabel.textContent = '0%';
@@ -269,14 +271,14 @@ function renderChart(challenge) {
             datasets: [{
                 label: 'Base Variant',
                 data: challenge.simulation.dailyData.map(d => d.base),
-                borderColor: 'rgb(59, 130, 246)',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderColor: 'rgb(147, 51, 234)',
+                backgroundColor: 'rgba(147, 51, 234, 0.1)',
                 fill: true
             }, {
                 label: 'Test Variant',
                 data: challenge.simulation.dailyData.map(d => d.variant),
-                borderColor: 'rgb(34, 197, 94)',
-                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: true
             }]
         },
@@ -313,6 +315,15 @@ function renderChart(challenge) {
             }
         }
     });
+}
+
+function initializeCharts(challenge) {
+    try {
+        updateConfidenceIntervals(challenge);
+        renderChart(challenge);
+    } catch (error) {
+        console.error('Error initializing visualizations:', error);
+    }
 }
 
 // Make sure charts resize properly
