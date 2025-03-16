@@ -67,26 +67,33 @@ function solveSampleSizeTTest(effectSize, power, varianceA, varianceB, alpha) {
 }
 
 function computeUpliftConfidenceInterval(baseRate, variantRate, baseVisitors, variantVisitors, alpha = 0.05) {
-    // Calculate coefficient of variation for base and variant
+    // Calculate standard errors
     const seBase = Math.sqrt((baseRate * (1 - baseRate)) / baseVisitors);
     const seVariant = Math.sqrt((variantRate * (1 - variantRate)) / variantVisitors);
+
+    // Calculate coefficients of variation
     const cvBase = seBase / baseRate;
     const cvVariant = seVariant / variantRate;
 
-    // Calculate percent difference
-    const pctDiff = (variantRate / baseRate) - 1;
+    // Calculate squared terms
+    const cvBaseSquared = cvBase * cvBase;
+    const cvVariantSquared = cvVariant * cvVariant;
 
     // Get z-score for the given alpha
     const zScore = jStat.normal.inv(1 - alpha / 2, 0, 1);
+    const zSquared = zScore * zScore;
 
     // Calculate the confidence interval using the formula from the image
-    const term = Math.sqrt(
-        (cvBase * cvBase + cvVariant * cvVariant -
-            (zScore * zScore) * cvBase * cvBase * cvVariant * cvVariant) /
-        (1 - (zScore * zScore) * cvBase * cvBase)
-    );
+    const numerator = cvBaseSquared + cvVariantSquared - zSquared * cvBaseSquared * cvVariantSquared;
+    const denominator = 1 - zSquared * cvBaseSquared;
 
+    const term = Math.sqrt(numerator / denominator);
     const margin = zScore * term;
+
+    // The percentage difference is (variant/base - 1)
+    const pctDiff = (variantRate / baseRate) - 1;
+
+    // Calculate bounds according to the formula
     return [
         (pctDiff + 1) * (1 - margin) - 1,
         (pctDiff + 1) * (1 + margin) - 1
