@@ -162,6 +162,106 @@ function addWeeklyPattern(dailyVisitors) {
     return patternedVisitors;
 }
 
+function addMonthlyPattern(weeklyVisitors) {
+    const numWeeks = weeklyVisitors.length;
+    const totalVisitors = weeklyVisitors.reduce((sum, v) => sum + v, 0);
+
+    // Monthly pattern (4 weeks per month)
+    const monthlyPattern = [
+        1.1,  // Week 1: Start of month, higher activity
+        1.0,  // Week 2: Normal activity
+        0.9,  // Week 3: Slightly lower
+        1.0   // Week 4: Back to normal
+    ];
+
+    // Calculate average weekly visitors
+    const avgWeeklyVisitors = totalVisitors / numWeeks;
+
+    // Apply pattern with noise
+    const patternedVisitors = weeklyVisitors.map((_, i) => {
+        const weekOfMonth = i % 4;
+        const baseWeight = monthlyPattern[weekOfMonth];
+        // Add random noise between -15% to +15%
+        const noise = (Math.random() * 0.3) - 0.15;
+        const weight = baseWeight * (1 + noise);
+        return Math.round(avgWeeklyVisitors * weight);
+    });
+
+    // Adjust totals like in weekly pattern
+    let currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
+    let diff = totalVisitors - currentTotal;
+
+    while (Math.abs(diff) > 0) {
+        const adjustmentPerVisitor = diff / currentTotal;
+        for (let i = 0; i < numWeeks && Math.abs(diff) > 0; i++) {
+            const adjustment = Math.min(
+                Math.abs(diff),
+                Math.max(1, Math.round(patternedVisitors[i] * Math.abs(adjustmentPerVisitor)))
+            ) * Math.sign(diff);
+
+            patternedVisitors[i] += adjustment;
+            diff -= adjustment;
+        }
+        currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
+    }
+
+    return patternedVisitors;
+}
+
+function addYearlyPattern(monthlyVisitors) {
+    const numMonths = monthlyVisitors.length;
+    const totalVisitors = monthlyVisitors.reduce((sum, v) => sum + v, 0);
+
+    // Yearly pattern (seasonal trends)
+    const yearlyPattern = [
+        0.9,   // January: Post-holiday drop
+        0.85,  // February: Winter lull
+        1.0,   // March: Spring pickup
+        1.1,   // April: Strong spring
+        1.2,   // May: Peak spring
+        1.1,   // June: Early summer
+        1.0,   // July: Mid-summer
+        1.0,   // August: Late summer
+        1.1,   // September: Back to school/work
+        1.2,   // October: Fall peak
+        1.15,  // November: Pre-holiday
+        1.3    // December: Holiday peak
+    ];
+
+    // Calculate average monthly visitors
+    const avgMonthlyVisitors = totalVisitors / numMonths;
+
+    // Apply pattern with noise
+    const patternedVisitors = monthlyVisitors.map((_, i) => {
+        const monthOfYear = i % 12;
+        const baseWeight = yearlyPattern[monthOfYear];
+        // Add random noise between -20% to +20%
+        const noise = (Math.random() * 0.4) - 0.2;
+        const weight = baseWeight * (1 + noise);
+        return Math.round(avgMonthlyVisitors * weight);
+    });
+
+    // Adjust totals like in other patterns
+    let currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
+    let diff = totalVisitors - currentTotal;
+
+    while (Math.abs(diff) > 0) {
+        const adjustmentPerVisitor = diff / currentTotal;
+        for (let i = 0; i < numMonths && Math.abs(diff) > 0; i++) {
+            const adjustment = Math.min(
+                Math.abs(diff),
+                Math.max(1, Math.round(patternedVisitors[i] * Math.abs(adjustmentPerVisitor)))
+            ) * Math.sign(diff);
+
+            patternedVisitors[i] += adjustment;
+            diff -= adjustment;
+        }
+        currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
+    }
+
+    return patternedVisitors;
+}
+
 function distributeConversions(totalConversions, dailyVisitors) {
     const numDays = dailyVisitors.length;
     const avgConversionRate = totalConversions / dailyVisitors.reduce((sum, v) => sum + v, 0);
@@ -242,10 +342,16 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
     let baseVisitorsPerPeriod = distributeDailyVisitors(baseVisitors, numPeriods);
     let variantVisitorsPerPeriod = distributeDailyVisitors(variantVisitors, numPeriods);
 
-    // Add weekly pattern variance if using daily data
+    // Add appropriate pattern based on the period
     if (period === 'day') {
         baseVisitorsPerPeriod = addWeeklyPattern(baseVisitorsPerPeriod);
         variantVisitorsPerPeriod = addWeeklyPattern(variantVisitorsPerPeriod);
+    } else if (period === 'week') {
+        baseVisitorsPerPeriod = addMonthlyPattern(baseVisitorsPerPeriod);
+        variantVisitorsPerPeriod = addMonthlyPattern(variantVisitorsPerPeriod);
+    } else { // month
+        baseVisitorsPerPeriod = addYearlyPattern(baseVisitorsPerPeriod);
+        variantVisitorsPerPeriod = addYearlyPattern(variantVisitorsPerPeriod);
     }
 
     // Distribute conversions
@@ -309,11 +415,11 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
 
 function generateABTestChallenge() {
     // Predefined options for each parameter
-    const ALPHA_OPTIONS = [0.1, 0.05, 0.2, 0.01];
-    const BETA_OPTIONS = [0.2, 0.1, 0.01, 0.3];
-    const BASE_CONVERSION_RATE_OPTIONS = [0.012, 0.523, 0.117, 0.231, 0.654];
-    const MRE_OPTIONS = [0.001, 0.002, 0.01];
-    const VISITORS_PER_DAY_OPTIONS = [150, 1200, 25000, 47000];
+    const ALPHA_OPTIONS = [0.1];
+    const BETA_OPTIONS = [0.2];
+    const BASE_CONVERSION_RATE_OPTIONS = [0.0127, 0.0523, 0.0814, 0.102, 0.146];
+    const MRE_OPTIONS = [0.01, 0.02];
+    const VISITORS_PER_DAY_OPTIONS = [150, 1200];
     const BUSINESS_CYCLE_DAYS_OPTIONS = [1, 7];
 
     // Randomly select one option from each array
