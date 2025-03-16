@@ -264,10 +264,6 @@ function renderChart(challenge) {
         existingChart.destroy();
     }
 
-    // Set Chart.js default colors for dark theme
-    Chart.defaults.color = '#9ca3af'; // text color
-    Chart.defaults.borderColor = '#374151'; // grid lines
-
     new Chart(ctx, {
         type: 'line',
         data: {
@@ -275,14 +271,14 @@ function renderChart(challenge) {
             datasets: [{
                 label: 'Base Variant',
                 data: challenge.simulation.dailyData.map(d => d.base),
-                borderColor: 'rgb(167, 139, 250)', // violet-400
-                backgroundColor: 'rgba(167, 139, 250, 0.1)',
+                borderColor: 'rgb(147, 51, 234)',
+                backgroundColor: 'rgba(147, 51, 234, 0.1)',
                 fill: true
             }, {
                 label: 'Test Variant',
                 data: challenge.simulation.dailyData.map(d => d.variant),
-                borderColor: 'rgb(96, 165, 250)', // blue-400
-                backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: true
             }]
         },
@@ -291,57 +287,29 @@ function renderChart(challenge) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Daily Conversion Rates',
-                    color: '#60a5fa', // blue-400
-                    font: {
-                        size: 16,
-                        weight: 'bold'
-                    }
+                    text: 'Daily Conversion Rates'
                 },
                 tooltip: {
                     mode: 'index',
                     intersect: false,
-                    backgroundColor: 'rgba(17, 24, 39, 0.8)', // gray-900 with opacity
-                    titleColor: '#f3f4f6', // gray-100
-                    bodyColor: '#f3f4f6', // gray-100
-                    borderColor: '#4b5563', // gray-600
-                    borderWidth: 1,
                     callbacks: {
                         label: function(context) {
                             return `${context.dataset.label}: ${formatPercent(context.raw)}`;
                         }
-                    }
-                },
-                legend: {
-                    labels: {
-                        color: '#9ca3af' // gray-400
                     }
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: {
-                        color: '#374151' // gray-700
+                    title: {
+                        display: true,
+                        text: 'Conversion Rate'
                     },
                     ticks: {
-                        color: '#9ca3af', // gray-400
                         callback: function(value) {
                             return formatPercent(value);
                         }
-                    },
-                    title: {
-                        display: true,
-                        text: 'Conversion Rate',
-                        color: '#9ca3af' // gray-400
-                    }
-                },
-                x: {
-                    grid: {
-                        color: '#374151' // gray-700
-                    },
-                    ticks: {
-                        color: '#9ca3af' // gray-400
                     }
                 }
             }
