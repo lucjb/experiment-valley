@@ -48,7 +48,26 @@
             <!-- Experiment Design Section -->
             <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-6 mb-6">
                 <h2 class="text-2xl font-semibold text-gray-800 mb-4">Experiment Design</h2>
-                <div id="experiment-card" class="grid grid-cols-1 gap-2"></div>
+                <div id="experiment-card" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="border rounded p-4">
+                        <h3 class="font-semibold mb-2 text-lg">Statistical Parameters</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><span class="font-medium">Alpha:</span> <span id="exp-alpha"></span></div>
+                            <div><span class="font-medium">Beta:</span> <span id="exp-beta"></span></div>
+                            <div><span class="font-medium">Base Rate:</span> <span id="exp-base-rate"></span></div>
+                            <div><span class="font-medium">Min Effect:</span> <span id="exp-min-effect"></span></div>
+                        </div>
+                    </div>
+                    <div class="border rounded p-4">
+                        <h3 class="font-semibold mb-2 text-lg">Sample Size Requirements</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><span class="font-medium">Daily Visitors:</span> <span id="exp-visitors"></span></div>
+                            <div><span class="font-medium">Required Per Variant:</span> <span id="exp-required-sample"></span></div>
+                            <div><span class="font-medium">Days per Cycle:</span> <span id="exp-cycle-days"></span></div>
+                            <div><span class="font-medium">Required Days:</span> <span id="exp-required-days"></span></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Results Analysis Section -->
@@ -232,23 +251,16 @@
 
         challenge = generateABTestChallenge();
 
-        // Update experiment card
-        document.getElementById('experiment-card').innerHTML = `
-            <div class="grid grid-cols-3 gap-2">
-                <div class="border px-4 py-2 rounded">
-                    <span class="font-semibold">Alpha:</span> ${challenge.experiment.alpha}<br>
-                    <span class="font-semibold">Beta:</span> ${challenge.experiment.beta}
-                </div>
-                <div class="border px-4 py-2 rounded">
-                    <span class="font-semibold">Base Rate:</span> ${(challenge.experiment.baseConversionRate * 100).toFixed(2)}%<br>
-                    <span class="font-semibold">Min Effect:</span> ${(challenge.experiment.minimumRelevantEffect * 100).toFixed(2)}%
-                </div>
-                <div class="border px-4 py-2 rounded">
-                    <span class="font-semibold">Daily Visitors:</span> ${challenge.experiment.visitorsPerDay}<br>
-                    <span class="font-semibold">Days:</span> ${challenge.experiment.businessCycleDays}
-                </div>
-            </div>
-        `;
+        // Update experiment card with all parameters
+        document.getElementById('exp-alpha').textContent = challenge.experiment.alpha;
+        document.getElementById('exp-beta').textContent = challenge.experiment.beta;
+        document.getElementById('exp-base-rate').textContent = `${(challenge.experiment.baseConversionRate * 100).toFixed(2)}%`;
+        document.getElementById('exp-min-effect').textContent = `${(challenge.experiment.minimumRelevantEffect * 100).toFixed(2)}%`;
+        document.getElementById('exp-visitors').textContent = challenge.experiment.visitorsPerDay.toLocaleString();
+        document.getElementById('exp-required-sample').textContent = challenge.experiment.requiredSampleSizePerVariant.toLocaleString();
+        document.getElementById('exp-cycle-days').textContent = challenge.experiment.businessCycleDays;
+        document.getElementById('exp-required-days').textContent = challenge.experiment.requiredRuntimeDays;
+
 
         // Update result cells
         document.getElementById('base-visitors').textContent = challenge.simulation.actualVisitorsBase;
@@ -271,7 +283,6 @@
         document.getElementById('delta-visitors').textContent = formatDelta(challenge.simulation.actualVisitorsVariant - challenge.simulation.actualVisitorsBase);
         document.getElementById('delta-conversions').textContent = formatDelta(challenge.simulation.actualConversionsVariant - challenge.simulation.actualConversionsBase);
         document.getElementById('delta-rate').textContent = formatDelta(challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate, true);
-
 
         initializeCharts(challenge);
     }

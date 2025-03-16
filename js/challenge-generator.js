@@ -75,6 +75,13 @@ function generateABTestChallenge() {
     const VISITORS_PER_DAY = VISITORS_PER_DAY_OPTIONS[Math.floor(Math.random() * VISITORS_PER_DAY_OPTIONS.length)];
     const BUSINESS_CYCLE_DAYS = BUSINESS_CYCLE_DAYS_OPTIONS[Math.floor(Math.random() * BUSINESS_CYCLE_DAYS_OPTIONS.length)];
 
+    var varianceA = BASE_CONVERSION_RATE * (1 - BASE_CONVERSION_RATE);
+    var varianceB = (BASE_CONVERSION_RATE + MRE) * (1 - (BASE_CONVERSION_RATE + MRE));
+    var requiredSampleSizePerVariant = solveSampleSizeTTest(MRE, 1 - BETA, varianceA, varianceB, ALPHA);
+
+    var requiredRuntimeDays = Math.ceil((requiredSampleSizePerVariant * 2) / VISITORS_PER_DAY);
+    requiredRuntimeDays = Math.ceil( requiredRuntimeDays / BUSINESS_CYCLE_DAYS ) * BUSINESS_CYCLE_DAYS; 
+
     const actualBaseConversionRate = sampleBetaDistribution(
         100000 * BASE_CONVERSION_RATE,
         100000 * (1 - BASE_CONVERSION_RATE)
@@ -83,7 +90,7 @@ function generateABTestChallenge() {
     const actualEffectSize = sampleNormalDistribution(MRE, MRE / 10);
     const variantConversionRate = actualBaseConversionRate + (Math.random() < 0.5 ? actualEffectSize : -actualEffectSize);
 
-    const actualVisitorsTotal = Math.round(VISITORS_PER_DAY * BUSINESS_CYCLE_DAYS);
+    const actualVisitorsTotal = Math.round(VISITORS_PER_DAY * requiredRuntimeDays);
     const actualVisitorsBase = sampleBinomial(actualVisitorsTotal, 0.5);
     const actualVisitorsVariant = actualVisitorsTotal - actualVisitorsBase;
 
@@ -121,10 +128,15 @@ function generateABTestChallenge() {
         experiment: {
             alpha: ALPHA,
             beta: BETA,
+            
             baseConversionRate: BASE_CONVERSION_RATE,
-            minimumRelevantEffect: MRE,
             visitorsPerDay: VISITORS_PER_DAY,
-            businessCycleDays: BUSINESS_CYCLE_DAYS
+
+            minimumRelevantEffect: MRE,
+            requiredSampleSizePerVariant: requiredSampleSizePerVariant,
+            
+            businessCycleDays: BUSINESS_CYCLE_DAYS,
+            requiredRuntimeDays: requiredRuntimeDays,
         },
         simulation: {
             actualBaseConversionRate: observedBaseRate,
