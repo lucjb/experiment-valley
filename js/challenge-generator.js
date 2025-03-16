@@ -116,7 +116,7 @@ function addWeeklyPattern(dailyVisitors) {
     const numDays = dailyVisitors.length;
     const totalVisitors = dailyVisitors.reduce((sum, v) => sum + v, 0);
 
-    // Weekly pattern weights
+    // Weekly pattern base weights
     const weeklyPattern = [
         1.2,  // Monday: Higher than average
         1.1,  // Tuesday: Slightly higher
@@ -130,18 +130,33 @@ function addWeeklyPattern(dailyVisitors) {
     // Calculate average daily visitors without pattern
     const avgDailyVisitors = totalVisitors / numDays;
 
-    // Apply pattern
+    // Apply pattern with noise
     const patternedVisitors = dailyVisitors.map((_, i) => {
         const dayOfWeek = i % 7;
-        return Math.round(avgDailyVisitors * weeklyPattern[dayOfWeek]);
+        const baseWeight = weeklyPattern[dayOfWeek];
+        // Add random noise between -10% to +10% of the base weight
+        const noise = (Math.random() * 0.2) - 0.1; // Random value between -0.1 and 0.1
+        const weight = baseWeight * (1 + noise);
+        return Math.round(avgDailyVisitors * weight);
     });
 
-    // Adjust to match total
-    const currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
-    const diff = totalVisitors - currentTotal;
+    // Adjust to match total (might need multiple passes due to rounding)
+    let currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
+    let diff = totalVisitors - currentTotal;
 
-    if (diff !== 0) {
-        patternedVisitors[0] += diff; // Add any difference to first day
+    // Distribute the difference across days proportionally to their current values
+    while (Math.abs(diff) > 0) {
+        const adjustmentPerVisitor = diff / currentTotal;
+        for (let i = 0; i < numDays && Math.abs(diff) > 0; i++) {
+            const adjustment = Math.min(
+                Math.abs(diff),
+                Math.max(1, Math.round(patternedVisitors[i] * Math.abs(adjustmentPerVisitor)))
+            ) * Math.sign(diff);
+
+            patternedVisitors[i] += adjustment;
+            diff -= adjustment;
+        }
+        currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
     }
 
     return patternedVisitors;
