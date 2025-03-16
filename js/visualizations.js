@@ -1,57 +1,5 @@
 const computeConfidenceInterval = window.computeConfidenceInterval;
 
-function aggregateData(dailyData, aggregationType = 'week') {
-    const periodLength = aggregationType === 'week' ? 7 : 30;
-    const numPeriods = Math.ceil(dailyData.length / periodLength);
-
-    return Array.from({ length: numPeriods }, (_, periodIndex) => {
-        const startIdx = periodIndex * periodLength;
-        const endIdx = Math.min(startIdx + periodLength, dailyData.length);
-        const periodData = dailyData.slice(startIdx, endIdx);
-
-        // Sum visitors and conversions
-        const baseStats = periodData.reduce((acc, day) => ({
-            visitors: acc.visitors + day.base.visitors,
-            conversions: acc.conversions + day.base.conversions
-        }), { visitors: 0, conversions: 0 });
-
-        const variantStats = periodData.reduce((acc, day) => ({
-            visitors: acc.visitors + day.variant.visitors,
-            conversions: acc.conversions + day.variant.conversions
-        }), { visitors: 0, conversions: 0 });
-
-        // Calculate rates and CIs for the aggregated period
-        const baseRate = baseStats.visitors === 0 ? 0 : baseStats.conversions / baseStats.visitors;
-        const variantRate = variantStats.visitors === 0 ? 0 : variantStats.conversions / variantStats.visitors;
-
-        // Get cumulative stats from the last day in the period
-        const lastDay = periodData[periodData.length - 1];
-
-        return {
-            base: {
-                visitors: baseStats.visitors,
-                conversions: baseStats.conversions,
-                rate: baseRate,
-                rateCI: computeConfidenceInterval(baseRate, baseStats.visitors, 0.05),
-                cumulativeVisitors: lastDay.base.cumulativeVisitors,
-                cumulativeConversions: lastDay.base.cumulativeConversions,
-                cumulativeRate: lastDay.base.cumulativeRate,
-                cumulativeRateCI: lastDay.base.cumulativeRateCI
-            },
-            variant: {
-                visitors: variantStats.visitors,
-                conversions: variantStats.conversions,
-                rate: variantRate,
-                rateCI: computeConfidenceInterval(variantRate, variantStats.visitors, 0.05),
-                cumulativeVisitors: lastDay.variant.cumulativeVisitors,
-                cumulativeConversions: lastDay.variant.cumulativeConversions,
-                cumulativeRate: lastDay.variant.cumulativeRate,
-                cumulativeRateCI: lastDay.variant.cumulativeRateCI
-            }
-        };
-    });
-}
-
 function showLoading(chartId) {
     document.getElementById(`${chartId}-loading`).classList.remove('hidden');
 }
@@ -391,15 +339,10 @@ function renderChart(challenge) {
         existingChart.destroy();
     }
 
-    // Determine aggregation type based on experiment length
-    const aggregationType = challenge.experiment.requiredRuntimeDays > 60 ? 'month' : 'week';
-    const aggregatedData = aggregateData(challenge.simulation.dailyData, aggregationType);
-    const periodName = aggregationType === 'week' ? 'Week' : 'Month';
-
     const datasets = [
         {
             label: 'Base Rate',
-            data: aggregatedData.map(d => d.base.rate),
+            data: challenge.simulation.timeline.data.map(d => d.base.rate),
             borderColor: 'rgb(147, 51, 234)',
             backgroundColor: 'transparent',
             fill: false,
@@ -408,7 +351,7 @@ function renderChart(challenge) {
         },
         {
             label: 'Base CI Lower',
-            data: aggregatedData.map(d => d.base.rateCI[0]),
+            data: challenge.simulation.timeline.data.map(d => d.base.rateCI[0]),
             borderColor: 'transparent',
             backgroundColor: 'rgba(147, 51, 234, 0.1)',
             fill: '+1',
@@ -417,7 +360,7 @@ function renderChart(challenge) {
         },
         {
             label: 'Base CI Upper',
-            data: aggregatedData.map(d => d.base.rateCI[1]),
+            data: challenge.simulation.timeline.data.map(d => d.base.rateCI[1]),
             borderColor: 'transparent',
             fill: false,
             tension: 0.4,
@@ -425,7 +368,7 @@ function renderChart(challenge) {
         },
         {
             label: 'Test Rate',
-            data: aggregatedData.map(d => d.variant.rate),
+            data: challenge.simulation.timeline.data.map(d => d.variant.rate),
             borderColor: 'rgb(59, 130, 246)',
             backgroundColor: 'transparent',
             fill: false,
@@ -434,7 +377,7 @@ function renderChart(challenge) {
         },
         {
             label: 'Test CI Lower',
-            data: aggregatedData.map(d => d.variant.rateCI[0]),
+            data: challenge.simulation.timeline.data.map(d => d.variant.rateCI[0]),
             borderColor: 'transparent',
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
             fill: '+1',
@@ -443,7 +386,7 @@ function renderChart(challenge) {
         },
         {
             label: 'Test CI Upper',
-            data: aggregatedData.map(d => d.variant.rateCI[1]),
+            data: challenge.simulation.timeline.data.map(d => d.variant.rateCI[1]),
             borderColor: 'transparent',
             fill: false,
             tension: 0.4,
@@ -455,8 +398,8 @@ function renderChart(challenge) {
         type: 'line',
         data: {
             labels: Array.from(
-                { length: aggregatedData.length },
-                (_, i) => `${periodName} ${i + 1}`
+                { length: challenge.simulation.timeline.data.length },
+                (_, i) => `${challenge.simulation.timeline.periodName} ${i + 1}`
             ),
             datasets: datasets
         },
@@ -488,7 +431,7 @@ function renderChart(challenge) {
                 },
                 title: {
                     display: true,
-                    text: `${aggregationType === 'week' ? 'Weekly' : 'Monthly'} Conversion Rates`
+                    text: `${challenge.simulation.timeline.periodName}ly Conversion Rates`
                 },
                 tooltip: {
                     mode: 'point',
@@ -499,7 +442,7 @@ function renderChart(challenge) {
                     },
                     callbacks: {
                         label: function(context) {
-                            const data = aggregatedData[context.dataIndex][
+                            const data = challenge.simulation.timeline.data[context.dataIndex][
                                 context.dataset.label.toLowerCase().includes('base') ? 'base' : 'variant'
                             ];
                             return [
@@ -565,23 +508,18 @@ function renderVisitorsChart(challenge) {
         existingChart.destroy();
     }
 
-    // Determine aggregation type based on experiment length
-    const aggregationType = challenge.experiment.requiredRuntimeDays > 60 ? 'month' : 'week';
-    const aggregatedData = aggregateData(challenge.simulation.dailyData, aggregationType);
-    const periodName = aggregationType === 'week' ? 'Week' : 'Month';
-
     // Create datasets
     const datasets = [
         {
             label: 'Base Visitors',
-            data: aggregatedData.map(d => d.base.visitors),
+            data: challenge.simulation.timeline.data.map(d => d.base.visitors),
             borderColor: 'rgb(147, 51, 234)',
             backgroundColor: 'rgba(147, 51, 234, 0.1)',
             fill: true
         },
         {
             label: 'Test Visitors',
-            data: aggregatedData.map(d => d.variant.visitors),
+            data: challenge.simulation.timeline.data.map(d => d.variant.visitors),
             borderColor: 'rgb(59, 130, 246)',
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
             fill: true
@@ -592,8 +530,8 @@ function renderVisitorsChart(challenge) {
         type: 'line',
         data: {
             labels: Array.from(
-                { length: aggregatedData.length },
-                (_, i) => `${periodName} ${i + 1}`
+                { length: challenge.simulation.timeline.data.length },
+                (_, i) => `${challenge.simulation.timeline.periodName} ${i + 1}`
             ),
             datasets: datasets
         },
@@ -621,7 +559,7 @@ function renderVisitorsChart(challenge) {
                 },
                 title: {
                     display: true,
-                    text: `${aggregationType === 'week' ? 'Weekly' : 'Monthly'} Visitors`
+                    text: `${challenge.simulation.timeline.periodName}ly Visitors`
                 },
                 tooltip: {
                     mode: 'point',
