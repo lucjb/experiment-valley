@@ -350,107 +350,110 @@ function renderChart(challenge) {
         const nonZeroValues = allValues.filter(v => v > 0);
         const minValue = nonZeroValues.length > 0 ? Math.min(...nonZeroValues) : 0;
         return {
-            min: Math.max(0, minValue - (minValue * 0.2)),
-            max: maxValue + (maxValue * 0.1)
+            suggestedMin: Math.max(0, minValue - (minValue * 0.5)),  // 50% padding below for better CI visibility
+            suggestedMax: maxValue + (maxValue * 0.5)  // 50% padding above for better CI visibility
         };
     }
-
-    // Limit data to last 28 days
-    const maxDays = 28;
-    const totalDays = challenge.experiment.requiredRuntimeDays;
-    const startDay = Math.max(0, totalDays - maxDays);
-    const days = Array.from(
-        {length: Math.min(maxDays, totalDays)}, 
-        (_, i) => `Day ${startDay + i + 1}`
-    );
 
     // Create datasets based on the view type
     function createDatasets(viewType) {
         let datasets = viewType === 'daily' ? [
             {
                 label: 'Base Daily Rate',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.rate),
+                data: challenge.simulation.dailyData.map(d => d.base.rate),
                 borderColor: 'rgb(147, 51, 234)',
                 backgroundColor: 'transparent',
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                pointRadius: 2
             }, {
                 label: 'Base CI Lower',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.rateCI[0]),
+                data: challenge.simulation.dailyData.map(d => d.base.rateCI[0]),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(147, 51, 234, 0.1)',
                 fill: '+1',
-                tension: 0.4
+                tension: 0.4,
+                pointRadius: 0
             }, {
                 label: 'Base CI Upper',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.rateCI[1]),
+                data: challenge.simulation.dailyData.map(d => d.base.rateCI[1]),
                 borderColor: 'transparent',
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                pointRadius: 0
             }, {
                 label: 'Test Daily Rate',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.rate),
+                data: challenge.simulation.dailyData.map(d => d.variant.rate),
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'transparent',
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                pointRadius: 2
             }, {
                 label: 'Test CI Lower',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.rateCI[0]),
+                data: challenge.simulation.dailyData.map(d => d.variant.rateCI[0]),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: '+1',
-                tension: 0.4
+                tension: 0.4,
+                pointRadius: 0
             }, {
                 label: 'Test CI Upper',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.rateCI[1]),
+                data: challenge.simulation.dailyData.map(d => d.variant.rateCI[1]),
                 borderColor: 'transparent',
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                pointRadius: 0
             }
         ] : [
             {
                 label: 'Base Cumulative Rate',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.cumulativeRate),
+                data: challenge.simulation.dailyData.map(d => d.base.cumulativeRate),
                 borderColor: 'rgb(107, 11, 194)',
                 backgroundColor: 'transparent',
                 borderDash: [5, 5],
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                pointRadius: 2
             }, {
                 label: 'Base CI Lower',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.cumulativeRateCI[0]),
+                data: challenge.simulation.dailyData.map(d => d.base.cumulativeRateCI[0]),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(107, 11, 194, 0.1)',
                 fill: '+1',
-                tension: 0.4
+                tension: 0.4,
+                pointRadius: 0
             }, {
                 label: 'Base CI Upper',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.cumulativeRateCI[1]),
+                data: challenge.simulation.dailyData.map(d => d.base.cumulativeRateCI[1]),
                 borderColor: 'transparent',
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                pointRadius: 0
             }, {
                 label: 'Test Cumulative Rate',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.cumulativeRate),
+                data: challenge.simulation.dailyData.map(d => d.variant.cumulativeRate),
                 borderColor: 'rgb(19, 90, 206)',
                 backgroundColor: 'transparent',
                 borderDash: [5, 5],
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                pointRadius: 2
             }, {
                 label: 'Test CI Lower',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.cumulativeRateCI[0]),
+                data: challenge.simulation.dailyData.map(d => d.variant.cumulativeRateCI[0]),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(19, 90, 206, 0.1)',
                 fill: '+1',
-                tension: 0.4
+                tension: 0.4,
+                pointRadius: 0
             }, {
                 label: 'Test CI Upper',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.cumulativeRateCI[1]),
+                data: challenge.simulation.dailyData.map(d => d.variant.cumulativeRateCI[1]),
                 borderColor: 'transparent',
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                pointRadius: 0
             }
         ];
 
@@ -464,27 +467,36 @@ function renderChart(challenge) {
     let chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: days,
+            labels: Array.from(
+                {length: challenge.experiment.requiredRuntimeDays},
+                (_, i) => `Day ${i + 1}`
+            ),
             datasets: createDatasets('daily')
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 zoom: {
+                    limits: {
+                        y: {min: 0},
+                    },
                     pan: {
                         enabled: true,
-                        mode: 'x',
-                        modifierKey: 'ctrl',
+                        mode: 'xy',
                     },
                     zoom: {
                         wheel: {
                             enabled: true,
-                            modifierKey: 'ctrl',
                         },
                         pinch: {
                             enabled: true
                         },
-                        mode: 'x',
+                        drag: {
+                            enabled: true,
+                            backgroundColor: 'rgba(127,127,127,0.2)'
+                        },
+                        mode: 'xy',
                     }
                 },
                 title: {
@@ -500,7 +512,7 @@ function renderChart(challenge) {
                     },
                     callbacks: {
                         label: function(context) {
-                            const dataPoint = challenge.simulation.dailyData[startDay + context.dataIndex][
+                            const dataPoint = challenge.simulation.dailyData[context.dataIndex][
                                 context.dataset.label.toLowerCase().includes('base') ? 'base' : 'variant'
                             ];
                             const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
@@ -537,10 +549,10 @@ function renderChart(challenge) {
         }
     });
 
-    // Add reset zoom button
-    const chartContainer = document.getElementById('conversion-chart').parentElement;
+    // Add reset zoom button with better styling
+    const chartContainer = ctx.parentElement;
     const resetZoomButton = document.createElement('button');
-    resetZoomButton.className = 'mt-2 px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm';
+    resetZoomButton.className = 'mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm font-medium transition-colors';
     resetZoomButton.textContent = 'Reset Zoom';
     resetZoomButton.style.display = 'none';
     chartContainer.appendChild(resetZoomButton);
@@ -556,17 +568,6 @@ function renderChart(challenge) {
     chart.options.plugins.zoom.zoom.onResetZoom = function() {
         resetZoomButton.style.display = 'none';
     };
-
-    // Add event listener for the toggle
-    document.getElementById('chart-view-toggle').addEventListener('change', function(e) {
-        const viewType = e.target.value;
-        const datasets = createDatasets(viewType);
-        chart.data.datasets = datasets;
-        chart.options.plugins.title.text = viewType === 'daily' ? 'Daily Conversion Rates' : 'Cumulative Conversion Rates';
-        chart.options.scales.y.min = datasets.yAxisRange.min;
-        chart.options.scales.y.max = datasets.yAxisRange.max;
-        chart.update();
-    });
 
     return chart;
 }
