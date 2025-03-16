@@ -355,55 +355,62 @@ function renderChart(challenge) {
         };
     }
 
-    // Limit data to last 28 days
-    const maxDays = 28;
-    const totalDays = challenge.experiment.requiredRuntimeDays;
-    const startDay = Math.max(0, totalDays - maxDays);
-    const days = Array.from(
-        {length: Math.min(maxDays, totalDays)}, 
-        (_, i) => `Day ${startDay + i + 1}`
-    );
+    // Get timeline data
+    const timelineData = challenge.simulation.timeline;
+    const timePoints = timelineData.timePoints;
+
+    // Create labels based on time period
+    const labels = timePoints.map(point => {
+        const { type, startDay, endDay } = point.period;
+        if (type === 'day') {
+            return `Day ${startDay}`;
+        } else if (type === 'week') {
+            return `Week ${Math.ceil(startDay/7)}`;
+        } else {
+            return `Month ${Math.ceil(startDay/28)}`;
+        }
+    });
 
     // Create datasets based on the view type
     function createDatasets(viewType) {
         let datasets = viewType === 'daily' ? [
             {
-                label: 'Base Daily Rate',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.rate),
+                label: `Base ${timelineData.timePeriod}ly Rate`,
+                data: timePoints.map(d => d.base.rate),
                 borderColor: 'rgb(147, 51, 234)',
                 backgroundColor: 'transparent',
                 fill: false,
                 tension: 0.4
             }, {
                 label: 'Base CI Lower',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.rateCI[0]),
+                data: timePoints.map(d => d.base.rateCI[0]),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(147, 51, 234, 0.1)',
                 fill: '+1',
                 tension: 0.4
             }, {
                 label: 'Base CI Upper',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.rateCI[1]),
+                data: timePoints.map(d => d.base.rateCI[1]),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
             }, {
-                label: 'Test Daily Rate',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.rate),
+                label: `Test ${timelineData.timePeriod}ly Rate`,
+                data: timePoints.map(d => d.variant.rate),
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'transparent',
                 fill: false,
                 tension: 0.4
             }, {
                 label: 'Test CI Lower',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.rateCI[0]),
+                data: timePoints.map(d => d.variant.rateCI[0]),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: '+1',
                 tension: 0.4
             }, {
                 label: 'Test CI Upper',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.rateCI[1]),
+                data: timePoints.map(d => d.variant.rateCI[1]),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
@@ -411,7 +418,7 @@ function renderChart(challenge) {
         ] : [
             {
                 label: 'Base Cumulative Rate',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.cumulativeRate),
+                data: timePoints.map(d => d.base.cumulativeRate),
                 borderColor: 'rgb(107, 11, 194)',
                 backgroundColor: 'transparent',
                 borderDash: [5, 5],
@@ -419,20 +426,20 @@ function renderChart(challenge) {
                 tension: 0.4
             }, {
                 label: 'Base CI Lower',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.cumulativeRateCI[0]),
+                data: timePoints.map(d => d.base.cumulativeRateCI[0]),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(107, 11, 194, 0.1)',
                 fill: '+1',
                 tension: 0.4
             }, {
                 label: 'Base CI Upper',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.cumulativeRateCI[1]),
+                data: timePoints.map(d => d.base.cumulativeRateCI[1]),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
             }, {
                 label: 'Test Cumulative Rate',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.cumulativeRate),
+                data: timePoints.map(d => d.variant.cumulativeRate),
                 borderColor: 'rgb(19, 90, 206)',
                 backgroundColor: 'transparent',
                 borderDash: [5, 5],
@@ -440,14 +447,14 @@ function renderChart(challenge) {
                 tension: 0.4
             }, {
                 label: 'Test CI Lower',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.cumulativeRateCI[0]),
+                data: timePoints.map(d => d.variant.cumulativeRateCI[0]),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(19, 90, 206, 0.1)',
                 fill: '+1',
                 tension: 0.4
             }, {
                 label: 'Test CI Upper',
-                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.cumulativeRateCI[1]),
+                data: timePoints.map(d => d.variant.cumulativeRateCI[1]),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
@@ -464,7 +471,7 @@ function renderChart(challenge) {
     let chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: days,
+            labels: labels,
             datasets: createDatasets('daily')
         },
         options: {
@@ -489,7 +496,7 @@ function renderChart(challenge) {
                 },
                 title: {
                     display: true,
-                    text: 'Daily Conversion Rates'
+                    text: `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates`
                 },
                 tooltip: {
                     mode: 'point',
@@ -500,9 +507,9 @@ function renderChart(challenge) {
                     },
                     callbacks: {
                         label: function(context) {
-                            const dataPoint = challenge.simulation.dailyData[startDay + context.dataIndex][
-                                context.dataset.label.toLowerCase().includes('base') ? 'base' : 'variant'
-                            ];
+                            const timePoint = timePoints[context.dataIndex];
+                            const dataPoint = context.dataset.label.toLowerCase().includes('base') ? 
+                                timePoint.base : timePoint.variant;
                             const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
 
                             const visitors = isCumulative ? dataPoint.cumulativeVisitors : dataPoint.visitors;
@@ -510,11 +517,14 @@ function renderChart(challenge) {
                             const rate = isCumulative ? dataPoint.cumulativeRate : dataPoint.rate;
                             const ci = isCumulative ? dataPoint.cumulativeRateCI : dataPoint.rateCI;
 
+                            const periodInfo = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)} ${timePoint.period.startDay}${timePoint.period.endDay !== timePoint.period.startDay ? `-${timePoint.period.endDay}` : ''}`;
+
                             return [
                                 `${context.dataset.label}: ${formatPercent(rate)}`,
                                 `95% CI: [${formatPercent(ci[0])}, ${formatPercent(ci[1])}]`,
                                 `Visitors: ${visitors.toLocaleString()}`,
-                                `Conversions: ${conversions.toLocaleString()}`
+                                `Conversions: ${conversions.toLocaleString()}`,
+                                periodInfo
                             ];
                         }
                     }
@@ -562,7 +572,9 @@ function renderChart(challenge) {
         const viewType = e.target.value;
         const datasets = createDatasets(viewType);
         chart.data.datasets = datasets;
-        chart.options.plugins.title.text = viewType === 'daily' ? 'Daily Conversion Rates' : 'Cumulative Conversion Rates';
+        chart.options.plugins.title.text = viewType === 'daily' ? 
+            `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates` : 
+            'Cumulative Conversion Rates';
         chart.options.scales.y.min = datasets.yAxisRange.min;
         chart.options.scales.y.max = datasets.yAxisRange.max;
         chart.update();
@@ -584,30 +596,34 @@ function renderVisitorsChart(challenge) {
         existingChart.destroy();
     }
 
-    // Limit data to last 28 days
-    const maxDays = 28;
-    const totalDays = challenge.experiment.requiredRuntimeDays;
-    const startDay = Math.max(0, totalDays - maxDays);
-    const days = Array.from(
-        {length: Math.min(maxDays, totalDays)}, 
-        (_, i) => `Day ${startDay + i + 1}`
-    );
+    // Get timeline data
+    const timelineData = challenge.simulation.timeline;
+    const timePoints = timelineData.timePoints;
 
-    // Get the sliced data
-    const slicedData = challenge.simulation.dailyData.slice(startDay);
+    // Create labels based on time period
+    const labels = timePoints.map(point => {
+        const { type, startDay, endDay } = point.period;
+        if (type === 'day') {
+            return `Day ${startDay}`;
+        } else if (type === 'week') {
+            return `Week ${Math.ceil(startDay/7)}`;
+        } else {
+            return `Month ${Math.ceil(startDay/28)}`;
+        }
+    });
 
     // Create datasets
     const datasets = [
         {
             label: 'Base Visitors',
-            data: slicedData.map(d => d.base.visitors),
+            data: timePoints.map(d => d.base.visitors),
             borderColor: 'rgb(147, 51, 234)',
             backgroundColor: 'rgba(147, 51, 234, 0.1)',
             fill: true
         },
         {
             label: 'Test Visitors',
-            data: slicedData.map(d => d.variant.visitors),
+            data: timePoints.map(d => d.variant.visitors),
             borderColor: 'rgb(59, 130, 246)',
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
             fill: true
@@ -617,7 +633,7 @@ function renderVisitorsChart(challenge) {
     let chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: days,
+            labels: labels,
             datasets: datasets
         },
         options: {
@@ -642,7 +658,7 @@ function renderVisitorsChart(challenge) {
                 },
                 title: {
                     display: true,
-                    text: 'Daily Visitors'
+                    text: `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Visitors`
                 },
                 tooltip: {
                     mode: 'point',
@@ -650,8 +666,13 @@ function renderVisitorsChart(challenge) {
                     position: 'nearest',
                     callbacks: {
                         label: function(context) {
+                            const timePoint = timePoints[context.dataIndex];
                             const value = context.parsed.y;
-                            return `${context.dataset.label}: ${value.toLocaleString()}`;
+                            const periodInfo = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)} ${timePoint.period.startDay}${timePoint.period.endDay !== timePoint.period.startDay ? `-${timePoint.period.endDay}` : ''}`;
+                            return [
+                                `${context.dataset.label}: ${value.toLocaleString()}`,
+                                periodInfo
+                            ];
                         }
                     }
                 }
