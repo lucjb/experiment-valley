@@ -16,13 +16,10 @@ function initializeCharts(challenge) {
 }
 
 function formatPercent(value) {
-    // Convert to percentage and round to 2 decimal places
     const percentage = value * 100;
-    // If it's a whole number, don't show decimals
     if (Math.round(percentage) === percentage) {
         return Math.round(percentage) + '%';
     }
-    // Otherwise, show up to 2 decimal places, but trim trailing zeros
     return percentage.toFixed(2).replace(/\.?0+$/, '') + '%';
 }
 
@@ -31,13 +28,25 @@ function formatDecimal(value) {
 }
 
 function updateConfidenceIntervals(challenge) {
-    // Helper functions remain unchanged
-    function formatPercent(value) {
-        const percentage = value * 100;
-        if (Math.round(percentage) === percentage) {
-            return Math.round(percentage) + '%';
+    // Display p-value
+    const pValueElement = document.getElementById('p-value-display');
+    if (pValueElement) {
+        const pValue = challenge.simulation.pValue;
+        pValueElement.textContent = pValue.toFixed(4);
+        if (pValue < 0.05) {
+            pValueElement.classList.add('text-green-600');
+            pValueElement.classList.remove('text-red-600');
+        } else {
+            pValueElement.classList.add('text-red-600');
+            pValueElement.classList.remove('text-green-600');
         }
-        return percentage.toFixed(2).replace(/\.?0+$/, '') + '%';
+    }
+
+    // Display difference in conversion rate
+    const diffValue = challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate;
+    const differenceDisplay = document.getElementById('difference-display');
+    if (differenceDisplay) {
+        differenceDisplay.textContent = formatPercent(diffValue);
     }
 
     // Find the range for conversion rate intervals
