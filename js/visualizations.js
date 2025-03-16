@@ -346,34 +346,93 @@ function renderChart(challenge) {
                 borderColor: 'rgb(147, 51, 234)',
                 backgroundColor: 'rgba(147, 51, 234, 0.1)',
                 fill: true,
+                tension: 0.4,
+                // Add CI data for fill between
                 confidenceIntervalLow: challenge.simulation.dailyData.map(d => d.base.rateCI[0]),
                 confidenceIntervalHigh: challenge.simulation.dailyData.map(d => d.base.rateCI[1])
+            }, {
+                label: 'Base CI Lower',
+                data: challenge.simulation.dailyData.map(d => d.base.rateCI[0]),
+                borderColor: 'transparent',
+                backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                fill: '+1',
+                tension: 0.4
+            }, {
+                label: 'Base CI Upper',
+                data: challenge.simulation.dailyData.map(d => d.base.rateCI[1]),
+                borderColor: 'transparent',
+                fill: false,
+                tension: 0.4
             }, {
                 label: 'Test Daily Rate',
                 data: challenge.simulation.dailyData.map(d => d.variant.rate),
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: true,
+                tension: 0.4,
                 confidenceIntervalLow: challenge.simulation.dailyData.map(d => d.variant.rateCI[0]),
                 confidenceIntervalHigh: challenge.simulation.dailyData.map(d => d.variant.rateCI[1])
+            }, {
+                label: 'Test CI Lower',
+                data: challenge.simulation.dailyData.map(d => d.variant.rateCI[0]),
+                borderColor: 'transparent',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: '+1',
+                tension: 0.4
+            }, {
+                label: 'Test CI Upper',
+                data: challenge.simulation.dailyData.map(d => d.variant.rateCI[1]),
+                borderColor: 'transparent',
+                fill: false,
+                tension: 0.4
             }];
         } else {
             return [{
                 label: 'Base Cumulative Rate',
                 data: challenge.simulation.dailyData.map(d => d.base.cumulativeRate),
                 borderColor: 'rgb(107, 11, 194)',
+                backgroundColor: 'rgba(107, 11, 194, 0.1)',
                 borderDash: [5, 5],
-                fill: false,
+                fill: true,
+                tension: 0.4,
                 confidenceIntervalLow: challenge.simulation.dailyData.map(d => d.base.cumulativeRateCI[0]),
                 confidenceIntervalHigh: challenge.simulation.dailyData.map(d => d.base.cumulativeRateCI[1])
+            }, {
+                label: 'Base CI Lower',
+                data: challenge.simulation.dailyData.map(d => d.base.cumulativeRateCI[0]),
+                borderColor: 'transparent',
+                backgroundColor: 'rgba(107, 11, 194, 0.1)',
+                fill: '+1',
+                tension: 0.4
+            }, {
+                label: 'Base CI Upper',
+                data: challenge.simulation.dailyData.map(d => d.base.cumulativeRateCI[1]),
+                borderColor: 'transparent',
+                fill: false,
+                tension: 0.4
             }, {
                 label: 'Test Cumulative Rate',
                 data: challenge.simulation.dailyData.map(d => d.variant.cumulativeRate),
                 borderColor: 'rgb(19, 90, 206)',
+                backgroundColor: 'rgba(19, 90, 206, 0.1)',
                 borderDash: [5, 5],
-                fill: false,
+                fill: true,
+                tension: 0.4,
                 confidenceIntervalLow: challenge.simulation.dailyData.map(d => d.variant.cumulativeRateCI[0]),
                 confidenceIntervalHigh: challenge.simulation.dailyData.map(d => d.variant.cumulativeRateCI[1])
+            }, {
+                label: 'Test CI Lower',
+                data: challenge.simulation.dailyData.map(d => d.variant.cumulativeRateCI[0]),
+                borderColor: 'transparent',
+                backgroundColor: 'rgba(19, 90, 206, 0.1)',
+                fill: '+1',
+                tension: 0.4
+            }, {
+                label: 'Test CI Upper',
+                data: challenge.simulation.dailyData.map(d => d.variant.cumulativeRateCI[1]),
+                borderColor: 'transparent',
+                fill: false,
+                tension: 0.4
             }];
         }
     }
@@ -394,6 +453,10 @@ function renderChart(challenge) {
                 tooltip: {
                     mode: 'index',
                     intersect: false,
+                    filter: function(tooltipItem) {
+                        // Only show tooltips for main rate lines (not CI lines)
+                        return !tooltipItem.dataset.label.includes('CI');
+                    },
                     callbacks: {
                         label: function(context) {
                             const dataPoint = challenge.simulation.dailyData[context.dataIndex][
