@@ -223,61 +223,88 @@ function distributeConversions(totalConversions, dailyVisitors) {
     return dailyConversions;
 }
 
-function generateDailyData(baseVisitors, variantVisitors, baseConversions, variantConversions, numDays, alpha) {
-    // 1. First distribute visitors evenly
-    let baseVisitorsPerDay = distributeDailyVisitors(baseVisitors, numDays);
-    let variantVisitorsPerDay = distributeDailyVisitors(variantVisitors, numDays);
+function determineTimePeriod(numDays) {
+    if (numDays <= 28) {
+        return { period: 'day', numPeriods: numDays };
+    } else if (numDays <= 196) { // 28 weeks
+        return { period: 'week', numPeriods: Math.ceil(numDays / 7) };
+    } else {
+        return { period: 'month', numPeriods: Math.ceil(numDays / 28) };
+    }
+}
 
-    // 2. Add weekly pattern variance
-    baseVisitorsPerDay = addWeeklyPattern(baseVisitorsPerDay);
-    variantVisitorsPerDay = addWeeklyPattern(variantVisitorsPerDay);
+function generateTimelineData(baseVisitors, variantVisitors, baseConversions, variantConversions, numDays, alpha) {
+    // Determine appropriate time period
+    const { period, numPeriods } = determineTimePeriod(numDays);
+    const daysPerPeriod = period === 'day' ? 1 : period === 'week' ? 7 : 28;
 
-    // 3. Distribute conversions based on final visitor numbers
-    const baseConversionsPerDay = distributeConversions(baseConversions, baseVisitorsPerDay);
-    const variantConversionsPerDay = distributeConversions(variantConversions, variantVisitorsPerDay);
+    // First distribute visitors evenly
+    let baseVisitorsPerPeriod = distributeDailyVisitors(baseVisitors, numPeriods);
+    let variantVisitorsPerPeriod = distributeDailyVisitors(variantVisitors, numPeriods);
 
-    // 4. Calculate daily and cumulative metrics
+    // Add weekly pattern variance if using daily data
+    if (period === 'day') {
+        baseVisitorsPerPeriod = addWeeklyPattern(baseVisitorsPerPeriod);
+        variantVisitorsPerPeriod = addWeeklyPattern(variantVisitorsPerPeriod);
+    }
+
+    // Distribute conversions
+    const baseConversionsPerPeriod = distributeConversions(baseConversions, baseVisitorsPerPeriod);
+    const variantConversionsPerPeriod = distributeConversions(variantConversions, variantVisitorsPerPeriod);
+
+    // Calculate cumulative metrics
     let cumulativeBaseVisitors = 0;
     let cumulativeBaseConversions = 0;
     let cumulativeVariantVisitors = 0;
     let cumulativeVariantConversions = 0;
 
-    return Array.from({ length: numDays }, (_, i) => {
-        // Update cumulative counters
-        cumulativeBaseVisitors += baseVisitorsPerDay[i];
-        cumulativeBaseConversions += baseConversionsPerDay[i];
-        cumulativeVariantVisitors += variantVisitorsPerDay[i];
-        cumulativeVariantConversions += variantConversionsPerDay[i];
+    return {
+        timePoints: Array.from({ length: numPeriods }, (_, i) => {
+            // Update cumulative counters
+            cumulativeBaseVisitors += baseVisitorsPerPeriod[i];
+            cumulativeBaseConversions += baseConversionsPerPeriod[i];
+            cumulativeVariantVisitors += variantVisitorsPerPeriod[i];
+            cumulativeVariantConversions += variantConversionsPerPeriod[i];
 
-        // Calculate rates and CIs
-        const baseRate = baseVisitorsPerDay[i] === 0 ? 0 : baseConversionsPerDay[i] / baseVisitorsPerDay[i];
-        const variantRate = variantVisitorsPerDay[i] === 0 ? 0 : variantConversionsPerDay[i] / variantVisitorsPerDay[i];
-        const baseCumulativeRate = cumulativeBaseVisitors === 0 ? 0 : cumulativeBaseConversions / cumulativeBaseVisitors;
-        const variantCumulativeRate = cumulativeVariantVisitors === 0 ? 0 : cumulativeVariantConversions / cumulativeVariantVisitors;
+            // Calculate rates and CIs
+            const baseRate = baseVisitorsPerPeriod[i] === 0 ? 0 : baseConversionsPerPeriod[i] / baseVisitorsPerPeriod[i];
+            const variantRate = variantVisitorsPerPeriod[i] === 0 ? 0 : variantConversionsPerPeriod[i] / variantVisitorsPerPeriod[i];
+            const baseCumulativeRate = cumulativeBaseVisitors === 0 ? 0 : cumulativeBaseConversions / cumulativeBaseVisitors;
+            const variantCumulativeRate = cumulativeVariantVisitors === 0 ? 0 : cumulativeVariantConversions / cumulativeVariantVisitors;
 
-        return {
-            base: {
-                visitors: baseVisitorsPerDay[i],
-                conversions: baseConversionsPerDay[i],
-                rate: baseRate,
-                rateCI: computeConfidenceInterval(baseRate, baseVisitorsPerDay[i], alpha),
-                cumulativeVisitors: cumulativeBaseVisitors,
-                cumulativeConversions: cumulativeBaseConversions,
-                cumulativeRate: baseCumulativeRate,
-                cumulativeRateCI: computeConfidenceInterval(baseCumulativeRate, cumulativeBaseVisitors, alpha)
-            },
-            variant: {
-                visitors: variantVisitorsPerDay[i],
-                conversions: variantConversionsPerDay[i],
-                rate: variantRate,
-                rateCI: computeConfidenceInterval(variantRate, variantVisitorsPerDay[i], alpha),
-                cumulativeVisitors: cumulativeVariantVisitors,
-                cumulativeConversions: cumulativeVariantConversions,
-                cumulativeRate: variantCumulativeRate,
-                cumulativeRateCI: computeConfidenceInterval(variantCumulativeRate, cumulativeVariantVisitors, alpha)
-            }
-        };
-    });
+            return {
+                period: {
+                    type: period,
+                    index: i,
+                    startDay: i * daysPerPeriod + 1,
+                    endDay: Math.min((i + 1) * daysPerPeriod, numDays)
+                },
+                base: {
+                    visitors: baseVisitorsPerPeriod[i],
+                    conversions: baseConversionsPerPeriod[i],
+                    rate: baseRate,
+                    rateCI: computeConfidenceInterval(baseRate, baseVisitorsPerPeriod[i], alpha),
+                    cumulativeVisitors: cumulativeBaseVisitors,
+                    cumulativeConversions: cumulativeBaseConversions,
+                    cumulativeRate: baseCumulativeRate,
+                    cumulativeRateCI: computeConfidenceInterval(baseCumulativeRate, cumulativeBaseVisitors, alpha)
+                },
+                variant: {
+                    visitors: variantVisitorsPerPeriod[i],
+                    conversions: variantConversionsPerPeriod[i],
+                    rate: variantRate,
+                    rateCI: computeConfidenceInterval(variantRate, variantVisitorsPerPeriod[i], alpha),
+                    cumulativeVisitors: cumulativeVariantVisitors,
+                    cumulativeConversions: cumulativeVariantConversions,
+                    cumulativeRate: variantCumulativeRate,
+                    cumulativeRateCI: computeConfidenceInterval(variantCumulativeRate, cumulativeVariantVisitors, alpha)
+                }
+            };
+        }),
+        timePeriod: period,
+        periodsCount: numPeriods,
+        totalDays: numDays
+    };
 }
 
 function generateABTestChallenge() {
@@ -347,8 +374,8 @@ function generateABTestChallenge() {
         observedDifference + diffMarginOfError
     ];
 
-    // Generate daily data using the new function
-    const dailyData = generateDailyData(
+    // Generate timeline data
+    const timelineData = generateTimelineData(
         actualVisitorsBase,
         actualVisitorsVariant,
         actualConversionsBase,
@@ -398,7 +425,7 @@ function generateABTestChallenge() {
             confidenceIntervalBase: ciBase,
             confidenceIntervalVariant: ciVariant,
             confidenceIntervalDifference: ciDifference,
-            dailyData: dailyData,
+            timeline: timelineData,
             uplift: conversionRateUplift,
             upliftConfidenceInterval: upliftCI,
             visitorUplift: visitorUplift,
