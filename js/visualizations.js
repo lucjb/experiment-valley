@@ -337,110 +337,143 @@ function renderChart(challenge) {
         existingChart.destroy();
     }
 
+    // Calculate dynamic y-axis range based on the data
+    function calculateYAxisRange(datasets) {
+        let allValues = [];
+        datasets.forEach(dataset => {
+            if (!dataset.label.includes('CI')) {
+                allValues = allValues.concat(dataset.data);
+            }
+        });
+        const maxValue = Math.max(...allValues);
+        // Set minimum to 20% below the lowest non-zero value, or 0 if all values are 0
+        const nonZeroValues = allValues.filter(v => v > 0);
+        const minValue = nonZeroValues.length > 0 ? Math.min(...nonZeroValues) : 0;
+        return {
+            min: Math.max(0, minValue - (minValue * 0.2)),
+            max: maxValue + (maxValue * 0.1)
+        };
+    }
+
+    // Limit data to last 28 days
+    const maxDays = 28;
+    const totalDays = challenge.experiment.requiredRuntimeDays;
+    const startDay = Math.max(0, totalDays - maxDays);
+    const days = Array.from(
+        {length: Math.min(maxDays, totalDays)}, 
+        (_, i) => `Day ${startDay + i + 1}`
+    );
+
     // Create datasets based on the view type
     function createDatasets(viewType) {
-        if (viewType === 'daily') {
-            return [{
+        // Create base datasets as before
+        let datasets = viewType === 'daily' ? [
+            {
                 label: 'Base Daily Rate',
-                data: challenge.simulation.dailyData.map(d => d.base.rate),
+                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.rate),
                 borderColor: 'rgb(147, 51, 234)',
                 backgroundColor: 'transparent',
                 fill: false,
                 tension: 0.4,
-                // Add CI data for fill between
-                confidenceIntervalLow: challenge.simulation.dailyData.map(d => d.base.rateCI[0]),
-                confidenceIntervalHigh: challenge.simulation.dailyData.map(d => d.base.rateCI[1])
+                confidenceIntervalLow: challenge.simulation.dailyData.slice(startDay).map(d => d.base.rateCI[0]),
+                confidenceIntervalHigh: challenge.simulation.dailyData.slice(startDay).map(d => d.base.rateCI[1])
             }, {
                 label: 'Base CI Lower',
-                data: challenge.simulation.dailyData.map(d => d.base.rateCI[0]),
+                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.rateCI[0]),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(147, 51, 234, 0.1)',
                 fill: '+1',
                 tension: 0.4
             }, {
                 label: 'Base CI Upper',
-                data: challenge.simulation.dailyData.map(d => d.base.rateCI[1]),
+                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.rateCI[1]),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
             }, {
                 label: 'Test Daily Rate',
-                data: challenge.simulation.dailyData.map(d => d.variant.rate),
+                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.rate),
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'transparent',
                 fill: false,
                 tension: 0.4,
-                confidenceIntervalLow: challenge.simulation.dailyData.map(d => d.variant.rateCI[0]),
-                confidenceIntervalHigh: challenge.simulation.dailyData.map(d => d.variant.rateCI[1])
+                confidenceIntervalLow: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.rateCI[0]),
+                confidenceIntervalHigh: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.rateCI[1])
             }, {
                 label: 'Test CI Lower',
-                data: challenge.simulation.dailyData.map(d => d.variant.rateCI[0]),
+                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.rateCI[0]),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: '+1',
                 tension: 0.4
             }, {
                 label: 'Test CI Upper',
-                data: challenge.simulation.dailyData.map(d => d.variant.rateCI[1]),
+                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.rateCI[1]),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
-            }];
-        } else {
-            return [{
+            }
+        ] : [
+            {
                 label: 'Base Cumulative Rate',
-                data: challenge.simulation.dailyData.map(d => d.base.cumulativeRate),
+                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.cumulativeRate),
                 borderColor: 'rgb(107, 11, 194)',
                 backgroundColor: 'transparent',
                 borderDash: [5, 5],
                 fill: false,
                 tension: 0.4,
-                confidenceIntervalLow: challenge.simulation.dailyData.map(d => d.base.cumulativeRateCI[0]),
-                confidenceIntervalHigh: challenge.simulation.dailyData.map(d => d.base.cumulativeRateCI[1])
+                confidenceIntervalLow: challenge.simulation.dailyData.slice(startDay).map(d => d.base.cumulativeRateCI[0]),
+                confidenceIntervalHigh: challenge.simulation.dailyData.slice(startDay).map(d => d.base.cumulativeRateCI[1])
             }, {
                 label: 'Base CI Lower',
-                data: challenge.simulation.dailyData.map(d => d.base.cumulativeRateCI[0]),
+                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.cumulativeRateCI[0]),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(107, 11, 194, 0.1)',
                 fill: '+1',
                 tension: 0.4
             }, {
                 label: 'Base CI Upper',
-                data: challenge.simulation.dailyData.map(d => d.base.cumulativeRateCI[1]),
+                data: challenge.simulation.dailyData.slice(startDay).map(d => d.base.cumulativeRateCI[1]),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
             }, {
                 label: 'Test Cumulative Rate',
-                data: challenge.simulation.dailyData.map(d => d.variant.cumulativeRate),
+                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.cumulativeRate),
                 borderColor: 'rgb(19, 90, 206)',
                 backgroundColor: 'transparent',
                 borderDash: [5, 5],
                 fill: false,
                 tension: 0.4,
-                confidenceIntervalLow: challenge.simulation.dailyData.map(d => d.variant.cumulativeRateCI[0]),
-                confidenceIntervalHigh: challenge.simulation.dailyData.map(d => d.variant.cumulativeRateCI[1])
+                confidenceIntervalLow: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.cumulativeRateCI[0]),
+                confidenceIntervalHigh: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.cumulativeRateCI[1])
             }, {
                 label: 'Test CI Lower',
-                data: challenge.simulation.dailyData.map(d => d.variant.cumulativeRateCI[0]),
+                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.cumulativeRateCI[0]),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(19, 90, 206, 0.1)',
                 fill: '+1',
                 tension: 0.4
             }, {
                 label: 'Test CI Upper',
-                data: challenge.simulation.dailyData.map(d => d.variant.cumulativeRateCI[1]),
+                data: challenge.simulation.dailyData.slice(startDay).map(d => d.variant.cumulativeRateCI[1]),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
-            }];
-        }
+            }
+        ];
+
+        // Calculate y-axis range based on the datasets
+        const yAxisRange = calculateYAxisRange(datasets);
+        datasets.yAxisRange = yAxisRange;
+
+        return datasets;
     }
 
     let chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: Array.from({length: challenge.experiment.requiredRuntimeDays}, (_, i) => `Day ${i + 1}`),
+            labels: days,
             datasets: createDatasets('daily')
         },
         options: {
@@ -459,7 +492,7 @@ function renderChart(challenge) {
                     },
                     callbacks: {
                         label: function(context) {
-                            const dataPoint = challenge.simulation.dailyData[context.dataIndex][
+                            const dataPoint = challenge.simulation.dailyData[startDay + context.dataIndex][
                                 context.dataset.label.toLowerCase().includes('base') ? 'base' : 'variant'
                             ];
                             const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
@@ -499,8 +532,11 @@ function renderChart(challenge) {
     // Add event listener for the toggle
     document.getElementById('chart-view-toggle').addEventListener('change', function(e) {
         const viewType = e.target.value;
-        chart.data.datasets = createDatasets(viewType);
+        const datasets = createDatasets(viewType);
+        chart.data.datasets = datasets;
         chart.options.plugins.title.text = viewType === 'daily' ? 'Daily Conversion Rates' : 'Cumulative Conversion Rates';
+        chart.options.scales.y.min = datasets.yAxisRange.min;
+        chart.options.scales.y.max = datasets.yAxisRange.max;
         chart.update();
     });
 
