@@ -312,15 +312,22 @@ function generateABTestChallenge() {
         100000 * (1 - BASE_CONVERSION_RATE)
     );
 
-    const actualEffectSize = sampleNormalDistribution(MRE, MRE / 10);
-    const variantConversionRate = actualBaseConversionRate + (Math.random() < 0.5 ? actualEffectSize : -actualEffectSize);
+    // Calculate effect size as a relative change instead of absolute
+    const relativeEffectSize = sampleNormalDistribution(MRE / BASE_CONVERSION_RATE, MRE / (10 * BASE_CONVERSION_RATE));
+
+    // Apply effect size as a relative change, ensuring we don't go below 20% of base rate
+    const variantConversionRate = actualBaseConversionRate * (1 + (Math.random() < 0.5 ? relativeEffectSize : -Math.min(0.8, Math.abs(relativeEffectSize))));
+
+    // Ensure variant rate is never zero or too close to zero
+    const minimumRate = actualBaseConversionRate * 0.2; // minimum 20% of base rate
+    const adjustedVariantRate = Math.max(minimumRate, variantConversionRate);
 
     const actualVisitorsTotal = requiredRuntimeDays * VISITORS_PER_DAY + sampleBinomial(VISITORS_PER_DAY, 0.8);
     const actualVisitorsBase = sampleBinomial(actualVisitorsTotal, 0.5);
     const actualVisitorsVariant = actualVisitorsTotal - actualVisitorsBase;
 
     const actualConversionsBase = sampleBinomial(actualVisitorsBase, actualBaseConversionRate);
-    const actualConversionsVariant = sampleBinomial(actualVisitorsVariant, variantConversionRate);
+    const actualConversionsVariant = sampleBinomial(actualVisitorsVariant, adjustedVariantRate);
 
     const { pValue } = computeTTest(actualConversionsBase, actualVisitorsBase, actualConversionsVariant, actualVisitorsVariant);
 
@@ -381,7 +388,7 @@ function generateABTestChallenge() {
         },
         simulation: {
             actualBaseConversionRate: actualBaseRate,
-            actualEffectSize: actualEffectSize,
+            actualEffectSize: relativeEffectSize,
             variantConversionRate: actualVariantRate,
             actualVisitorsBase: actualVisitorsBase,
             actualVisitorsVariant: actualVisitorsVariant,
