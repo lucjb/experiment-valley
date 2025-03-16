@@ -87,7 +87,7 @@ function computeUpliftConfidenceInterval(baseRate, variantRate, baseVisitors, va
 
     // Calculate the confidence interval using the formula from the image
     const numerator = (1 - zScore * Math.sqrt(cvBaseSquared + cvVariantSquared - zSquared * cvBaseSquared * cvVariantSquared));
-    const denominator = 1 - zSquared*cvBaseSquared;
+    const denominator = 1 - zSquared * cvBaseSquared;
     const lb = (pctDiff + 1) * (numerator / denominator) - 1;
 
     const numeratora = (1 + zScore * Math.sqrt(cvBaseSquared + cvVariantSquared - zSquared * cvBaseSquared * cvVariantSquared));
@@ -161,15 +161,10 @@ function generateABTestChallenge() {
         variant: sampleBinomial(VISITORS_PER_DAY / 2, variantConversionRate) / (VISITORS_PER_DAY / 2)
     }));
 
-    // Calculate uplifts
-    const visitorsUplift = (actualVisitorsVariant / actualVisitorsBase) - 1;
-    const conversionsUplift = (actualConversionsVariant / actualConversionsBase) - 1;
-    const conversionRateUplift = (actualVariantRate / actualBaseRate) - 1;
-
     // Calculate uplift as relative percentage change
     const actualBaseRate = actualConversionsBase / actualVisitorsBase;
     const actualVariantRate = actualConversionsVariant / actualVisitorsVariant;
-
+    const uplift = (actualVariantRate / actualBaseRate) - 1;
 
     const upliftCI = computeUpliftConfidenceInterval(
         actualBaseRate,
@@ -203,10 +198,8 @@ function generateABTestChallenge() {
             confidenceIntervalVariant: ciVariant,
             confidenceIntervalDifference: ciDifference,
             dailyData: dailyData,
-            uplift: conversionRateUplift,
-            upliftConfidenceInterval: upliftCI,
-            visitorsUplift: visitorsUplift,
-            conversionsUplift: conversionsUplift
+            uplift: uplift,
+            upliftConfidenceInterval: upliftCI
         }
     };
 }
