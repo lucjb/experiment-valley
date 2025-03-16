@@ -101,13 +101,40 @@ function computeUpliftConfidenceInterval(baseRate, variantRate, baseVisitors, va
 }
 
 function distributeDailyVisitors(totalVisitors, numDays) {
-    // Initialize array for each day
-    const dailyVisitors = new Array(numDays).fill(0);
+    // First, distribute visitors evenly
+    const baseVisitorsPerDay = Math.floor(totalVisitors / numDays);
+    const dailyVisitors = new Array(numDays).fill(baseVisitorsPerDay);
 
-    // For each visitor, assign to a random day
-    for (let i = 0; i < totalVisitors; i++) {
-        const randomDay = Math.floor(Math.random() * numDays);
-        dailyVisitors[randomDay]++;
+    // Add remainder to first day
+    const remainder = totalVisitors - (baseVisitorsPerDay * numDays);
+    dailyVisitors[0] += remainder;
+
+    // Add variance by moving visitors between random days
+    const numShuffles = 10;
+    for (let i = 0; i < numShuffles; i++) {
+        // Pick two random days
+        const dayA = Math.floor(Math.random() * numDays);
+        let dayB = Math.floor(Math.random() * numDays);
+        while (dayB === dayA) {
+            dayB = Math.floor(Math.random() * numDays);
+        }
+
+        // Find day with more visitors
+        const [largerDay, smallerDay] = dailyVisitors[dayA] > dailyVisitors[dayB]
+            ? [dayA, dayB]
+            : [dayB, dayA];
+
+        // Calculate maximum possible transfer
+        const maxTransfer = Math.min(
+            dailyVisitors[largerDay] - Math.floor(baseVisitorsPerDay * 0.5), // Don't go below 50% of base
+            Math.floor(baseVisitorsPerDay * 0.5) // Don't add more than 50% of base
+        );
+
+        if (maxTransfer > 0) {
+            const transfer = Math.floor(Math.random() * maxTransfer);
+            dailyVisitors[largerDay] -= transfer;
+            dailyVisitors[smallerDay] += transfer;
+        }
     }
 
     return dailyVisitors;
@@ -147,7 +174,7 @@ function generateABTestChallenge() {
     const BETA_OPTIONS = [0.2, 0.1, 0.01, 0.3];
     const BASE_CONVERSION_RATE_OPTIONS = [0.012, 0.523, 0.117, 0.231, 0.654];
     const MRE_OPTIONS = [0.001, 0.002, 0.01];
-    const VISITORS_PER_DAY_OPTIONS = [150, 1200, 25000, 47000, 128000, 200000];
+    const VISITORS_PER_DAY_OPTIONS = [150, 1200, 25000, 47000];
     const BUSINESS_CYCLE_DAYS_OPTIONS = [1, 7];
 
     // Randomly select one option from each array
@@ -176,7 +203,7 @@ function generateABTestChallenge() {
     const actualEffectSize = sampleNormalDistribution(MRE, MRE / 10);
     const variantConversionRate = actualBaseConversionRate + (Math.random() < 0.5 ? actualEffectSize : -actualEffectSize);
 
-    const actualVisitorsTotal = Math.round(VISITORS_PER_DAY * BUSINESS_CYCLE_DAYS);
+    const actualVisitorsTotal = requiredRuntimeDays * VISITORS_PER_DAY + sampleBinomial(VISITORS_PER_DAY, 0.8);
     const actualVisitorsBase = sampleBinomial(actualVisitorsTotal, 0.5);
     const actualVisitorsVariant = actualVisitorsTotal - actualVisitorsBase;
 
