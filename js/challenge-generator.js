@@ -140,7 +140,7 @@ function distributeConversions(totalConversions, dailyVisitors) {
     return dailyConversions;
 }
 
-function addDailyDataVariance(dailyData, numSwaps = 10) {
+function addDailyDataVariance(dailyData, numSwaps = 10, alpha = 0.05) {
     const numDays = dailyData.length;
 
     for (let swap = 0; swap < numSwaps; swap++) {
@@ -200,8 +200,8 @@ function addDailyDataVariance(dailyData, numSwaps = 10) {
             variantData.rate = variantData.visitors === 0 ? 0 : variantData.conversions / variantData.visitors;
 
             // Update confidence intervals
-            baseData.rateCI = computeConfidenceInterval(baseData.rate, baseData.visitors, ALPHA);
-            variantData.rateCI = computeConfidenceInterval(variantData.rate, variantData.visitors, ALPHA);
+            baseData.rateCI = computeConfidenceInterval(baseData.rate, baseData.visitors, alpha);
+            variantData.rateCI = computeConfidenceInterval(variantData.rate, variantData.visitors, alpha);
         });
     }
 
@@ -225,12 +225,12 @@ function addDailyDataVariance(dailyData, numSwaps = 10) {
         baseData.cumulativeVisitors = cumulativeBaseVisitors;
         baseData.cumulativeConversions = cumulativeBaseConversions;
         baseData.cumulativeRate = cumulativeBaseVisitors === 0 ? 0 : cumulativeBaseConversions / cumulativeBaseVisitors;
-        baseData.cumulativeRateCI = computeConfidenceInterval(baseData.cumulativeRate, cumulativeBaseVisitors, ALPHA);
+        baseData.cumulativeRateCI = computeConfidenceInterval(baseData.cumulativeRate, cumulativeBaseVisitors, alpha);
 
         variantData.cumulativeVisitors = cumulativeVariantVisitors;
         variantData.cumulativeConversions = cumulativeVariantConversions;
         variantData.cumulativeRate = cumulativeVariantVisitors === 0 ? 0 : cumulativeVariantConversions / cumulativeVariantVisitors;
-        variantData.cumulativeRateCI = computeConfidenceInterval(variantData.cumulativeRate, cumulativeVariantVisitors, ALPHA);
+        variantData.cumulativeRateCI = computeConfidenceInterval(variantData.cumulativeRate, cumulativeVariantVisitors, alpha);
     }
 
     return dailyData;
@@ -363,7 +363,7 @@ function generateABTestChallenge() {
     });
 
     // Add variance to the daily data
-    const dailyDataWithVariance = addDailyDataVariance(dailyData);
+    const dailyDataWithVariance = addDailyDataVariance(dailyData, 10, ALPHA);
 
     // Calculate uplift as relative percentage change
     const actualBaseRate = actualConversionsBase / actualVisitorsBase;
