@@ -101,22 +101,44 @@ function computeUpliftConfidenceInterval(baseRate, variantRate, baseVisitors, va
 }
 
 function distributeDailyVisitors(totalVisitors, numDays) {
-    // Create an array of random weights with more variance
-    const weights = Array.from({length: numDays}, () => Math.exp(Math.random() * 2)); // Using exponential to create more variance
-    const totalWeight = weights.reduce((a, b) => a + b, 0);
+    // Initialize array for each day
+    const dailyVisitors = new Array(numDays).fill(0);
 
-    // Distribute visitors according to weights
-    const dailyVisitors = weights.map(weight => Math.round((weight / totalWeight) * totalVisitors));
-
-    // Adjust for rounding errors
-    const currentTotal = dailyVisitors.reduce((a, b) => a + b, 0);
-    const diff = totalVisitors - currentTotal;
-    if (diff !== 0) {
-        // Add any rounding difference to the last day to ensure exact total
-        dailyVisitors[dailyVisitors.length - 1] += diff;
+    // For each visitor, assign to a random day
+    for (let i = 0; i < totalVisitors; i++) {
+        const randomDay = Math.floor(Math.random() * numDays);
+        dailyVisitors[randomDay]++;
     }
 
     return dailyVisitors;
+}
+
+function distributeConversions(totalConversions, dailyVisitors) {
+    const numDays = dailyVisitors.length;
+    const dailyConversions = new Array(numDays).fill(0);
+
+    // For each conversion, assign to a random day that has available visitors
+    let remainingConversions = totalConversions;
+
+    while (remainingConversions > 0) {
+        // Create array of days that still have room for conversions
+        const availableDays = dailyVisitors.map((visitors, day) => ({
+            day,
+            available: visitors - dailyConversions[day]
+        })).filter(d => d.available > 0);
+
+        if (availableDays.length === 0) break; // Safety check
+
+        // Pick a random day from available days
+        const randomIndex = Math.floor(Math.random() * availableDays.length);
+        const chosenDay = availableDays[randomIndex].day;
+
+        // Add a conversion to that day
+        dailyConversions[chosenDay]++;
+        remainingConversions--;
+    }
+
+    return dailyConversions;
 }
 
 function generateABTestChallenge() {
@@ -124,7 +146,7 @@ function generateABTestChallenge() {
     const ALPHA_OPTIONS = [0.1, 0.05, 0.2, 0.01];
     const BETA_OPTIONS = [0.2, 0.1, 0.01, 0.3];
     const BASE_CONVERSION_RATE_OPTIONS = [0.012, 0.523, 0.117, 0.231, 0.654];
-    const MRE_OPTIONS = [0.01, 0.02, 0.03, 0.04, 0.05];
+    const MRE_OPTIONS = [0.001, 0.002, 0.01];
     const VISITORS_PER_DAY_OPTIONS = [150, 1200, 25000, 47000, 128000, 200000];
     const BUSINESS_CYCLE_DAYS_OPTIONS = [1, 7];
 
@@ -180,8 +202,13 @@ function generateABTestChallenge() {
     ];
 
     // Generate daily data for entire runtime
+    // First, distribute visitors randomly across days
     const baseVisitorsPerDay = distributeDailyVisitors(actualVisitorsBase, requiredRuntimeDays);
     const variantVisitorsPerDay = distributeDailyVisitors(actualVisitorsVariant, requiredRuntimeDays);
+
+    // Then distribute conversions across days
+    const baseConversionsPerDay = distributeConversions(actualConversionsBase, baseVisitorsPerDay);
+    const variantConversionsPerDay = distributeConversions(actualConversionsVariant, variantVisitorsPerDay);
 
     // Initialize cumulative counters
     let cumulativeBaseVisitors = 0;
@@ -189,45 +216,11 @@ function generateABTestChallenge() {
     let cumulativeVariantVisitors = 0;
     let cumulativeVariantConversions = 0;
 
-    // Keep track of total conversions to distribute
-    let remainingBaseConversions = actualConversionsBase;
-    let remainingVariantConversions = actualConversionsVariant;
-
     const dailyData = Array.from({ length: requiredRuntimeDays }, (_, i) => {
         const baseVisitors = baseVisitorsPerDay[i];
         const variantVisitors = variantVisitorsPerDay[i];
-
-        // Calculate proportional conversions for this day with added randomness
-        const isLastDay = i === requiredRuntimeDays - 1;
-        let baseConversions, variantConversions;
-
-        if (isLastDay) {
-            // On the last day, use all remaining conversions
-            baseConversions = remainingBaseConversions;
-            variantConversions = remainingVariantConversions;
-        } else {
-            // Add random variance to conversion rates (±20% from mean)
-            const baseRandomFactor = 0.8 + Math.random() * 0.4; // Random between 0.8 and 1.2
-            const variantRandomFactor = 0.8 + Math.random() * 0.4;
-
-            // Calculate base proportions with randomness
-            const baseProportion = (baseVisitors / actualVisitorsBase) * baseRandomFactor;
-            const variantProportion = (variantVisitors / actualVisitorsVariant) * variantRandomFactor;
-
-            // Ensure we don't exceed remaining conversions
-            baseConversions = Math.min(
-                remainingBaseConversions - 1,
-                Math.round(actualConversionsBase * baseProportion)
-            );
-            variantConversions = Math.min(
-                remainingVariantConversions - 1,
-                Math.round(actualConversionsVariant * variantProportion)
-            );
-
-            // Update remaining conversions
-            remainingBaseConversions -= baseConversions;
-            remainingVariantConversions -= variantConversions;
-        }
+        const baseConversions = baseConversionsPerDay[i];
+        const variantConversions = variantConversionsPerDay[i];
 
         // Update cumulative counters
         cumulativeBaseVisitors += baseVisitors;
@@ -236,12 +229,12 @@ function generateABTestChallenge() {
         cumulativeVariantConversions += variantConversions;
 
         // Calculate daily rates
-        const baseRate = baseConversions / baseVisitors;
-        const variantRate = variantConversions / variantVisitors;
+        const baseRate = baseVisitors === 0 ? 0 : baseConversions / baseVisitors;
+        const variantRate = variantVisitors === 0 ? 0 : variantConversions / variantVisitors;
 
         // Calculate cumulative rates
-        const baseCumulativeRate = cumulativeBaseConversions / cumulativeBaseVisitors;
-        const variantCumulativeRate = cumulativeVariantConversions / cumulativeVariantVisitors;
+        const baseCumulativeRate = cumulativeBaseVisitors === 0 ? 0 : cumulativeBaseConversions / cumulativeBaseVisitors;
+        const variantCumulativeRate = cumulativeVariantVisitors === 0 ? 0 : cumulativeVariantConversions / cumulativeVariantVisitors;
 
         // Calculate confidence intervals using experiment's alpha
         const baseDailyCI = computeConfidenceInterval(baseRate, baseVisitors, ALPHA);
