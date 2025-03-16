@@ -582,6 +582,12 @@ function renderChart(challenge) {
 
 function initializeCharts(challenge) {
     try {
+        // Reset view toggle to 'daily' first
+        const viewToggle = document.getElementById('chart-view-toggle');
+        if (viewToggle) {
+            viewToggle.value = 'daily';
+        }
+
         updateConfidenceIntervals(challenge);
         renderChart(challenge);
     } catch (error) {
