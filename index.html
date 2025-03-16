@@ -129,8 +129,7 @@
                             </tr>
                             <tr class="bg-gray-100">
                                 <td class="border px-4 py-1 font-semibold min-w-[6rem]">Uplift</td>
-                                <td class="border px-4 py-1 min-w-[6rem]" id="visitors-uplift"></td>
-                                <td class="border px-4 py-1 min-w-[6rem]" id="conversions-uplift"></td>
+                                <td class="border px-4 py-1 min-w-[6rem]" colspan="2">Relative Change</td>
                                 <td class="border px-4 py-1 min-w-[7rem]" id="uplift-value"></td>
                                 <td class="border px-2 py-1">
                                     <div id="uplift-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
@@ -331,8 +330,6 @@
         };
 
         // Update uplift row
-        document.getElementById('visitors-uplift').textContent = formatUplift(challenge.simulation.visitorsUplift);
-        document.getElementById('conversions-uplift').textContent = formatUplift(challenge.simulation.conversionsUplift);
         document.getElementById('uplift-value').textContent = formatUplift(challenge.simulation.uplift);
 
         // The visualization.js will handle the confidence interval visualization
