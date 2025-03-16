@@ -129,7 +129,8 @@
                             </tr>
                             <tr class="bg-gray-100">
                                 <td class="border px-4 py-1 font-semibold min-w-[6rem]">Uplift</td>
-                                <td class="border px-4 py-1 min-w-[6rem]" colspan="2">Relative Change</td>
+                                <td class="border px-4 py-1 min-w-[6rem]" id="visitor-uplift"></td>
+                                <td class="border px-4 py-1 min-w-[6rem]" id="conversion-uplift"></td>
                                 <td class="border px-4 py-1 min-w-[7rem]" id="uplift-value"></td>
                                 <td class="border px-2 py-1">
                                     <div id="uplift-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
@@ -288,11 +289,15 @@
             document.getElementById('delta-conversions').textContent = formatDelta(challenge.simulation.actualConversionsVariant - challenge.simulation.actualConversionsBase);
             document.getElementById('delta-rate').textContent = formatDelta(challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate, true);
 
+            // Format uplift values with + or - sign and percentage
             const formatUplift = (value) => {
                 const sign = value > 0 ? '+' : '';
                 return `${sign}${(value * 100).toFixed(2)}%`;
             };
 
+            // Update uplift row
+            document.getElementById('visitor-uplift').textContent = formatUplift(challenge.simulation.visitorUplift);
+            document.getElementById('conversion-uplift').textContent = formatUplift(challenge.simulation.conversionUplift);
             document.getElementById('uplift-value').textContent = formatUplift(challenge.simulation.uplift);
 
             showLoading('chart-loading');
