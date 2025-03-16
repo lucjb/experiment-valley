@@ -337,17 +337,15 @@ function renderChart(challenge) {
         existingChart.destroy();
     }
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: Array.from({length: challenge.experiment.requiredRuntimeDays}, (_, i) => `Day ${i + 1}`),
-            datasets: [{
+    // Create datasets based on the view type
+    function createDatasets(viewType) {
+        if (viewType === 'daily') {
+            return [{
                 label: 'Base Daily Rate',
                 data: challenge.simulation.dailyData.map(d => d.base.rate),
                 borderColor: 'rgb(147, 51, 234)',
                 backgroundColor: 'rgba(147, 51, 234, 0.1)',
                 fill: true,
-                // Add CI data
                 confidenceIntervalLow: challenge.simulation.dailyData.map(d => d.base.rateCI[0]),
                 confidenceIntervalHigh: challenge.simulation.dailyData.map(d => d.base.rateCI[1])
             }, {
@@ -358,7 +356,9 @@ function renderChart(challenge) {
                 fill: true,
                 confidenceIntervalLow: challenge.simulation.dailyData.map(d => d.variant.rateCI[0]),
                 confidenceIntervalHigh: challenge.simulation.dailyData.map(d => d.variant.rateCI[1])
-            }, {
+            }];
+        } else {
+            return [{
                 label: 'Base Cumulative Rate',
                 data: challenge.simulation.dailyData.map(d => d.base.cumulativeRate),
                 borderColor: 'rgb(107, 11, 194)',
@@ -374,14 +374,22 @@ function renderChart(challenge) {
                 fill: false,
                 confidenceIntervalLow: challenge.simulation.dailyData.map(d => d.variant.cumulativeRateCI[0]),
                 confidenceIntervalHigh: challenge.simulation.dailyData.map(d => d.variant.cumulativeRateCI[1])
-            }]
+            }];
+        }
+    }
+
+    let chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: challenge.experiment.requiredRuntimeDays}, (_, i) => `Day ${i + 1}`),
+            datasets: createDatasets('daily')
         },
         options: {
             responsive: true,
             plugins: {
                 title: {
                     display: true,
-                    text: 'Daily and Cumulative Conversion Rates'
+                    text: 'Daily Conversion Rates'
                 },
                 tooltip: {
                     mode: 'index',
@@ -424,6 +432,16 @@ function renderChart(challenge) {
             }
         }
     });
+
+    // Add event listener for the toggle
+    document.getElementById('chart-view-toggle').addEventListener('change', function(e) {
+        const viewType = e.target.value;
+        chart.data.datasets = createDatasets(viewType);
+        chart.options.plugins.title.text = viewType === 'daily' ? 'Daily Conversion Rates' : 'Cumulative Conversion Rates';
+        chart.update();
+    });
+
+    return chart;
 }
 
 function initializeCharts(challenge) {
