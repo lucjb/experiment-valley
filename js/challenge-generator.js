@@ -86,7 +86,7 @@ function computeUpliftConfidenceInterval(baseRate, variantRate, baseVisitors, va
 
     const pctDiff = (variantRate / baseRate) - 1;
 
-    // Calculate the confidence interval
+    // Calculate the confidence interval using the formula from the image
     const numerator = (1 - zScore * Math.sqrt(cvBaseSquared + cvVariantSquared - zSquared * cvBaseSquared * cvVariantSquared));
     const denominator = 1 - zSquared * cvBaseSquared;
     const lb = (pctDiff + 1) * (numerator / denominator) - 1;
@@ -94,7 +94,10 @@ function computeUpliftConfidenceInterval(baseRate, variantRate, baseVisitors, va
     const numeratora = (1 + zScore * Math.sqrt(cvBaseSquared + cvVariantSquared - zSquared * cvBaseSquared * cvVariantSquared));
     const ub = (pctDiff + 1) * (numeratora / denominator) - 1;
 
-    return [lb, ub];
+    return [
+        lb,
+        ub
+    ];
 }
 
 function distributeDailyVisitors(totalVisitors, numDays) {
@@ -220,59 +223,7 @@ function distributeConversions(totalConversions, dailyVisitors) {
     return dailyConversions;
 }
 
-function aggregateTimelineData(dailyData, aggregationType) {
-    const periodLength = aggregationType === 'week' ? 7 : 30;
-    const numPeriods = Math.ceil(dailyData.length / periodLength);
-
-    return Array.from({ length: numPeriods }, (_, periodIndex) => {
-        const startIdx = periodIndex * periodLength;
-        const endIdx = Math.min(startIdx + periodLength, dailyData.length);
-        const periodData = dailyData.slice(startIdx, endIdx);
-
-        // Sum visitors and conversions
-        const baseStats = periodData.reduce((acc, day) => ({
-            visitors: acc.visitors + day.base.visitors,
-            conversions: acc.conversions + day.base.conversions
-        }), { visitors: 0, conversions: 0 });
-
-        const variantStats = periodData.reduce((acc, day) => ({
-            visitors: acc.visitors + day.variant.visitors,
-            conversions: acc.conversions + day.variant.conversions
-        }), { visitors: 0, conversions: 0 });
-
-        // Calculate rates and CIs for the aggregated period
-        const baseRate = baseStats.visitors === 0 ? 0 : baseStats.conversions / baseStats.visitors;
-        const variantRate = variantStats.visitors === 0 ? 0 : variantStats.conversions / variantStats.visitors;
-
-        // Get cumulative stats from the last day in the period
-        const lastDay = periodData[periodData.length - 1];
-
-        return {
-            base: {
-                visitors: baseStats.visitors,
-                conversions: baseStats.conversions,
-                rate: baseRate,
-                rateCI: computeConfidenceInterval(baseRate, baseStats.visitors, 0.05),
-                cumulativeVisitors: lastDay.base.cumulativeVisitors,
-                cumulativeConversions: lastDay.base.cumulativeConversions,
-                cumulativeRate: lastDay.base.cumulativeRate,
-                cumulativeRateCI: lastDay.base.cumulativeRateCI
-            },
-            variant: {
-                visitors: variantStats.visitors,
-                conversions: variantStats.conversions,
-                rate: variantRate,
-                rateCI: computeConfidenceInterval(variantRate, variantStats.visitors, 0.05),
-                cumulativeVisitors: lastDay.variant.cumulativeVisitors,
-                cumulativeConversions: lastDay.variant.cumulativeConversions,
-                cumulativeRate: lastDay.variant.cumulativeRate,
-                cumulativeRateCI: lastDay.variant.cumulativeRateCI
-            }
-        };
-    });
-}
-
-function generateTimelineData(baseVisitors, variantVisitors, baseConversions, variantConversions, numDays, alpha) {
+function generateDailyData(baseVisitors, variantVisitors, baseConversions, variantConversions, numDays, alpha) {
     // 1. First distribute visitors evenly
     let baseVisitorsPerDay = distributeDailyVisitors(baseVisitors, numDays);
     let variantVisitorsPerDay = distributeDailyVisitors(variantVisitors, numDays);
@@ -291,7 +242,7 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
     let cumulativeVariantVisitors = 0;
     let cumulativeVariantConversions = 0;
 
-    const dailyData = Array.from({ length: numDays }, (_, i) => {
+    return Array.from({ length: numDays }, (_, i) => {
         // Update cumulative counters
         cumulativeBaseVisitors += baseVisitorsPerDay[i];
         cumulativeBaseConversions += baseConversionsPerDay[i];
@@ -327,25 +278,6 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
             }
         };
     });
-
-    // 5. Determine appropriate aggregation level based on experiment duration
-    let aggregationType, timelineData;
-    if (numDays > 60) {
-        aggregationType = 'month';
-        timelineData = aggregateTimelineData(dailyData, 'month');
-    } else if (numDays > 14) {
-        aggregationType = 'week';
-        timelineData = aggregateTimelineData(dailyData, 'week');
-    } else {
-        aggregationType = 'day';
-        timelineData = dailyData;
-    }
-
-    return {
-        aggregationType,
-        periodName: aggregationType === 'month' ? 'Month' : aggregationType === 'week' ? 'Week' : 'Day',
-        data: timelineData
-    };
 }
 
 function generateABTestChallenge() {
@@ -415,8 +347,8 @@ function generateABTestChallenge() {
         observedDifference + diffMarginOfError
     ];
 
-    // Generate timeline data using the new function
-    const timeline = generateTimelineData(
+    // Generate daily data using the new function
+    const dailyData = generateDailyData(
         actualVisitorsBase,
         actualVisitorsVariant,
         actualConversionsBase,
@@ -424,6 +356,7 @@ function generateABTestChallenge() {
         requiredRuntimeDays,
         ALPHA
     );
+
 
     // Calculate uplift as relative percentage change
     const actualBaseRate = actualConversionsBase / actualVisitorsBase;
@@ -465,7 +398,7 @@ function generateABTestChallenge() {
             confidenceIntervalBase: ciBase,
             confidenceIntervalVariant: ciVariant,
             confidenceIntervalDifference: ciDifference,
-            timeline: timeline,
+            dailyData: dailyData,
             uplift: conversionRateUplift,
             upliftConfidenceInterval: upliftCI,
             visitorUplift: visitorUplift,
@@ -474,6 +407,4 @@ function generateABTestChallenge() {
     };
 }
 
-// Make functions available globally
 window.generateABTestChallenge = generateABTestChallenge;
-window.computeConfidenceInterval = computeConfidenceInterval;
