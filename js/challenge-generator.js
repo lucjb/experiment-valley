@@ -158,8 +158,8 @@ function addDailyDataVariance(dailyData, numSwaps = 10) {
         );
 
         if (maxVisitorTransfer > 0) {
-            // Transfer random amount of visitors
-            const visitorTransfer = Math.floor(Math.random() * maxVisitorTransfer * 0.5); // Up to 50% of possible
+            // Transfer random amount of visitors (up to 50% of possible)
+            const visitorTransfer = Math.floor(Math.random() * maxVisitorTransfer * 0.5);
 
             // Transfer base visitors
             dailyData[dayA].base.visitors -= visitorTransfer;
