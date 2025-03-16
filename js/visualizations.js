@@ -342,17 +342,29 @@ function renderChart(challenge) {
         data: {
             labels: Array.from({length: challenge.experiment.requiredRuntimeDays}, (_, i) => `Day ${i + 1}`),
             datasets: [{
-                label: 'Base Variant',
+                label: 'Base Daily Rate',
                 data: challenge.simulation.dailyData.map(d => d.base.rate),
                 borderColor: 'rgb(147, 51, 234)',
                 backgroundColor: 'rgba(147, 51, 234, 0.1)',
                 fill: true
             }, {
-                label: 'Test Variant',
+                label: 'Test Daily Rate',
                 data: challenge.simulation.dailyData.map(d => d.variant.rate),
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: true
+            }, {
+                label: 'Base Cumulative Rate',
+                data: challenge.simulation.dailyData.map(d => d.base.cumulativeRate),
+                borderColor: 'rgb(107, 11, 194)',
+                borderDash: [5, 5],
+                fill: false
+            }, {
+                label: 'Test Cumulative Rate',
+                data: challenge.simulation.dailyData.map(d => d.variant.cumulativeRate),
+                borderColor: 'rgb(19, 90, 206)',
+                borderDash: [5, 5],
+                fill: false
             }]
         },
         options: {
@@ -360,18 +372,26 @@ function renderChart(challenge) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Daily Conversion Rates'
+                    text: 'Daily and Cumulative Conversion Rates'
                 },
                 tooltip: {
                     mode: 'index',
                     intersect: false,
                     callbacks: {
                         label: function(context) {
-                            const dataPoint = challenge.simulation.dailyData[context.dataIndex][context.dataset.label === 'Base Variant' ? 'base' : 'variant'];
+                            const dataPoint = challenge.simulation.dailyData[context.dataIndex][
+                                context.dataset.label.toLowerCase().includes('base') ? 'base' : 'variant'
+                            ];
+                            const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
+
+                            const visitors = isCumulative ? dataPoint.cumulativeVisitors : dataPoint.visitors;
+                            const conversions = isCumulative ? dataPoint.cumulativeConversions : dataPoint.conversions;
+                            const rate = isCumulative ? dataPoint.cumulativeRate : dataPoint.rate;
+
                             return [
-                                `${context.dataset.label}: ${formatPercent(context.raw)}`,
-                                `Visitors: ${dataPoint.visitors}`,
-                                `Conversions: ${dataPoint.conversions}`
+                                `${context.dataset.label}: ${formatPercent(rate)}`,
+                                `Visitors: ${visitors.toLocaleString()}`,
+                                `Conversions: ${conversions.toLocaleString()}`
                             ];
                         }
                     }
