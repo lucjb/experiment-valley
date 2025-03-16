@@ -51,8 +51,8 @@
                     <div class="border rounded p-3">
                         <h3 class="font-semibold mb-2 text-lg">Statistical Parameters</h3>
                         <div class="grid grid-cols-2 gap-2">
-                            <div><span class="font-medium">Alpha:</span> <span id="exp-alpha"></span></div>
-                            <div><span class="font-medium">Beta:</span> <span id="exp-beta"></span></div>
+                            <div><span class="font-medium">Significance Level:</span> <span id="exp-alpha"></span></div>
+                            <div><span class="font-medium">Power:</span> <span id="exp-beta"></span></div>
                             <div><span class="font-medium">Experiment Type:</span> <span>2-sided Test</span></div>
                             <div><span class="font-medium">Null Hypothesis:</span> <span>No difference</span></div>
                         </div>
@@ -60,12 +60,12 @@
                     <div class="border rounded p-3">
                         <h3 class="font-semibold mb-2 text-lg">Sample Size Parameters</h3>
                         <div class="grid grid-cols-2 gap-2">
-                            <div><span class="font-medium">Base Rate:</span> <span id="exp-base-rate"></span></div>
-                            <div><span class="font-medium">Min Effect:</span> <span id="exp-min-effect"></span></div>
+                            <div><span class="font-medium">Base Conversion Rate:</span> <span id="exp-base-rate"></span></div>
+                            <div><span class="font-medium">Minimum Relevant Effect (absolute):</span> <span id="exp-min-effect"></span></div>
                             <div><span class="font-medium">Daily Visitors:</span> <span id="exp-visitors"></span></div>
-                            <div><span class="font-medium">Required Per Variant:</span> <span id="exp-required-sample"></span></div>
-                            <div><span class="font-medium">Days per Cycle:</span> <span id="exp-cycle-days"></span></div>
-                            <div><span class="font-medium">Required Days:</span> <span id="exp-required-days"></span></div>
+                            <div><span class="font-medium">Required Visitors per Variant:</span> <span id="exp-required-sample"></span></div>
+                            <div><span class="font-medium">Business Cycle:</span> <span id="exp-cycle-days"></span></div>
+                            <div><span class="font-medium">Runtime:</span> <span id="exp-required-days"></span></div>
                         </div>
                     </div>
                 </div>
@@ -260,14 +260,14 @@
 
             challenge = generateABTestChallenge();
 
-            document.getElementById('exp-alpha').textContent = challenge.experiment.alpha;
-            document.getElementById('exp-beta').textContent = challenge.experiment.beta;
+            document.getElementById('exp-alpha').textContent = `${(challenge.experiment.alpha * 100).toFixed(1)}%`;
+            document.getElementById('exp-beta').textContent = `${((1 - challenge.experiment.beta) * 100).toFixed(1)}%`;
             document.getElementById('exp-base-rate').textContent = `${(challenge.experiment.baseConversionRate * 100).toFixed(2)}%`;
             document.getElementById('exp-min-effect').textContent = `${(challenge.experiment.minimumRelevantEffect * 100).toFixed(2)}%`;
             document.getElementById('exp-visitors').textContent = challenge.experiment.visitorsPerDay.toLocaleString();
             document.getElementById('exp-required-sample').textContent = challenge.experiment.requiredSampleSizePerVariant.toLocaleString();
-            document.getElementById('exp-cycle-days').textContent = challenge.experiment.businessCycleDays;
-            document.getElementById('exp-required-days').textContent = challenge.experiment.requiredRuntimeDays;
+            document.getElementById('exp-cycle-days').textContent = challenge.experiment.businessCycleDays === 1 ? '1 day' : '1 week';
+            document.getElementById('exp-required-days').textContent = `${challenge.experiment.requiredRuntimeDays} days`;
 
 
             document.getElementById('base-visitors').textContent = challenge.simulation.actualVisitorsBase;
