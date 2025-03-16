@@ -48,6 +48,7 @@ function computeTTest(conversionsA, visitorsA, conversionsB, visitorsB) {
 }
 
 function computeConfidenceInterval(conversionRate, visitors, alpha) {
+    if (visitors === 0) return [0, 0];
     const se = Math.sqrt((conversionRate * (1 - conversionRate)) / visitors);
     const zScore = jStat.normal.inv(1 - alpha / 2, 0, 1);
     const marginOfError = zScore * se;
@@ -201,22 +202,40 @@ function generateABTestChallenge() {
         cumulativeVariantVisitors += variantVisitors;
         cumulativeVariantConversions += variantConversions;
 
+        // Calculate daily rates
+        const baseRate = baseConversions / baseVisitors;
+        const variantRate = variantConversions / variantVisitors;
+
+        // Calculate cumulative rates
+        const baseCumulativeRate = cumulativeBaseConversions / cumulativeBaseVisitors;
+        const variantCumulativeRate = cumulativeVariantConversions / cumulativeVariantVisitors;
+
+        // Calculate confidence intervals
+        const baseDailyCI = computeConfidenceInterval(baseRate, baseVisitors, ALPHA);
+        const variantDailyCI = computeConfidenceInterval(variantRate, variantVisitors, ALPHA);
+        const baseCumulativeCI = computeConfidenceInterval(baseCumulativeRate, cumulativeBaseVisitors, ALPHA);
+        const variantCumulativeCI = computeConfidenceInterval(variantCumulativeRate, cumulativeVariantVisitors, ALPHA);
+
         return {
             base: {
                 visitors: baseVisitors,
                 conversions: baseConversions,
-                rate: baseConversions / baseVisitors,
+                rate: baseRate,
+                rateCI: baseDailyCI,
                 cumulativeVisitors: cumulativeBaseVisitors,
                 cumulativeConversions: cumulativeBaseConversions,
-                cumulativeRate: cumulativeBaseConversions / cumulativeBaseVisitors
+                cumulativeRate: baseCumulativeRate,
+                cumulativeRateCI: baseCumulativeCI
             },
             variant: {
                 visitors: variantVisitors,
                 conversions: variantConversions,
-                rate: variantConversions / variantVisitors,
+                rate: variantRate,
+                rateCI: variantDailyCI,
                 cumulativeVisitors: cumulativeVariantVisitors,
                 cumulativeConversions: cumulativeVariantConversions,
-                cumulativeRate: cumulativeVariantConversions / cumulativeVariantVisitors
+                cumulativeRate: variantCumulativeRate,
+                cumulativeRateCI: variantCumulativeCI
             }
         };
     });

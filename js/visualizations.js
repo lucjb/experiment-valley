@@ -346,25 +346,34 @@ function renderChart(challenge) {
                 data: challenge.simulation.dailyData.map(d => d.base.rate),
                 borderColor: 'rgb(147, 51, 234)',
                 backgroundColor: 'rgba(147, 51, 234, 0.1)',
-                fill: true
+                fill: true,
+                // Add CI data
+                confidenceIntervalLow: challenge.simulation.dailyData.map(d => d.base.rateCI[0]),
+                confidenceIntervalHigh: challenge.simulation.dailyData.map(d => d.base.rateCI[1])
             }, {
                 label: 'Test Daily Rate',
                 data: challenge.simulation.dailyData.map(d => d.variant.rate),
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: true
+                fill: true,
+                confidenceIntervalLow: challenge.simulation.dailyData.map(d => d.variant.rateCI[0]),
+                confidenceIntervalHigh: challenge.simulation.dailyData.map(d => d.variant.rateCI[1])
             }, {
                 label: 'Base Cumulative Rate',
                 data: challenge.simulation.dailyData.map(d => d.base.cumulativeRate),
                 borderColor: 'rgb(107, 11, 194)',
                 borderDash: [5, 5],
-                fill: false
+                fill: false,
+                confidenceIntervalLow: challenge.simulation.dailyData.map(d => d.base.cumulativeRateCI[0]),
+                confidenceIntervalHigh: challenge.simulation.dailyData.map(d => d.base.cumulativeRateCI[1])
             }, {
                 label: 'Test Cumulative Rate',
                 data: challenge.simulation.dailyData.map(d => d.variant.cumulativeRate),
                 borderColor: 'rgb(19, 90, 206)',
                 borderDash: [5, 5],
-                fill: false
+                fill: false,
+                confidenceIntervalLow: challenge.simulation.dailyData.map(d => d.variant.cumulativeRateCI[0]),
+                confidenceIntervalHigh: challenge.simulation.dailyData.map(d => d.variant.cumulativeRateCI[1])
             }]
         },
         options: {
@@ -387,9 +396,11 @@ function renderChart(challenge) {
                             const visitors = isCumulative ? dataPoint.cumulativeVisitors : dataPoint.visitors;
                             const conversions = isCumulative ? dataPoint.cumulativeConversions : dataPoint.conversions;
                             const rate = isCumulative ? dataPoint.cumulativeRate : dataPoint.rate;
+                            const ci = isCumulative ? dataPoint.cumulativeRateCI : dataPoint.rateCI;
 
                             return [
                                 `${context.dataset.label}: ${formatPercent(rate)}`,
+                                `95% CI: [${formatPercent(ci[0])}, ${formatPercent(ci[1])}]`,
                                 `Visitors: ${visitors.toLocaleString()}`,
                                 `Conversions: ${conversions.toLocaleString()}`
                             ];
