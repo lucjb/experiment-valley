@@ -83,20 +83,19 @@ function computeUpliftConfidenceInterval(baseRate, variantRate, baseVisitors, va
     const zScore = jStat.normal.inv(1 - alpha / 2, 0, 1);
     const zSquared = zScore * zScore;
 
-    // Calculate the confidence interval using the formula from the image
-    const numerator = cvBaseSquared + cvVariantSquared - zSquared * cvBaseSquared * cvVariantSquared;
-    const denominator = 1 - zSquared * cvBaseSquared;
-
-    const term = Math.sqrt(numerator / denominator);
-    const margin = zScore * term;
-
-    // The percentage difference is (variant/base - 1)
     const pctDiff = (variantRate / baseRate) - 1;
+    
+    // Calculate the confidence interval using the formula from the image
+    const numerator = (1 - zScore * Math.sqrt(cvBaseSquared + cvVariantSquared - zSquared * cvBaseSquared * cvVariantSquared));
+    const denominator = 1 - zSquared*cvBaseSquared;
+    const lb = (pctDiff + 1) * (numerator / denominator) - 1;
 
-    // Calculate bounds according to the formula
+    const numeratora = (1 + zScore * Math.sqrt(cvBaseSquared + cvVariantSquared - zSquared * cvBaseSquared * cvVariantSquared));
+    const ub = (pctDiff + 1) * (numeratora / denominator) - 1;
+    
     return [
-        (pctDiff + 1) * (1 - margin) - 1,
-        (pctDiff + 1) * (1 + margin) - 1
+        lb,
+        ub
     ];
 }
 
