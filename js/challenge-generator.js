@@ -140,6 +140,102 @@ function distributeConversions(totalConversions, dailyVisitors) {
     return dailyConversions;
 }
 
+function addDailyDataVariance(dailyData, numSwaps = 10) {
+    const numDays = dailyData.length;
+
+    for (let swap = 0; swap < numSwaps; swap++) {
+        // Pick two random days
+        const dayA = Math.floor(Math.random() * numDays);
+        let dayB = Math.floor(Math.random() * numDays);
+        while (dayB === dayA) {
+            dayB = Math.floor(Math.random() * numDays);
+        }
+
+        // Calculate maximum possible visitor transfer
+        const maxVisitorTransfer = Math.min(
+            dailyData[dayA].base.visitors,
+            dailyData[dayB].base.visitors
+        );
+
+        if (maxVisitorTransfer > 0) {
+            // Transfer random amount of visitors
+            const visitorTransfer = Math.floor(Math.random() * maxVisitorTransfer * 0.5); // Up to 50% of possible
+
+            // Transfer base visitors
+            dailyData[dayA].base.visitors -= visitorTransfer;
+            dailyData[dayB].base.visitors += visitorTransfer;
+
+            // Adjust base conversions proportionally
+            const conversionTransfer = Math.floor(
+                (visitorTransfer / (dailyData[dayA].base.visitors + visitorTransfer)) *
+                dailyData[dayA].base.conversions
+            );
+            dailyData[dayA].base.conversions -= conversionTransfer;
+            dailyData[dayB].base.conversions += conversionTransfer;
+
+            // Do the same for variant
+            const variantVisitorTransfer = Math.floor(Math.random() * Math.min(
+                dailyData[dayA].variant.visitors,
+                dailyData[dayB].variant.visitors
+            ) * 0.5);
+
+            dailyData[dayA].variant.visitors -= variantVisitorTransfer;
+            dailyData[dayB].variant.visitors += variantVisitorTransfer;
+
+            const variantConversionTransfer = Math.floor(
+                (variantVisitorTransfer / (dailyData[dayA].variant.visitors + variantVisitorTransfer)) *
+                dailyData[dayA].variant.conversions
+            );
+            dailyData[dayA].variant.conversions -= variantConversionTransfer;
+            dailyData[dayB].variant.conversions += variantConversionTransfer;
+        }
+
+        // Recalculate rates and CIs for both days
+        [dayA, dayB].forEach(day => {
+            const baseData = dailyData[day].base;
+            const variantData = dailyData[day].variant;
+
+            // Calculate rates
+            baseData.rate = baseData.visitors === 0 ? 0 : baseData.conversions / baseData.visitors;
+            variantData.rate = variantData.visitors === 0 ? 0 : variantData.conversions / variantData.visitors;
+
+            // Update confidence intervals
+            baseData.rateCI = computeConfidenceInterval(baseData.rate, baseData.visitors, ALPHA);
+            variantData.rateCI = computeConfidenceInterval(variantData.rate, variantData.visitors, ALPHA);
+        });
+    }
+
+    // After all swaps, recalculate cumulative values
+    let cumulativeBaseVisitors = 0;
+    let cumulativeBaseConversions = 0;
+    let cumulativeVariantVisitors = 0;
+    let cumulativeVariantConversions = 0;
+
+    for (let i = 0; i < numDays; i++) {
+        const baseData = dailyData[i].base;
+        const variantData = dailyData[i].variant;
+
+        // Update cumulative counters
+        cumulativeBaseVisitors += baseData.visitors;
+        cumulativeBaseConversions += baseData.conversions;
+        cumulativeVariantVisitors += variantData.visitors;
+        cumulativeVariantConversions += variantData.conversions;
+
+        // Calculate cumulative rates
+        baseData.cumulativeVisitors = cumulativeBaseVisitors;
+        baseData.cumulativeConversions = cumulativeBaseConversions;
+        baseData.cumulativeRate = cumulativeBaseVisitors === 0 ? 0 : cumulativeBaseConversions / cumulativeBaseVisitors;
+        baseData.cumulativeRateCI = computeConfidenceInterval(baseData.cumulativeRate, cumulativeBaseVisitors, ALPHA);
+
+        variantData.cumulativeVisitors = cumulativeVariantVisitors;
+        variantData.cumulativeConversions = cumulativeVariantConversions;
+        variantData.cumulativeRate = cumulativeVariantVisitors === 0 ? 0 : cumulativeVariantConversions / cumulativeVariantVisitors;
+        variantData.cumulativeRateCI = computeConfidenceInterval(variantData.cumulativeRate, cumulativeVariantVisitors, ALPHA);
+    }
+
+    return dailyData;
+}
+
 function generateABTestChallenge() {
     // Predefined options for each parameter
     const ALPHA_OPTIONS = [0.1, 0.05, 0.2, 0.01];
@@ -209,6 +305,7 @@ function generateABTestChallenge() {
     const baseConversionsPerDay = distributeConversions(actualConversionsBase, baseVisitorsPerDay);
     const variantConversionsPerDay = distributeConversions(actualConversionsVariant, variantVisitorsPerDay);
 
+
     // Initialize cumulative counters
     let cumulativeBaseVisitors = 0;
     let cumulativeBaseConversions = 0;
@@ -265,6 +362,9 @@ function generateABTestChallenge() {
         };
     });
 
+    // Add variance to the daily data
+    const dailyDataWithVariance = addDailyDataVariance(dailyData);
+
     // Calculate uplift as relative percentage change
     const actualBaseRate = actualConversionsBase / actualVisitorsBase;
     const actualVariantRate = actualConversionsVariant / actualVisitorsVariant;
@@ -305,7 +405,7 @@ function generateABTestChallenge() {
             confidenceIntervalBase: ciBase,
             confidenceIntervalVariant: ciVariant,
             confidenceIntervalDifference: ciDifference,
-            dailyData: dailyData,
+            dailyData: dailyDataWithVariance,
             uplift: conversionRateUplift,
             upliftConfidenceInterval: upliftCI,
             visitorUplift: visitorUplift,
