@@ -48,13 +48,10 @@ function computeTTest(conversionsA, visitorsA, conversionsB, visitorsB) {
 }
 
 function computeConfidenceInterval(conversionRate, visitors, alpha) {
-    // Standard error calculation for proportion
     const se = Math.sqrt((conversionRate * (1 - conversionRate)) / visitors);
-    // Z-score for the given alpha (e.g., 1.96 for 95% CI)
     const zScore = jStat.normal.inv(1 - alpha / 2, 0, 1);
     const marginOfError = zScore * se;
 
-    // Return symmetric bounds around the conversion rate
     return [
         Math.max(0, conversionRate - marginOfError),
         Math.min(1, conversionRate + marginOfError)
@@ -62,21 +59,21 @@ function computeConfidenceInterval(conversionRate, visitors, alpha) {
 }
 
 function generateABTestChallenge() {
-    // Fixed parameters
-    const ALPHA = 0.05;  // Significance level
-    const BETA = 0.2;   // Type II error rate
+    // Predefined options for each parameter
+    const ALPHA_OPTIONS = [0.1, 0.05, 0.2, 0.01];
+    const BETA_OPTIONS = [0.2, 0.1, 0.01, 0.3];
+    const BASE_CONVERSION_RATE_OPTIONS = [0.012, 0.523, 0.117, 0.231, 0.654];
+    const MRE_OPTIONS = [0.01, 0.02, 0.03, 0.04, 0.05];
+    const VISITORS_PER_DAY_OPTIONS = [150, 1200, 25000, 47000, 128000, 200000];
+    const BUSINESS_CYCLE_DAYS_OPTIONS = [1, 7];
 
-    // Random base conversion rate between 1% and 25%
-    const BASE_CONVERSION_RATE = 0.01 + Math.random() * 0.24;
-
-    // Random minimum relevant effect between 0.5% and 2%
-    const MRE = 0.005 + Math.random() * 0.015;
-
-    // Random visitors per day between 500 and 2000
-    const VISITORS_PER_DAY = Math.floor(500 + Math.random() * 1500);
-
-    // Random business cycle length between 7 and 21 days
-    const BUSINESS_CYCLE_DAYS = Math.floor(7 + Math.random() * 14);
+    // Randomly select one option from each array
+    const ALPHA = ALPHA_OPTIONS[Math.floor(Math.random() * ALPHA_OPTIONS.length)];
+    const BETA = BETA_OPTIONS[Math.floor(Math.random() * BETA_OPTIONS.length)];
+    const BASE_CONVERSION_RATE = BASE_CONVERSION_RATE_OPTIONS[Math.floor(Math.random() * BASE_CONVERSION_RATE_OPTIONS.length)];
+    const MRE = MRE_OPTIONS[Math.floor(Math.random() * MRE_OPTIONS.length)];
+    const VISITORS_PER_DAY = VISITORS_PER_DAY_OPTIONS[Math.floor(Math.random() * VISITORS_PER_DAY_OPTIONS.length)];
+    const BUSINESS_CYCLE_DAYS = BUSINESS_CYCLE_DAYS_OPTIONS[Math.floor(Math.random() * BUSINESS_CYCLE_DAYS_OPTIONS.length)];
 
     const actualBaseConversionRate = sampleBetaDistribution(
         100000 * BASE_CONVERSION_RATE,
