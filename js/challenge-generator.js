@@ -112,7 +112,8 @@ function distributeDailyVisitors(totalVisitors, numDays) {
     const currentTotal = dailyVisitors.reduce((a, b) => a + b, 0);
     const diff = totalVisitors - currentTotal;
     if (diff !== 0) {
-        dailyVisitors[0] += diff; // Add any rounding difference to first day
+        // Add any rounding difference to the last day to ensure exact total
+        dailyVisitors[dailyVisitors.length - 1] += diff;
     }
 
     return dailyVisitors;
@@ -188,13 +189,31 @@ function generateABTestChallenge() {
     let cumulativeVariantVisitors = 0;
     let cumulativeVariantConversions = 0;
 
+    // Keep track of total conversions to distribute
+    let remainingBaseConversions = actualConversionsBase;
+    let remainingVariantConversions = actualConversionsVariant;
+
     const dailyData = Array.from({ length: requiredRuntimeDays }, (_, i) => {
         const baseVisitors = baseVisitorsPerDay[i];
         const variantVisitors = variantVisitorsPerDay[i];
 
-        // Sample conversions using the overall conversion rates
-        const baseConversions = sampleBinomial(baseVisitors, actualBaseConversionRate);
-        const variantConversions = sampleBinomial(variantVisitors, variantConversionRate);
+        // Calculate proportional conversions for this day
+        const isLastDay = i === requiredRuntimeDays - 1;
+        let baseConversions, variantConversions;
+
+        if (isLastDay) {
+            // On the last day, use all remaining conversions
+            baseConversions = remainingBaseConversions;
+            variantConversions = remainingVariantConversions;
+        } else {
+            // Otherwise distribute proportionally
+            baseConversions = Math.round((baseVisitors / actualVisitorsBase) * actualConversionsBase);
+            variantConversions = Math.round((variantVisitors / actualVisitorsVariant) * actualConversionsVariant);
+
+            // Update remaining conversions
+            remainingBaseConversions -= baseConversions;
+            remainingVariantConversions -= variantConversions;
+        }
 
         // Update cumulative counters
         cumulativeBaseVisitors += baseVisitors;
