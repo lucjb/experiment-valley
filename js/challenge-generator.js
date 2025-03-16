@@ -121,6 +121,9 @@ function generateABTestChallenge() {
     var varianceB = (BASE_CONVERSION_RATE + MRE) * (1 - (BASE_CONVERSION_RATE + MRE));
     var requiredSampleSizePerVariant = solveSampleSizeTTest(MRE, 1 - BETA, varianceA, varianceB, ALPHA);
     var requiredRuntimeDays = Math.ceil((requiredSampleSizePerVariant * 2) / VISITORS_PER_DAY);
+
+    // Ensure runtime is at least 7 days and aligned with business cycles
+    requiredRuntimeDays = Math.max(7, requiredRuntimeDays);
     requiredRuntimeDays = Math.ceil(requiredRuntimeDays / BUSINESS_CYCLE_DAYS) * BUSINESS_CYCLE_DAYS;
 
     const actualBaseConversionRate = sampleBetaDistribution(
