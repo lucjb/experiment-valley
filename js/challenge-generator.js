@@ -61,30 +61,29 @@ function computeConfidenceInterval(conversionRate, visitors, alpha) {
     ];
 }
 
-function generateABTestChallenge(level = 1) {
-    const difficultySettings = {
-        1: { mre: 0.02, visitors: 1000, noise: 0.001 },
-        2: { mre: 0.015, visitors: 800, noise: 0.002 },
-        3: { mre: 0.01, visitors: 600, noise: 0.003 },
-        4: { mre: 0.008, visitors: 400, noise: 0.004 },
-        5: { mre: 0.005, visitors: 200, noise: 0.005 }
-    };
+function generateABTestChallenge() {
+    // Fixed parameters
+    const ALPHA = 0.05;  // Significance level
+    const BETA = 0.2;   // Type II error rate
 
-    const settings = difficultySettings[level] || difficultySettings[1];
+    // Random base conversion rate between 1% and 25%
+    const BASE_CONVERSION_RATE = 0.01 + Math.random() * 0.24;
 
-    const ALPHA = 0.05;
-    const BETA = 0.2;
-    const BASE_CONVERSION_RATE = 0.12;
-    const MRE = settings.mre;
-    const VISITORS_PER_DAY = settings.visitors;
-    const BUSINESS_CYCLE_DAYS = 14;
+    // Random minimum relevant effect between 0.5% and 2%
+    const MRE = 0.005 + Math.random() * 0.015;
+
+    // Random visitors per day between 500 and 2000
+    const VISITORS_PER_DAY = Math.floor(500 + Math.random() * 1500);
+
+    // Random business cycle length between 7 and 21 days
+    const BUSINESS_CYCLE_DAYS = Math.floor(7 + Math.random() * 14);
 
     const actualBaseConversionRate = sampleBetaDistribution(
         100000 * BASE_CONVERSION_RATE,
         100000 * (1 - BASE_CONVERSION_RATE)
     );
 
-    const actualEffectSize = sampleNormalDistribution(MRE, settings.noise);
+    const actualEffectSize = sampleNormalDistribution(MRE, MRE / 10);
     const variantConversionRate = actualBaseConversionRate + (Math.random() < 0.5 ? actualEffectSize : -actualEffectSize);
 
     const actualVisitorsTotal = Math.round(VISITORS_PER_DAY * BUSINESS_CYCLE_DAYS);
@@ -122,7 +121,6 @@ function generateABTestChallenge(level = 1) {
     }));
 
     return {
-        level,
         experiment: {
             alpha: ALPHA,
             beta: BETA,
