@@ -101,8 +101,8 @@ function computeUpliftConfidenceInterval(baseRate, variantRate, baseVisitors, va
 }
 
 function distributeDailyVisitors(totalVisitors, numDays) {
-    // Create an array of random weights
-    const weights = Array.from({length: numDays}, () => Math.random());
+    // Create an array of random weights with more variance
+    const weights = Array.from({length: numDays}, () => Math.exp(Math.random() * 2)); // Using exponential to create more variance
     const totalWeight = weights.reduce((a, b) => a + b, 0);
 
     // Distribute visitors according to weights
@@ -197,7 +197,7 @@ function generateABTestChallenge() {
         const baseVisitors = baseVisitorsPerDay[i];
         const variantVisitors = variantVisitorsPerDay[i];
 
-        // Calculate proportional conversions for this day
+        // Calculate proportional conversions for this day with added randomness
         const isLastDay = i === requiredRuntimeDays - 1;
         let baseConversions, variantConversions;
 
@@ -206,9 +206,23 @@ function generateABTestChallenge() {
             baseConversions = remainingBaseConversions;
             variantConversions = remainingVariantConversions;
         } else {
-            // Otherwise distribute proportionally
-            baseConversions = Math.round((baseVisitors / actualVisitorsBase) * actualConversionsBase);
-            variantConversions = Math.round((variantVisitors / actualVisitorsVariant) * actualConversionsVariant);
+            // Add random variance to conversion rates (±20% from mean)
+            const baseRandomFactor = 0.8 + Math.random() * 0.4; // Random between 0.8 and 1.2
+            const variantRandomFactor = 0.8 + Math.random() * 0.4;
+
+            // Calculate base proportions with randomness
+            const baseProportion = (baseVisitors / actualVisitorsBase) * baseRandomFactor;
+            const variantProportion = (variantVisitors / actualVisitorsVariant) * variantRandomFactor;
+
+            // Ensure we don't exceed remaining conversions
+            baseConversions = Math.min(
+                remainingBaseConversions - 1,
+                Math.round(actualConversionsBase * baseProportion)
+            );
+            variantConversions = Math.min(
+                remainingVariantConversions - 1,
+                Math.round(actualConversionsVariant * variantProportion)
+            );
 
             // Update remaining conversions
             remainingBaseConversions -= baseConversions;
