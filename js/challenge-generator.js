@@ -66,6 +66,33 @@ function solveSampleSizeTTest(effectSize, power, varianceA, varianceB, alpha) {
     );
 }
 
+function computeUpliftConfidenceInterval(baseRate, variantRate, baseVisitors, variantVisitors, alpha = 0.05) {
+    // Calculate coefficient of variation for base and variant
+    const seBase = Math.sqrt((baseRate * (1 - baseRate)) / baseVisitors);
+    const seVariant = Math.sqrt((variantRate * (1 - variantRate)) / variantVisitors);
+    const cvBase = seBase / baseRate;
+    const cvVariant = seVariant / variantRate;
+
+    // Calculate percent difference
+    const pctDiff = (variantRate - baseRate) / baseRate;
+
+    // Get z-score for the given alpha
+    const zScore = jStat.normal.inv(1 - alpha / 2, 0, 1);
+
+    // Calculate the confidence interval using the formula
+    const term = Math.sqrt(
+        (cvBase * cvBase + cvVariant * cvVariant -
+            (zScore * zScore) * cvBase * cvBase * cvVariant * cvVariant) /
+        (1 - (zScore * zScore) * cvBase * cvBase)
+    );
+
+    const margin = zScore * term;
+    return [
+        (pctDiff + 1) * (1 - margin) - 1,
+        (pctDiff + 1) * (1 + margin) - 1
+    ];
+}
+
 function generateABTestChallenge() {
     // Predefined options for each parameter
     const ALPHA_OPTIONS = [0.1, 0.05, 0.2, 0.01];
@@ -116,8 +143,8 @@ function generateABTestChallenge() {
         ((actualConversionsBase / actualVisitorsBase) * (1 - actualConversionsBase / actualVisitorsBase)) / actualVisitorsBase +
         ((actualConversionsVariant / actualVisitorsVariant) * (1 - actualConversionsVariant / actualVisitorsVariant)) / actualVisitorsVariant
     );
-    const zScore = jStat.normal.inv(1 - ALPHA / 2, 0, 1);
-    const diffMarginOfError = zScore * pooledSE;
+    const zScoreCI = jStat.normal.inv(1 - ALPHA / 2, 0, 1);
+    const diffMarginOfError = zScoreCI * pooledSE;
     const ciDifference = [
         observedDifference - diffMarginOfError,
         observedDifference + diffMarginOfError
@@ -128,6 +155,15 @@ function generateABTestChallenge() {
         base: sampleBinomial(VISITORS_PER_DAY / 2, actualBaseConversionRate) / (VISITORS_PER_DAY / 2),
         variant: sampleBinomial(VISITORS_PER_DAY / 2, variantConversionRate) / (VISITORS_PER_DAY / 2)
     }));
+
+    const uplift = (actualConversionsVariant / actualVisitorsVariant) - (actualConversionsBase / actualVisitorsBase);
+    const upliftCI = computeUpliftConfidenceInterval(
+        actualConversionsBase / actualVisitorsBase,
+        actualConversionsVariant / actualVisitorsVariant,
+        actualVisitorsBase,
+        actualVisitorsVariant,
+        ALPHA
+    );
 
     return {
         experiment: {
@@ -152,7 +188,9 @@ function generateABTestChallenge() {
             confidenceIntervalBase: ciBase,
             confidenceIntervalVariant: ciVariant,
             confidenceIntervalDifference: ciDifference,
-            dailyData: dailyData
+            dailyData: dailyData,
+            uplift: uplift,
+            upliftConfidenceInterval: upliftCI
         }
     };
 }
