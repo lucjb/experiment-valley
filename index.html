@@ -189,6 +189,32 @@
         </div>
 
     </div>
+    <!-- Add modal for feedback -->
+    <div id="feedback-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <div id="feedback-icon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                    <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4" id="feedback-title">Correct!</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500" id="feedback-message"></p>
+                    <div class="mt-3">
+                        <p class="font-semibold">Current Score: <span id="modal-score" class="text-blue-600"></span></p>
+                        <p class="font-semibold">Streak: <span id="modal-streak" class="text-orange-600"></span></p>
+                        <p class="font-semibold">Accuracy: <span id="modal-accuracy" class="text-purple-600"></span></p>
+                    </div>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="next-challenge-btn" class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition">
+                        Next Challenge
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 <script>
     let score = 0;
@@ -211,10 +237,14 @@
         evaluateDecision(false);
     });
 
-    document.getElementById('next-btn').addEventListener('click', function() {
+    document.getElementById('next-challenge-btn').addEventListener('click', function() {
+        document.getElementById('feedback-modal').classList.add('hidden');
+        // Re-enable decision buttons
+        document.getElementById('decision-yes').disabled = false;
+        document.getElementById('decision-no').disabled = false;
+        document.getElementById('decision-yes').classList.remove('opacity-50', 'cursor-not-allowed');
+        document.getElementById('decision-no').classList.remove('opacity-50', 'cursor-not-allowed');
         loadChallenge();
-        document.getElementById('feedback').classList.add('hidden');
-        document.getElementById('next-btn').classList.add('hidden');
     });
 
     function evaluateDecision(userChoice) {
@@ -224,24 +254,45 @@
             return;
         }
 
+        // Disable both buttons
+        document.getElementById('decision-yes').disabled = true;
+        document.getElementById('decision-no').disabled = true;
+        document.getElementById('decision-yes').classList.add('opacity-50', 'cursor-not-allowed');
+        document.getElementById('decision-no').classList.add('opacity-50', 'cursor-not-allowed');
+
         totalAttempts++;
         const correctDecision = challenge.simulation.variantConversionRate > challenge.simulation.actualBaseConversionRate;
+
         if (userChoice === correctDecision) {
             score++;
             streak++;
-            document.getElementById('score').textContent = score;
-            document.getElementById('streak').textContent = streak;
-            document.getElementById('feedback').textContent = "✅ Correct! Your score has increased.";
-            document.getElementById('feedback').className = "mt-6 p-4 rounded-lg bg-green-100 text-green-800";
+            // Update feedback modal for success
+            document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';
+            document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            document.getElementById('feedback-title').textContent = 'Correct!';
+            document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-green-900 mt-4';
         } else {
             streak = 0;
-            document.getElementById('streak').textContent = streak;
-            document.getElementById('feedback').textContent = "❌ Incorrect. Review the results carefully.";
-            document.getElementById('feedback').className = "mt-6 p-4 rounded-lg bg-red-100 text-red-800";
+            // Update feedback modal for incorrect answer
+            document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100';
+            document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            document.getElementById('feedback-title').textContent = 'Incorrect';
+            document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-red-900 mt-4';
         }
-        document.getElementById('accuracy').textContent = `${Math.round((score / totalAttempts) * 100)}%`;
-        document.getElementById('feedback').classList.remove('hidden');
-        document.getElementById('next-btn').classList.remove('hidden');
+
+        // Update all score displays
+        const accuracy = Math.round((score / totalAttempts) * 100);
+        document.getElementById('score').textContent = score;
+        document.getElementById('streak').textContent = streak;
+        document.getElementById('accuracy').textContent = `${accuracy}%`;
+
+        // Update modal score displays
+        document.getElementById('modal-score').textContent = score;
+        document.getElementById('modal-streak').textContent = streak;
+        document.getElementById('modal-accuracy').textContent = `${accuracy}%`;
+
+        // Show the feedback modal
+        document.getElementById('feedback-modal').classList.remove('hidden');
     }
 
     function loadChallenge() {
