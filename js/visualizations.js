@@ -59,14 +59,15 @@ function updateConfidenceIntervals(challenge) {
 
     const minConversionValue = Math.min(...conversionValues);
     const maxConversionValue = Math.max(...conversionValues);
+    const conversionViewRange = maxConversionValue - minConversionValue;
+    const viewPadding = conversionViewRange * 0.2;
 
-    // Round to nice intervals (multiples of 0.05 or 5%)
-    const conversionViewMin = Math.floor(minConversionValue * 20) / 20;
-    const conversionViewMax = Math.ceil(maxConversionValue * 20) / 20;
-    const conversionViewRange = conversionViewMax - conversionViewMin;
+    // Round to nice intervals
+    const conversionViewMin = Math.floor((minConversionValue - viewPadding) * 100) / 100;
+    const conversionViewMax = Math.ceil((maxConversionValue + viewPadding) * 100) / 100;
 
     // Helper function to convert actual values to view percentages
-    const toViewPercent = (value) => ((value - conversionViewMin) / conversionViewRange) * 100;
+    const toViewPercent = (value) => ((value - conversionViewMin) / (conversionViewMax - conversionViewMin)) * 100;
 
     // Helper function to set CI visualization
     function updateCIVisualization(containerId, low, high, mean, color, showBounds = true) {
@@ -109,7 +110,7 @@ function updateConfidenceIntervals(challenge) {
         if (showBounds) {
             const minBound = container.querySelector('.view-min') || document.createElement('span');
             minBound.className = 'view-min absolute text-xs font-medium transform -translate-x-1/2 -translate-y-1/2 text-gray-400 top-1/2';
-            minBound.style.left = '2%';  // Move slightly inside from the left edge
+            minBound.style.left = '2%';
             minBound.textContent = formatPercent(conversionViewMin);
             if (!container.querySelector('.view-min')) {
                 container.appendChild(minBound);
@@ -117,7 +118,7 @@ function updateConfidenceIntervals(challenge) {
 
             const maxBound = container.querySelector('.view-max') || document.createElement('span');
             maxBound.className = 'view-max absolute text-xs font-medium transform -translate-x-1/2 -translate-y-1/2 text-gray-400 top-1/2';
-            maxBound.style.left = '98%';  // Move slightly inside from the right edge
+            maxBound.style.left = '98%';
             maxBound.textContent = formatPercent(conversionViewMax);
             if (!container.querySelector('.view-max')) {
                 container.appendChild(maxBound);
@@ -140,7 +141,7 @@ function updateConfidenceIntervals(challenge) {
         challenge.simulation.confidenceIntervalVariant[0],
         challenge.simulation.confidenceIntervalVariant[1],
         challenge.simulation.variantConversionRate,
-        'green',
+        'purple',
         true
     );
 
@@ -159,32 +160,56 @@ function updateConfidenceIntervals(challenge) {
     if (container) {
         const toDiffViewPercent = (value) => ((value - diffViewMin) / (diffViewMax - diffViewMin)) * 100;
 
-        const rangeBar = container.querySelector('.bg-purple-200');
-        const marker = container.querySelector('.bg-purple-600');
+        const diffCIBar = document.getElementById('diff-ci-bar');
+        const diffCIMarker = document.getElementById('diff-ci-marker');
         const lowLabel = document.getElementById('diff-ci-low');
         const highLabel = document.getElementById('diff-ci-high');
 
-        const lowPercent = toDiffViewPercent(challenge.simulation.confidenceIntervalDifference[0]);
-        const highPercent = toDiffViewPercent(challenge.simulation.confidenceIntervalDifference[1]);
+        const lowValue = challenge.simulation.confidenceIntervalDifference[0];
+        const highValue = challenge.simulation.confidenceIntervalDifference[1];
+
+        const lowPercent = toDiffViewPercent(lowValue);
+        const highPercent = toDiffViewPercent(highValue);
         const meanPercent = toDiffViewPercent(challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate);
         const zeroPercent = toDiffViewPercent(0);
 
-        if (rangeBar) {
-            rangeBar.style.left = `${lowPercent}%`;
-            rangeBar.style.width = `${highPercent - lowPercent}%`;
+        // Determine color based on CI position relative to zero
+        let barColorClass, markerColorClass, textColorClass;
+        if (lowValue > 0) {
+            barColorClass = 'bg-green-200';
+            markerColorClass = 'bg-green-600';
+            textColorClass = 'text-green-900';
+        } else if (highValue < 0) {
+            barColorClass = 'bg-red-200';
+            markerColorClass = 'bg-red-600';
+            textColorClass = 'text-red-900';
+        } else {
+            barColorClass = 'bg-slate-300';
+            markerColorClass = 'bg-slate-700';
+            textColorClass = 'text-slate-900';
         }
 
-        if (marker) {
-            marker.style.left = `${meanPercent}%`;
+        // Update diff CI elements with appropriate colors
+        if (diffCIBar) {
+            diffCIBar.className = `absolute h-full ${barColorClass} rounded-md`;
+            diffCIBar.style.left = `${lowPercent}%`;
+            diffCIBar.style.width = `${highPercent - lowPercent}%`;
+        }
+
+        if (diffCIMarker) {
+            diffCIMarker.className = `absolute w-0.5 h-full ${markerColorClass} rounded-sm`;
+            diffCIMarker.style.left = `${meanPercent}%`;
         }
 
         if (lowLabel) {
-            lowLabel.textContent = formatPercent(challenge.simulation.confidenceIntervalDifference[0]);
+            lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${textColorClass} top-1/2 -translate-y-1/2 drop-shadow-sm`;
+            lowLabel.textContent = formatPercent(lowValue);
             lowLabel.style.left = `${lowPercent}%`;
         }
 
         if (highLabel) {
-            highLabel.textContent = formatPercent(challenge.simulation.confidenceIntervalDifference[1]);
+            highLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${textColorClass} top-1/2 -translate-y-1/2 drop-shadow-sm`;
+            highLabel.textContent = formatPercent(highValue);
             highLabel.style.left = `${highPercent}%`;
         }
 
