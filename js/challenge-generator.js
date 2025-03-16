@@ -58,6 +58,13 @@ function computeConfidenceInterval(conversionRate, visitors, alpha) {
     ];
 }
 
+function solveSampleSizeTTest(effectSize, power, varianceA, varianceB, alpha) {
+    const z_alpha = jStat.normal.inv(1 - alpha / 2, 0, 1);
+    const z_beta = jStat.normal.inv(power, 0, 1);
+    const pooledVariance = (varianceA + varianceB);
+    return Math.ceil(2 * Math.pow(z_alpha + z_beta, 2) * pooledVariance / Math.pow(effectSize, 2));
+}
+
 function generateABTestChallenge() {
     // Predefined options for each parameter
     const ALPHA_OPTIONS = [0.1, 0.05, 0.2, 0.01];
@@ -75,12 +82,12 @@ function generateABTestChallenge() {
     const VISITORS_PER_DAY = VISITORS_PER_DAY_OPTIONS[Math.floor(Math.random() * VISITORS_PER_DAY_OPTIONS.length)];
     const BUSINESS_CYCLE_DAYS = BUSINESS_CYCLE_DAYS_OPTIONS[Math.floor(Math.random() * BUSINESS_CYCLE_DAYS_OPTIONS.length)];
 
+    // Calculate required sample size
     var varianceA = BASE_CONVERSION_RATE * (1 - BASE_CONVERSION_RATE);
     var varianceB = (BASE_CONVERSION_RATE + MRE) * (1 - (BASE_CONVERSION_RATE + MRE));
     var requiredSampleSizePerVariant = solveSampleSizeTTest(MRE, 1 - BETA, varianceA, varianceB, ALPHA);
-
     var requiredRuntimeDays = Math.ceil((requiredSampleSizePerVariant * 2) / VISITORS_PER_DAY);
-    requiredRuntimeDays = Math.ceil( requiredRuntimeDays / BUSINESS_CYCLE_DAYS ) * BUSINESS_CYCLE_DAYS; 
+    requiredRuntimeDays = Math.ceil(requiredRuntimeDays / BUSINESS_CYCLE_DAYS) * BUSINESS_CYCLE_DAYS;
 
     const actualBaseConversionRate = sampleBetaDistribution(
         100000 * BASE_CONVERSION_RATE,
@@ -90,7 +97,7 @@ function generateABTestChallenge() {
     const actualEffectSize = sampleNormalDistribution(MRE, MRE / 10);
     const variantConversionRate = actualBaseConversionRate + (Math.random() < 0.5 ? actualEffectSize : -actualEffectSize);
 
-    const actualVisitorsTotal = Math.round(VISITORS_PER_DAY * requiredRuntimeDays);
+    const actualVisitorsTotal = Math.round(VISITORS_PER_DAY * BUSINESS_CYCLE_DAYS);
     const actualVisitorsBase = sampleBinomial(actualVisitorsTotal, 0.5);
     const actualVisitorsVariant = actualVisitorsTotal - actualVisitorsBase;
 
@@ -99,17 +106,14 @@ function generateABTestChallenge() {
 
     const { pValue } = computeTTest(actualConversionsBase, actualVisitorsBase, actualConversionsVariant, actualVisitorsVariant);
 
-    const observedBaseRate = actualConversionsBase / actualVisitorsBase;
-    const observedVariantRate = actualConversionsVariant / actualVisitorsVariant;
-
-    const ciBase = computeConfidenceInterval(observedBaseRate, actualVisitorsBase, ALPHA);
-    const ciVariant = computeConfidenceInterval(observedVariantRate, actualVisitorsVariant, ALPHA);
+    const ciBase = computeConfidenceInterval(actualConversionsBase / actualVisitorsBase, actualVisitorsBase, ALPHA);
+    const ciVariant = computeConfidenceInterval(actualConversionsVariant / actualVisitorsVariant, actualVisitorsVariant, ALPHA);
 
     // Calculate difference CI directly using pooled standard error
-    const observedDifference = observedVariantRate - observedBaseRate;
+    const observedDifference = (actualConversionsVariant / actualVisitorsVariant) - (actualConversionsBase / actualVisitorsBase);
     const pooledSE = Math.sqrt(
-        (observedBaseRate * (1 - observedBaseRate)) / actualVisitorsBase +
-        (observedVariantRate * (1 - observedVariantRate)) / actualVisitorsVariant
+        ((actualConversionsBase / actualVisitorsBase) * (1 - actualConversionsBase / actualVisitorsBase)) / actualVisitorsBase +
+        ((actualConversionsVariant / actualVisitorsVariant) * (1 - actualConversionsVariant / actualVisitorsVariant)) / actualVisitorsVariant
     );
     const zScore = jStat.normal.inv(1 - ALPHA / 2, 0, 1);
     const diffMarginOfError = zScore * pooledSE;
@@ -128,20 +132,17 @@ function generateABTestChallenge() {
         experiment: {
             alpha: ALPHA,
             beta: BETA,
-            
             baseConversionRate: BASE_CONVERSION_RATE,
-            visitorsPerDay: VISITORS_PER_DAY,
-
             minimumRelevantEffect: MRE,
-            requiredSampleSizePerVariant: requiredSampleSizePerVariant,
-            
+            visitorsPerDay: VISITORS_PER_DAY,
             businessCycleDays: BUSINESS_CYCLE_DAYS,
-            requiredRuntimeDays: requiredRuntimeDays,
+            requiredSampleSizePerVariant: requiredSampleSizePerVariant,
+            requiredRuntimeDays: requiredRuntimeDays
         },
         simulation: {
-            actualBaseConversionRate: observedBaseRate,
+            actualBaseConversionRate: actualConversionsBase / actualVisitorsBase,
             actualEffectSize: actualEffectSize,
-            variantConversionRate: observedVariantRate,
+            variantConversionRate: actualConversionsVariant / actualVisitorsVariant,
             actualVisitorsBase: actualVisitorsBase,
             actualVisitorsVariant: actualVisitorsVariant,
             actualConversionsBase: actualConversionsBase,
