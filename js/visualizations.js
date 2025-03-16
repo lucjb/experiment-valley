@@ -501,8 +501,9 @@ function renderChart(challenge) {
                     text: 'Daily Conversion Rates'
                 },
                 tooltip: {
-                    mode: 'index',
-                    intersect: false,
+                    mode: 'point',
+                    intersect: true,
+                    position: 'nearest',
                     filter: function(tooltipItem) {
                         return !tooltipItem.dataset.label.includes('CI');
                     },
