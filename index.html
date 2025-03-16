@@ -54,13 +54,15 @@
                         <div class="grid grid-cols-2 gap-2">
                             <div><span class="font-medium">Alpha:</span> <span id="exp-alpha"></span></div>
                             <div><span class="font-medium">Beta:</span> <span id="exp-beta"></span></div>
-                            <div><span class="font-medium">Base Rate:</span> <span id="exp-base-rate"></span></div>
-                            <div><span class="font-medium">Min Effect:</span> <span id="exp-min-effect"></span></div>
+                            <div><span class="font-medium">Experiment Type:</span> <span>2-sided Test</span></div>
+                            <div><span class="font-medium">Null Hypothesis:</span> <span>No difference</span></div>
                         </div>
                     </div>
                     <div class="border rounded p-4">
-                        <h3 class="font-semibold mb-2 text-lg">Sample Size Requirements</h3>
+                        <h3 class="font-semibold mb-2 text-lg">Sample Size Parameters</h3>
                         <div class="grid grid-cols-2 gap-2">
+                            <div><span class="font-medium">Base Rate:</span> <span id="exp-base-rate"></span></div>
+                            <div><span class="font-medium">Min Effect:</span> <span id="exp-min-effect"></span></div>
                             <div><span class="font-medium">Daily Visitors:</span> <span id="exp-visitors"></span></div>
                             <div><span class="font-medium">Required Per Variant:</span> <span id="exp-required-sample"></span></div>
                             <div><span class="font-medium">Days per Cycle:</span> <span id="exp-cycle-days"></span></div>
@@ -274,7 +276,7 @@
         // Format delta values with + or - sign
         const formatDelta = (value, isPercentage = false) => {
             const sign = value > 0 ? '+' : '';
-            return isPercentage ? 
+            return isPercentage ?
                 `${sign}${(value * 100).toFixed(2)}%` :
                 `${sign}${value}`;
         };
