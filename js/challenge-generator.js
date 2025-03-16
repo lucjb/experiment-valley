@@ -164,7 +164,11 @@ function generateABTestChallenge() {
     // Calculate uplift as relative percentage change
     const actualBaseRate = actualConversionsBase / actualVisitorsBase;
     const actualVariantRate = actualConversionsVariant / actualVisitorsVariant;
-    const uplift = (actualVariantRate / actualBaseRate) - 1;
+    const conversionRateUplift = (actualVariantRate / actualBaseRate) - 1;
+
+    // Calculate visitor and conversion uplifts
+    const visitorUplift = (actualVisitorsVariant / actualVisitorsBase) - 1;
+    const conversionUplift = (actualConversionsVariant / actualConversionsBase) - 1;
 
     const upliftCI = computeUpliftConfidenceInterval(
         actualBaseRate,
@@ -198,8 +202,10 @@ function generateABTestChallenge() {
             confidenceIntervalVariant: ciVariant,
             confidenceIntervalDifference: ciDifference,
             dailyData: dailyData,
-            uplift: uplift,
-            upliftConfidenceInterval: upliftCI
+            uplift: conversionRateUplift,
+            upliftConfidenceInterval: upliftCI,
+            visitorUplift: visitorUplift,
+            conversionUplift: conversionUplift
         }
     };
 }
