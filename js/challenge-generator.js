@@ -159,10 +159,61 @@ function generateABTestChallenge() {
         observedDifference + diffMarginOfError
     ];
 
-    const dailyData = Array.from({ length: BUSINESS_CYCLE_DAYS }, () => ({
-        base: sampleBinomial(VISITORS_PER_DAY / 2, actualBaseConversionRate) / (VISITORS_PER_DAY / 2),
-        variant: sampleBinomial(VISITORS_PER_DAY / 2, variantConversionRate) / (VISITORS_PER_DAY / 2)
-    }));
+    // Generate daily data that sums to actual totals
+    const dailyData = Array.from({ length: BUSINESS_CYCLE_DAYS }, (_, day) => {
+        // For the last day, ensure we match the exact totals
+        const isLastDay = day === BUSINESS_CYCLE_DAYS - 1;
+
+        // Calculate daily target visitors
+        const avgDailyVisitorsBase = actualVisitorsBase / BUSINESS_CYCLE_DAYS;
+        const avgDailyVisitorsVariant = actualVisitorsVariant / BUSINESS_CYCLE_DAYS;
+
+        // Add some random variation (±20%) except for the last day
+        const variation = isLastDay ? 0 : 0.2;
+        const baseVisitorsDay = isLastDay ? 
+            (actualVisitorsBase - dailyData.reduce((sum, d) => sum + d.base.visitors, 0)) :
+            Math.round(avgDailyVisitorsBase * (1 + (Math.random() - 0.5) * variation));
+
+        const variantVisitorsDay = isLastDay ?
+            (actualVisitorsVariant - dailyData.reduce((sum, d) => sum + d.variant.visitors, 0)) :
+            Math.round(avgDailyVisitorsVariant * (1 + (Math.random() - 0.5) * variation));
+
+        // Calculate daily conversions based on actual conversion rates
+        const baseConversionsDay = isLastDay ?
+            (actualConversionsBase - dailyData.reduce((sum, d) => sum + d.base.conversions, 0)) :
+            sampleBinomial(baseVisitorsDay, actualBaseConversionRate);
+
+        const variantConversionsDay = isLastDay ?
+            (actualConversionsVariant - dailyData.reduce((sum, d) => sum + d.variant.conversions, 0)) :
+            sampleBinomial(variantVisitorsDay, variantConversionRate);
+
+        // Calculate cumulative totals
+        const previousCumulative = day > 0 ? dailyData[day - 1].cumulative : {
+            base: { visitors: 0, conversions: 0 },
+            variant: { visitors: 0, conversions: 0 }
+        };
+
+        return {
+            base: {
+                visitors: baseVisitorsDay,
+                conversions: baseConversionsDay
+            },
+            variant: {
+                visitors: variantVisitorsDay,
+                conversions: variantConversionsDay
+            },
+            cumulative: {
+                base: {
+                    visitors: previousCumulative.base.visitors + baseVisitorsDay,
+                    conversions: previousCumulative.base.conversions + baseConversionsDay
+                },
+                variant: {
+                    visitors: previousCumulative.variant.visitors + variantVisitorsDay,
+                    conversions: previousCumulative.variant.conversions + variantConversionsDay
+                }
+            }
+        };
+    });
 
     // Calculate uplift as relative percentage change
     const actualBaseRate = actualConversionsBase / actualVisitorsBase;
