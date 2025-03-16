@@ -479,6 +479,23 @@ function renderChart(challenge) {
         options: {
             responsive: true,
             plugins: {
+                zoom: {
+                    pan: {
+                        enabled: true,
+                        mode: 'x',
+                        modifierKey: 'ctrl',
+                    },
+                    zoom: {
+                        wheel: {
+                            enabled: true,
+                            modifierKey: 'ctrl',
+                        },
+                        pinch: {
+                            enabled: true
+                        },
+                        mode: 'x',
+                    }
+                },
                 title: {
                     display: true,
                     text: 'Daily Conversion Rates'
@@ -487,7 +504,6 @@ function renderChart(challenge) {
                     mode: 'index',
                     intersect: false,
                     filter: function(tooltipItem) {
-                        // Only show tooltips for main rate lines (not CI lines)
                         return !tooltipItem.dataset.label.includes('CI');
                     },
                     callbacks: {
@@ -528,6 +544,26 @@ function renderChart(challenge) {
             }
         }
     });
+
+    // Add reset zoom button
+    const chartContainer = document.getElementById('conversion-chart').parentElement;
+    const resetZoomButton = document.createElement('button');
+    resetZoomButton.className = 'mt-2 px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm';
+    resetZoomButton.textContent = 'Reset Zoom';
+    resetZoomButton.style.display = 'none';
+    chartContainer.appendChild(resetZoomButton);
+
+    resetZoomButton.addEventListener('click', () => {
+        chart.resetZoom();
+    });
+
+    chart.options.plugins.zoom.zoom.onZoomComplete = function() {
+        resetZoomButton.style.display = 'block';
+    };
+
+    chart.options.plugins.zoom.zoom.onResetZoom = function() {
+        resetZoomButton.style.display = 'none';
+    };
 
     // Add event listener for the toggle
     document.getElementById('chart-view-toggle').addEventListener('change', function(e) {
