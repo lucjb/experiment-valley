@@ -16,8 +16,8 @@
     <script src="js/visualizations.js"></script>
 </head>
 <body class="bg-gray-50 text-gray-900">
-    <div class="max-w-6xl mx-auto p-4 md:p-8">
-        <header class="flex justify-between items-center mb-6 bg-white rounded-lg shadow p-4">
+    <div class="max-w-6xl mx-auto p-2 md:p-4">
+        <header class="flex justify-between items-center mb-4 bg-white rounded-lg shadow p-3">
             <div class="flex items-center">
                 <h1 class="text-3xl font-bold text-blue-600 mr-4">A/B Testing Gym</h1>
                 <p class="text-lg text-gray-700 hidden md:block">Master statistical analysis through practice</p>
@@ -38,18 +38,17 @@
             </div>
         </header>
 
-        <div class="flex justify-center mb-6">
-            <button id="start-btn" class="px-6 py-3 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition">
+        <div class="flex justify-center mb-4">
+            <button id="start-btn" class="px-6 py-2 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition">
                 Start Challenge
             </button>
         </div>
 
         <div id="challenge-container" class="hidden">
-            <!-- Experiment Design Section -->
-            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-6 mb-6">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Experiment Design</h2>
-                <div id="experiment-card" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="border rounded p-4">
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-4">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-3">Experiment Design</h2>
+                <div id="experiment-card" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="border rounded p-3">
                         <h3 class="font-semibold mb-2 text-lg">Statistical Parameters</h3>
                         <div class="grid grid-cols-2 gap-2">
                             <div><span class="font-medium">Alpha:</span> <span id="exp-alpha"></span></div>
@@ -58,7 +57,7 @@
                             <div><span class="font-medium">Null Hypothesis:</span> <span>No difference</span></div>
                         </div>
                     </div>
-                    <div class="border rounded p-4">
+                    <div class="border rounded p-3">
                         <h3 class="font-semibold mb-2 text-lg">Sample Size Parameters</h3>
                         <div class="grid grid-cols-2 gap-2">
                             <div><span class="font-medium">Base Rate:</span> <span id="exp-base-rate"></span></div>
@@ -72,24 +71,20 @@
                 </div>
             </div>
 
-            <!-- Results Analysis Section -->
-            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-6 mb-6">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Results Analysis</h2>
-
-                <!-- Results Table with CI Visualizations -->
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-4">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-3">Results Analysis</h2>
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse border">
                         <thead>
                             <tr class="bg-gray-100">
-                                <th class="border px-4 py-2 text-left w-24">Variant</th>
-                                <th class="border px-4 py-2 text-left w-24">Visitors</th>
-                                <th class="border px-4 py-2 text-left w-24">Conversions</th>
-                                <th class="border px-4 py-2 text-left w-28">Rate</th>
-                                <th class="border px-4 py-2 text-left">95% Confidence Interval</th>
+                                <th class="border px-3 py-2 text-left w-24">Variant</th>
+                                <th class="border px-3 py-2 text-left w-24">Visitors</th>
+                                <th class="border px-3 py-2 text-left w-24">Conversions</th>
+                                <th class="border px-3 py-2 text-left w-28">Rate</th>
+                                <th class="border px-3 py-2 text-left">95% Confidence Interval</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Base Variant -->
                             <tr>
                                 <td class="border px-4 py-1 font-semibold min-w-[6rem]">Base</td>
                                 <td class="border px-4 py-1 min-w-[6rem]" id="base-visitors"></td>
@@ -104,7 +99,6 @@
                                     </div>
                                 </td>
                             </tr>
-                            <!-- Test Variant -->
                             <tr>
                                 <td class="border px-4 py-1 font-semibold min-w-[6rem]">Variant</td>
                                 <td class="border px-4 py-1 min-w-[6rem]" id="variant-visitors"></td>
@@ -119,7 +113,6 @@
                                     </div>
                                 </td>
                             </tr>
-                            <!-- Delta Row -->
                             <tr class="bg-gray-50">
                                 <td class="border px-4 py-1 font-semibold min-w-[6rem]">Delta</td>
                                 <td class="border px-4 py-1 min-w-[6rem]" id="delta-visitors"></td>
@@ -139,47 +132,41 @@
                     </table>
                 </div>
 
-                <!-- Statistical Analysis Section -->
-                <div class="mt-6">
-                    <h3 class="text-xl font-semibold mb-4">Statistical Analysis</h3>
-
-                    <!-- P-value and Difference display -->
-                    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-                        <div class="grid grid-cols-2 gap-4">
+                <div class="mt-4">
+                    <h3 class="text-xl font-semibold mb-3">Statistical Analysis</h3>
+                    <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                        <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <p class="text-lg mb-2">P-value:</p>
+                                <p class="text-lg mb-1">P-value:</p>
                                 <p id="p-value-display" class="text-2xl font-bold"></p>
                                 <p class="text-sm text-gray-600">Significance threshold: 0.05</p>
                             </div>
                             <div>
-                                <p class="text-lg mb-2">Difference in Conversion Rate:</p>
+                                <p class="text-lg mb-1">Difference in Conversion Rate:</p>
                                 <p id="difference-display" class="text-2xl font-bold text-purple-600"></p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Daily Conversion Rates Chart -->
-                    <div class="mt-8">
-                        <h3 class="text-xl font-semibold mb-3">Daily Conversion Rates</h3>
+                    <div class="mt-4">
+                        <h3 class="text-xl font-semibold mb-2">Daily Conversion Rates</h3>
                         <canvas id="conversion-chart"></canvas>
                     </div>
                 </div>
-                <!-- Make Your Decision Section -->
-                <div class="text-center mt-8">
-                    <h2 class="text-xl font-semibold mb-4">Make Your Decision</h2>
-                    <p class="text-gray-700 mb-4">Based on these results, should we implement Variant B?</p>
+
+                <div class="text-center mt-6">
+                    <h2 class="text-xl font-semibold mb-3">Make Your Decision</h2>
+                    <p class="text-gray-700 mb-3">Based on these results, should we implement Variant B?</p>
                     <div class="flex justify-center space-x-4">
-                        <button id="decision-yes" class="px-6 py-3 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition">
+                        <button id="decision-yes" class="px-6 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition">
                             Yes, Implement
                         </button>
-                        <button id="decision-no" class="px-6 py-3 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition">
+                        <button id="decision-no" class="px-6 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition">
                             No, Keep Original
                         </button>
                     </div>
                 </div>
-
                 <div id="feedback" class="hidden mt-6 p-4 rounded-lg"></div>
-
                 <div class="flex justify-center mt-6">
                     <button id="next-btn" class="hidden px-6 py-3 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition">
                         Next Challenge
@@ -187,9 +174,7 @@
                 </div>
             </div>
         </div>
-
     </div>
-    <!-- Add modal for feedback -->
     <div id="feedback-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="mt-3 text-center">
@@ -239,7 +224,6 @@
 
     document.getElementById('next-challenge-btn').addEventListener('click', function() {
         document.getElementById('feedback-modal').classList.add('hidden');
-        // Re-enable decision buttons
         document.getElementById('decision-yes').disabled = false;
         document.getElementById('decision-no').disabled = false;
         document.getElementById('decision-yes').classList.remove('opacity-50', 'cursor-not-allowed');
@@ -254,7 +238,6 @@
             return;
         }
 
-        // Disable both buttons
         document.getElementById('decision-yes').disabled = true;
         document.getElementById('decision-no').disabled = true;
         document.getElementById('decision-yes').classList.add('opacity-50', 'cursor-not-allowed');
@@ -266,32 +249,27 @@
         if (userChoice === correctDecision) {
             score++;
             streak++;
-            // Update feedback modal for success
             document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';
             document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
             document.getElementById('feedback-title').textContent = 'Correct!';
             document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-green-900 mt-4';
         } else {
             streak = 0;
-            // Update feedback modal for incorrect answer
             document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100';
             document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
             document.getElementById('feedback-title').textContent = 'Incorrect';
             document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-red-900 mt-4';
         }
 
-        // Update all score displays
         const accuracy = Math.round((score / totalAttempts) * 100);
         document.getElementById('score').textContent = score;
         document.getElementById('streak').textContent = streak;
         document.getElementById('accuracy').textContent = `${accuracy}%`;
 
-        // Update modal score displays
         document.getElementById('modal-score').textContent = score;
         document.getElementById('modal-streak').textContent = streak;
         document.getElementById('modal-accuracy').textContent = `${accuracy}%`;
 
-        // Show the feedback modal
         document.getElementById('feedback-modal').classList.remove('hidden');
     }
 
@@ -304,7 +282,6 @@
 
         challenge = generateABTestChallenge();
 
-        // Update experiment card with all parameters
         document.getElementById('exp-alpha').textContent = challenge.experiment.alpha;
         document.getElementById('exp-beta').textContent = challenge.experiment.beta;
         document.getElementById('exp-base-rate').textContent = `${(challenge.experiment.baseConversionRate * 100).toFixed(2)}%`;
@@ -315,7 +292,6 @@
         document.getElementById('exp-required-days').textContent = challenge.experiment.requiredRuntimeDays;
 
 
-        // Update result cells
         document.getElementById('base-visitors').textContent = challenge.simulation.actualVisitorsBase;
         document.getElementById('base-conversions').textContent = challenge.simulation.actualConversionsBase;
         document.getElementById('base-rate').textContent = `${(challenge.simulation.actualBaseConversionRate * 100).toFixed(2)}%`;
@@ -324,7 +300,6 @@
         document.getElementById('variant-conversions').textContent = challenge.simulation.actualConversionsVariant;
         document.getElementById('variant-rate').textContent = `${(challenge.simulation.variantConversionRate * 100).toFixed(2)}%`;
 
-        // Format delta values with + or - sign
         const formatDelta = (value, isPercentage = false) => {
             const sign = value > 0 ? '+' : '';
             return isPercentage ?
@@ -332,7 +307,6 @@
                 `${sign}${value}`;
         };
 
-        // Update delta row - without color coding
         document.getElementById('delta-visitors').textContent = formatDelta(challenge.simulation.actualVisitorsVariant - challenge.simulation.actualVisitorsBase);
         document.getElementById('delta-conversions').textContent = formatDelta(challenge.simulation.actualConversionsVariant - challenge.simulation.actualConversionsBase);
         document.getElementById('delta-rate').textContent = formatDelta(challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate, true);
