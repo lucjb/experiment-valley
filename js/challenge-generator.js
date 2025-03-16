@@ -59,10 +59,11 @@ function computeConfidenceInterval(conversionRate, visitors, alpha) {
 }
 
 function solveSampleSizeTTest(effectSize, power, varianceA, varianceB, alpha) {
-    const z_alpha = jStat.normal.inv(1 - alpha / 2, 0, 1);
-    const z_beta = jStat.normal.inv(power, 0, 1);
-    const pooledVariance = (varianceA + varianceB);
-    return Math.ceil(2 * Math.pow(z_alpha + z_beta, 2) * pooledVariance / Math.pow(effectSize, 2));
+    var zAlpha = jStat.normal.inv(1 - alpha / 2, 0, 1);
+    var zBeta = jStat.normal.inv(power, 0, 1);
+    return Math.ceil(
+        ((zAlpha + zBeta) * (zAlpha + zBeta) * (varianceA + varianceB)) / (effectSize * effectSize)
+    );
 }
 
 function generateABTestChallenge() {
