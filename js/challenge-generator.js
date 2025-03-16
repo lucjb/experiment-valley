@@ -181,6 +181,12 @@ function generateABTestChallenge() {
     const baseVisitorsPerDay = distributeDailyVisitors(actualVisitorsBase, requiredRuntimeDays);
     const variantVisitorsPerDay = distributeDailyVisitors(actualVisitorsVariant, requiredRuntimeDays);
 
+    // Initialize cumulative counters
+    let cumulativeBaseVisitors = 0;
+    let cumulativeBaseConversions = 0;
+    let cumulativeVariantVisitors = 0;
+    let cumulativeVariantConversions = 0;
+
     const dailyData = Array.from({ length: requiredRuntimeDays }, (_, i) => {
         const baseVisitors = baseVisitorsPerDay[i];
         const variantVisitors = variantVisitorsPerDay[i];
@@ -189,16 +195,28 @@ function generateABTestChallenge() {
         const baseConversions = sampleBinomial(baseVisitors, actualBaseConversionRate);
         const variantConversions = sampleBinomial(variantVisitors, variantConversionRate);
 
+        // Update cumulative counters
+        cumulativeBaseVisitors += baseVisitors;
+        cumulativeBaseConversions += baseConversions;
+        cumulativeVariantVisitors += variantVisitors;
+        cumulativeVariantConversions += variantConversions;
+
         return {
             base: {
                 visitors: baseVisitors,
                 conversions: baseConversions,
-                rate: baseConversions / baseVisitors
+                rate: baseConversions / baseVisitors,
+                cumulativeVisitors: cumulativeBaseVisitors,
+                cumulativeConversions: cumulativeBaseConversions,
+                cumulativeRate: cumulativeBaseConversions / cumulativeBaseVisitors
             },
             variant: {
                 visitors: variantVisitors,
                 conversions: variantConversions,
-                rate: variantConversions / variantVisitors
+                rate: variantConversions / variantVisitors,
+                cumulativeVisitors: cumulativeVariantVisitors,
+                cumulativeConversions: cumulativeVariantConversions,
+                cumulativeRate: cumulativeVariantConversions / cumulativeVariantVisitors
             }
         };
     });
