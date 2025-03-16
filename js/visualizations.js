@@ -192,8 +192,8 @@ function updateConfidenceIntervals(challenge) {
     const toDiffViewPercent = (value) => ((value - diffViewMin) / (diffViewMax - diffViewMin)) * 100;
 
     // Update difference CI
-    const container = document.getElementById('diff-ci');
-    if (container) {
+    const diffContainer = document.getElementById('diff-ci');
+    if (diffContainer) {
         const diffCIBar = document.getElementById('diff-ci-bar');
         const diffCIMarker = document.getElementById('diff-ci-marker');
         const lowLabel = document.getElementById('diff-ci-low');
@@ -233,20 +233,84 @@ function updateConfidenceIntervals(challenge) {
         }
 
         // Update zero line
-        const zeroLine = container.querySelector('.zero-line') || document.createElement('div');
+        const zeroLine = diffContainer.querySelector('.zero-line') || document.createElement('div');
         zeroLine.className = 'zero-line absolute h-full w-px bg-gray-400';
         zeroLine.style.left = `${zeroPercent}%`;
-        if (!container.querySelector('.zero-line')) {
-            container.appendChild(zeroLine);
+        if (!diffContainer.querySelector('.zero-line')) {
+            diffContainer.appendChild(zeroLine);
         }
 
         // Update zero label
-        const zeroLabel = container.querySelector('.zero-label') || document.createElement('span');
+        const zeroLabel = diffContainer.querySelector('.zero-label') || document.createElement('span');
         zeroLabel.className = 'zero-label absolute text-xs font-medium transform -translate-x-1/2 text-gray-400 top-1/2 -translate-y-1/2';
         zeroLabel.style.left = `${zeroPercent}%`;
         zeroLabel.textContent = '0%';
-        if (!container.querySelector('.zero-label')) {
-            container.appendChild(zeroLabel);
+        if (!diffContainer.querySelector('.zero-label')) {
+            diffContainer.appendChild(zeroLabel);
+        }
+    }
+    // Update uplift CI
+    const container = document.getElementById('uplift-ci');
+    if (container) {
+        const upliftValue = challenge.simulation.uplift;
+        const [lowUplift, highUplift] = challenge.simulation.upliftConfidenceInterval;
+
+        // Determine color based on significance
+        const colors = resultType === 'positive' ? {
+            bar: 'bg-green-200',
+            marker: 'bg-green-600',
+            text: 'text-green-900'
+        } : resultType === 'negative' ? {
+            bar: 'bg-red-200',
+            marker: 'bg-red-600',
+            text: 'text-red-900'
+        } : {
+            bar: 'bg-blue-200',
+            marker: 'bg-blue-600',
+            text: 'text-blue-900'
+        };
+
+        const upliftBar = document.getElementById('uplift-ci-bar');
+        const upliftMarker = document.getElementById('uplift-ci-marker');
+        const lowLabel = document.getElementById('uplift-ci-low');
+        const highLabel = document.getElementById('uplift-ci-high');
+
+        // Calculate relative positions
+        const maxAbsUplift = Math.max(Math.abs(lowUplift), Math.abs(highUplift), Math.abs(upliftValue)) * 1.2;
+        const viewMin = -maxAbsUplift;
+        const viewMax = maxAbsUplift;
+        const toViewPercent = (value) => ((value - viewMin) / (viewMax - viewMin)) * 100;
+
+        // Update visual elements
+        if (upliftBar) {
+            upliftBar.className = `absolute h-full ${colors.bar} rounded-md`;
+            upliftBar.style.left = `${toViewPercent(lowUplift)}%`;
+            upliftBar.style.width = `${toViewPercent(highUplift) - toViewPercent(lowUplift)}%`;
+        }
+
+        if (upliftMarker) {
+            upliftMarker.className = `absolute w-0.5 h-full ${colors.marker} rounded-sm`;
+            upliftMarker.style.left = `${toViewPercent(upliftValue)}%`;
+        }
+
+        if (lowLabel) {
+            lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
+            lowLabel.textContent = formatPercent(lowUplift);
+            lowLabel.style.left = `${toViewPercent(lowUplift)}%`;
+        }
+
+        if (highLabel) {
+            highLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
+            highLabel.textContent = formatPercent(highUplift);
+            highLabel.style.left = `${toViewPercent(highUplift)}%`;
+        }
+
+        // Add zero line
+        const zeroLine = container.querySelector('.zero-line') || document.createElement('div');
+        zeroLine.className = 'absolute h-full w-px bg-gray-400';
+        zeroLine.style.left = `${toViewPercent(0)}%`;
+        if (!container.querySelector('.zero-line')) {
+            container.appendChild(zeroLine);
         }
     }
 }
