@@ -164,24 +164,59 @@ function addWeeklyPattern(dailyVisitors) {
 
 function distributeConversions(totalConversions, dailyVisitors) {
     const numDays = dailyVisitors.length;
-    const conversionRate = totalConversions / dailyVisitors.reduce((sum, v) => sum + v, 0);
+    const avgConversionRate = totalConversions / dailyVisitors.reduce((sum, v) => sum + v, 0);
 
-    // Distribute conversions proportionally to visitors
-    const dailyConversions = dailyVisitors.map(visitors =>
-        Math.round(visitors * conversionRate)
-    );
+    // First, distribute conversions independently with noise
+    const dailyConversions = new Array(numDays).fill(0).map((_, i) => {
+        // Allow conversion rate to vary by ±20% from average
+        const dayRate = avgConversionRate * (1 + (Math.random() * 0.4 - 0.2));
+        // Calculate conversions based on this day's rate
+        return Math.round(dailyVisitors[i] * dayRate);
+    });
 
-    // Adjust to match total
-    const currentTotal = dailyConversions.reduce((sum, v) => sum + v, 0);
-    const diff = totalConversions - currentTotal;
+    // Calculate the current total
+    let currentTotal = dailyConversions.reduce((sum, v) => sum + v, 0);
 
-    if (diff !== 0) {
-        // Add remaining conversions to the first day that has enough visitors
+    // First pass: If we have too many conversions, reduce them proportionally
+    if (currentTotal > totalConversions) {
+        const reduction = totalConversions / currentTotal;
         for (let i = 0; i < numDays; i++) {
-            if (dailyConversions[i] + diff <= dailyVisitors[i]) {
-                dailyConversions[i] += diff;
-                break;
+            dailyConversions[i] = Math.round(dailyConversions[i] * reduction);
+        }
+        currentTotal = dailyConversions.reduce((sum, v) => sum + v, 0);
+    }
+
+    // Second pass: Add any remaining conversions to days that have room
+    let remaining = totalConversions - currentTotal;
+    if (remaining > 0) {
+        // Create array of days with available capacity
+        const daysWithRoom = Array.from({length: numDays}, (_, i) => ({
+            index: i,
+            room: dailyVisitors[i] - dailyConversions[i]
+        })).filter(d => d.room > 0);
+
+        // Distribute remaining conversions randomly among days with capacity
+        while (remaining > 0 && daysWithRoom.length > 0) {
+            const dayIndex = Math.floor(Math.random() * daysWithRoom.length);
+            const day = daysWithRoom[dayIndex];
+
+            const add = Math.min(remaining, day.room);
+            dailyConversions[day.index] += add;
+            remaining -= add;
+
+            // Update or remove the day if it's full
+            day.room -= add;
+            if (day.room <= 0) {
+                daysWithRoom.splice(dayIndex, 1);
             }
+        }
+    }
+
+    // Final validation: ensure no day has more conversions than visitors
+    for (let i = 0; i < numDays; i++) {
+        if (dailyConversions[i] > dailyVisitors[i]) {
+            console.warn(`Day ${i} had more conversions than visitors, capping at visitor count`);
+            dailyConversions[i] = dailyVisitors[i];
         }
     }
 
