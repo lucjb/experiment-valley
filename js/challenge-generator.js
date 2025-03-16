@@ -99,6 +99,24 @@ function computeUpliftConfidenceInterval(baseRate, variantRate, baseVisitors, va
     ];
 }
 
+function distributeDailyVisitors(totalVisitors, numDays) {
+    // Create an array of random weights
+    const weights = Array.from({length: numDays}, () => Math.random());
+    const totalWeight = weights.reduce((a, b) => a + b, 0);
+
+    // Distribute visitors according to weights
+    const dailyVisitors = weights.map(weight => Math.round((weight / totalWeight) * totalVisitors));
+
+    // Adjust for rounding errors
+    const currentTotal = dailyVisitors.reduce((a, b) => a + b, 0);
+    const diff = totalVisitors - currentTotal;
+    if (diff !== 0) {
+        dailyVisitors[0] += diff; // Add any rounding difference to first day
+    }
+
+    return dailyVisitors;
+}
+
 function generateABTestChallenge() {
     // Predefined options for each parameter
     const ALPHA_OPTIONS = [0.1, 0.05, 0.2, 0.01];
@@ -159,10 +177,31 @@ function generateABTestChallenge() {
         observedDifference + diffMarginOfError
     ];
 
-    const dailyData = Array.from({ length: BUSINESS_CYCLE_DAYS }, () => ({
-        base: sampleBinomial(VISITORS_PER_DAY / 2, actualBaseConversionRate) / (VISITORS_PER_DAY / 2),
-        variant: sampleBinomial(VISITORS_PER_DAY / 2, variantConversionRate) / (VISITORS_PER_DAY / 2)
-    }));
+    // Generate daily data for entire runtime
+    const baseVisitorsPerDay = distributeDailyVisitors(actualVisitorsBase, requiredRuntimeDays);
+    const variantVisitorsPerDay = distributeDailyVisitors(actualVisitorsVariant, requiredRuntimeDays);
+
+    const dailyData = Array.from({ length: requiredRuntimeDays }, (_, i) => {
+        const baseVisitors = baseVisitorsPerDay[i];
+        const variantVisitors = variantVisitorsPerDay[i];
+
+        // Sample conversions using the overall conversion rates
+        const baseConversions = sampleBinomial(baseVisitors, actualBaseConversionRate);
+        const variantConversions = sampleBinomial(variantVisitors, variantConversionRate);
+
+        return {
+            base: {
+                visitors: baseVisitors,
+                conversions: baseConversions,
+                rate: baseConversions / baseVisitors
+            },
+            variant: {
+                visitors: variantVisitors,
+                conversions: variantConversions,
+                rate: variantConversions / variantVisitors
+            }
+        };
+    });
 
     // Calculate uplift as relative percentage change
     const actualBaseRate = actualConversionsBase / actualVisitorsBase;

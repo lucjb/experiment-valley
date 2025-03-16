@@ -340,16 +340,16 @@ function renderChart(challenge) {
     new Chart(ctx, {
         type: 'line',
         data: {
-            labels: Array.from({length: challenge.experiment.businessCycleDays}, (_, i) => `Day ${i + 1}`),
+            labels: Array.from({length: challenge.experiment.requiredRuntimeDays}, (_, i) => `Day ${i + 1}`),
             datasets: [{
                 label: 'Base Variant',
-                data: challenge.simulation.dailyData.map(d => d.base),
+                data: challenge.simulation.dailyData.map(d => d.base.rate),
                 borderColor: 'rgb(147, 51, 234)',
                 backgroundColor: 'rgba(147, 51, 234, 0.1)',
                 fill: true
             }, {
                 label: 'Test Variant',
-                data: challenge.simulation.dailyData.map(d => d.variant),
+                data: challenge.simulation.dailyData.map(d => d.variant.rate),
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: true
@@ -367,7 +367,12 @@ function renderChart(challenge) {
                     intersect: false,
                     callbacks: {
                         label: function(context) {
-                            return `${context.dataset.label}: ${formatPercent(context.raw)}`;
+                            const dataPoint = challenge.simulation.dailyData[context.dataIndex][context.dataset.label === 'Base Variant' ? 'base' : 'variant'];
+                            return [
+                                `${context.dataset.label}: ${formatPercent(context.raw)}`,
+                                `Visitors: ${dataPoint.visitors}`,
+                                `Conversions: ${dataPoint.conversions}`
+                            ];
                         }
                     }
                 }
