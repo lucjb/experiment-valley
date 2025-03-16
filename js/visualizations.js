@@ -312,6 +312,15 @@ function updateConfidenceIntervals(challenge) {
         if (!container.querySelector('.zero-line')) {
             container.appendChild(zeroLine);
         }
+
+        // Add zero label
+        const zeroLabel = container.querySelector('.zero-label') || document.createElement('span');
+        zeroLabel.className = 'zero-label absolute text-xs font-medium transform -translate-x-1/2 text-gray-400 top-1/2 -translate-y-1/2';
+        zeroLabel.style.left = `${toViewPercent(0)}%`;
+        zeroLabel.textContent = '0%';
+        if (!container.querySelector('.zero-label')) {
+            container.appendChild(zeroLabel);
+        }
     }
 }
 
