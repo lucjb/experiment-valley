@@ -109,60 +109,32 @@ function distributeDailyVisitors(totalVisitors, numDays) {
     const remainder = totalVisitors - (baseVisitorsPerDay * numDays);
     dailyVisitors[0] += remainder;
 
-    // Add variance by moving visitors between random days
-    const numShuffles = 10;
-    for (let i = 0; i < numShuffles; i++) {
-        // Pick two random days
-        const dayA = Math.floor(Math.random() * numDays);
-        let dayB = Math.floor(Math.random() * numDays);
-        while (dayB === dayA) {
-            dayB = Math.floor(Math.random() * numDays);
-        }
-
-        // Find day with more visitors
-        const [largerDay, smallerDay] = dailyVisitors[dayA] > dailyVisitors[dayB]
-            ? [dayA, dayB]
-            : [dayB, dayA];
-
-        // Calculate maximum possible transfer
-        const maxTransfer = Math.min(
-            dailyVisitors[largerDay] - Math.floor(baseVisitorsPerDay * 0.5), // Don't go below 50% of base
-            Math.floor(baseVisitorsPerDay * 0.5) // Don't add more than 50% of base
-        );
-
-        if (maxTransfer > 0) {
-            const transfer = Math.floor(Math.random() * maxTransfer);
-            dailyVisitors[largerDay] -= transfer;
-            dailyVisitors[smallerDay] += transfer;
-        }
-    }
-
     return dailyVisitors;
 }
 
 function distributeConversions(totalConversions, dailyVisitors) {
     const numDays = dailyVisitors.length;
-    const dailyConversions = new Array(numDays).fill(0);
+    const baseConversionsPerDay = Math.floor(totalConversions / numDays);
+    const dailyConversions = new Array(numDays).fill(baseConversionsPerDay);
 
-    // For each conversion, assign to a random day that has available visitors
-    let remainingConversions = totalConversions;
+    // Add remainder to first day
+    const remainder = totalConversions - (baseConversionsPerDay * numDays);
+    dailyConversions[0] += remainder;
 
-    while (remainingConversions > 0) {
-        // Create array of days that still have room for conversions
-        const availableDays = dailyVisitors.map((visitors, day) => ({
-            day,
-            available: visitors - dailyConversions[day]
-        })).filter(d => d.available > 0);
-
-        if (availableDays.length === 0) break; // Safety check
-
-        // Pick a random day from available days
-        const randomIndex = Math.floor(Math.random() * availableDays.length);
-        const chosenDay = availableDays[randomIndex].day;
-
-        // Add a conversion to that day
-        dailyConversions[chosenDay]++;
-        remainingConversions--;
+    // Ensure conversions don't exceed visitors for any day
+    for (let i = 0; i < numDays; i++) {
+        if (dailyConversions[i] > dailyVisitors[i]) {
+            const excess = dailyConversions[i] - dailyVisitors[i];
+            dailyConversions[i] = dailyVisitors[i];
+            // Add excess to next day that has room
+            for (let j = i + 1; j < numDays; j++) {
+                const room = dailyVisitors[j] - dailyConversions[j];
+                if (room > 0) {
+                    dailyConversions[j] += Math.min(excess, room);
+                    break;
+                }
+            }
+        }
     }
 
     return dailyConversions;
