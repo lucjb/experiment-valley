@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Interactive A/B Testing educational platform. Practice statistical analysis and decision making with simulated experiments.">
-    <title>A/B Testing Gym - Learn Statistical Analysis</title>
+    <title>Learn Statistical Analysis</title>
 
     <!-- CDN Resources -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
@@ -36,24 +36,26 @@
 </head>
 <body class="bg-gray-50 text-gray-900">
     <div class="max-w-6xl mx-auto p-2 md:p-4">
-        <header class="flex justify-between items-center mb-4 bg-white rounded-lg shadow p-3">
-            <div class="flex items-center">
-                <h1 class="text-3xl font-bold text-blue-600 mr-4">A/B Testing Gym</h1>
-                <p class="text-lg text-gray-700 hidden md:block">Master statistical analysis through practice</p>
+        <header class="flex flex-col bg-white rounded-lg shadow p-3 mb-4">
+            <div class="flex justify-between items-center">
+                <div class="flex space-x-6">
+                    <div>
+                        <span class="font-semibold text-gray-600">Score: </span>
+                        <span id="score" class="text-xl text-green-600">0</span>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-gray-600">Streak: </span>
+                        <span id="streak" class="text-xl text-orange-600">0</span>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-gray-600">Accuracy: </span>
+                        <span id="accuracy" class="text-xl text-purple-600">0%</span>
+                    </div>
+                </div>
+                <div class="text-sm font-medium text-gray-700">Experiment <span id="current-experiment">1</span>/3</div>
             </div>
-            <div class="flex space-x-6">
-                <div>
-                    <span class="font-semibold text-gray-600">Score: </span>
-                    <span id="score" class="text-xl text-green-600">0</span>
-                </div>
-                <div>
-                    <span class="font-semibold text-gray-600">Streak: </span>
-                    <span id="streak" class="text-xl text-orange-600">0</span>
-                </div>
-                <div>
-                    <span class="font-semibold text-gray-600">Accuracy: </span>
-                    <span id="accuracy" class="text-xl text-purple-600">0%</span>
-                </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
             </div>
         </header>
 
@@ -110,17 +112,6 @@
         </div>
 
         <div id="challenge-container" class="hidden">
-            <!-- Progress Bar -->
-            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-4">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="text-sm font-medium text-gray-700">Progress</div>
-                    <div class="text-sm font-medium text-gray-700">Experiment <span id="current-experiment">1</span>/3</div>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2.5">
-                    <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 33%"></div>
-                </div>
-            </div>
-
             <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-4">
                 <div class="flex items-center space-x-6">
                     <h2 class="text-xl font-semibold text-gray-800 whitespace-nowrap">Decision Making:</h2>
