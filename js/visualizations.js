@@ -735,27 +735,24 @@ function renderVisitorsChart(challenge) {
         resetZoomButton.style.display = 'none';
     };
 
-    // Add view toggle
-    const toggleContainer = document.createElement('div');
-    toggleContainer.className = 'mt-2 flex items-center justify-end';
-    toggleContainer.innerHTML = `
-        <select id="visitors-view-toggle" class="px-2 py-1 border rounded text-sm">
-            <option value="daily">Regular View</option>
-            <option value="cumulative">Cumulative View</option>
-        </select>
-    `;
-    chartContainer.insertBefore(toggleContainer, resetZoomButton);
+    // Update view toggle with correct period type
+    const viewToggle = document.getElementById('visitors-view-toggle');
+    if (viewToggle) {
+        // Update first option based on time period
+        const periodOption = viewToggle.options[0];
+        periodOption.text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
 
-    // Add event listener for the toggle
-    document.getElementById('visitors-view-toggle').addEventListener('change', function(e) {
-        const viewType = e.target.value;
-        const datasets = createDatasets(viewType);
-        chart.data.datasets = datasets;
-        chart.options.plugins.title.text = viewType === 'daily' ? 
-            `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Visitors` : 
-            'Cumulative Visitors';
-        chart.update();
-    });
+        // Add event listener for the toggle
+        viewToggle.addEventListener('change', function(e) {
+            const viewType = e.target.value;
+            const datasets = createDatasets(viewType);
+            chart.data.datasets = datasets;
+            chart.options.plugins.title.text = viewType === 'daily' ? 
+                `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Visitors` : 
+                'Cumulative Visitors';
+            chart.update();
+        });
+    }
 
     return chart;
 }
