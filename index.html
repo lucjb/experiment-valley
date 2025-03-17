@@ -12,6 +12,24 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
 
+    <style>
+        .fade-out {
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+        .fade-in {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.5s ease-in, transform 0.5s ease-in;
+        }
+        .experiment-section {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+    </style>
+
     <!-- Application Scripts -->
     <script src="js/challenge-generator.js"></script>
     <script src="js/visualizations.js"></script>
@@ -357,14 +375,6 @@
             document.getElementById('current-experiment').textContent = currentExperiment;
         }
 
-        function showCompletionModal() {
-            console.log('Showing completion modal');
-            document.getElementById('final-score').textContent = score;
-            document.getElementById('final-accuracy').textContent = `${Math.round((score / totalAttempts) * 100)}%`;
-            document.getElementById('completion-modal').classList.remove('hidden');
-            document.getElementById('challenge-container').classList.add('hidden');
-        }
-
         async function loadChallenge() {
             console.log('Loading challenge for experiment:', currentExperiment, 'of', EXPERIMENTS_PER_SESSION);
             // Check if we've completed all experiments
@@ -373,6 +383,12 @@
                 showCompletionModal();
                 return;
             }
+
+            const experimentContainer = document.getElementById('challenge-container');
+            experimentContainer.classList.add('fade-out');
+
+            // Wait for fade out animation
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             showLoading('loading-overlay');
             resetDecisions();
@@ -386,7 +402,6 @@
                 }
 
                 challenge = generateABTestChallenge();
-
                 const formatPercentage = (value) => {
                     const percentage = value * 100;
                     return Number.isInteger(percentage) ? `${percentage}%` : `${percentage.toFixed(1)}%`;
@@ -435,6 +450,10 @@
                 setTimeout(() => {
                     hideLoading('chart-loading');
                     initializeCharts(challenge);
+
+                    // Fade in the new experiment
+                    experimentContainer.classList.remove('fade-out');
+                    experimentContainer.classList.add('fade-in');
                 }, 500);
 
             } catch (error) {
@@ -442,6 +461,27 @@
             } finally {
                 hideLoading('loading-overlay');
             }
+        }
+
+        function showCompletionModal() {
+            console.log('Showing completion modal');
+            const experimentContainer = document.getElementById('challenge-container');
+            const completionModal = document.getElementById('completion-modal');
+
+            // Fade out experiment container
+            experimentContainer.classList.add('fade-out');
+
+            setTimeout(() => {
+                experimentContainer.classList.add('hidden');
+                document.getElementById('final-score').textContent = score;
+                document.getElementById('final-accuracy').textContent = `${Math.round((score / totalAttempts) * 100)}%`;
+
+                // Show and fade in completion modal
+                completionModal.classList.remove('hidden');
+                setTimeout(() => {
+                    completionModal.classList.add('fade-in');
+                }, 10);
+            }, 500);
         }
 
         async function evaluateDecision(userChoice) {
@@ -482,7 +522,7 @@
                 document.getElementById('modal-streak').textContent = streak;
                 document.getElementById('modal-accuracy').textContent = `${accuracy}%`;
 
-                // Check if this was the last experiment of the session
+                                // Check if this was the last experiment of the session
                 console.log('Checking if last experiment:', currentExperiment, 'of', EXPERIMENTS_PER_SESSION);
                 if (currentExperiment === EXPERIMENTS_PER_SESSION) {
                     document.getElementById('next-challenge-btn').textContent = 'Complete Session';
@@ -568,9 +608,14 @@
             evaluateDecision(implementDecision);
         });
 
-        document.getElementById('next-challenge-btn').addEventListener('click', function() {
-            console.log('Next challenge clicked, current experiment:', currentExperiment);
-            document.getElementById('feedback-modal').classList.add('hidden');
+        document.getElementById('next-challenge-btn').addEventListener('click', async function() {
+            const feedbackModal = document.getElementById('feedback-modal');
+            feedbackModal.classList.add('fade-out');
+
+            // Wait for fade out animation
+            await new Promise(resolve => setTimeout(resolve, 500));
+            feedbackModal.classList.add('hidden');
+            feedbackModal.classList.remove('fade-out');
 
             // First increment the counter
             currentExperiment++;
@@ -579,6 +624,11 @@
             // Then check if we should show completion
             if (currentExperiment > EXPERIMENTS_PER_SESSION) {
                 console.log('Session complete, showing completion modal');
+                const completionModal = document.getElementById('completion-modal');
+                completionModal.classList.remove('hidden');
+                setTimeout(() => {
+                    completionModal.classList.add('fade-in');
+                }, 10);
                 showCompletionModal();
             } else {
                 console.log('Loading next experiment:', currentExperiment);
@@ -590,16 +640,29 @@
 
         document.getElementById('start-new-session').addEventListener('click', function() {
             console.log('Starting new session');
-            document.getElementById('completion-modal').classList.add('hidden');
-            document.getElementById('challenge-container').classList.remove('hidden');
-            score = 0;
-            streak = 0;
-            totalAttempts = 0;
-            currentExperiment = 1;
-            document.getElementById('score').textContent = '0';
-            document.getElementById('streak').textContent = '0';
-            document.getElementById('accuracy').textContent = '0%';
-            loadChallenge();
+            const completionModal = document.getElementById('completion-modal');
+            const experimentContainer = document.getElementById('challenge-container');
+
+            completionModal.classList.add('fade-out');
+
+            setTimeout(() => {
+                completionModal.classList.add('hidden');
+                completionModal.classList.remove('fade-out', 'fade-in');
+
+                experimentContainer.classList.remove('hidden');
+                setTimeout(() => {
+                    experimentContainer.classList.add('fade-in');
+                }, 10);
+
+                score = 0;
+                streak = 0;
+                totalAttempts = 0;
+                currentExperiment = 1;
+                document.getElementById('score').textContent = '0';
+                document.getElementById('streak').textContent = '0';
+                document.getElementById('accuracy').textContent = '0%';
+                loadChallenge();
+            }, 500);
         });
 
         document.querySelectorAll('.tab-button').forEach(button => {
