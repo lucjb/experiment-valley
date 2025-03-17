@@ -57,63 +57,56 @@
             </div>
         </header>
 
-        <div id="tutorial-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
-            <div class="relative top-20 mx-auto p-5 border w-[800px] shadow-lg rounded-md bg-white">
-                <div class="mt-3">
-                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Welcome to A/B Testing Gym!</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <h4 class="text-lg font-semibold text-blue-600 mb-2">What is A/B Testing?</h4>
-                            <p class="text-gray-700">A/B testing is a way to compare two versions of something (like a website) to see which performs better. We'll help you practice making data-driven decisions!</p>
-                        </div>
+        <!-- Tutorial Section -->
+        <div id="tutorial-section" class="bg-white rounded-lg shadow-lg border border-gray-200 p-8 mb-6">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6 text-center">Welcome to A/B Testing Gym!</h2>
 
-                        <div>
-                            <h4 class="text-lg font-semibold text-blue-600 mb-2">How to Play</h4>
-                            <ul class="list-disc pl-5 space-y-2 text-gray-700">
-                                <li>You'll face 3 different experiments</li>
-                                <li>For each experiment, you'll need to make two decisions:
-                                    <ul class="list-circle pl-5 mt-1">
-                                        <li>Is the experiment trustworthy?</li>
-                                        <li>Should we implement the new variant?</li>
-                                    </ul>
-                                </li>
-                                <li>Your score increases when you make correct implementation decisions</li>
-                            </ul>
-                        </div>
+            <div class="space-y-8 max-w-4xl mx-auto">
+                <div>
+                    <h3 class="text-xl font-semibold text-blue-600 mb-3">What is A/B Testing?</h3>
+                    <p class="text-gray-700 text-lg">A/B testing is a way to compare two versions of something (like a website) to see which performs better. We'll help you practice making data-driven decisions!</p>
+                </div>
 
-                        <div>
-                            <h4 class="text-lg font-semibold text-blue-600 mb-2">What You'll See</h4>
-                            <ul class="list-disc pl-5 space-y-2 text-gray-700">
-                                <li><span class="font-medium">Experiment Design:</span> Shows statistical parameters and sample size requirements</li>
-                                <li><span class="font-medium">Results Analysis:</span> Includes detailed metrics and interactive visualizations</li>
-                                <li><span class="font-medium">Confidence Intervals:</span> Visual representation of statistical uncertainty</li>
-                                <li><span class="font-medium">Conversion Charts:</span> Track how rates change over time</li>
+                <div>
+                    <h3 class="text-xl font-semibold text-blue-600 mb-3">How to Play</h3>
+                    <ul class="list-disc pl-6 space-y-2 text-gray-700 text-lg">
+                        <li>You'll face 3 different experiments</li>
+                        <li>For each experiment, you'll need to make two decisions:
+                            <ul class="list-circle pl-6 mt-2">
+                                <li>Is the experiment trustworthy?</li>
+                                <li>Should we implement the new variant?</li>
                             </ul>
-                        </div>
+                        </li>
+                        <li>Your score increases when you make correct implementation decisions</li>
+                    </ul>
+                </div>
 
-                        <div>
-                            <h4 class="text-lg font-semibold text-blue-600 mb-2">Tips for Success</h4>
-                            <ul class="list-disc pl-5 space-y-2 text-gray-700">
-                                <li>Check if the sample size is large enough</li>
-                                <li>Look for overlapping confidence intervals</li>
-                                <li>Consider both statistical significance (p-value) and practical significance</li>
-                                <li>Watch for unusual patterns in the conversion charts</li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="mt-6 text-center">
-                        <button id="start-tutorial" class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition">
-                            Let's Start!
-                        </button>
-                    </div>
+                <div>
+                    <h3 class="text-xl font-semibold text-blue-600 mb-3">What You'll See</h3>
+                    <ul class="list-disc pl-6 space-y-2 text-gray-700 text-lg">
+                        <li><span class="font-medium">Experiment Design:</span> Shows statistical parameters and sample size requirements</li>
+                        <li><span class="font-medium">Results Analysis:</span> Includes detailed metrics and interactive visualizations</li>
+                        <li><span class="font-medium">Confidence Intervals:</span> Visual representation of statistical uncertainty</li>
+                        <li><span class="font-medium">Conversion Charts:</span> Track how rates change over time</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold text-blue-600 mb-3">Tips for Success</h3>
+                    <ul class="list-disc pl-6 space-y-2 text-gray-700 text-lg">
+                        <li>Check if the sample size is large enough</li>
+                        <li>Look for overlapping confidence intervals</li>
+                        <li>Consider both statistical significance (p-value) and practical significance</li>
+                        <li>Watch for unusual patterns in the conversion charts</li>
+                    </ul>
+                </div>
+
+                <div class="text-center mt-8">
+                    <button id="start-btn" class="px-8 py-4 bg-blue-500 text-white text-xl font-bold rounded-lg shadow-lg hover:bg-blue-600 transform hover:scale-105 transition-all">
+                        Start Challenge
+                    </button>
                 </div>
             </div>
-        </div>
-
-        <div class="flex justify-center mb-4">
-            <button id="start-btn" class="px-6 py-2 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition">
-                Start Challenge
-            </button>
         </div>
 
         <div id="challenge-container" class="hidden">
@@ -396,7 +389,6 @@
                 </div>
             </div>
         </div>
-    </div>
     <script>
         let score = 0;
         let streak = 0;
@@ -540,8 +532,7 @@
                 if (userChoice === correctDecision) {
                     score++;
                     streak++;
-                    document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';
-                    document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                    document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';                    document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
                     document.getElementById('feedback-title').textContent = 'Correct!';
                     document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-green-900 mt-4';
                 } else {
@@ -576,8 +567,17 @@
         document.getElementById('start-btn').addEventListener('click', function(event) {
             event.preventDefault();
             console.log('Start button clicked');
-            document.getElementById('tutorial-modal').classList.remove('hidden');
 
+            // Fade out tutorial section
+            const tutorialSection = document.getElementById('tutorial-section');
+            tutorialSection.classList.add('fade-out');
+
+            // Wait for fade out animation
+            setTimeout(() => {
+                tutorialSection.classList.add('hidden');
+                document.getElementById('challenge-container').classList.remove('hidden');
+                loadChallenge();
+            }, 500);
         });
 
 
@@ -753,18 +753,6 @@
             document.querySelector('#current-experiment').parentElement.parentElement.querySelector('.text-sm.font-medium.text-gray-700:nth-child(2)').textContent = `Experiment ${currentExperiment}/${EXPERIMENTS_PER_SESSION}`;
 
         }
-
-        document.getElementById('start-tutorial').addEventListener('click', function() {
-            document.getElementById('tutorial-modal').classList.add('fade-out');
-
-            setTimeout(() => {
-                document.getElementById('tutorial-modal').classList.add('hidden');
-                document.getElementById('tutorial-modal').classList.remove('fade-out');
-                document.getElementById('challenge-container').classList.remove('hidden');
-                document.getElementById('start-btn').classList.add('hidden');
-                loadChallenge();
-            }, 500);
-        })
 
     </script>
 </body>
