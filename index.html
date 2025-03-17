@@ -309,11 +309,12 @@
         let trustDecision = null;
         let implementDecision = null;
         let currentExperiment = 1;
-        const EXPERIMENTS_PER_SESSION = 3;
+        const EXPERIMENTS_PER_SESSION = 3;  // Easy to modify for future changes (e.g., 10 or 15)
 
         function updateProgress() {
             document.getElementById('current-experiment').textContent = currentExperiment;
-            const progressPercent = (currentExperiment - 1) / EXPERIMENTS_PER_SESSION * 100;
+            // Calculate progress based on completed experiments
+            const progressPercent = ((currentExperiment - 1) / EXPERIMENTS_PER_SESSION) * 100;
             document.getElementById('progress-bar').style.width = `${progressPercent}%`;
         }
 
@@ -321,19 +322,11 @@
             document.getElementById('final-score').textContent = score;
             document.getElementById('final-accuracy').textContent = `${Math.round((score / totalAttempts) * 100)}%`;
             document.getElementById('completion-modal').classList.remove('hidden');
-        }
-
-        function shareOnTwitter() {
-            const text = `I just completed the A/B Testing Gym challenge with a score of ${score} and ${Math.round((score / totalAttempts) * 100)}% accuracy! Try it yourself!`;
-            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`);
-        }
-
-        function shareOnLinkedIn() {
-            const text = `I just completed the A/B Testing Gym challenge with a score of ${score} and ${Math.round((score / totalAttempts) * 100)}% accuracy! Try it yourself!`;
-            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(text)}`);
+            document.getElementById('challenge-container').classList.add('hidden');
         }
 
         async function loadChallenge() {
+            // Check if we've completed all experiments
             if (currentExperiment > EXPERIMENTS_PER_SESSION) {
                 showCompletionModal();
                 return;
@@ -475,7 +468,11 @@
 
         document.getElementById('next-challenge-btn').addEventListener('click', function() {
             document.getElementById('feedback-modal').classList.add('hidden');
+
+            // Increment experiment counter before loading next challenge
             currentExperiment++;
+
+            // Load next challenge or show completion modal
             loadChallenge();
         });
 
@@ -549,7 +546,7 @@
                 <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
                     <div class="mt-3 text-center">
                         <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                            <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="h-6 w-6 text-green-600" fill="none" strokecurrentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
                         </div>
@@ -584,6 +581,7 @@
         document.body.insertAdjacentHTML('beforeend', completionModal);
 
 
+
         document.getElementById('next-challenge-btn').addEventListener('click', function() {
             document.getElementById('feedback-modal').classList.add('hidden');
             currentExperiment++;
@@ -592,6 +590,7 @@
 
         document.getElementById('start-new-session').addEventListener('click', function() {
             document.getElementById('completion-modal').classList.add('hidden');
+            document.getElementById('challenge-container').classList.remove('hidden');
             score = 0;
             streak = 0;
             totalAttempts = 0;
