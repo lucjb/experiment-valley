@@ -292,8 +292,13 @@
 
             challenge = generateABTestChallenge();
 
-            document.getElementById('exp-alpha').textContent = `${(challenge.experiment.alpha * 100).toFixed(1)}%`;
-            document.getElementById('exp-beta').textContent = `${((1 - challenge.experiment.beta) * 100).toFixed(1)}%`;
+            const formatPercentage = (value) => {
+                const percentage = value * 100;
+                return Number.isInteger(percentage) ? `${percentage}%` : `${percentage.toFixed(1)}%`;
+            };
+
+            document.getElementById('exp-alpha').textContent = formatPercentage(challenge.experiment.alpha);
+            document.getElementById('exp-beta').textContent = formatPercentage(1 - challenge.experiment.beta);
             document.getElementById('exp-base-rate').textContent = `${(challenge.experiment.baseConversionRate * 100).toFixed(2)}%`;
             document.getElementById('exp-min-effect').textContent = `${(challenge.experiment.minimumRelevantEffect * 100).toFixed(2)}%`;
             document.getElementById('exp-visitors').textContent = challenge.experiment.visitorsPerDay.toLocaleString();
@@ -321,13 +326,11 @@
             document.getElementById('delta-conversions').textContent = formatDelta(challenge.simulation.actualConversionsVariant - challenge.simulation.actualConversionsBase);
             document.getElementById('delta-rate').textContent = formatDelta(challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate, true);
 
-            // Format uplift values with + or - sign and percentage
             const formatUplift = (value) => {
                 const sign = value > 0 ? '+' : '';
                 return `${sign}${(value * 100).toFixed(2)}%`;
             };
 
-            // Update uplift row
             document.getElementById('visitor-uplift').textContent = formatUplift(challenge.simulation.visitorUplift);
             document.getElementById('conversion-uplift').textContent = formatUplift(challenge.simulation.conversionUplift);
             document.getElementById('uplift-value').textContent = formatUplift(challenge.simulation.uplift);
@@ -418,28 +421,22 @@
         loadChallenge();
     });
 
-    // Add tab switching functionality
     document.querySelectorAll('.tab-button').forEach(button => {
         button.addEventListener('click', () => {
-            // Remove active state from all buttons
             document.querySelectorAll('.tab-button').forEach(btn => {
                 btn.classList.remove('border-blue-500', 'text-blue-600');
                 btn.classList.add('text-gray-500');
             });
 
-            // Add active state to clicked button
             button.classList.remove('text-gray-500');
             button.classList.add('border-blue-500', 'text-blue-600');
 
-            // Hide all tab content
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.add('hidden');
             });
 
-            // Show selected tab content
             document.getElementById(`${button.dataset.tab}-tab`).classList.remove('hidden');
 
-            // Trigger resize event to ensure charts render properly when shown
             if (button.dataset.tab === 'charts') {
                 window.dispatchEvent(new Event('resize'));
             }
