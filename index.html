@@ -312,10 +312,10 @@
         const EXPERIMENTS_PER_SESSION = 3;  // Easy to modify for future changes (e.g., 10 or 15)
 
         function updateProgress() {
+            const progressBar = document.getElementById('progress-bar');
+            const progressPercentage = ((currentExperiment - 1) / EXPERIMENTS_PER_SESSION) * 100;
+            progressBar.style.width = `${progressPercentage}%`;
             document.getElementById('current-experiment').textContent = currentExperiment;
-            // Calculate progress based on current experiment
-            const progressPercent = ((currentExperiment - 1) / EXPERIMENTS_PER_SESSION) * 100;
-            document.getElementById('progress-bar').style.width = `${progressPercent}%`;
         }
 
         function showCompletionModal() {
@@ -413,11 +413,6 @@
             showLoading('loading-overlay');
 
             try {
-                document.getElementById('decision-yes').disabled = true;
-                document.getElementById('decision-no').disabled = true;
-                document.getElementById('decision-yes').classList.add('opacity-50', 'cursor-not-allowed');
-                document.getElementById('decision-no').classList.add('opacity-50', 'cursor-not-allowed');
-
                 totalAttempts++;
                 const correctDecision = challenge.simulation.variantConversionRate > challenge.simulation.actualBaseConversionRate;
 
@@ -445,6 +440,11 @@
                 document.getElementById('modal-streak').textContent = streak;
                 document.getElementById('modal-accuracy').textContent = `${accuracy}%`;
 
+                // Check if this was the last experiment of the session
+                if (currentExperiment === EXPERIMENTS_PER_SESSION) {
+                    document.getElementById('next-challenge-btn').textContent = 'Complete Session';
+                }
+
             } finally {
                 hideLoading('loading-overlay');
                 document.getElementById('feedback-modal').classList.remove('hidden');
@@ -468,8 +468,14 @@
 
         document.getElementById('next-challenge-btn').addEventListener('click', function() {
             document.getElementById('feedback-modal').classList.add('hidden');
-            currentExperiment++;
-            loadChallenge();
+
+            if (currentExperiment === EXPERIMENTS_PER_SESSION) {
+                showCompletionModal();
+            } else {
+                currentExperiment++;
+                updateProgress();
+                loadChallenge();
+            }
         });
 
         document.querySelectorAll('.tab-button').forEach(button => {
@@ -579,8 +585,13 @@
 
         document.getElementById('next-challenge-btn').addEventListener('click', function() {
             document.getElementById('feedback-modal').classList.add('hidden');
-            currentExperiment++;
-            loadChallenge();
+            if (currentExperiment === EXPERIMENTS_PER_SESSION) {
+                showCompletionModal();
+            } else {
+                currentExperiment++;
+                updateProgress();
+                loadChallenge();
+            }
         });
 
         document.getElementById('start-new-session').addEventListener('click', function() {
