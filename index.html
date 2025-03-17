@@ -313,7 +313,7 @@
 
         function updateProgress() {
             document.getElementById('current-experiment').textContent = currentExperiment;
-            // Calculate progress based on completed experiments
+            // Calculate progress based on current experiment
             const progressPercent = ((currentExperiment - 1) / EXPERIMENTS_PER_SESSION) * 100;
             document.getElementById('progress-bar').style.width = `${progressPercent}%`;
         }
@@ -468,11 +468,7 @@
 
         document.getElementById('next-challenge-btn').addEventListener('click', function() {
             document.getElementById('feedback-modal').classList.add('hidden');
-
-            // Increment experiment counter before loading next challenge
             currentExperiment++;
-
-            // Load next challenge or show completion modal
             loadChallenge();
         });
 
@@ -513,13 +509,13 @@
             if (decisionType === 'trust') {
                 trustDecision = value;
                 trustButtons.forEach(btn => {
-                    btn.classList.remove('bg-blue-700');
+                    btn.classList.remove('bg-green-700', 'bg-red-700');
                     btn.disabled = false;
                 });
                 if (value) {
-                    document.getElementById('trust-yes').classList.add('bg-blue-700');
+                    document.getElementById('trust-yes').classList.add('bg-green-700');
                 } else {
-                    document.getElementById('trust-no').classList.add('bg-blue-700');
+                    document.getElementById('trust-no').classList.add('bg-red-700');
                 }
             } else if (decisionType === 'implement') {
                 implementDecision = value;
@@ -540,13 +536,12 @@
         }
 
 
-        // Add the completion modal HTML here
         const completionModal = `
             <div id="completion-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflowy-auto h-full w-full z-50">
                 <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
                     <div class="mt-3 text-center">
                         <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                            <svg class="h-6 w-6 text-green-600" fill="none" strokecurrentColor" viewBox="0 0 24 24">
+                            <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
                         </div>
