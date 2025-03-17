@@ -74,115 +74,94 @@
 
             <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-4">
                 <h2 class="text-2xl font-semibold text-gray-800 mb-3">Results Analysis</h2>
-                <div class="overflow-x-auto">
-                    <table class="w-full border-collapse border">
-                        <thead>
-                            <tr class="bg-gray-100">
-                                <th class="border px-3 py-2 text-left w-24">Variant</th>
-                                <th class="border px-3 py-2 text-left w-24">Visitors</th>
-                                <th class="border px-3 py-2 text-left w-24">Conversions</th>
-                                <th class="border px-3 py-2 text-left w-28">Rate</th>
-                                <th class="border px-3 py-2 text-left">95% Confidence Interval</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="border px-4 py-1 font-semibold min-w-[6rem]">Base</td>
-                                <td class="border px-4 py-1 min-w-[6rem]" id="base-visitors"></td>
-                                <td class="border px-4 py-1 min-w-[6rem]" id="base-conversions"></td>
-                                <td class="border px-4 py-1 min-w-[7rem]" id="base-rate"></td>
-                                <td class="border px-2 py-1">
-                                    <div id="base-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
-                                        <div class="absolute h-full bg-blue-200 rounded-md"></div>
-                                        <div class="absolute w-0.5 h-full bg-blue-600 rounded-sm"></div>
-                                        <span id="base-ci-low" class="absolute text-xs font-medium transform -translate-x-1/2 text-blue-900 top-1/2 -translate-y-1/2 drop-shadow-sm"></span>
-                                        <span id="base-ci-high" class="absolute text-xs font-medium transform -translate-x-1/2 text-blue-900 top-1/2 -translate-y-1/2 drop-shadow-sm"></span>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="border px-4 py-1 font-semibold min-w-[6rem]">Variant</td>
-                                <td class="border px-4 py-1 min-w-[6rem]" id="variant-visitors"></td>
-                                <td class="border px-4 py-1 min-w-[6rem]" id="variant-conversions"></td>
-                                <td class="border px-4 py-1 min-w-[7rem]" id="variant-rate"></td>
-                                <td class="border px-2 py-1">
-                                    <div id="variant-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
-                                        <div class="absolute h-full bg-purple-200 rounded-md"></div>
-                                        <div class="absolute w-0.5 h-full bg-purple-600 rounded-sm"></div>
-                                        <span id="variant-ci-low" class="absolute text-xs font-medium transform -translate-x-1/2 text-purple-900 top-1/2 -translate-y-1/2 drop-shadow-sm"></span>
-                                        <span id="variant-ci-high" class="absolute text-xs font-medium transform -translate-x-1/2 text-purple-900 top-1/2 -translate-y-1/2 drop-shadow-sm"></span>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr class="bg-gray-50">
-                                <td class="border px-4 py-1 font-semibold min-w-[6rem]">Delta</td>
-                                <td class="border px-4 py-1 min-w-[6rem]" id="delta-visitors"></td>
-                                <td class="border px-4 py-1 min-w-[6rem]" id="delta-conversions"></td>
-                                <td class="border px-4 py-1 min-w-[7rem]" id="delta-rate"></td>
-                                <td class="border px-2 py-1">
-                                    <div id="diff-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
-                                        <div id="diff-ci-bar" class="absolute h-full rounded-md"></div>
-                                        <div id="diff-ci-marker" class="absolute w-0.5 h-full rounded-sm"></div>
-                                        <span id="diff-ci-low" class="absolute text-xs font-medium"></span>
-                                        <span id="diff-ci-high" class="absolute text-xs font-medium"></span>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr class="bg-gray-50">
-                                <td class="border px-4 py-1 font-semibold min-w-[6rem]">Uplift</td>
-                                <td class="border px-4 py-1 min-w-[6rem]" id="visitor-uplift"></td>
-                                <td class="border px-4 py-1 min-w-[6rem]" id="conversion-uplift"></td>
-                                <td class="border px-4 py-1 min-w-[7rem]" id="uplift-value"></td>
-                                <td class="border px-2 py-1">
-                                    <div id="uplift-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
-                                        <div id="uplift-ci-bar" class="absolute h-full rounded-md"></div>
-                                        <div id="uplift-ci-marker" class="absolute w-0.5 h-full rounded-sm"></div>
-                                        <span id="uplift-ci-low" class="absolute text-xs font-medium"></span>
-                                        <span id="uplift-ci-high" class="absolute text-xs font-medium"></span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+
+                <!-- Tab Navigation -->
+                <div class="border-b border-gray-200">
+                    <nav class="flex -mb-px">
+                        <button class="tab-button px-4 py-2 font-medium text-sm leading-5 rounded-t-lg border-b-2 border-blue-500 text-blue-600 bg-white focus:outline-none" data-tab="metrics">
+                            Metrics Table
+                        </button>
+                        <button class="tab-button px-4 py-2 font-medium text-sm leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none ml-4" data-tab="charts">
+                            Visualization Charts
+                        </button>
+                    </nav>
                 </div>
 
-                <div class="mt-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="text-xl font-semibold">Conversion Rates</h3>
-                        <div class="flex items-center space-x-2">
-                            <label class="text-sm text-gray-600">View:</label>
-                            <select id="chart-view-toggle" class="form-select text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                <option value="daily">Daily View</option>
-                                <option value="cumulative">Cumulative View</option>
-                            </select>
-                        </div>
+                <!-- Tab Content -->
+                <div id="metrics-tab" class="tab-content">
+                    <div class="overflow-x-auto mt-4">
+                        <table class="w-full border-collapse border">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="border px-3 py-2 text-left w-24">Variant</th>
+                                    <th class="border px-3 py-2 text-left w-24">Visitors</th>
+                                    <th class="border px-3 py-2 text-left w-24">Conversions</th>
+                                    <th class="border px-3 py-2 text-left w-28">Rate</th>
+                                    <th class="border px-3 py-2 text-left">95% Confidence Interval</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="border px-4 py-1 font-semibold min-w-[6rem]">Base</td>
+                                    <td class="border px-4 py-1 min-w-[6rem]" id="base-visitors"></td>
+                                    <td class="border px-4 py-1 min-w-[6rem]" id="base-conversions"></td>
+                                    <td class="border px-4 py-1 min-w-[7rem]" id="base-rate"></td>
+                                    <td class="border px-2 py-1">
+                                        <div id="base-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
+                                            <div class="absolute h-full bg-blue-200 rounded-md"></div>
+                                            <div class="absolute w-0.5 h-full bg-blue-600 rounded-sm"></div>
+                                            <span id="base-ci-low" class="absolute text-xs font-medium transform -translate-x-1/2 text-blue-900 top-1/2 -translate-y-1/2 drop-shadow-sm"></span>
+                                            <span id="base-ci-high" class="absolute text-xs font-medium transform -translate-x-1/2 text-blue-900 top-1/2 -translate-y-1/2 drop-shadow-sm"></span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-4 py-1 font-semibold min-w-[6rem]">Variant</td>
+                                    <td class="border px-4 py-1 min-w-[6rem]" id="variant-visitors"></td>
+                                    <td class="border px-4 py-1 min-w-[6rem]" id="variant-conversions"></td>
+                                    <td class="border px-4 py-1 min-w-[7rem]" id="variant-rate"></td>
+                                    <td class="border px-2 py-1">
+                                        <div id="variant-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
+                                            <div class="absolute h-full bg-purple-200 rounded-md"></div>
+                                            <div class="absolute w-0.5 h-full bg-purple-600 rounded-sm"></div>
+                                            <span id="variant-ci-low" class="absolute text-xs font-medium transform -translate-x-1/2 text-purple-900 top-1/2 -translate-y-1/2 drop-shadow-sm"></span>
+                                            <span id="variant-ci-high" class="absolute text-xs font-medium transform -translate-x-1/2 text-purple-900 top-1/2 -translate-y-1/2 drop-shadow-sm"></span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="border px-4 py-1 font-semibold min-w-[6rem]">Delta</td>
+                                    <td class="border px-4 py-1 min-w-[6rem]" id="delta-visitors"></td>
+                                    <td class="border px-4 py-1 min-w-[6rem]" id="delta-conversions"></td>
+                                    <td class="border px-4 py-1 min-w-[7rem]" id="delta-rate"></td>
+                                    <td class="border px-2 py-1">
+                                        <div id="diff-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
+                                            <div id="diff-ci-bar" class="absolute h-full rounded-md"></div>
+                                            <div id="diff-ci-marker" class="absolute w-0.5 h-full rounded-sm"></div>
+                                            <span id="diff-ci-low" class="absolute text-xs font-medium"></span>
+                                            <span id="diff-ci-high" class="absolute text-xs font-medium"></span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="border px-4 py-1 font-semibold min-w-[6rem]">Uplift</td>
+                                    <td class="border px-4 py-1 min-w-[6rem]" id="visitor-uplift"></td>
+                                    <td class="border px-4 py-1 min-w-[6rem]" id="conversion-uplift"></td>
+                                    <td class="border px-4 py-1 min-w-[7rem]" id="uplift-value"></td>
+                                    <td class="border px-2 py-1">
+                                        <div id="uplift-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
+                                            <div id="uplift-ci-bar" class="absolute h-full rounded-md"></div>
+                                            <div id="uplift-ci-marker" class="absolute w-0.5 h-full rounded-sm"></div>
+                                            <span id="uplift-ci-low" class="absolute text-xs font-medium"></span>
+                                            <span id="uplift-ci-high" class="absolute text-xs font-medium"></span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <div id="chart-loading" class="hidden">
-                        <div class="animate-pulse space-y-4">
-                            <div class="h-48 bg-gray-200 rounded"></div>
-                            <div class="h-4 bg-gray-200 rounded w-1/2"></div>
-                        </div>
-                    </div>
-                    <canvas id="conversion-chart"></canvas>
-                </div>
 
-                <div class="mt-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="text-xl font-semibold">Visitors</h3>
-                        <div class="flex items-center space-x-2">
-                            <label class="text-sm text-gray-600">View:</label>
-                            <select id="visitors-view-toggle" class="form-select text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                <option value="daily">Daily View</option>
-                                <option value="cumulative">Cumulative View</option>
-                            </select>
-                        </div>
-                    </div>
-                    <canvas id="visitors-chart"></canvas>
-                </div>
-
-                <div class="mt-4">
-                    <h3 class="text-xl font-semibold mb-3">Statistical Analysis</h3>
-                    <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                    <div class="mt-4 p-3 bg-gray-50 rounded-lg">
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <p class="text-lg mb-1">P-value:</p>
@@ -195,26 +174,62 @@
                             </div>
                         </div>
                     </div>
+                </div>
 
+                <div id="charts-tab" class="tab-content hidden">
+                    <div class="mt-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-xl font-semibold">Conversion Rates</h3>
+                            <div class="flex items-center space-x-2">
+                                <label class="text-sm text-gray-600">View:</label>
+                                <select id="chart-view-toggle" class="form-select text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                    <option value="daily">Daily View</option>
+                                    <option value="cumulative">Cumulative View</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="chart-loading" class="hidden">
+                            <div class="animate-pulse space-y-4">
+                                <div class="h-48 bg-gray-200 rounded"></div>
+                                <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                        </div>
+                        <canvas id="conversion-chart"></canvas>
+                    </div>
 
-                <div class="text-center mt-6">
-                    <h2 class="text-xl font-semibold mb-3">Make Your Decision</h2>
-                    <p class="text-gray-700 mb-3">Based on these results, should we implement Variant B?</p>
-                    <div class="flex justify-center space-x-4">
-                        <button id="decision-yes" class="px-6 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition">
-                            Yes, Implement
-                        </button>
-                        <button id="decision-no" class="px-6 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition">
-                            No, Keep Original
-                        </button>
+                    <div class="mt-8">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-xl font-semibold">Visitors</h3>
+                            <div class="flex items-center space-x-2">
+                                <label class="text-sm text-gray-600">View:</label>
+                                <select id="visitors-view-toggle" class="form-select text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                    <option value="daily">Daily View</option>
+                                    <option value="cumulative">Cumulative View</option>
+                                </select>
+                            </div>
+                        </div>
+                        <canvas id="visitors-chart"></canvas>
                     </div>
                 </div>
-                <div id="feedback" class="hidden mt-6 p-4 rounded-lg"></div>
-                <div class="flex justify-center mt-6">
-                    <button id="next-btn" class="hidden px-6 py-3 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition">
-                        Next Challenge
+            </div>
+
+            <div class="text-center mt-6">
+                <h2 class="text-xl font-semibold mb-3">Make Your Decision</h2>
+                <p class="text-gray-700 mb-3">Based on these results, should we implement Variant B?</p>
+                <div class="flex justify-center space-x-4">
+                    <button id="decision-yes" class="px-6 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition">
+                        Yes, Implement
+                    </button>
+                    <button id="decision-no" class="px-6 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition">
+                        No, Keep Original
                     </button>
                 </div>
+            </div>
+            <div id="feedback" class="hidden mt-6 p-4 rounded-lg"></div>
+            <div class="flex justify-center mt-6">
+                <button id="next-btn" class="hidden px-6 py-3 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition">
+                    Next Challenge
+                </button>
             </div>
         </div>
     </div>
@@ -257,7 +272,6 @@
             </div>
         </div>
     </div>
-</body>
 <script>
     let score = 0;
     let streak = 0;
@@ -408,6 +422,34 @@
         document.getElementById('decision-yes').classList.remove('opacity-50', 'cursor-not-allowed');
         document.getElementById('decision-no').classList.remove('opacity-50', 'cursor-not-allowed');
         loadChallenge();
+    });
+
+    // Add tab switching functionality
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', () => {
+            // Remove active state from all buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'text-blue-600');
+                btn.classList.add('text-gray-500');
+            });
+
+            // Add active state to clicked button
+            button.classList.remove('text-gray-500');
+            button.classList.add('border-blue-500', 'text-blue-600');
+
+            // Hide all tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            // Show selected tab content
+            document.getElementById(`${button.dataset.tab}-tab`).classList.remove('hidden');
+
+            // Trigger resize event to ensure charts render properly when shown
+            if (button.dataset.tab === 'charts') {
+                window.dispatchEvent(new Event('resize'));
+            }
+        });
     });
 </script>
 </html>
