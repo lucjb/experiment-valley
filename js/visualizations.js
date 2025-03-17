@@ -492,6 +492,12 @@ function renderChart(challenge) {
                             enabled: true
                         },
                         mode: 'x',
+                    },
+                    onZoomComplete: function() {
+                        resetZoomButton.style.display = 'block';
+                    },
+                    onResetZoom: function() {
+                        resetZoomButton.style.display = 'none';
                     }
                 },
                 title: {
@@ -559,26 +565,25 @@ function renderChart(challenge) {
         chart.resetZoom();
     });
 
-    chart.options.plugins.zoom.zoom.onZoomComplete = function() {
-        resetZoomButton.style.display = 'block';
-    };
 
-    chart.options.plugins.zoom.zoom.onResetZoom = function() {
-        resetZoomButton.style.display = 'none';
-    };
+    // Update first option text based on time period
+    const viewToggle = document.getElementById('chart-view-toggle');
+    if (viewToggle) {
+        viewToggle.options[0].text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
 
-    // Add event listener for the toggle
-    document.getElementById('chart-view-toggle').addEventListener('change', function(e) {
-        const viewType = e.target.value;
-        const datasets = createDatasets(viewType);
-        chart.data.datasets = datasets;
-        chart.options.plugins.title.text = viewType === 'daily' ? 
-            `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates` : 
-            'Cumulative Conversion Rates';
-        chart.options.scales.y.min = datasets.yAxisRange.min;
-        chart.options.scales.y.max = datasets.yAxisRange.max;
-        chart.update();
-    });
+        // Add event listener for the toggle
+        viewToggle.addEventListener('change', function(e) {
+            const viewType = e.target.value;
+            const datasets = createDatasets(viewType);
+            chart.data.datasets = datasets;
+            chart.options.plugins.title.text = viewType === 'daily' ? 
+                `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates` : 
+                'Cumulative Conversion Rates';
+            chart.options.scales.y.min = datasets.yAxisRange.min;
+            chart.options.scales.y.max = datasets.yAxisRange.max;
+            chart.update();
+        });
+    }
 
     return chart;
 }
@@ -675,6 +680,12 @@ function renderVisitorsChart(challenge) {
                             enabled: true
                         },
                         mode: 'x',
+                    },
+                    onZoomComplete: function() {
+                        resetZoomButton.style.display = 'block';
+                    },
+                    onResetZoom: function() {
+                        resetZoomButton.style.display = 'none';
                     }
                 },
                 title: {
@@ -726,14 +737,6 @@ function renderVisitorsChart(challenge) {
     resetZoomButton.addEventListener('click', () => {
         chart.resetZoom();
     });
-
-    chart.options.plugins.zoom.zoom.onZoomComplete = function() {
-        resetZoomButton.style.display = 'block';
-    };
-
-    chart.options.plugins.zoom.zoom.onResetZoom = function() {
-        resetZoomButton.style.display = 'none';
-    };
 
     // Update view toggle with correct period type
     const viewToggle = document.getElementById('visitors-view-toggle');
