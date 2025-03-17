@@ -36,29 +36,6 @@
 </head>
 <body class="bg-gray-50 text-gray-900">
     <div class="max-w-6xl mx-auto p-2 md:p-4">
-        <header class="flex flex-col bg-white rounded-lg shadow p-3 mb-4">
-            <div class="flex justify-between items-center">
-                <div class="flex space-x-6">
-                    <div>
-                        <span class="font-semibold text-gray-600">Score: </span>
-                        <span id="score" class="text-xl text-green-600">0</span>
-                    </div>
-                    <div>
-                        <span class="font-semibold text-gray-600">Streak: </span>
-                        <span id="streak" class="text-xl text-orange-600">0</span>
-                    </div>
-                    <div>
-                        <span class="font-semibold text-gray-600">Accuracy: </span>
-                        <span id="accuracy" class="text-xl text-purple-600">0%</span>
-                    </div>
-                </div>
-                <div class="text-sm font-medium text-gray-700">Experiment <span id="current-experiment">1</span>/3</div>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
-                <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-            </div>
-        </header>
-
         <!-- Tutorial Section -->
         <div id="tutorial-section" class="bg-white rounded-lg shadow-lg border border-gray-200 p-8 mb-6">
             <h2 class="text-3xl font-bold text-gray-900 mb-6 text-center">Welcome to A/B Testing Gym!</h2>
@@ -112,6 +89,30 @@
         </div>
 
         <div id="challenge-container" class="hidden">
+            <!-- Score and Progress Header -->
+            <header class="flex flex-col bg-white rounded-lg shadow p-3 mb-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex space-x-6">
+                        <div>
+                            <span class="font-semibold text-gray-600">Score: </span>
+                            <span id="score" class="text-xl text-green-600">0</span>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-gray-600">Streak: </span>
+                            <span id="streak" class="text-xl text-orange-600">0</span>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-gray-600">Accuracy: </span>
+                            <span id="accuracy" class="text-xl text-purple-600">0%</span>
+                        </div>
+                    </div>
+                    <div class="text-sm font-medium text-gray-700">Experiment <span id="current-experiment">1</span>/3</div>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </header>
+
             <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-4">
                 <div class="flex items-center space-x-6">
                     <h2 class="text-xl font-semibold text-gray-800 whitespace-nowrap">Decision Making:</h2>
