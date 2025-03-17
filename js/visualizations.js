@@ -612,29 +612,50 @@ function renderVisitorsChart(challenge) {
         }
     });
 
-    // Create datasets
-    const datasets = [
-        {
-            label: 'Base Visitors',
-            data: timePoints.map(d => d.base.visitors),
-            borderColor: 'rgb(147, 51, 234)',
-            backgroundColor: 'rgba(147, 51, 234, 0.1)',
-            fill: true
-        },
-        {
-            label: 'Test Visitors',
-            data: timePoints.map(d => d.variant.visitors),
-            borderColor: 'rgb(59, 130, 246)',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            fill: true
-        }
-    ];
+    // Create datasets based on the view type
+    function createDatasets(viewType) {
+        let datasets = viewType === 'daily' ? [
+            {
+                label: 'Base Visitors',
+                data: timePoints.map(d => d.base.visitors),
+                borderColor: 'rgb(147, 51, 234)',
+                backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                fill: true
+            },
+            {
+                label: 'Test Visitors',
+                data: timePoints.map(d => d.variant.visitors),
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true
+            }
+        ] : [
+            {
+                label: 'Base Cumulative Visitors',
+                data: timePoints.map(d => d.base.cumulativeVisitors),
+                borderColor: 'rgb(107, 11, 194)',
+                backgroundColor: 'rgba(107, 11, 194, 0.1)',
+                fill: true,
+                borderDash: [5, 5]
+            },
+            {
+                label: 'Test Cumulative Visitors',
+                data: timePoints.map(d => d.variant.cumulativeVisitors),
+                borderColor: 'rgb(19, 90, 206)',
+                backgroundColor: 'rgba(19, 90, 206, 0.1)',
+                fill: true,
+                borderDash: [5, 5]
+            }
+        ];
+
+        return datasets;
+    }
 
     let chart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
-            datasets: datasets
+            datasets: createDatasets('daily')
         },
         options: {
             responsive: true,
@@ -713,6 +734,28 @@ function renderVisitorsChart(challenge) {
     chart.options.plugins.zoom.zoom.onResetZoom = function() {
         resetZoomButton.style.display = 'none';
     };
+
+    // Add view toggle
+    const toggleContainer = document.createElement('div');
+    toggleContainer.className = 'mt-2 flex items-center justify-end';
+    toggleContainer.innerHTML = `
+        <select id="visitors-view-toggle" class="px-2 py-1 border rounded text-sm">
+            <option value="daily">Regular View</option>
+            <option value="cumulative">Cumulative View</option>
+        </select>
+    `;
+    chartContainer.insertBefore(toggleContainer, resetZoomButton);
+
+    // Add event listener for the toggle
+    document.getElementById('visitors-view-toggle').addEventListener('change', function(e) {
+        const viewType = e.target.value;
+        const datasets = createDatasets(viewType);
+        chart.data.datasets = datasets;
+        chart.options.plugins.title.text = viewType === 'daily' ? 
+            `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Visitors` : 
+            'Cumulative Visitors';
+        chart.update();
+    });
 
     return chart;
 }
