@@ -529,7 +529,8 @@
                 if (userChoice === correctDecision) {
                     score++;
                     streak++;
-                    document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';                    document.getElementById('feedback-icon').innerHTML =`'<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" strokelinejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                    document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';
+                    document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
                     document.getElementById('feedback-title').textContent = 'Correct!';
                     document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-green-900 mt-4';
                 } else {
@@ -573,6 +574,7 @@
             setTimeout(() => {
                 tutorialSection.classList.add('hidden');
                 document.getElementById('challenge-container').classList.remove('hidden');
+                document.getElementById('challenge-container').classList.add('fade-in');
                 loadChallenge();
             }, 500);
         });
