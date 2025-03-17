@@ -26,9 +26,9 @@ function updateConfidenceIntervals(challenge) {
         pValueElement.textContent = pValue.toFixed(4);
         if (pValue < 0.05) {
             pValueElement.classList.add('text-green-600');
-            pValueElement.classList.remove('text-red-600');
+            pValueElement.classList.remove('text-blue-600');
         } else {
-            pValueElement.classList.add('text-red-600');
+            pValueElement.classList.add('text-blue-600');
             pValueElement.classList.remove('text-green-600');
         }
     }
