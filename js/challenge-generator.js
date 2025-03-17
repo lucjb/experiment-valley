@@ -415,7 +415,7 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
 
 function generateABTestChallenge() {
     // Predefined options for each parameter
-    const ALPHA_OPTIONS = [0.1];
+    const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
     const BETA_OPTIONS = [0.2];
     const BASE_CONVERSION_RATE_OPTIONS = [0.0127, 0.0523, 0.0814, 0.102, 0.146];
     const MRE_OPTIONS = [0.01, 0.02];

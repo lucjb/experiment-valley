@@ -47,6 +47,34 @@
 
         <div id="challenge-container" class="hidden">
             <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-4">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-3">Decision Making</h2>
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="border rounded p-3">
+                        <h3 class="font-semibold mb-2 text-lg">Is this Experiment Trustworthy?</h3>
+                        <div class="flex space-x-2">
+                            <button id="trust-yes" class="px-4 py-2 bg-blue-500 text-white text-sm rounded shadow hover:bg-blue-600 transition">
+                                Yes, Trust it
+                            </button>
+                            <button id="trust-no" class="px-4 py-2 bg-blue-500 text-white text-sm rounded shadow hover:bg-blue-600 transition">
+                                No, Don't Trust
+                            </button>
+                        </div>
+                    </div>
+                    <div class="border rounded p-3">
+                        <h3 class="font-semibold mb-2 text-lg">Would you implement the new variant?</h3>
+                        <div class="flex space-x-2">
+                            <button id="implement-yes" class="px-4 py-2 bg-green-500 text-white text-sm rounded shadow hover:bg-green-600 transition">
+                                Yes, Implement
+                            </button>
+                            <button id="implement-no" class="px-4 py-2 bg-red-500 text-white text-sm rounded shadow hover:bg-red-600 transition">
+                                No, Keep Original
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-4">
                 <h2 class="text-2xl font-semibold text-gray-800 mb-3">Experiment Design</h2>
                 <div id="experiment-card" class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div class="border rounded p-3">
@@ -271,6 +299,8 @@
     let streak = 0;
     let totalAttempts = 0;
     let challenge = null;
+    let trustDecision = null;
+    let implementDecision = null;
 
     function showLoading(id) {
         document.getElementById(id).classList.remove('hidden');
@@ -280,8 +310,51 @@
         document.getElementById(id).classList.add('hidden');
     }
 
+    function handleDecision(decisionType, value) {
+        const trustButtons = [document.getElementById('trust-yes'), document.getElementById('trust-no')];
+        const implementButtons = [document.getElementById('implement-yes'), document.getElementById('implement-no')];
+
+        if (decisionType === 'trust') {
+            trustDecision = value;
+            trustButtons.forEach(btn => {
+                btn.classList.remove('bg-blue-700');
+                btn.disabled = false;
+            });
+            if (value) {
+                document.getElementById('trust-yes').classList.add('bg-blue-700');
+            } else {
+                document.getElementById('trust-no').classList.add('bg-blue-700');
+            }
+        } else if (decisionType === 'implement') {
+            implementDecision = value;
+            implementButtons.forEach(btn => {
+                btn.classList.remove('bg-green-700', 'bg-red-700');
+                btn.disabled = false;
+            });
+            if (value) {
+                document.getElementById('implement-yes').classList.add('bg-green-700');
+            } else {
+                document.getElementById('implement-no').classList.add('bg-red-700');
+            }
+        }
+
+        // Only evaluate when both decisions are made
+        if (trustDecision !== null && implementDecision !== null) {
+            evaluateDecision(implementDecision);  // For now, only use implement decision for scoring
+        }
+    }
+
     async function loadChallenge() {
         showLoading('loading-overlay');
+        trustDecision = null;
+        implementDecision = null;
+
+        // Reset button states
+        ['trust-yes', 'trust-no', 'implement-yes', 'implement-no'].forEach(id => {
+            const btn = document.getElementById(id);
+            btn.disabled = false;
+            btn.classList.remove('bg-blue-700', 'bg-green-700', 'bg-red-700');
+        });
 
         try {
             if (typeof generateABTestChallenge !== 'function') {
@@ -404,13 +477,15 @@
         loadChallenge();
     });
 
-    document.getElementById('decision-yes').addEventListener('click', function() {
-        evaluateDecision(true);
-    });
+    // Add event listeners for the new decision buttons
+    document.getElementById('trust-yes').addEventListener('click', () => handleDecision('trust', true));
+    document.getElementById('trust-no').addEventListener('click', () => handleDecision('trust', false));
+    document.getElementById('implement-yes').addEventListener('click', () => handleDecision('implement', true));
+    document.getElementById('implement-no').addEventListener('click', () => handleDecision('implement', false));
 
-    document.getElementById('decision-no').addEventListener('click', function() {
-        evaluateDecision(false);
-    });
+    // Remove event listeners from old decision buttons
+    document.getElementById('decision-yes').style.display = 'none';
+    document.getElementById('decision-no').style.display = 'none';
 
     document.getElementById('next-challenge-btn').addEventListener('click', function() {
         document.getElementById('feedback-modal').classList.add('hidden');
