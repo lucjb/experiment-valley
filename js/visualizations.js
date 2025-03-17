@@ -23,8 +23,9 @@ function updateConfidenceIntervals(challenge) {
     const pValueElement = document.getElementById('p-value-display');
     if (pValueElement) {
         const pValue = challenge.simulation.pValue;
+        const alpha = challenge.experiment.alpha;  // Get the experiment's alpha value
         pValueElement.textContent = pValue.toFixed(4);
-        if (pValue < 0.05) {
+        if (pValue < alpha) {  // Compare against the experiment's alpha
             pValueElement.classList.add('text-green-600');
             pValueElement.classList.remove('text-blue-600');
         } else {
