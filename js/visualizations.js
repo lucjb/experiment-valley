@@ -42,24 +42,31 @@ function updateConfidenceIntervals(challenge) {
         differenceDisplay.textContent = formatPercent(diffValue);
     }
 
-    // Find the range for conversion rate intervals
-    const conversionValues = [
+    // Calculate range for base and variant conversion rates separately
+    const baseValues = [
         ...challenge.simulation.confidenceIntervalBase,
+        challenge.simulation.actualBaseConversionRate
+    ];
+
+    const variantValues = [
         ...challenge.simulation.confidenceIntervalVariant,
-        challenge.simulation.actualBaseConversionRate,
         challenge.simulation.variantConversionRate
     ];
 
-    const minConversionValue = Math.min(...conversionValues);
-    const maxConversionValue = Math.max(...conversionValues);
-    const conversionViewRange = maxConversionValue - minConversionValue;
-    const viewPadding = conversionViewRange * 0.2;
+    // Calculate view ranges for base and variant (never negative)
+    const minBaseValue = Math.min(...baseValues);
+    const maxBaseValue = Math.max(...baseValues);
+    const minVariantValue = Math.min(...variantValues);
+    const maxVariantValue = Math.max(...variantValues);
 
-    // Round to nice intervals
-    const conversionViewMin = Math.floor((minConversionValue - viewPadding) * 100) / 100;
-    const conversionViewMax = Math.ceil((maxConversionValue + viewPadding) * 100) / 100;
+    const conversionRange = Math.max(maxBaseValue, maxVariantValue) - Math.min(minBaseValue, minVariantValue);
+    const viewPadding = conversionRange * 0.2;
 
-    // Helper function to convert actual values to view percentages
+    // Round to nice intervals for conversion rates (base and variant), never negative
+    const conversionViewMin = Math.max(0, Math.floor((Math.min(minBaseValue, minVariantValue) - viewPadding) * 100) / 100);
+    const conversionViewMax = Math.ceil((Math.max(maxBaseValue, maxVariantValue) + viewPadding) * 100) / 100;
+
+    // Helper function to convert actual values to view percentages for conversion rates
     const toViewPercent = (value) => ((value - conversionViewMin) / (conversionViewMax - conversionViewMin)) * 100;
 
     // Determine result type based on CI difference
@@ -94,7 +101,7 @@ function updateConfidenceIntervals(challenge) {
     };
 
     // Helper function to set CI visualization
-    function updateCIVisualization(containerId, low, high, mean, colorSet, showBounds = true) {
+    function updateCIVisualization(containerId, low, high, mean, colorSet, allowNegative = false) {
         const container = document.getElementById(containerId);
         if (!container) return;
 
@@ -105,9 +112,59 @@ function updateConfidenceIntervals(challenge) {
         const highLabel = document.getElementById(`${containerId}-high`);
 
         // Calculate positions
-        const lowPercent = toViewPercent(low);
-        const highPercent = toViewPercent(high);
-        const meanPercent = toViewPercent(mean);
+        let positionFunc;
+        if (allowNegative) {
+            // For delta and uplift, center around zero
+            const maxAbsValue = Math.max(Math.abs(low), Math.abs(high), Math.abs(mean)) * 1.2;
+            const viewMin = -maxAbsValue;
+            const viewMax = maxAbsValue;
+            positionFunc = (value) => ((value - viewMin) / (viewMax - viewMin)) * 100;
+
+            // Add zero line
+            const zeroLine = container.querySelector('.zero-line') || document.createElement('div');
+            zeroLine.className = 'absolute h-full w-px bg-gray-400';
+            zeroLine.style.left = `${positionFunc(0)}%`;
+            if (!container.querySelector('.zero-line')) {
+                container.appendChild(zeroLine);
+            }
+
+            // Add zero label
+            const zeroLabel = container.querySelector('.zero-label') || document.createElement('span');
+            zeroLabel.className = 'absolute text-xs font-medium transform -translate-x-1/2 text-gray-400 top-1/2 -translate-y-1/2';
+            zeroLabel.style.left = `${positionFunc(0)}%`;
+            zeroLabel.textContent = '0%';
+            if (!container.querySelector('.zero-label')) {
+                container.appendChild(zeroLabel);
+            }
+
+            // Add min/max bounds
+            const viewBounds = {
+                min: container.querySelector('.view-min') || document.createElement('span'),
+                max: container.querySelector('.view-max') || document.createElement('span')
+            };
+
+            for (const [key, element] of Object.entries(viewBounds)) {
+                const position = key === 'min' ? '2%' : '98%';
+                const value = key === 'min' ? viewMin : viewMax;
+
+                element.className = 'absolute text-xs font-medium transform -translate-x-1/2 -translate-y-1/2 text-gray-400 top-1/2';
+                element.style.left = position;
+                element.textContent = formatPercent(value);
+
+                if (!container.querySelector(`.view-${key}`)) {
+                    element.classList.add(`view-${key}`);
+                    container.appendChild(element);
+                }
+            }
+        } else {
+            // For base and variant rates, use the non-negative view range
+            positionFunc = toViewPercent;
+        }
+
+        // Calculate positions
+        const lowPercent = positionFunc(low);
+        const highPercent = positionFunc(high);
+        const meanPercent = positionFunc(mean);
 
         // Update visual elements
         if (rangeBar) {
@@ -133,31 +190,9 @@ function updateConfidenceIntervals(challenge) {
             highLabel.textContent = formatPercent(high);
             highLabel.style.left = `${highPercent}%`;
         }
-
-        // Add view range bounds if needed
-        if (showBounds) {
-            const viewBounds = {
-                min: container.querySelector('.view-min') || document.createElement('span'),
-                max: container.querySelector('.view-max') || document.createElement('span')
-            };
-
-            for (const [key, element] of Object.entries(viewBounds)) {
-                const position = key === 'min' ? '2%' : '98%';
-                const value = key === 'min' ? conversionViewMin : conversionViewMax;
-
-                element.className = 'absolute text-xs font-medium transform -translate-x-1/2 -translate-y-1/2 text-gray-400 top-1/2';
-                element.style.left = position;
-                element.textContent = formatPercent(value);
-
-                if (!container.querySelector(`.view-${key}`)) {
-                    element.classList.add(`view-${key}`);
-                    container.appendChild(element);
-                }
-            }
-        }
     }
 
-    // Update base CI (always purple)
+    // Update base CI (never negative)
     updateCIVisualization(
         'base-ci',
         challenge.simulation.confidenceIntervalBase[0],
@@ -168,160 +203,38 @@ function updateConfidenceIntervals(challenge) {
             marker: 'bg-purple-600',
             text: 'text-purple-900'
         },
-        true
+        false
     );
 
-    // Update variant CI with result-based colors
+    // Update variant CI (never negative)
     updateCIVisualization(
         'variant-ci',
         challenge.simulation.confidenceIntervalVariant[0],
         challenge.simulation.confidenceIntervalVariant[1],
         challenge.simulation.variantConversionRate,
         variantColors[resultType],
+        false
+    );
+
+    // Update difference CI (can be negative)
+    updateCIVisualization(
+        'diff-ci',
+        challenge.simulation.confidenceIntervalDifference[0],
+        challenge.simulation.confidenceIntervalDifference[1],
+        diffValue,
+        variantColors[resultType],
         true
     );
 
-    // For difference CI, calculate a view range centered around zero
-    const diffValues = [
-        ...challenge.simulation.confidenceIntervalDifference,
-        diffValue
-    ];
-    const maxAbsDiff = Math.max(Math.abs(Math.min(...diffValues)), Math.abs(Math.max(...diffValues)));
-    const diffViewMin = -maxAbsDiff * 1.2;  // Add 20% padding
-    const diffViewMax = maxAbsDiff * 1.2;   // Add 20% padding
-    const toDiffViewPercent = (value) => ((value - diffViewMin) / (diffViewMax - diffViewMin)) * 100;
-
-    // Update difference CI
-    const diffContainer = document.getElementById('diff-ci');
-    if (diffContainer) {
-        const diffCIBar = document.getElementById('diff-ci-bar');
-        const diffCIMarker = document.getElementById('diff-ci-marker');
-        const lowLabel = document.getElementById('diff-ci-low');
-        const highLabel = document.getElementById('diff-ci-high');
-
-        // Calculate positions
-        const lowPercent = toDiffViewPercent(lowDiff);
-        const highPercent = toDiffViewPercent(highDiff);
-        const meanPercent = toDiffViewPercent(diffValue);
-        const zeroPercent = toDiffViewPercent(0);
-
-        // Apply the same color scheme as variant
-        const colors = variantColors[resultType];
-
-        // Update elements
-        if (diffCIBar) {
-            diffCIBar.className = `absolute h-full ${colors.bar} rounded-md`;
-            diffCIBar.style.left = `${lowPercent}%`;
-            diffCIBar.style.width = `${highPercent - lowPercent}%`;
-        }
-
-        if (diffCIMarker) {
-            diffCIMarker.className = `absolute w-0.5 h-full ${colors.marker} rounded-sm`;
-            diffCIMarker.style.left = `${meanPercent}%`;
-        }
-
-        if (lowLabel) {
-            lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
-            lowLabel.textContent = formatPercent(lowDiff);
-            lowLabel.style.left = `${lowPercent}%`;
-        }
-
-        if (highLabel) {
-            highLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
-            highLabel.textContent = formatPercent(highDiff);
-            highLabel.style.left = `${highPercent}%`;
-        }
-
-        // Update zero line
-        const zeroLine = diffContainer.querySelector('.zero-line') || document.createElement('div');
-        zeroLine.className = 'zero-line absolute h-full w-px bg-gray-400';
-        zeroLine.style.left = `${zeroPercent}%`;
-        if (!diffContainer.querySelector('.zero-line')) {
-            diffContainer.appendChild(zeroLine);
-        }
-
-        // Update zero label
-        const zeroLabel = diffContainer.querySelector('.zero-label') || document.createElement('span');
-        zeroLabel.className = 'zero-label absolute text-xs font-medium transform -translate-x-1/2 text-gray-400 top-1/2 -translate-y-1/2';
-        zeroLabel.style.left = `${zeroPercent}%`;
-        zeroLabel.textContent = '0%';
-        if (!diffContainer.querySelector('.zero-label')) {
-            diffContainer.appendChild(zeroLabel);
-        }
-    }
-    // Update uplift CI
-    const container = document.getElementById('uplift-ci');
-    if (container) {
-        const upliftValue = challenge.simulation.uplift;
-        const [lowUplift, highUplift] = challenge.simulation.upliftConfidenceInterval;
-
-        // Determine color based on significance
-        const colors = resultType === 'positive' ? {
-            bar: 'bg-green-200',
-            marker: 'bg-green-600',
-            text: 'text-green-900'
-        } : resultType === 'negative' ? {
-            bar: 'bg-red-200',
-            marker: 'bg-red-600',
-            text: 'text-red-900'
-        } : {
-            bar: 'bg-blue-200',
-            marker: 'bg-blue-600',
-            text: 'text-blue-900'
-        };
-
-        const upliftBar = document.getElementById('uplift-ci-bar');
-        const upliftMarker = document.getElementById('uplift-ci-marker');
-        const lowLabel = document.getElementById('uplift-ci-low');
-        const highLabel = document.getElementById('uplift-ci-high');
-
-        // Calculate relative positions
-        const maxAbsUplift = Math.max(Math.abs(lowUplift), Math.abs(highUplift), Math.abs(upliftValue)) * 1.2;
-        const viewMin = -maxAbsUplift;
-        const viewMax = maxAbsUplift;
-        const toViewPercent = (value) => ((value - viewMin) / (viewMax - viewMin)) * 100;
-
-        // Update visual elements
-        if (upliftBar) {
-            upliftBar.className = `absolute h-full ${colors.bar} rounded-md`;
-            upliftBar.style.left = `${toViewPercent(lowUplift)}%`;
-            upliftBar.style.width = `${toViewPercent(highUplift) - toViewPercent(lowUplift)}%`;
-        }
-
-        if (upliftMarker) {
-            upliftMarker.className = `absolute w-0.5 h-full ${colors.marker} rounded-sm`;
-            upliftMarker.style.left = `${toViewPercent(upliftValue)}%`;
-        }
-
-        if (lowLabel) {
-            lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
-            lowLabel.textContent = formatPercent(lowUplift);
-            lowLabel.style.left = `${toViewPercent(lowUplift)}%`;
-        }
-
-        if (highLabel) {
-            highLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
-            highLabel.textContent = formatPercent(highUplift);
-            highLabel.style.left = `${toViewPercent(highUplift)}%`;
-        }
-
-        // Add zero line
-        const zeroLine = container.querySelector('.zero-line') || document.createElement('div');
-        zeroLine.className = 'absolute h-full w-px bg-gray-400';
-        zeroLine.style.left = `${toViewPercent(0)}%`;
-        if (!container.querySelector('.zero-line')) {
-            container.appendChild(zeroLine);
-        }
-
-        // Add zero label
-        const zeroLabel = container.querySelector('.zero-label') || document.createElement('span');
-        zeroLabel.className = 'zero-label absolute text-xs font-medium transform -translate-x-1/2 text-gray-400 top-1/2 -translate-y-1/2';
-        zeroLabel.style.left = `${toViewPercent(0)}%`;
-        zeroLabel.textContent = '0%';
-        if (!container.querySelector('.zero-label')) {
-            container.appendChild(zeroLabel);
-        }
-    }
+    // Update uplift CI (can be negative)
+    updateCIVisualization(
+        'uplift-ci',
+        challenge.simulation.upliftConfidenceInterval[0],
+        challenge.simulation.upliftConfidenceInterval[1],
+        challenge.simulation.uplift,
+        variantColors[resultType],
+        true
+    );
 }
 
 function renderChart(challenge) {
@@ -514,7 +427,7 @@ function renderChart(challenge) {
                     callbacks: {
                         label: function(context) {
                             const timePoint = timePoints[context.dataIndex];
-                            const dataPoint = context.dataset.label.toLowerCase().includes('base') ? 
+                            const dataPoint = context.dataset.label.toLowerCase().includes('base') ?
                                 timePoint.base : timePoint.variant;
                             const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
 
@@ -576,8 +489,8 @@ function renderChart(challenge) {
             const viewType = e.target.value;
             const datasets = createDatasets(viewType);
             chart.data.datasets = datasets;
-            chart.options.plugins.title.text = viewType === 'daily' ? 
-                `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates` : 
+            chart.options.plugins.title.text = viewType === 'daily' ?
+                `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates` :
                 'Cumulative Conversion Rates';
             chart.options.scales.y.min = datasets.yAxisRange.min;
             chart.options.scales.y.max = datasets.yAxisRange.max;
@@ -750,8 +663,8 @@ function renderVisitorsChart(challenge) {
             const viewType = e.target.value;
             const datasets = createDatasets(viewType);
             chart.data.datasets = datasets;
-            chart.options.plugins.title.text = viewType === 'daily' ? 
-                `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Visitors` : 
+            chart.options.plugins.title.text = viewType === 'daily' ?
+                `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Visitors` :
                 'Cumulative Visitors';
             chart.update();
         });
