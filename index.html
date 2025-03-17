@@ -315,6 +315,7 @@
         const EXPERIMENTS_PER_SESSION = 3;  // Easy to modify for future changes (e.g., 10 or 15)
 
         function updateProgress() {
+            console.log('Updating progress, current experiment:', currentExperiment);
             const progressBar = document.getElementById('progress-bar');
             const progressPercentage = ((currentExperiment - 1) / EXPERIMENTS_PER_SESSION) * 100;
             progressBar.style.width = `${progressPercentage}%`;
@@ -322,6 +323,7 @@
         }
 
         function showCompletionModal() {
+            console.log('Showing completion modal');
             document.getElementById('final-score').textContent = score;
             document.getElementById('final-accuracy').textContent = `${Math.round((score / totalAttempts) * 100)}%`;
             document.getElementById('completion-modal').classList.remove('hidden');
@@ -329,8 +331,10 @@
         }
 
         async function loadChallenge() {
+            console.log('Loading challenge for experiment:', currentExperiment, 'of', EXPERIMENTS_PER_SESSION);
             // Check if we've completed all experiments
             if (currentExperiment > EXPERIMENTS_PER_SESSION) {
+                console.log('All experiments completed, showing modal');
                 showCompletionModal();
                 return;
             }
@@ -406,6 +410,7 @@
         }
 
         async function evaluateDecision(userChoice) {
+            console.log('Evaluating decision for experiment:', currentExperiment);
             if (!challenge) {
                 console.error("No challenge loaded");
                 alert("No challenge available. Try reloading.");
@@ -443,6 +448,7 @@
                 document.getElementById('modal-accuracy').textContent = `${accuracy}%`;
 
                 // Check if this was the last experiment of the session
+                console.log('Checking if last experiment:', currentExperiment, 'of', EXPERIMENTS_PER_SESSION);
                 if (currentExperiment === EXPERIMENTS_PER_SESSION) {
                     document.getElementById('next-challenge-btn').textContent = 'Complete Session';
                 }
@@ -455,6 +461,7 @@
 
         document.getElementById('start-btn').addEventListener('click', function(event) {
             event.preventDefault();
+            console.log('Start button clicked');
             document.getElementById('challenge-container').classList.remove('hidden');
             document.getElementById('start-btn').classList.add('hidden');
             loadChallenge();
@@ -504,6 +511,7 @@
         }
 
         function resetDecisions() {
+            console.log('Resetting decisions');
             trustDecision = null;
             implementDecision = null;
             const buttons = ['trust-yes', 'trust-no', 'implement-yes', 'implement-no'];
@@ -521,20 +529,42 @@
         document.getElementById('implement-no').addEventListener('click', () => handleDecision('implement', false));
 
         document.getElementById('submit-decision').addEventListener('click', function() {
+            console.log('Decision submitted for experiment:', currentExperiment);
             evaluateDecision(implementDecision);
         });
 
         document.getElementById('next-challenge-btn').addEventListener('click', function() {
+            console.log('Next challenge clicked, current experiment:', currentExperiment);
             document.getElementById('feedback-modal').classList.add('hidden');
 
-            if (currentExperiment >= EXPERIMENTS_PER_SESSION) {
+            // First increment the counter
+            currentExperiment++;
+            console.log('Incremented to experiment:', currentExperiment);
+
+            // Then check if we should show completion
+            if (currentExperiment > EXPERIMENTS_PER_SESSION) {
+                console.log('Session complete, showing completion modal');
                 showCompletionModal();
             } else {
-                currentExperiment++;
+                console.log('Loading next experiment:', currentExperiment);
                 resetDecisions();
                 updateProgress();
                 loadChallenge();
             }
+        });
+
+        document.getElementById('start-new-session').addEventListener('click', function() {
+            console.log('Starting new session');
+            document.getElementById('completion-modal').classList.add('hidden');
+            document.getElementById('challenge-container').classList.remove('hidden');
+            score = 0;
+            streak = 0;
+            totalAttempts = 0;
+            currentExperiment = 1;
+            document.getElementById('score').textContent = '0';
+            document.getElementById('streak').textContent = '0';
+            document.getElementById('accuracy').textContent = '0%';
+            loadChallenge();
         });
 
         document.querySelectorAll('.tab-button').forEach(button => {
@@ -560,10 +590,12 @@
         });
 
         function showLoading(id) {
+            console.log('Showing loading indicator:', id);
             document.getElementById(id).classList.remove('hidden');
         }
 
         function hideLoading(id) {
+            console.log('Hiding loading indicator:', id);
             document.getElementById(id).classList.add('hidden');
         }
 
@@ -607,19 +639,8 @@
         `;
         document.body.insertAdjacentHTML('beforeend', completionModal);
 
-        document.getElementById('next-challenge-btn').addEventListener('click', function() {
-            document.getElementById('feedback-modal').classList.add('hidden');
-            if (currentExperiment === EXPERIMENTS_PER_SESSION) {
-                showCompletionModal();
-            } else {
-                currentExperiment++;
-                resetDecisions();
-                updateProgress();
-                loadChallenge();
-            }
-        });
-
         document.getElementById('start-new-session').addEventListener('click', function() {
+            console.log('Starting new session');
             document.getElementById('completion-modal').classList.add('hidden');
             document.getElementById('challenge-container').classList.remove('hidden');
             score = 0;
