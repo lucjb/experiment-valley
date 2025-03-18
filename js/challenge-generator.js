@@ -144,19 +144,9 @@ function addWeeklyPattern(dailyVisitors) {
     let currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
     let diff = totalVisitors - currentTotal;
 
-    // Distribute the difference across days proportionally to their current values
-    while (Math.abs(diff) > 0) {
-        const adjustmentPerVisitor = diff / currentTotal;
-        for (let i = 0; i < numDays && Math.abs(diff) > 0; i++) {
-            const adjustment = Math.min(
-                Math.abs(diff),
-                Math.max(1, Math.round(patternedVisitors[i] * Math.abs(adjustmentPerVisitor)))
-            ) * Math.sign(diff);
-
-            patternedVisitors[i] += adjustment;
-            diff -= adjustment;
-        }
-        currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
+    // Simplify the distribution of difference by adjusting the first day
+    if (diff !== 0) {
+        patternedVisitors[0] += diff;
     }
 
     return patternedVisitors;
@@ -187,22 +177,9 @@ function addMonthlyPattern(weeklyVisitors) {
         return Math.round(avgWeeklyVisitors * weight);
     });
 
-    // Adjust totals like in weekly pattern
-    let currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
-    let diff = totalVisitors - currentTotal;
-
-    while (Math.abs(diff) > 0) {
-        const adjustmentPerVisitor = diff / currentTotal;
-        for (let i = 0; i < numWeeks && Math.abs(diff) > 0; i++) {
-            const adjustment = Math.min(
-                Math.abs(diff),
-                Math.max(1, Math.round(patternedVisitors[i] * Math.abs(adjustmentPerVisitor)))
-            ) * Math.sign(diff);
-
-            patternedVisitors[i] += adjustment;
-            diff -= adjustment;
-        }
-        currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
+    // Simplify the distribution of difference by adjusting the first day
+    if (diff !== 0) {
+        patternedVisitors[0] += diff;
     }
 
     return patternedVisitors;
@@ -241,22 +218,9 @@ function addYearlyPattern(monthlyVisitors) {
         return Math.round(avgMonthlyVisitors * weight);
     });
 
-    // Adjust totals like in other patterns
-    let currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
-    let diff = totalVisitors - currentTotal;
-
-    while (Math.abs(diff) > 0) {
-        const adjustmentPerVisitor = diff / currentTotal;
-        for (let i = 0; i < numMonths && Math.abs(diff) > 0; i++) {
-            const adjustment = Math.min(
-                Math.abs(diff),
-                Math.max(1, Math.round(patternedVisitors[i] * Math.abs(adjustmentPerVisitor)))
-            ) * Math.sign(diff);
-
-            patternedVisitors[i] += adjustment;
-            diff -= adjustment;
-        }
-        currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
+    // Simplify the distribution of difference by adjusting the first day
+    if (diff !== 0) {
+        patternedVisitors[0] += diff;
     }
 
     return patternedVisitors;
