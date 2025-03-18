@@ -6,6 +6,10 @@ function hideLoading(chartId) {
     document.getElementById(`${chartId}-loading`).classList.add('hidden');
 }
 
+function calculateConfidenceLevel(alpha) {
+    return ((1 - alpha) * 100).toFixed(0);
+}
+
 function formatPercent(value) {
     const percentage = value * 100;
     // Always show 2 decimal places for consistency with the table
@@ -524,10 +528,11 @@ function renderChart(challenge) {
                             const ci = isCumulative ? dataPoint.cumulativeRateCI : dataPoint.rateCI;
 
                             const periodInfo = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)} ${timePoint.period.startDay}${timePoint.period.endDay !== timePoint.period.startDay ? `-${timePoint.period.endDay}` : ''}`;
+                            const confidenceLevel = calculateConfidenceLevel(challenge.experiment.alpha);
 
                             return [
                                 `${context.dataset.label}: ${formatPercent(rate)}`,
-                                `95% CI: [${formatPercent(ci[0])}, ${formatPercent(ci[1])}]`,
+                                `${confidenceLevel}% CI: [${formatPercent(ci[0])}, ${formatPercent(ci[1])}]`,
                                 `Visitors: ${visitors.toLocaleString()}`,
                                 `Conversions: ${conversions.toLocaleString()}`,
                                 periodInfo
