@@ -325,6 +325,11 @@ function updateConfidenceIntervals(challenge) {
     }
 }
 
+// Helper function to get confidence level from alpha
+function getConfidenceLevel(alpha) {
+    return Math.round((1 - alpha) * 100);
+}
+
 function renderChart(challenge) {
     const ctx = document.getElementById('conversion-chart');
     if (!ctx) {
@@ -525,10 +530,11 @@ function renderChart(challenge) {
                             const ci = isCumulative ? dataPoint.cumulativeRateCI : dataPoint.rateCI;
 
                             const periodInfo = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)} ${timePoint.period.startDay}${timePoint.period.endDay !== timePoint.period.startDay ? `-${timePoint.period.endDay}` : ''}`;
+                            const confidenceLevel = getConfidenceLevel(challenge.experiment.alpha);
 
                             return [
                                 `${context.dataset.label}: ${formatPercent(rate)}`,
-                                `95% CI: [${formatPercent(ci[0])}, ${formatPercent(ci[1])}]`,
+                                `${confidenceLevel}% CI: [${formatPercent(ci[0])}, ${formatPercent(ci[1])}]`,
                                 `Visitors: ${visitors.toLocaleString()}`,
                                 `Conversions: ${conversions.toLocaleString()}`,
                                 periodInfo
@@ -905,10 +911,11 @@ function renderDifferenceChart(challenge) {
                             }
 
                             const periodInfo = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)} ${timePoint.period.startDay}${timePoint.period.endDay !== timePoint.period.startDay ? `-${timePoint.period.endDay}` : ''}`;
+                            const confidenceLevel = getConfidenceLevel(challenge.experiment.alpha);
 
                             return [
                                 `${context.dataset.label}: ${formatPercent(value)}`,
-                                `95% CI: [${formatPercent(ciLow)}, ${formatPercent(ciHigh)}]`,
+                                `${confidenceLevel}% CI: [${formatPercent(ciLow)}, ${formatPercent(ciHigh)}]`,
                                 periodInfo
                             ];
                         }
