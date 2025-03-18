@@ -797,17 +797,49 @@ function renderDifferenceChart(challenge) {
                 label: `${timelineData.timePeriod}ly Difference`,
                 data: timePoints.map(d => d.variant.rate - d.base.rate),
                 borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'transparent',
+                fill: false,
+                tension: 0.4
+            },
+            {
+                label: 'Difference CI Lower',
+                data: timePoints.map(d => d.variant.rateCI[0] - d.base.rateCI[1]),
+                borderColor: 'transparent',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: true
+                fill: '+1',
+                tension: 0.4
+            },
+            {
+                label: 'Difference CI Upper',
+                data: timePoints.map(d => d.variant.rateCI[1] - d.base.rateCI[0]),
+                borderColor: 'transparent',
+                fill: false,
+                tension: 0.4
             }
         ] : [
             {
                 label: 'Cumulative Difference',
                 data: timePoints.map(d => d.variant.cumulativeRate - d.base.cumulativeRate),
                 borderColor: 'rgb(19, 90, 206)',
+                backgroundColor: 'transparent',
+                fill: false,
+                borderDash: [5, 5],
+                tension: 0.4
+            },
+            {
+                label: 'Cumulative Difference CI Lower',
+                data: timePoints.map(d => d.variant.cumulativeRateCI[0] - d.base.cumulativeRateCI[1]),
+                borderColor: 'transparent',
                 backgroundColor: 'rgba(19, 90, 206, 0.1)',
-                fill: true,
-                borderDash: [5, 5]
+                fill: '+1',
+                tension: 0.4
+            },
+            {
+                label: 'Cumulative Difference CI Upper',
+                data: timePoints.map(d => d.variant.cumulativeRateCI[1] - d.base.cumulativeRateCI[0]),
+                borderColor: 'transparent',
+                fill: false,
+                tension: 0.4
             }
         ];
 
@@ -854,13 +886,29 @@ function renderDifferenceChart(challenge) {
                     mode: 'point',
                     intersect: true,
                     position: 'nearest',
+                    filter: function(tooltipItem) {
+                        return !tooltipItem.dataset.label.includes('CI');
+                    },
                     callbacks: {
                         label: function(context) {
                             const timePoint = timePoints[context.dataIndex];
                             const value = context.parsed.y;
+                            const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
+
+                            let ciLow, ciHigh;
+                            if (isCumulative) {
+                                ciLow = timePoint.variant.cumulativeRateCI[0] - timePoint.base.cumulativeRateCI[1];
+                                ciHigh = timePoint.variant.cumulativeRateCI[1] - timePoint.base.cumulativeRateCI[0];
+                            } else {
+                                ciLow = timePoint.variant.rateCI[0] - timePoint.base.rateCI[1];
+                                ciHigh = timePoint.variant.rateCI[1] - timePoint.base.rateCI[0];
+                            }
+
                             const periodInfo = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)} ${timePoint.period.startDay}${timePoint.period.endDay !== timePoint.period.startDay ? `-${timePoint.period.endDay}` : ''}`;
+
                             return [
-                                `Difference: ${formatPercent(value)}`,
+                                `${context.dataset.label}: ${formatPercent(value)}`,
+                                `95% CI: [${formatPercent(ciLow)}, ${formatPercent(ciHigh)}]`,
                                 periodInfo
                             ];
                         }
@@ -882,6 +930,28 @@ function renderDifferenceChart(challenge) {
             }
         }
     });
+
+    // Add horizontal line at y=0
+    const zeroLine = {
+        id: 'zeroLine',
+        beforeDraw: function(chart) {
+            if (chart.config.type !== 'line') return;
+
+            const yScale = chart.scales.y;
+            const ctx = chart.ctx;
+            const zeroY = yScale.getPixelForValue(0);
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.moveTo(chart.chartArea.left, zeroY);
+            ctx.lineTo(chart.chartArea.right, zeroY);
+            ctx.stroke();
+            ctx.restore();
+        }
+    };
+    chart.options.plugins.zeroLine = zeroLine;
 
     // Add reset zoom button
     const chartContainer = ctx.parentElement;
@@ -917,7 +987,6 @@ function renderDifferenceChart(challenge) {
     return chart;
 }
 
-// Update the initializeCharts function to include the new difference chart
 function initializeCharts(challenge) {
     try {
         // Reset view toggle to 'daily' first
