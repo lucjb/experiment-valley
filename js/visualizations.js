@@ -340,31 +340,13 @@ function renderChart(challenge) {
         existingChart.destroy();
     }
 
-    // Calculate dynamic y-axis range based on the data
-    function calculateYAxisRange(datasets) {
-        let allValues = [];
-        datasets.forEach(dataset => {
-            if (!dataset.label.includes('CI')) {
-                allValues = allValues.concat(dataset.data);
-            }
-        });
-        const maxValue = Math.max(...allValues);
-        // Set minimum to 20% below the lowest non-zero value, or 0 if all values are 0
-        const nonZeroValues = allValues.filter(v => v > 0);
-        const minValue = nonZeroValues.length > 0 ? Math.min(...nonZeroValues) : 0;
-        return {
-            min: Math.max(0, minValue - (minValue * 0.2)),
-            max: maxValue + (maxValue * 0.1)
-        };
-    }
-
     // Get timeline data
     const timelineData = challenge.simulation.timeline;
     const timePoints = timelineData.timePoints;
 
     // Create labels based on time period
     const labels = timePoints.map(point => {
-        const { type, startDay, endDay } = point.period;
+        const { type, startDay } = point.period;
         if (type === 'day') {
             return `Day ${startDay}`;
         } else if (type === 'week') {
@@ -472,6 +454,23 @@ function renderChart(challenge) {
         return datasets;
     }
 
+    function calculateYAxisRange(datasets) {
+        let allValues = [];
+        datasets.forEach(dataset => {
+            if (!dataset.label.includes('CI')) {
+                allValues = allValues.concat(dataset.data);
+            }
+        });
+        const maxValue = Math.max(...allValues);
+        // Set minimum to 20% below the lowest non-zero value, or 0 if all values are 0
+        const nonZeroValues = allValues.filter(v => v > 0);
+        const minValue = nonZeroValues.length > 0 ? Math.min(...nonZeroValues) : 0;
+        return {
+            min: Math.max(0, minValue - (minValue * 0.2)),
+            max: maxValue + (maxValue * 0.1)
+        };
+    }
+
     let chart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -542,8 +541,7 @@ function renderChart(challenge) {
                 y: {
                     beginAtZero: true,
                     title: {
-                        display: true,
-                        text: 'Conversion Rate'
+                        display: false // Remove y-axis title
                     },
                     ticks: {
                         callback: function(value) {
@@ -609,7 +607,7 @@ function renderVisitorsChart(challenge) {
 
     // Create labels based on time period
     const labels = timePoints.map(point => {
-        const { type, startDay, endDay } = point.period;
+        const { type, startDay } = point.period;
         if (type === 'day') {
             return `Day ${startDay}`;
         } else if (type === 'week') {
@@ -713,8 +711,7 @@ function renderVisitorsChart(challenge) {
                 y: {
                     beginAtZero: true,
                     title: {
-                        display: true,
-                        text: 'Number of Visitors'
+                        display: false // Remove y-axis title
                     },
                     ticks: {
                         callback: function(value) {
