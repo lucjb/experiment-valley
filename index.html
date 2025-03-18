@@ -181,9 +181,7 @@
                         <button class="tab-button px-4 py-2 font-medium text-sm leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none ml-4" data-tab="visitors">
                             Visitors
                         </button>
-                        <button class="tab-button px-4 py-2 font-medium text-sm leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none ml-4" data-tab="difference">
-                            Rate Difference
-                        </button>
+
                     </nav>
                 </div>
 
@@ -304,29 +302,6 @@
                             </div>
                         </div>
                         <canvas id="visitors-chart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Add the new difference tab content -->
-                <div id="difference-tab" class="tab-content hidden">
-                    <div class="mt-4">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="text-xl font-semibold">Conversion Rate Difference</h3>
-                            <div class="flex items-center space-x-2">
-                                <label class="text-sm text-gray-600">View:</label>
-                                <select id="difference-view-toggle" class="form-select text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
-                                    <option value="daily">Daily View</option>
-                                    <option value="cumulative">Cumulative View</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div id="chart-loading" class="hidden">
-                            <div class="animate-pulse space-y-4">
-                                <div class="h-48 bg-gray-200 rounded"></div>
-                                <div class="h-4 bg-gray-200 rounded w-1/2"></div>
-                            </div>
-                        </div>
-                        <canvas id="difference-chart"></canvas>
                     </div>
                 </div>
             </div>
