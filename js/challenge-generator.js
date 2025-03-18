@@ -245,75 +245,89 @@ function addYearlyPattern(monthlyVisitors) {
 
 function distributeConversions(totalConversions, dailyVisitors) {
     const numDays = dailyVisitors.length;
-    const avgConversionRate = totalConversions / dailyVisitors.reduce((sum, v) => sum + v, 0);
+    const totalVisitors = dailyVisitors.reduce((sum, v) => sum + v, 0);
 
-    // First, distribute conversions independently with noise
-    const dailyConversions = new Array(numDays).fill(0).map((_, i) => {
-        // Allow conversion rate to vary by ±20% from average
-        const dayRate = avgConversionRate * (1 + (Math.random() * 0.4 - 0.2));
-        // Calculate conversions based on this day's rate
-        return Math.round(dailyVisitors[i] * dayRate);
-    });
+    // Ensure we don't try to convert more visitors than we have
+    const maxPossibleConversions = Math.min(totalConversions, totalVisitors);
 
-    // Calculate the current total
-    let currentTotal = dailyConversions.reduce((sum, v) => sum + v, 0);
+    // Calculate base conversion rate
+    const avgConversionRate = maxPossibleConversions / totalVisitors;
 
-    // If we have too many conversions, reduce them proportionally
-    if (currentTotal > totalConversions) {
-        // Calculate scaling factor
-        const scalingFactor = totalConversions / currentTotal;
+    // First pass: distribute conversions based on visitors with some randomness
+    const dailyConversions = new Array(numDays).fill(0);
+    let remainingConversions = maxPossibleConversions;
+    let remainingVisitors = totalVisitors;
 
-        // Scale down all conversions, ensuring proper rounding
-        let remainingReduction = currentTotal - totalConversions;
-        const sortedIndices = Array.from({length: numDays}, (_, i) => i)
-            .sort((a, b) => dailyConversions[b] - dailyConversions[a]);
+    // Sort days by number of visitors to handle larger groups first
+    const sortedDays = Array.from({ length: numDays }, (_, i) => i)
+        .sort((a, b) => dailyVisitors[b] - dailyVisitors[a]);
 
-        for (const i of sortedIndices) {
-            if (remainingReduction <= 0) break;
-            const oldValue = dailyConversions[i];
-            const newValue = Math.max(0, Math.round(oldValue * scalingFactor));
-            const reduction = oldValue - newValue;
-            if (reduction > remainingReduction) {
-                dailyConversions[i] = oldValue - remainingReduction;
-                remainingReduction = 0;
-            } else {
-                dailyConversions[i] = newValue;
-                remainingReduction -= reduction;
-            }
-        }
+    for (const dayIndex of sortedDays) {
+        const visitors = dailyVisitors[dayIndex];
+        if (visitors === 0) continue;
 
-        currentTotal = dailyConversions.reduce((sum, v) => sum + v, 0);
+        // Calculate expected conversions for this day
+        const expectedShare = visitors / remainingVisitors;
+        const expectedConversions = Math.min(
+            visitors, // Can't convert more than we have visitors
+            Math.round(remainingConversions * expectedShare)
+        );
+
+        // Add some randomness but ensure we stay within bounds
+        const randomFactor = 0.8 + (Math.random() * 0.4); // Random factor between 0.8 and 1.2
+        const actualConversions = Math.min(
+            visitors,
+            Math.round(expectedConversions * randomFactor)
+        );
+
+        dailyConversions[dayIndex] = actualConversions;
+        remainingConversions -= actualConversions;
+        remainingVisitors -= visitors;
     }
 
-    // Add any remaining conversions to days that have room
-    let remaining = totalConversions - currentTotal;
-    if (remaining > 0) {
-        // Create array of days with available capacity
-        const daysWithRoom = Array.from({length: numDays}, (_, i) => ({
-            index: i,
-            room: dailyVisitors[i] - dailyConversions[i]
-        })).filter(d => d.room > 0);
+    // Second pass: distribute any remaining conversions
+    if (remainingConversions > 0) {
+        // Find days that can accept more conversions
+        const daysWithCapacity = sortedDays.filter(i =>
+            dailyConversions[i] < dailyVisitors[i]
+        );
 
         // Distribute remaining conversions randomly among days with capacity
-        while (remaining > 0 && daysWithRoom.length > 0) {
-            const dayIndex = Math.floor(Math.random() * daysWithRoom.length);
-            const day = daysWithRoom[dayIndex];
+        while (remainingConversions > 0 && daysWithCapacity.length > 0) {
+            const randomIndex = Math.floor(Math.random() * daysWithCapacity.length);
+            const dayIndex = daysWithCapacity[randomIndex];
 
-            const add = Math.min(remaining, day.room);
-            dailyConversions[day.index] += add;
-            remaining -= add;
-
-            // Update or remove the day if it's full
-            day.room -= add;
-            if (day.room <= 0) {
-                daysWithRoom.splice(dayIndex, 1);
+            const additionalCapacity = dailyVisitors[dayIndex] - dailyConversions[dayIndex];
+            if (additionalCapacity <= 0) {
+                // Remove this day if it has no more capacity
+                daysWithCapacity.splice(randomIndex, 1);
+                continue;
             }
+
+            // Add one conversion at a time to maintain better distribution
+            dailyConversions[dayIndex]++;
+            remainingConversions--;
         }
     }
 
-    // Final validation: ensure no day has more conversions than visitors
-    // and that total matches exactly
+    // Final validation
+    let currentTotal = dailyConversions.reduce((sum, v) => sum + v, 0);
+
+    // If we somehow ended up with too many conversions (shouldn't happen with above logic)
+    if (currentTotal > maxPossibleConversions) {
+        const excess = currentTotal - maxPossibleConversions;
+        // Remove excess conversions from days with the most conversions
+        for (const dayIndex of sortedDays) {
+            if (excess <= 0) break;
+            const reduction = Math.min(excess, dailyConversions[dayIndex]);
+            dailyConversions[dayIndex] -= reduction;
+            currentTotal -= reduction;
+        }
+    }
+
+    // Verify all constraints are met
     for (let i = 0; i < numDays; i++) {
+        // Ensure no day has more conversions than visitors
         if (dailyConversions[i] > dailyVisitors[i]) {
             dailyConversions[i] = dailyVisitors[i];
         }
