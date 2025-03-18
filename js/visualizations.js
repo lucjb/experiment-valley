@@ -809,15 +809,16 @@ function renderDifferenceChart(challenge) {
             },
             {
                 label: 'Difference CI Lower',
-                data: timePoints.map(d => d.variant.rateCI[0] - d.base.rateCI[1]),
+                // Use the difference CI values directly from the timepoint
+                data: timePoints.map(d => d.differenceCIs ? d.differenceCIs[0] : d.variant.rate - d.base.rate),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: '+1',
                 tension: 0.4
-            },
-            {
+            },            {
                 label: 'Difference CI Upper',
-                data: timePoints.map(d => d.variant.rateCI[1] - d.base.rateCI[0]),
+                // Use the difference CI values directly from the timepoint
+                data: timePoints.map(d => d.differenceCIs ? d.differenceCIs[1] : d.variant.rate - d.base.rate),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
@@ -834,7 +835,8 @@ function renderDifferenceChart(challenge) {
             },
             {
                 label: 'Cumulative Difference CI Lower',
-                data: timePoints.map(d => d.variant.cumulativeRateCI[0] - d.base.cumulativeRateCI[1]),
+                // Use the cumulative difference CI values directly
+                data: timePoints.map(d => d.cumulativeDifferenceCIs ? d.cumulativeDifferenceCIs[0] : d.variant.cumulativeRate - d.base.cumulativeRate),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(19, 90, 206, 0.1)',
                 fill: '+1',
@@ -842,7 +844,8 @@ function renderDifferenceChart(challenge) {
             },
             {
                 label: 'Cumulative Difference CI Upper',
-                data: timePoints.map(d => d.variant.cumulativeRateCI[1] - d.base.cumulativeRateCI[0]),
+                // Use the cumulative difference CI values directly
+                data: timePoints.map(d => d.cumulativeDifferenceCIs ? d.cumulativeDifferenceCIs[1] : d.variant.cumulativeRate - d.base.cumulativeRate),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
@@ -903,11 +906,11 @@ function renderDifferenceChart(challenge) {
 
                             let ciLow, ciHigh;
                             if (isCumulative) {
-                                ciLow = timePoint.variant.cumulativeRateCI[0] - timePoint.base.cumulativeRateCI[1];
-                                ciHigh = timePoint.variant.cumulativeRateCI[1] - timePoint.base.cumulativeRateCI[0];
+                                ciLow = timePoint.cumulativeDifferenceCIs ? timePoint.cumulativeDifferenceCIs[0] : value;
+                                ciHigh = timePoint.cumulativeDifferenceCIs ? timePoint.cumulativeDifferenceCIs[1] : value;
                             } else {
-                                ciLow = timePoint.variant.rateCI[0] - timePoint.base.rateCI[1];
-                                ciHigh = timePoint.variant.rateCI[1] - timePoint.base.rateCI[0];
+                                ciLow = timePoint.differenceCIs ? timePoint.differenceCIs[0] : value;
+                                ciHigh = timePoint.differenceCIs ? timePoint.differenceCIs[1] : value;
                             }
 
                             const periodInfo = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)} ${timePoint.period.startDay}${timePoint.period.endDay !== timePoint.period.startDay ? `-${timePoint.period.endDay}` : ''}`;
