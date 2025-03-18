@@ -228,7 +228,7 @@
                                     </td>
                                 </tr>
                                 <tr class="bg-gray-50">
-                                    <td class="border px-4 py-1 font-semibold min-w-[6rem]">Delta</td>
+                                    <td class="border px-4 py-1 fontsemibold min-w-[6rem]">Delta</td>
                                     <td class="border px-4 py-1 min-w-[6rem]" id="delta-visitors"></td>
                                     <td class="border px-4 py-1 min-w-[6rem]" id="delta-conversions"></td>
                                     <td class="border px-4 py-1 min-w-[7rem]" id="delta-rate"></td>
@@ -452,7 +452,7 @@
         function updateProgress() {
             console.log('Updating progress, current experiment:', currentExperiment);
             const progressBar = document.getElementById('progress-bar');
-            const progressPercentage = ((currentExperiment- 1) / EXPERIMENTS_PER_SESSION) * 100;
+            const progressPercentage = ((currentExperiment - 1) / EXPERIMENTS_PER_SESSION) * 100;
             progressBar.style.width = `${progressPercentage}%`;
             document.getElementById('current-experiment').textContent = currentExperiment;
         }
@@ -536,10 +536,13 @@
                     // Fade in the new experiment
                     experimentContainer.classList.remove('fade-out');
                     experimentContainer.classList.add('fade-in');
+                    // Initialize cheat sheet right after showing the challenge
+                    initializeCheatSheet();
                 }, 500);
 
             } catch (error) {
                 console.error('Error loading challenge:', error);
+                alert('Error loading challenge');
             } finally {
                 hideLoading('loading-overlay');
             }
@@ -547,7 +550,8 @@
 
         function showCompletionModal() {
             console.log('Showing completion modal');
-            const experimentContainer = document.getElementById('challenge-container');            const completionModal = document.getElementById('completion-modal');
+            const experimentContainer = document.getElementById('challenge-container');
+            const completionModal = document.getElementById('completion-modal');
 
             // Fade out experiment container
             experimentContainer.classList.add('fade-out');
@@ -603,7 +607,7 @@
                 document.getElementById('modal-streak').textContent = streak;
                 document.getElementById('modal-accuracy').textContent = `${accuracy}%`;
 
-                                // Check if this was the last experiment of the session
+                // Check if this was the last experiment of the session
                 console.log('Checking if last experiment:', currentExperiment, 'of', EXPERIMENTS_PER_SESSION);
                 if (currentExperiment === EXPERIMENTS_PER_SESSION) {
                     document.getElementById('next-challenge-btn').textContent = 'Complete Session';
@@ -815,17 +819,33 @@
             const closeCheatSheet = document.getElementById('close-cheat-sheet');
 
             if (!cheatSheetBtn || !cheatSheetModal || !closeCheatSheet) {
-                console.error('Cheat sheet elements not found!');
+                console.error('Cheat sheet elements not found:', {
+                    button: !!cheatSheetBtn,
+                    modal: !!cheatSheetModal,
+                    closeBtn: !!closeCheatSheet
+                });
                 return;
             }
 
-            cheatSheetBtn.addEventListener('click', function() {
+            // Remove any existing listeners
+            const newCheatSheetBtn = cheatSheetBtn.cloneNode(true);
+            cheatSheetBtn.parentNode.replaceChild(newCheatSheetBtn, cheatSheetBtn);
+
+            const newCloseBtn = closeCheatSheet.cloneNode(true);
+            closeCheatSheet.parentNode.replaceChild(newCloseBtn, closeCheatSheet);
+
+            // Add new listeners
+            newCheatSheetBtn.addEventListener('click', function(e) {
                 console.log('Cheat sheet button clicked');
+                e.preventDefault();
+                e.stopPropagation();
                 cheatSheetModal.classList.remove('hidden');
             });
 
-            closeCheatSheet.addEventListener('click', function() {
+            newCloseBtn.addEventListener('click', function(e) {
                 console.log('Close button clicked');
+                e.preventDefault();
+                e.stopPropagation();
                 cheatSheetModal.classList.add('hidden');
             });
 
@@ -835,12 +855,6 @@
                 }
             });
         }
-
-        // Call initializeCheatSheet after DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeCheatSheet();
-        });
-
     </script>
 </body>
 </html>
