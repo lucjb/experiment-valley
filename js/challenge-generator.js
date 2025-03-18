@@ -372,7 +372,7 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
             cumulativeVariantVisitors += variantVisitorsPerPeriod[i];
             cumulativeVariantConversions += variantConversionsPerPeriod[i];
 
-            // Calculate rates and CIs
+            // Calculate rates
             const baseRate = baseVisitorsPerPeriod[i] === 0 ? 0 : baseConversionsPerPeriod[i] / baseVisitorsPerPeriod[i];
             const variantRate = variantVisitorsPerPeriod[i] === 0 ? 0 : variantConversionsPerPeriod[i] / variantVisitorsPerPeriod[i];
             const baseCumulativeRate = cumulativeBaseVisitors === 0 ? 0 : cumulativeBaseConversions / cumulativeBaseVisitors;
