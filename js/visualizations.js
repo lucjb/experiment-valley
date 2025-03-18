@@ -520,7 +520,7 @@ function renderChart(challenge) {
                     callbacks: {
                         label: function(context) {
                             const timePoint = timePoints[context.dataIndex];
-                            const dataPoint = context.dataset.label.toLowerCase().includes('base') ? 
+                            const dataPoint = context.dataset.label.toLowerCase().includes('base') ?
                                 timePoint.base : timePoint.variant;
                             const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
 
@@ -583,8 +583,8 @@ function renderChart(challenge) {
             const viewType = e.target.value;
             const datasets = createDatasets(viewType);
             chart.data.datasets = datasets;
-            chart.options.plugins.title.text = viewType === 'daily' ? 
-                `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates` : 
+            chart.options.plugins.title.text = viewType === 'daily' ?
+                `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates` :
                 'Cumulative Conversion Rates';
             chart.options.scales.y.min = datasets.yAxisRange.min;
             chart.options.scales.y.max = datasets.yAxisRange.max;
@@ -757,247 +757,9 @@ function renderVisitorsChart(challenge) {
             const viewType = e.target.value;
             const datasets = createDatasets(viewType);
             chart.data.datasets = datasets;
-            chart.options.plugins.title.text = viewType === 'daily' ? 
-                `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Visitors` : 
+            chart.options.plugins.title.text = viewType === 'daily' ?
+                `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Visitors` :
                 'Cumulative Visitors';
-            chart.update();
-        });
-    }
-
-    return chart;
-}
-
-function calculateDifferenceCI(variant, base, z) {
-    // Guard against invalid inputs
-    if (!variant || !base || variant.visitors === 0 || base.visitors === 0) {
-        return [0, 0];
-    }
-
-    const diffRate = variant.rate - base.rate;
-    const variantStdErr = Math.sqrt((variant.rate * (1 - variant.rate)) / variant.visitors);
-    const baseStdErr = Math.sqrt((base.rate * (1 - base.rate)) / base.visitors);
-    const combinedStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
-
-    return [
-        diffRate - z * combinedStdErr,
-        diffRate + z * combinedStdErr
-    ];
-}
-
-function calculateCumulativeDifferenceCI(variant, base, z) {
-    // Guard against invalid inputs
-    if (!variant || !base || variant.cumulativeVisitors === 0 || base.cumulativeVisitors === 0) {
-        return [0, 0];
-    }
-
-    const diffRate = variant.cumulativeRate - base.cumulativeRate;
-    const variantStdErr = Math.sqrt((variant.cumulativeRate * (1 - variant.cumulativeRate)) / variant.cumulativeVisitors);
-    const baseStdErr = Math.sqrt((base.cumulativeRate * (1 - base.cumulativeRate)) / base.cumulativeVisitors);
-    const combinedStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
-
-    return [
-        diffRate - z * combinedStdErr,
-        diffRate + z * combinedStdErr
-    ];
-}
-
-function renderDifferenceChart(challenge) {
-    const ctx = document.getElementById('difference-chart');
-    if (!ctx) {
-        console.error('Difference chart canvas not found');
-        return;
-    }
-
-    // Clear any existing chart
-    const existingChart = Chart.getChart(ctx);
-    if (existingChart) {
-        existingChart.destroy();
-    }
-
-    // Get timeline data
-    const timelineData = challenge.simulation.timeline;
-    const timePoints = timelineData.timePoints;
-    const z = challenge.experiment.zScore;
-
-    // Create labels based on time period
-    const labels = timePoints.map(point => {
-        const { type, startDay, endDay } = point.period;
-        if (type === 'day') {
-            return `Day ${startDay}`;
-        } else if (type === 'week') {
-            return `Week ${Math.ceil(startDay/7)}`;
-        } else {
-            return `Month ${Math.ceil(startDay/28)}`;
-        }
-    });
-
-    // Create datasets based on the view type
-    function createDatasets(viewType) {
-        let datasets = viewType === 'daily' ? [
-            {
-                label: `${timelineData.timePeriod}ly Difference`,
-                data: timePoints.map(d => d.variant.rate - d.base.rate),
-                borderColor: 'rgb(59, 130, 246)',
-                backgroundColor: 'transparent',
-                fill: false,
-                tension: 0.4
-            },
-            {
-                label: 'Difference CI Lower',
-                data: timePoints.map(d => calculateDifferenceCI(d.variant, d.base, z)[0]),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: '+1',
-                tension: 0.4
-            },
-            {
-                label: 'Difference CI Upper',
-                data: timePoints.map(d => calculateDifferenceCI(d.variant, d.base, z)[1]),
-                borderColor: 'transparent',
-                fill: false,
-                tension: 0.4
-            }
-        ] : [
-            {
-                label: 'Cumulative Difference',
-                data: timePoints.map(d => d.variant.cumulativeRate - d.base.cumulativeRate),
-                borderColor: 'rgb(19, 90, 206)',
-                backgroundColor: 'transparent',
-                fill: false,
-                borderDash: [5, 5],
-                tension: 0.4
-            },
-            {
-                label: 'Cumulative Difference CI Lower',
-                data: timePoints.map(d => calculateCumulativeDifferenceCI(d.variant, d.base, z)[0]),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(19, 90, 206, 0.1)',
-                fill: '+1',
-                tension: 0.4
-            },
-            {
-                label: 'Cumulative Difference CI Upper',
-                data: timePoints.map(d => calculateCumulativeDifferenceCI(d.variant, d.base, z)[1]),
-                borderColor: 'transparent',
-                fill: false,
-                tension: 0.4
-            }
-        ];
-
-        return datasets;
-    }
-
-    let chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: createDatasets('daily')
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                zoom: {
-                    pan: {
-                        enabled: true,
-                        mode: 'x',
-                        modifierKey: 'ctrl',
-                    },
-                    zoom: {
-                        wheel: {
-                            enabled: true,
-                            modifierKey: 'ctrl',
-                        },
-                        pinch: {
-                            enabled: true
-                        },
-                        mode: 'x',
-                    },
-                    onZoomComplete: function() {
-                        resetZoomButton.style.display = 'block';
-                    },
-                    onResetZoom: function() {
-                        resetZoomButton.style.display = 'none';
-                    }
-                },
-                title: {
-                    display: true,
-                    text: `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rate Difference`
-                },
-                tooltip: {
-                    mode: 'point',
-                    intersect: true,
-                    position: 'nearest',
-                    filter: function(tooltipItem) {
-                        return !tooltipItem.dataset.label.includes('CI');
-                    },
-                    callbacks: {
-                        label: function(context) {
-                            const timePoint = timePoints[context.dataIndex];
-                            const value = context.parsed.y;
-                            const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
-
-                            let cis;
-                            if (isCumulative) {
-                                cis = calculateCumulativeDifferenceCI(timePoint.variant, timePoint.base, z);
-                            } else {
-                                cis = calculateDifferenceCI(timePoint.variant, timePoint.base, z);
-                            }
-
-                            const periodInfo = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)} ${timePoint.period.startDay}${timePoint.period.endDay !== timePoint.period.startDay ? `-${timePoint.period.endDay}` : ''}`;
-                            const confidenceLevel = getConfidenceLevel(challenge.experiment.alpha);
-
-                            return [
-                                `${context.dataset.label}: ${formatPercent(value)}`,
-                                `${confidenceLevel}% CI: [${formatPercent(cis[0])}, ${formatPercent(cis[1])}]`,
-                                periodInfo
-                            ];
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    title: {
-                        display: true,
-                        text: 'Conversion Rate Difference'
-                    },
-                    ticks: {
-                        callback: function(value) {
-                            return formatPercent(value);
-                        }
-                    }
-                }
-            }
-        }
-    });
-
-    // Add reset zoom button
-    const chartContainer = ctx.parentElement;
-    const resetZoomButton = document.createElement('button');
-    resetZoomButton.className = 'mt-2 px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm';
-    resetZoomButton.textContent = 'Reset Zoom';
-    resetZoomButton.style.display = 'none';
-    chartContainer.appendChild(resetZoomButton);
-
-    resetZoomButton.addEventListener('click', () => {
-        chart.resetZoom();
-    });
-
-    // Update view toggle with correct period type
-    const viewToggle = document.getElementById('difference-view-toggle');
-    if (viewToggle) {
-        // Update first option based on time period
-        const periodOption = viewToggle.options[0];
-        periodOption.text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
-
-        // Add event listener for the toggle
-        viewToggle.addEventListener('change', function(e) {
-            const viewType = e.target.value;
-            const datasets = createDatasets(viewType);
-            chart.data.datasets = datasets;
-            chart.options.plugins.title.text = viewType === 'daily' ? 
-                `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rate Difference` : 
-                'Cumulative Conversion Rate Difference';
             chart.update();
         });
     }
@@ -1016,19 +778,16 @@ function initializeCharts(challenge) {
         updateConfidenceIntervals(challenge);
         renderChart(challenge);
         renderVisitorsChart(challenge);
-        renderDifferenceChart(challenge);
     } catch (error) {
         console.error('Error initializing visualizations:', error);
     }
 }
 
-// Make sure charts resize properly
-window.addEventListener('resize', function() {
+// Add window resize event listener to handle responsive charts
+window.addEventListener('resize', () => {
     const conversionChart = Chart.getChart('conversion-chart');
     if (conversionChart) conversionChart.resize();
 
     const visitorsChart = Chart.getChart('visitors-chart');
     if (visitorsChart) visitorsChart.resize();
-    const differenceChart = Chart.getChart('difference-chart');
-    if (differenceChart) differenceChart.resize();
 });
