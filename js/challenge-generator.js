@@ -112,6 +112,21 @@ function distributeDailyVisitors(totalVisitors, numDays) {
     return dailyVisitors;
 }
 
+// First define the shared function
+function distributeDiff(patternedVisitors, diff, numUnits) {
+    if (diff !== 0) {
+        const increment = Math.ceil(diff / numUnits);
+        for (let i = 0; i < numUnits - 1; i++) {
+            patternedVisitors[i] += increment;
+            diff -= increment;
+        }
+        // Add remaining diff to a random unit
+        const randomUnit = Math.floor(Math.random() * numUnits);
+        patternedVisitors[randomUnit] += diff;
+    }
+    return patternedVisitors;
+}
+
 function addWeeklyPattern(dailyVisitors) {
     const numDays = dailyVisitors.length;
     const totalVisitors = dailyVisitors.reduce((sum, v) => sum + v, 0);
@@ -140,26 +155,12 @@ function addWeeklyPattern(dailyVisitors) {
         return Math.round(avgDailyVisitors * weight);
     });
 
-    // Adjust to match total (might need multiple passes due to rounding)
+    // Calculate current total after pattern application
     let currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
     let diff = totalVisitors - currentTotal;
 
-    // Distribute the difference across days proportionally to their current values
-    while (Math.abs(diff) > 0) {
-        const adjustmentPerVisitor = diff / currentTotal;
-        for (let i = 0; i < numDays && Math.abs(diff) > 0; i++) {
-            const adjustment = Math.min(
-                Math.abs(diff),
-                Math.max(1, Math.round(patternedVisitors[i] * Math.abs(adjustmentPerVisitor)))
-            ) * Math.sign(diff);
-
-            patternedVisitors[i] += adjustment;
-            diff -= adjustment;
-        }
-        currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
-    }
-
-    return patternedVisitors;
+    // Use shared distributeDiff function
+    return distributeDiff(patternedVisitors, diff, numDays);
 }
 
 function addMonthlyPattern(weeklyVisitors) {
@@ -187,27 +188,15 @@ function addMonthlyPattern(weeklyVisitors) {
         return Math.round(avgWeeklyVisitors * weight);
     });
 
-    // Adjust totals like in weekly pattern
+    // Calculate current total after pattern application
     let currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
     let diff = totalVisitors - currentTotal;
 
-    while (Math.abs(diff) > 0) {
-        const adjustmentPerVisitor = diff / currentTotal;
-        for (let i = 0; i < numWeeks && Math.abs(diff) > 0; i++) {
-            const adjustment = Math.min(
-                Math.abs(diff),
-                Math.max(1, Math.round(patternedVisitors[i] * Math.abs(adjustmentPerVisitor)))
-            ) * Math.sign(diff);
-
-            patternedVisitors[i] += adjustment;
-            diff -= adjustment;
-        }
-        currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
-    }
-
-    return patternedVisitors;
+    // Use shared distributeDiff function
+    return distributeDiff(patternedVisitors, diff, numWeeks);
 }
 
+// Keep the original addYearlyPattern function but use the extracted distributeDiff
 function addYearlyPattern(monthlyVisitors) {
     const numMonths = monthlyVisitors.length;
     const totalVisitors = monthlyVisitors.reduce((sum, v) => sum + v, 0);
@@ -241,25 +230,12 @@ function addYearlyPattern(monthlyVisitors) {
         return Math.round(avgMonthlyVisitors * weight);
     });
 
-    // Adjust totals like in other patterns
+    // Calculate current total after pattern application
     let currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
     let diff = totalVisitors - currentTotal;
 
-    while (Math.abs(diff) > 0) {
-        const adjustmentPerVisitor = diff / currentTotal;
-        for (let i = 0; i < numMonths && Math.abs(diff) > 0; i++) {
-            const adjustment = Math.min(
-                Math.abs(diff),
-                Math.max(1, Math.round(patternedVisitors[i] * Math.abs(adjustmentPerVisitor)))
-            ) * Math.sign(diff);
-
-            patternedVisitors[i] += adjustment;
-            diff -= adjustment;
-        }
-        currentTotal = patternedVisitors.reduce((sum, v) => sum + v, 0);
-    }
-
-    return patternedVisitors;
+    // Use shared distributeDiff function
+    return distributeDiff(patternedVisitors, diff, numMonths);
 }
 
 function distributeConversions(totalConversions, dailyVisitors) {
