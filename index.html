@@ -113,6 +113,12 @@
                     <h2 class="text-xl font-semibold text-gray-800 whitespace-nowrap">Decision Making:</h2>
                     <div class="flex items-center space-x-2">
                         <span class="font-medium">Is this Experiment Trustworthy?</span>
+                        <button id="cheat-sheet-btn" class="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded hover:bg-gray-200 transition flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Cheat Sheet
+                        </button>
                         <button id="trust-yes" class="px-4 py-1 bg-green-500 text-white text-sm rounded shadow hover:bg-green-600 transition">
                             Yes
                         </button>
@@ -748,5 +754,76 @@
         }
 
     </script>
+    <div id="cheat-sheet-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-[600px] shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-medium text-gray-900">Experiment Trustworthiness Checklist</h3>
+                <button id="close-cheat-sheet" class="text-gray-400 hover:text-gray-500">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="mt-4">
+                <ul class="space-y-3 text-gray-600">
+                    <li class="flex items-start">
+                        <svg class="h-6 w-6 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span><strong>Sample Ratio Mismatch:</strong> Check if the traffic split between variants matches the expected ratio (usually 50/50)</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="h-6 w-6 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span><strong>Traffic Patterns:</strong> Verify if daily traffic and conversion rates align with historical patterns</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="h-6 w-6 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span><strong>Sample Size:</strong> Ensure both variants have enough data (at least the required sample size)</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="h-6 w-6 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span><strong>Business Cycles:</strong> Verify the experiment ran for an integer number of business cycles</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="h-6 w-6 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span><strong>Unusual Patterns:</strong> Look for any unexpected spikes or drops in the timeline charts</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="h-6 w-6 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span><strong>Statistical Significance:</strong> Check if the p-value is below the significance level (alpha)</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // Add event listeners for cheat sheet modal
+    document.getElementById('cheat-sheet-btn').addEventListener('click', function() {
+        document.getElementById('cheat-sheet-modal').classList.remove('hidden');
+    });
+
+    document.getElementById('close-cheat-sheet').addEventListener('click', function() {
+        document.getElementById('cheat-sheet-modal').classList.add('hidden');
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('cheat-sheet-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+        }
+    });
+</script>
 </body>
 </html>
