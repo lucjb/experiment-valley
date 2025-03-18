@@ -767,6 +767,40 @@ function renderVisitorsChart(challenge) {
     return chart;
 }
 
+function calculateDifferenceCI(variant, base, z) {
+    // Guard against invalid inputs
+    if (!variant || !base || variant.visitors === 0 || base.visitors === 0) {
+        return [0, 0];
+    }
+
+    const diffRate = variant.rate - base.rate;
+    const variantStdErr = Math.sqrt((variant.rate * (1 - variant.rate)) / variant.visitors);
+    const baseStdErr = Math.sqrt((base.rate * (1 - base.rate)) / base.visitors);
+    const combinedStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
+
+    return [
+        diffRate - z * combinedStdErr,
+        diffRate + z * combinedStdErr
+    ];
+}
+
+function calculateCumulativeDifferenceCI(variant, base, z) {
+    // Guard against invalid inputs
+    if (!variant || !base || variant.cumulativeVisitors === 0 || base.cumulativeVisitors === 0) {
+        return [0, 0];
+    }
+
+    const diffRate = variant.cumulativeRate - base.cumulativeRate;
+    const variantStdErr = Math.sqrt((variant.cumulativeRate * (1 - variant.cumulativeRate)) / variant.cumulativeVisitors);
+    const baseStdErr = Math.sqrt((base.cumulativeRate * (1 - base.cumulativeRate)) / base.cumulativeVisitors);
+    const combinedStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
+
+    return [
+        diffRate - z * combinedStdErr,
+        diffRate + z * combinedStdErr
+    ];
+}
+
 function renderDifferenceChart(challenge) {
     const ctx = document.getElementById('difference-chart');
     if (!ctx) {
@@ -783,6 +817,7 @@ function renderDifferenceChart(challenge) {
     // Get timeline data
     const timelineData = challenge.simulation.timeline;
     const timePoints = timelineData.timePoints;
+    const z = challenge.experiment.zScore;
 
     // Create labels based on time period
     const labels = timePoints.map(point => {
@@ -806,30 +841,18 @@ function renderDifferenceChart(challenge) {
                 backgroundColor: 'transparent',
                 fill: false,
                 tension: 0.4
-            }, {
+            },
+            {
                 label: 'Difference CI Lower',
-                data: timePoints.map(d => {
-                    const diffRate = d.variant.rate - d.base.rate;
-                    const variantStdErr = Math.sqrt(d.variant.rate * (1 - d.variant.rate) / d.variant.visitors);
-                    const baseStdErr = Math.sqrt(d.base.rate * (1 - d.base.rate) / d.base.visitors);
-                    const combinedStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
-                    const z = challenge.experiment.zScore;
-                    return diffRate - z * combinedStdErr;
-                }),
+                data: timePoints.map(d => calculateDifferenceCI(d.variant, d.base, z)[0]),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: '+1',
                 tension: 0.4
-            }, {
+            },
+            {
                 label: 'Difference CI Upper',
-                data: timePoints.map(d => {
-                    const diffRate = d.variant.rate - d.base.rate;
-                    const variantStdErr = Math.sqrt(d.variant.rate * (1 - d.variant.rate) / d.variant.visitors);
-                    const baseStdErr = Math.sqrt(d.base.rate * (1 - d.base.rate) / d.base.visitors);
-                    const combinedStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
-                    const z = challenge.experiment.zScore;
-                    return diffRate + z * combinedStdErr;
-                }),
+                data: timePoints.map(d => calculateDifferenceCI(d.variant, d.base, z)[1]),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
@@ -843,30 +866,18 @@ function renderDifferenceChart(challenge) {
                 fill: false,
                 borderDash: [5, 5],
                 tension: 0.4
-            }, {
+            },
+            {
                 label: 'Cumulative Difference CI Lower',
-                data: timePoints.map(d => {
-                    const diffRate = d.variant.cumulativeRate - d.base.cumulativeRate;
-                    const variantStdErr = Math.sqrt(d.variant.cumulativeRate * (1 - d.variant.cumulativeRate) / d.variant.cumulativeVisitors);
-                    const baseStdErr = Math.sqrt(d.base.cumulativeRate * (1 - d.base.cumulativeRate) / d.base.cumulativeVisitors);
-                    const combinedStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
-                    const z = challenge.experiment.zScore;
-                    return diffRate - z * combinedStdErr;
-                }),
+                data: timePoints.map(d => calculateCumulativeDifferenceCI(d.variant, d.base, z)[0]),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(19, 90, 206, 0.1)',
                 fill: '+1',
                 tension: 0.4
-            }, {
+            },
+            {
                 label: 'Cumulative Difference CI Upper',
-                data: timePoints.map(d => {
-                    const diffRate = d.variant.cumulativeRate - d.base.cumulativeRate;
-                    const variantStdErr = Math.sqrt(d.variant.cumulativeRate * (1 - d.variant.cumulativeRate) / d.variant.cumulativeVisitors);
-                    const baseStdErr = Math.sqrt(d.base.cumulativeRate * (1 - d.base.cumulativeRate) / d.base.cumulativeVisitors);
-                    const combinedStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
-                    const z = challenge.experiment.zScore;
-                    return diffRate + z * combinedStdErr;
-                }),
+                data: timePoints.map(d => calculateCumulativeDifferenceCI(d.variant, d.base, z)[1]),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
@@ -925,28 +936,19 @@ function renderDifferenceChart(challenge) {
                             const value = context.parsed.y;
                             const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
 
-                            // Calculate CIs for tooltip
-                            let diffRate, variantStdErr, baseStdErr, combinedStdErr;
+                            let cis;
                             if (isCumulative) {
-                                diffRate = timePoint.variant.cumulativeRate - timePoint.base.cumulativeRate;
-                                variantStdErr = Math.sqrt(timePoint.variant.cumulativeRate * (1 - timePoint.variant.cumulativeRate) / timePoint.variant.cumulativeVisitors);
-                                baseStdErr = Math.sqrt(timePoint.base.cumulativeRate * (1 - timePoint.base.cumulativeRate) / timePoint.base.cumulativeVisitors);
+                                cis = calculateCumulativeDifferenceCI(timePoint.variant, timePoint.base, z);
                             } else {
-                                diffRate = timePoint.variant.rate - timePoint.base.rate;
-                                variantStdErr = Math.sqrt(timePoint.variant.rate * (1 - timePoint.variant.rate) / timePoint.variant.visitors);
-                                baseStdErr = Math.sqrt(timePoint.base.rate * (1 - timePoint.base.rate) / timePoint.base.visitors);
+                                cis = calculateDifferenceCI(timePoint.variant, timePoint.base, z);
                             }
-                            combinedStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
-                            const z = challenge.experiment.zScore;
-                            const ciLow = diffRate - z * combinedStdErr;
-                            const ciHigh = diffRate + z * combinedStdErr;
 
                             const periodInfo = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)} ${timePoint.period.startDay}${timePoint.period.endDay !== timePoint.period.startDay ? `-${timePoint.period.endDay}` : ''}`;
                             const confidenceLevel = getConfidenceLevel(challenge.experiment.alpha);
 
                             return [
                                 `${context.dataset.label}: ${formatPercent(value)}`,
-                                `${confidenceLevel}% CI: [${formatPercent(ciLow)}, ${formatPercent(ciHigh)}]`,
+                                `${confidenceLevel}% CI: [${formatPercent(cis[0])}, ${formatPercent(cis[1])}]`,
                                 periodInfo
                             ];
                         }
