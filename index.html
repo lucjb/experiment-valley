@@ -507,10 +507,11 @@
                     initializeCharts(challenge);
 
                     // Fade in the new experiment
-                    experimentContainer.classList.remove('fade-out);
+                    experimentContainer.classList.remove('fade-out');
                     experimentContainer.classList.add('fade-in');
                 }, 500);
 
+                hideLoading('loading-overlay');
             } catch (error) {
                 console.error('Error loading challenge:', error);
             } finally {
