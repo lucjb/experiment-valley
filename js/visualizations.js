@@ -767,6 +767,237 @@ function renderVisitorsChart(challenge) {
     return chart;
 }
 
+function renderDifferenceChart(challenge) {
+    const ctx = document.getElementById('difference-chart');
+    if (!ctx) {
+        console.error('Difference chart canvas not found');
+        return;
+    }
+
+    // Clear any existing chart
+    const existingChart = Chart.getChart(ctx);
+    if (existingChart) {
+        existingChart.destroy();
+    }
+
+    // Get timeline data
+    const timelineData = challenge.simulation.timeline;
+    const timePoints = timelineData.timePoints;
+
+    // Create labels based on time period
+    const labels = timePoints.map(point => {
+        const { type, startDay, endDay } = point.period;
+        if (type === 'day') {
+            return `Day ${startDay}`;
+        } else if (type === 'week') {
+            return `Week ${Math.ceil(startDay/7)}`;
+        } else {
+            return `Month ${Math.ceil(startDay/28)}`;
+        }
+    });
+
+    // Create datasets based on the view type
+    function createDatasets(viewType) {
+        let datasets = viewType === 'daily' ? [
+            {
+                label: `${timelineData.timePeriod}ly Rate Difference`,
+                data: timePoints.map(d => d.variant.rate - d.base.rate),
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'transparent',
+                fill: false,
+                tension: 0.4
+            },
+            {
+                label: 'Rate Difference CI Lower',
+                data: timePoints.map(d => {
+                    const variantStdErr = Math.sqrt((d.variant.rate * (1 - d.variant.rate)) / d.variant.visitors);
+                    const baseStdErr = Math.sqrt((d.base.rate * (1 - d.base.rate)) / d.base.visitors);
+                    const diffStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
+                    return (d.variant.rate - d.base.rate) - challenge.experiment.zScore * diffStdErr;
+                }),
+                borderColor: 'transparent',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',                fill: '+1',
+                tension: 0.4
+            },
+            {
+                label: 'Rate Difference CI Upper',
+                data: timePoints.map(d => {
+                    const variantStdErr = Math.sqrt((d.variant.rate * (1 - d.variant.rate)) / d.variant.visitors);
+                    const baseStdErr = Math.sqrt((d.base.rate * (1 - d.base.rate)) / d.base.visitors);
+                    const diffStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
+                    return (d.variant.rate - d.base.rate) + challenge.experiment.zScore * diffStdErr;
+                }),
+                borderColor: 'transparent',
+                fill: false,
+                tension: 0.4
+            }
+        ] : [
+            {
+                label: 'Cumulative Rate Difference',
+                data: timePoints.map(d => d.variant.cumulativeRate - d.base.cumulativeRate),
+                borderColor: 'rgb(19, 90, 206)',
+                backgroundColor: 'transparent',
+                fill: false,
+                borderDash: [5, 5],
+                tension: 0.4
+            },
+            {
+                label: 'Cumulative Rate Difference CI Lower',
+                data: timePoints.map(d => {
+                    const variantStdErr = Math.sqrt((d.variant.cumulativeRate * (1 - d.variant.cumulativeRate)) / d.variant.cumulativeVisitors);
+                    const baseStdErr = Math.sqrt((d.base.cumulativeRate * (1 - d.base.cumulativeRate)) / d.base.cumulativeVisitors);
+                    const diffStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
+                    return (d.variant.cumulativeRate - d.base.cumulativeRate) - challenge.experiment.zScore * diffStdErr;
+                }),
+                borderColor: 'transparent',
+                backgroundColor: 'rgba(19, 90, 206, 0.1)',
+                fill: '+1',
+                tension: 0.4
+            },
+            {
+                label: 'Cumulative Rate Difference CI Upper',
+                data: timePoints.map(d => {
+                    const variantStdErr = Math.sqrt((d.variant.cumulativeRate * (1 - d.variant.cumulativeRate)) / d.variant.cumulativeVisitors);
+                    const baseStdErr = Math.sqrt((d.base.cumulativeRate * (1 - d.base.cumulativeRate)) / d.base.cumulativeVisitors);
+                    const diffStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
+                    return (d.variant.cumulativeRate - d.base.cumulativeRate) + challenge.experiment.zScore * diffStdErr;
+                }),
+                borderColor: 'transparent',
+                fill: false,
+                tension: 0.4
+            }
+        ];
+
+        return datasets;
+    }
+
+    let chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: createDatasets('daily')
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                zoom: {
+                    pan: {
+                        enabled: true,
+                        mode: 'x',
+                        modifierKey: 'ctrl',
+                    },
+                    zoom: {
+                        wheel: {
+                            enabled: true,
+                            modifierKey: 'ctrl',
+                        },
+                        pinch: {
+                            enabled: true
+                        },
+                        mode: 'x',
+                    },
+                    onZoomComplete: function() {
+                        resetZoomButton.style.display = 'block';
+                    },
+                    onResetZoom: function() {
+                        resetZoomButton.style.display = 'none';
+                    }
+                },
+                title: {
+                    display: true,
+                    text: `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rate Difference`
+                },
+                tooltip: {
+                    mode: 'point',
+                    intersect: true,
+                    position: 'nearest',
+                    filter: function(tooltipItem) {
+                        return !tooltipItem.dataset.label.includes('CI');
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            const timePoint = timePoints[context.dataIndex];
+                            const value = context.parsed.y;
+                            const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
+
+                            let diffRate, variantStdErr, baseStdErr, diffStdErr;
+                            if (isCumulative) {
+                                diffRate = timePoint.variant.cumulativeRate - timePoint.base.cumulativeRate;
+                                variantStdErr = Math.sqrt((timePoint.variant.cumulativeRate * (1 - timePoint.variant.cumulativeRate)) / timePoint.variant.cumulativeVisitors);
+                                baseStdErr = Math.sqrt((timePoint.base.cumulativeRate * (1 - timePoint.base.cumulativeRate)) / timePoint.base.cumulativeVisitors);
+                            } else {
+                                diffRate = timePoint.variant.rate - timePoint.base.rate;
+                                variantStdErr = Math.sqrt((timePoint.variant.rate * (1 - timePoint.variant.rate)) / timePoint.variant.visitors);
+                                baseStdErr = Math.sqrt((timePoint.base.rate * (1 - timePoint.base.rate)) / timePoint.base.visitors);
+                            }
+                            diffStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
+                            const z = challenge.experiment.zScore;
+                            const ciLow = diffRate - z * diffStdErr;
+                            const ciHigh = diffRate + z * diffStdErr;
+
+                            const periodInfo = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)} ${timePoint.period.startDay}${timePoint.period.endDay !== timePoint.period.startDay ? `-${timePoint.period.endDay}` : ''}`;
+                            const confidenceLevel = getConfidenceLevel(challenge.experiment.alpha);
+
+                            return [
+                                `${context.dataset.label}: ${formatPercent(value)}`,
+                                `${confidenceLevel}% CI: [${formatPercent(ciLow)}, ${formatPercent(ciHigh)}]`,
+                                periodInfo
+                            ];
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Conversion Rate Difference'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return formatPercent(value);
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Add reset zoom button
+    const chartContainer = ctx.parentElement;
+    const resetZoomButton = document.createElement('button');
+    resetZoomButton.className = 'mt-2 px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm';
+    resetZoomButton.textContent = 'Reset Zoom';
+    resetZoomButton.style.display = 'none';
+    chartContainer.appendChild(resetZoomButton);
+
+    resetZoomButton.addEventListener('click', () => {
+        chart.resetZoom();
+    });
+
+    // Update view toggle with correct period type
+    const viewToggle = document.getElementById('difference-view-toggle');
+    if (viewToggle) {
+        // Update first option based on time period
+        const periodOption = viewToggle.options[0];
+        periodOption.text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
+
+        // Add event listener for the toggle
+        viewToggle.addEventListener('change', function(e) {
+            const viewType = e.target.value;
+            const datasets = createDatasets(viewType);
+            chart.data.datasets = datasets;
+            chart.options.plugins.title.text = viewType === 'daily' ?
+                `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rate Difference` :
+                'Cumulative Conversion Rate Difference';
+            chart.update();
+        });
+    }
+
+    return chart;
+}
+
+// Update initializeCharts to include the difference chart
 function initializeCharts(challenge) {
     try {
         // Reset view toggle to 'daily' first
@@ -778,16 +1009,20 @@ function initializeCharts(challenge) {
         updateConfidenceIntervals(challenge);
         renderChart(challenge);
         renderVisitorsChart(challenge);
+        renderDifferenceChart(challenge);
     } catch (error) {
         console.error('Error initializing visualizations:', error);
     }
 }
 
-// Add window resize event listener to handle responsive charts
+// Update resize event listener to include difference chart
 window.addEventListener('resize', () => {
     const conversionChart = Chart.getChart('conversion-chart');
     if (conversionChart) conversionChart.resize();
 
     const visitorsChart = Chart.getChart('visitors-chart');
     if (visitorsChart) visitorsChart.resize();
+
+    const differenceChart = Chart.getChart('difference-chart');
+    if (differenceChart) differenceChart.resize();
 });
