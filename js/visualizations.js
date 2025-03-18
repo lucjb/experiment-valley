@@ -526,16 +526,13 @@ function renderChart(challenge) {
                             const conversions = isCumulative ? dataPoint.cumulativeConversions : dataPoint.conversions;
                             const rate = isCumulative ? dataPoint.cumulativeRate : dataPoint.rate;
                             const ci = isCumulative ? dataPoint.cumulativeRateCI : dataPoint.rateCI;
-
-                            const periodInfo = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)} ${timePoint.period.startDay}${timePoint.period.endDay !== timePoint.period.startDay ? `-${timePoint.period.endDay}` : ''}`;
                             const confidenceLevel = calculateConfidenceLevel(challenge.experiment.alpha);
 
                             return [
                                 `${context.dataset.label}: ${formatPercent(rate)}`,
                                 `${confidenceLevel}% CI: [${formatPercent(ci[0])}, ${formatPercent(ci[1])}]`,
                                 `Visitors: ${visitors.toLocaleString()}`,
-                                `Conversions: ${conversions.toLocaleString()}`,
-                                periodInfo
+                                `Conversions: ${conversions.toLocaleString()}`
                             ];
                         }
                     }
@@ -705,10 +702,8 @@ function renderVisitorsChart(challenge) {
                         label: function(context) {
                             const timePoint = timePoints[context.dataIndex];
                             const value = context.parsed.y;
-                            const periodInfo = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)} ${timePoint.period.startDay}${timePoint.period.endDay !== timePoint.period.startDay ? `-${timePoint.period.endDay}` : ''}`;
                             return [
-                                `${context.dataset.label}: ${value.toLocaleString()}`,
-                                periodInfo
+                                `${context.dataset.label}: ${value.toLocaleString()}`
                             ];
                         }
                     }
