@@ -8,10 +8,8 @@ function hideLoading(chartId) {
 
 function formatPercent(value) {
     const percentage = value * 100;
-    if (Math.round(percentage) === percentage) {
-        return Math.round(percentage) + '%';
-    }
-    return percentage.toFixed(2).replace(/\.?0+$/, '') + '%';
+    // Always show 2 decimal places for consistency with the table
+    return percentage.toFixed(2) + '%';
 }
 
 function formatDecimal(value) {
@@ -377,41 +375,42 @@ function renderChart(challenge) {
         let datasets = viewType === 'daily' ? [
             {
                 label: `Base ${timelineData.timePeriod}ly Rate`,
-                data: timePoints.map(d => d.base.rate),
+                // Round to ensure consistent display with table
+                data: timePoints.map(d => Number((d.base.rate).toFixed(4))),
                 borderColor: 'rgb(147, 51, 234)',
                 backgroundColor: 'transparent',
                 fill: false,
                 tension: 0.4
             }, {
                 label: 'Base CI Lower',
-                data: timePoints.map(d => d.base.rateCI[0]),
+                data: timePoints.map(d => Number(d.base.rateCI[0].toFixed(4))),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(147, 51, 234, 0.1)',
                 fill: '+1',
                 tension: 0.4
             }, {
                 label: 'Base CI Upper',
-                data: timePoints.map(d => d.base.rateCI[1]),
+                data: timePoints.map(d => Number(d.base.rateCI[1].toFixed(4))),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
             }, {
                 label: `Test ${timelineData.timePeriod}ly Rate`,
-                data: timePoints.map(d => d.variant.rate),
+                data: timePoints.map(d => Number(d.variant.rate.toFixed(4))),
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'transparent',
                 fill: false,
                 tension: 0.4
             }, {
                 label: 'Test CI Lower',
-                data: timePoints.map(d => d.variant.rateCI[0]),
+                data: timePoints.map(d => Number(d.variant.rateCI[0].toFixed(4))),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: '+1',
                 tension: 0.4
             }, {
                 label: 'Test CI Upper',
-                data: timePoints.map(d => d.variant.rateCI[1]),
+                data: timePoints.map(d => Number(d.variant.rateCI[1].toFixed(4))),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
@@ -419,7 +418,7 @@ function renderChart(challenge) {
         ] : [
             {
                 label: 'Base Cumulative Rate',
-                data: timePoints.map(d => d.base.cumulativeRate),
+                data: timePoints.map(d => Number(d.base.cumulativeRate.toFixed(4))),
                 borderColor: 'rgb(107, 11, 194)',
                 backgroundColor: 'transparent',
                 borderDash: [5, 5],
@@ -427,20 +426,20 @@ function renderChart(challenge) {
                 tension: 0.4
             }, {
                 label: 'Base CI Lower',
-                data: timePoints.map(d => d.base.cumulativeRateCI[0]),
+                data: timePoints.map(d => Number(d.base.cumulativeRateCI[0].toFixed(4))),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(107, 11, 194, 0.1)',
                 fill: '+1',
                 tension: 0.4
             }, {
                 label: 'Base CI Upper',
-                data: timePoints.map(d => d.base.cumulativeRateCI[1]),
+                data: timePoints.map(d => Number(d.base.cumulativeRateCI[1].toFixed(4))),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
             }, {
                 label: 'Test Cumulative Rate',
-                data: timePoints.map(d => d.variant.cumulativeRate),
+                data: timePoints.map(d => Number(d.variant.cumulativeRate.toFixed(4))),
                 borderColor: 'rgb(19, 90, 206)',
                 backgroundColor: 'transparent',
                 borderDash: [5, 5],
@@ -448,14 +447,14 @@ function renderChart(challenge) {
                 tension: 0.4
             }, {
                 label: 'Test CI Lower',
-                data: timePoints.map(d => d.variant.cumulativeRateCI[0]),
+                data: timePoints.map(d => Number(d.variant.cumulativeRateCI[0].toFixed(4))),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(19, 90, 206, 0.1)',
                 fill: '+1',
                 tension: 0.4
             }, {
                 label: 'Test CI Upper',
-                data: timePoints.map(d => d.variant.cumulativeRateCI[1]),
+                data: timePoints.map(d => Number(d.variant.cumulativeRateCI[1].toFixed(4))),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
