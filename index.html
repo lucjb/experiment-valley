@@ -381,7 +381,7 @@
         </div>
     </div>
     <div id="cheat-sheet-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-4 border w-[450px] shadow-lg rounded-md bg-white">
+        <div class="relative top-20 mx-auto p-4 border max-w-sm shadow-lg rounded-md bg-white">
             <div class="mt-2">
                 <div class="flex justify-between items-center border-b pb-3">
                     <h3 class="text-lg font-medium text-gray-900">Experiment Trustworthiness Guide</h3>
@@ -394,35 +394,25 @@
                 <div class="mt-4">
                     <ul class="space-y-4 text-gray-600">
                         <!-- Sample Ratio Mismatch Section -->
-                        <li class="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('srm-details')">
+                        <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('srm-details')">
                             <div class="flex items-start">
-                                <svg class="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                <div class="flex-grow">
+                                <div class="flex-grow pr-2">
                                     <div class="flex justify-between items-center">
-                                        <span class="font-semibold text-gray-900">Sample Ratio Mismatch (SRM)</span>
-                                        <svg class="h-5 w-5 transform transition-transform" id="srm-arrow">
+                                        <span class="font-semibold text-gray-900 text-sm">Sample Ratio Mismatch</span>
+                                        <svg class="h-4 w-4 transform transition-transform" id="srm-arrow">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                         </svg>
                                     </div>
-                                    <p class="text-sm mt-1">Check if traffic split matches expected ratio (usually 50/50)</p>
-                                    <div id="srm-details" class="hidden mt-3 bg-gray-100 rounded-lg p-3">
-                                        <div class="space-y-2">
-                                            <p class="text-sm font-medium">How to Check:</p>
-                                            <ul class="list-disc pl-5 text-sm">
-                                                <li>Compare visitor counts between variants</li>
-                                                <li>Calculate actual split ratio: <span class="font-mono bg-gray-200 px-1">variant_visitors / total_visitors</span></li>
-                                                <li>Look for splits between 45% - 55% for a 50/50 test</li>
+                                    <p class="text-xs mt-1">Check traffic split (usually 50/50)</p>
+                                    <div id="srm-details" class="hidden mt-2 bg-gray-100 rounded p-2">
+                                        <div class="space-y-2 text-xs">
+                                            <ul class="list-disc pl-4">
+                                                <li>Compare visitor counts</li>
+                                                <li>Look for 45-55% split</li>
                                             </ul>
-                                            <div class="mt-2">
-                                                <p class="text-sm font-medium">Example:</p>
-                                                <div class="bg-white p-2 rounded mt-1">
-                                                    <p class="text-sm font-mono">Base: 1000 visitors (48%)</p>
-                                                    <p class="text-sm font-mono">Variant: 1084 visitors (52%)</p>
-                                                    <p class="text-sm text-green-600 mt-1">✓ Good: Split within acceptable range</p>
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -430,35 +420,26 @@
                         </li>
 
                         <!-- Traffic Patterns Section -->
-                        <li class="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('traffic-details')">
+                        <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('traffic-details')">
                             <div class="flex items-start">
-                                <svg class="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                <div class="flex-grow">
+                                <div class="flex-grow pr-2">
                                     <div class="flex justify-between items-center">
-                                        <span class="font-semibold text-gray-900">Traffic Patterns</span>
-                                        <svg class="h-5 w-5 transform transition-transform" id="traffic-arrow">
+                                        <span class="font-semibold text-gray-900 text-sm">Traffic Patterns</span>
+                                        <svg class="h-4 w-4 transform transition-transform" id="traffic-arrow">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                         </svg>
                                     </div>
-                                    <p class="text-sm mt-1">Verify if traffic and conversion patterns follow expected trends</p>
-                                    <div id="traffic-details" class="hidden mt-3 bg-gray-100 rounded-lg p-3">
-                                        <div class="space-y-2">
-                                            <p class="text-sm font-medium">What to Look For:</p>
-                                            <ul class="list-disc pl-5 text-sm">
-                                                <li>Weekly patterns (weekday vs weekend)</li>
-                                                <li>Daily volume consistency</li>
-                                                <li>Conversion rate stability</li>
+                                    <p class="text-xs mt-1">Check traffic & conversion trends</p>
+                                    <div id="traffic-details" class="hidden mt-2 bg-gray-100 rounded p-2">
+                                        <div class="space-y-2 text-xs">
+                                            <ul class="list-disc pl-4">
+                                                <li>Weekly patterns</li>
+                                                <li>Volume consistency</li>
+                                                <li>Rate stability</li>
                                             </ul>
-                                            <div class="mt-2">
-                                                <p class="text-sm font-medium">Common Patterns:</p>
-                                                <div class="bg-white p-2 rounded mt-1">
-                                                    <p class="text-sm">✓ Higher traffic on weekdays</p>
-                                                    <p class="textsm">✓ Lower weekend conversion rates</p>
-                                                    <p class="text-sm text-red-600">⚠ Sudden traffic drops</p>
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -466,35 +447,26 @@
                         </li>
 
                         <!-- Sample Size Section -->
-                        <li class="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('sample-details')">
+                        <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('sample-details')">
                             <div class="flex items-start">
-                                <svg class="h-6 w-6 text-green-500 mr-2flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                <div class="flex-grow">
+                                <div class="flex-grow pr-2">
                                     <div class="flex justify-between items-center">
-                                        <span class="font-semibold text-gray-900">Sample Size Adequacy</span>
-                                        <svg class="h-5 w-5 transform transition-transform" id="sample-arrow">
+                                        <span class="font-semibold text-gray-900 text-sm">Sample Size</span>
+                                        <svg class="h-4 w-4 transform transition-transform" id="sample-arrow">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                         </svg>
                                     </div>
-                                    <p class="text-sm mt-1">Ensure enough data for statistical validity</p>
-                                    <div id="sample-details" class="hidden mt-3 bg-gray-100 rounded-lg p-3">
-                                        <div class="space-y-2">
-                                            <p class="text-sm font-medium">Requirements:</p>
-                                            <ul class="list-disc pl-5 text-sm">
-                                                <li>Each variant needs <span class="font-mono bg-gray-200 px-1">required_sample_size</span> visitors</li>
-                                                <li>More visitors needed for smaller effects</li>
-                                                <li>Consider baseline conversion rate</li>
+                                    <p class="text-xs mt-1">Check required sample size</p>
+                                    <div id="sample-details" class="hidden mt-2 bg-gray-100 rounded p-2">
+                                        <div class="space-y-2 text-xs">
+                                            <ul class="list-disc pl-4">
+                                                <li>Meet minimum visitors</li>
+                                                <li>Consider effect size</li>
+                                                <li>Check baseline rate</li>
                                             </ul>
-                                            <div class="mt-2">
-                                                <p class="text-sm font-medium">Sample Size Calculator:</p>
-                                                <div class="bg-white p-2 rounded mt-1 text-sm">
-                                                    <p>Required = f(baseline_rate, MDE, power, significance)</p>
-                                                    <p class="text-green-600 mt-1">✓ Higher baseline = smaller sample needed</p>
-                                                    <p class="text-red-600">⚠ Smaller MDE = larger sample needed</p>
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -502,35 +474,26 @@
                         </li>
 
                         <!-- Business Cycles Section -->
-                        <li class="border rounded-lg p-4 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('cycles-details')">
+                        <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('cycles-details')">
                             <div class="flex items-start">
-                                <svg class="h-6 w-6 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                <div class="flex-grow">
+                                <div class="flex-grow pr-2">
                                     <div class="flex justify-between items-center">
-                                        <span class="font-semibold text-gray-900">Business Cycles</span>
-                                        <svg class="h-5 w-5 transform transition-transform" id="cycles-arrow">
+                                        <span class="font-semibold text-gray-900 text-sm">Business Cycles</span>
+                                        <svg class="h-4 w-4 transform transition-transform" id="cycles-arrow">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                         </svg>
                                     </div>
-                                    <p class="text-sm mt-1">Run experiment for complete business cycles</p>
-                                    <div id="cycles-details" class="hidden mt-3 bg-gray-100 rounded-lg p-3">
-                                        <div class="space-y-2">
-                                            <p class="text-sm font-medium">Common Cycles:</p>
-                                            <ul class="list-disc pl-5 text-sm">
-                                                <li>Daily (24 hours)</li>
-                                                <li>Weekly (7 days)</li>
-                                                <li>Monthly (28-31 days)</li>
+                                    <p class="text-xs mt-1">Check cycle completion</p>
+                                    <div id="cycles-details" class="hidden mt-2 bg-gray-100 rounded p-2">
+                                        <div class="space-y-2 text-xs">
+                                            <ul class="list-disc pl-4">
+                                                <li>Daily: 24 hours</li>
+                                                <li>Weekly: 7 days</li>
+                                                <li>Monthly: 28-31 days</li>
                                             </ul>
-                                            <div class="mt-2">
-                                                <p class="text-sm font-medium">Example:</p>
-                                                <div class="bg-white p-2 rounded mt-1">
-                                                    <p class="text-sm">Weekly cycle: Must run for 7, 14, 21... days</p>
-                                                    <p class="text-green-600">✓ 14 days = 2 complete cycles</p>
-                                                    <p class="text-red-600">⚠ 10 days = incomplete cycle</p>
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -541,7 +504,6 @@
             </div>
         </div>
     </div>
-
     <script>
         let score = 0;
         let streak = 0;
