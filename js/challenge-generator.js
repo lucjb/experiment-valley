@@ -250,87 +250,57 @@ function distributeConversions(totalConversions, dailyVisitors) {
     // Ensure we don't try to convert more visitors than we have
     const maxPossibleConversions = Math.min(totalConversions, totalVisitors);
 
-    // Calculate base conversion rate
-    const avgConversionRate = maxPossibleConversions / totalVisitors;
+    // Calculate uniform conversion rate
+    const uniformRate = maxPossibleConversions / totalVisitors;
 
-    // First pass: distribute conversions based on visitors with some randomness
-    const dailyConversions = new Array(numDays).fill(0);
-    let remainingConversions = maxPossibleConversions;
-    let remainingVisitors = totalVisitors;
+    // First pass: distribute conversions uniformly
+    const dailyConversions = new Array(numDays);
+    let distributedConversions = 0;
 
-    // Sort days by number of visitors to handle larger groups first
-    const sortedDays = Array.from({ length: numDays }, (_, i) => i)
-        .sort((a, b) => dailyVisitors[b] - dailyVisitors[a]);
-
-    for (const dayIndex of sortedDays) {
-        const visitors = dailyVisitors[dayIndex];
-        if (visitors === 0) continue;
-
+    for (let i = 0; i < numDays; i++) {
         // Calculate expected conversions for this day
-        const expectedShare = visitors / remainingVisitors;
-        const expectedConversions = Math.min(
-            visitors, // Can't convert more than we have visitors
-            Math.round(remainingConversions * expectedShare)
+        const expectedConversions = Math.round(dailyVisitors[i] * uniformRate);
+        // Ensure we don't exceed visitors or remaining conversions
+        dailyConversions[i] = Math.min(
+            dailyVisitors[i],
+            expectedConversions,
+            maxPossibleConversions - distributedConversions
         );
-
-        // Add some randomness but ensure we stay within bounds
-        const randomFactor = 0.8 + (Math.random() * 0.4); // Random factor between 0.8 and 1.2
-        const actualConversions = Math.min(
-            visitors,
-            Math.round(expectedConversions * randomFactor)
-        );
-
-        dailyConversions[dayIndex] = actualConversions;
-        remainingConversions -= actualConversions;
-        remainingVisitors -= visitors;
+        distributedConversions += dailyConversions[i];
     }
 
     // Second pass: distribute any remaining conversions
-    if (remainingConversions > 0) {
+    let remaining = maxPossibleConversions - distributedConversions;
+    if (remaining > 0) {
         // Find days that can accept more conversions
-        const daysWithCapacity = sortedDays.filter(i =>
-            dailyConversions[i] < dailyVisitors[i]
-        );
+        const daysWithCapacity = Array.from({ length: numDays }, (_, i) => i)
+            .filter(i => dailyConversions[i] < dailyVisitors[i]);
 
-        // Distribute remaining conversions randomly among days with capacity
-        while (remainingConversions > 0 && daysWithCapacity.length > 0) {
-            const randomIndex = Math.floor(Math.random() * daysWithCapacity.length);
-            const dayIndex = daysWithCapacity[randomIndex];
+        // Distribute remaining one at a time
+        while (remaining > 0 && daysWithCapacity.length > 0) {
+            // Rotate through days with capacity
+            const dayIndex = daysWithCapacity.shift();
 
-            const additionalCapacity = dailyVisitors[dayIndex] - dailyConversions[dayIndex];
-            if (additionalCapacity <= 0) {
-                // Remove this day if it has no more capacity
-                daysWithCapacity.splice(randomIndex, 1);
-                continue;
+            if (dailyConversions[dayIndex] < dailyVisitors[dayIndex]) {
+                dailyConversions[dayIndex]++;
+                remaining--;
+
+                // If day still has capacity, add it back to the end
+                if (dailyConversions[dayIndex] < dailyVisitors[dayIndex]) {
+                    daysWithCapacity.push(dayIndex);
+                }
             }
-
-            // Add one conversion at a time to maintain better distribution
-            dailyConversions[dayIndex]++;
-            remainingConversions--;
         }
     }
 
     // Final validation
-    let currentTotal = dailyConversions.reduce((sum, v) => sum + v, 0);
+    const finalTotal = dailyConversions.reduce((sum, v) => sum + v, 0);
+    console.assert(finalTotal === maxPossibleConversions, 
+        `Total conversions mismatch: ${finalTotal} vs ${maxPossibleConversions}`);
 
-    // If we somehow ended up with too many conversions (shouldn't happen with above logic)
-    if (currentTotal > maxPossibleConversions) {
-        const excess = currentTotal - maxPossibleConversions;
-        // Remove excess conversions from days with the most conversions
-        for (const dayIndex of sortedDays) {
-            if (excess <= 0) break;
-            const reduction = Math.min(excess, dailyConversions[dayIndex]);
-            dailyConversions[dayIndex] -= reduction;
-            currentTotal -= reduction;
-        }
-    }
-
-    // Verify all constraints are met
     for (let i = 0; i < numDays; i++) {
-        // Ensure no day has more conversions than visitors
-        if (dailyConversions[i] > dailyVisitors[i]) {
-            dailyConversions[i] = dailyVisitors[i];
-        }
+        console.assert(dailyConversions[i] <= dailyVisitors[i],
+            `Day ${i} has more conversions than visitors`);
     }
 
     return dailyConversions;
