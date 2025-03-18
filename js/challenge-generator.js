@@ -277,16 +277,34 @@ function distributeConversions(totalConversions, dailyVisitors) {
     // Calculate the current total
     let currentTotal = dailyConversions.reduce((sum, v) => sum + v, 0);
 
-    // First pass: If we have too many conversions, reduce them proportionally
+    // If we have too many conversions, reduce them proportionally
     if (currentTotal > totalConversions) {
-        const reduction = totalConversions / currentTotal;
-        for (let i = 0; i < numDays; i++) {
-            dailyConversions[i] = Math.round(dailyConversions[i] * reduction);
+        // Calculate scaling factor
+        const scalingFactor = totalConversions / currentTotal;
+
+        // Scale down all conversions, ensuring proper rounding
+        let remainingReduction = currentTotal - totalConversions;
+        const sortedIndices = Array.from({length: numDays}, (_, i) => i)
+            .sort((a, b) => dailyConversions[b] - dailyConversions[a]);
+
+        for (const i of sortedIndices) {
+            if (remainingReduction <= 0) break;
+            const oldValue = dailyConversions[i];
+            const newValue = Math.max(0, Math.round(oldValue * scalingFactor));
+            const reduction = oldValue - newValue;
+            if (reduction > remainingReduction) {
+                dailyConversions[i] = oldValue - remainingReduction;
+                remainingReduction = 0;
+            } else {
+                dailyConversions[i] = newValue;
+                remainingReduction -= reduction;
+            }
         }
+
         currentTotal = dailyConversions.reduce((sum, v) => sum + v, 0);
     }
 
-    // Second pass: Add any remaining conversions to days that have room
+    // Add any remaining conversions to days that have room
     let remaining = totalConversions - currentTotal;
     if (remaining > 0) {
         // Create array of days with available capacity
@@ -313,9 +331,9 @@ function distributeConversions(totalConversions, dailyVisitors) {
     }
 
     // Final validation: ensure no day has more conversions than visitors
+    // and that total matches exactly
     for (let i = 0; i < numDays; i++) {
         if (dailyConversions[i] > dailyVisitors[i]) {
-            console.warn(`Day ${i} had more conversions than visitors, capping at visitor count`);
             dailyConversions[i] = dailyVisitors[i];
         }
     }
