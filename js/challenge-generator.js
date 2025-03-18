@@ -249,11 +249,15 @@ function addNoiseToConversions(conversions, visitors) {
     const numSwaps = Math.max(1, Math.floor(numPeriods * 0.2));
 
     for (let swap = 0; swap < numSwaps; swap++) {
-        // Pick two random different periods
+        // Pick first random period
         let period1 = Math.floor(Math.random() * numPeriods);
-        let period2 = Math.floor(Math.random() * (numPeriods - 1));
-        if (period2 >= period1) period2++; // Ensure different periods
+        // Pick second period
+        let period2 = Math.floor(Math.random() * numPeriods);
 
+        // If periods are the same, just skip this swap
+        if (period1 === period2) continue;
+
+        // Swap the values
         // Calculate how many conversions we can move
         const maxFromPeriod1 = Math.max(0, conversions[period1] - 1); // Keep at least 1 conversion
         const maxToPeriod2 = visitors[period2] - conversions[period2]; // Can't exceed visitors
@@ -263,7 +267,7 @@ function addNoiseToConversions(conversions, visitors) {
             const amount = Math.min(
                 maxFromPeriod1,
                 maxToPeriod2,
-                Math.max(1, Math.floor(Math.random() * 5)) // 1-4 conversions
+                Math.max(1, Math.floor(Math.random() * Math.floor(maxFromPeriod1 / 2)))
             );
 
             conversions[period1] -= amount;
