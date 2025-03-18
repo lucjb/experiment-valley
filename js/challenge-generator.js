@@ -112,9 +112,9 @@ function distributeDailyVisitors(totalVisitors, numDays) {
     return dailyVisitors;
 }
 
-// First define the shared function
-function distributeDiff(patternedVisitors, diff, numUnits) {
+function distributeDiff(patternedVisitors, diff) {
     if (diff !== 0) {
+        const numUnits = patternedVisitors.length;
         const increment = Math.ceil(diff / numUnits);
         for (let i = 0; i < numUnits - 1; i++) {
             patternedVisitors[i] += increment;
@@ -124,7 +124,7 @@ function distributeDiff(patternedVisitors, diff, numUnits) {
         const randomUnit = Math.floor(Math.random() * numUnits);
         patternedVisitors[randomUnit] += diff;
     }
-    return patternedVisitors;
+    // Function modifies array in place, no return needed
 }
 
 function addWeeklyPattern(dailyVisitors) {
@@ -160,7 +160,9 @@ function addWeeklyPattern(dailyVisitors) {
     let diff = totalVisitors - currentTotal;
 
     // Use shared distributeDiff function
-    return distributeDiff(patternedVisitors, diff, numDays);
+    distributeDiff(patternedVisitors, diff);
+
+    return patternedVisitors;
 }
 
 function addMonthlyPattern(weeklyVisitors) {
@@ -193,10 +195,11 @@ function addMonthlyPattern(weeklyVisitors) {
     let diff = totalVisitors - currentTotal;
 
     // Use shared distributeDiff function
-    return distributeDiff(patternedVisitors, diff, numWeeks);
+    distributeDiff(patternedVisitors, diff);
+
+    return patternedVisitors;
 }
 
-// Keep the original addYearlyPattern function but use the extracted distributeDiff
 function addYearlyPattern(monthlyVisitors) {
     const numMonths = monthlyVisitors.length;
     const totalVisitors = monthlyVisitors.reduce((sum, v) => sum + v, 0);
@@ -235,7 +238,9 @@ function addYearlyPattern(monthlyVisitors) {
     let diff = totalVisitors - currentTotal;
 
     // Use shared distributeDiff function
-    return distributeDiff(patternedVisitors, diff, numMonths);
+    distributeDiff(patternedVisitors, diff);
+
+    return patternedVisitors;
 }
 
 function distributeConversions(totalConversions, dailyVisitors) {
