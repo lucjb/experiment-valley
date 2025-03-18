@@ -378,6 +378,27 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
             const baseCumulativeRate = cumulativeBaseVisitors === 0 ? 0 : cumulativeBaseConversions / cumulativeBaseVisitors;
             const variantCumulativeRate = cumulativeVariantVisitors === 0 ? 0 : cumulativeVariantConversions / cumulativeVariantVisitors;
 
+            // Calculate rate differences
+            const rateDiff = variantRate - baseRate;
+            const cumulativeRateDiff = variantCumulativeRate - baseCumulativeRate;
+
+            // Calculate confidence intervals for differences
+            const baseStdErr = Math.sqrt((baseRate * (1 - baseRate)) / baseVisitorsPerPeriod[i]);
+            const variantStdErr = Math.sqrt((variantRate * (1 - variantRate)) / variantVisitorsPerPeriod[i]);
+            const diffStdErr = Math.sqrt(baseStdErr * baseStdErr + variantStdErr * variantStdErr);
+            const diffCI = [
+                rateDiff - alpha.zScore * diffStdErr,
+                rateDiff + alpha.zScore * diffStdErr
+            ];
+
+            const baseCumStdErr = Math.sqrt((baseCumulativeRate * (1 - baseCumulativeRate)) / cumulativeBaseVisitors);
+            const variantCumStdErr = Math.sqrt((variantCumulativeRate * (1 - variantCumulativeRate)) / cumulativeVariantVisitors);
+            const diffCumStdErr = Math.sqrt(baseCumStdErr * baseCumStdErr + variantCumStdErr * variantCumStdErr);
+            const diffCumulativeCI = [
+                cumulativeRateDiff - alpha.zScore * diffCumStdErr,
+                cumulativeRateDiff + alpha.zScore * diffCumStdErr
+            ];
+
             return {
                 period: {
                     type: period,
@@ -404,6 +425,12 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
                     cumulativeConversions: cumulativeVariantConversions,
                     cumulativeRate: variantCumulativeRate,
                     cumulativeRateCI: computeConfidenceInterval(variantCumulativeRate, cumulativeVariantVisitors, alpha)
+                },
+                difference: {
+                    rate: rateDiff,
+                    rateCI: diffCI,
+                    cumulativeRate: cumulativeRateDiff,
+                    cumulativeRateCI: diffCumulativeCI
                 }
             };
         }),
@@ -487,7 +514,7 @@ function generateABTestChallenge() {
         actualConversionsBase,
         actualConversionsVariant,
         requiredRuntimeDays,
-        ALPHA
+        {zScore: zScoreCI, alpha: ALPHA}
     );
 
 
