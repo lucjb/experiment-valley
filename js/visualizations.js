@@ -806,19 +806,30 @@ function renderDifferenceChart(challenge) {
                 backgroundColor: 'transparent',
                 fill: false,
                 tension: 0.4
-            },
-            {
+            }, {
                 label: 'Difference CI Lower',
-                // Use the difference CI values directly from the timepoint
-                data: timePoints.map(d => d.differenceCIs ? d.differenceCIs[0] : d.variant.rate - d.base.rate),
+                data: timePoints.map(d => {
+                    const diffRate = d.variant.rate - d.base.rate;
+                    const variantStdErr = Math.sqrt(d.variant.rate * (1 - d.variant.rate) / d.variant.visitors);
+                    const baseStdErr = Math.sqrt(d.base.rate * (1 - d.base.rate) / d.base.visitors);
+                    const combinedStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
+                    const z = challenge.experiment.zScore;
+                    return diffRate - z * combinedStdErr;
+                }),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: '+1',
                 tension: 0.4
-            },            {
+            }, {
                 label: 'Difference CI Upper',
-                // Use the difference CI values directly from the timepoint
-                data: timePoints.map(d => d.differenceCIs ? d.differenceCIs[1] : d.variant.rate - d.base.rate),
+                data: timePoints.map(d => {
+                    const diffRate = d.variant.rate - d.base.rate;
+                    const variantStdErr = Math.sqrt(d.variant.rate * (1 - d.variant.rate) / d.variant.visitors);
+                    const baseStdErr = Math.sqrt(d.base.rate * (1 - d.base.rate) / d.base.visitors);
+                    const combinedStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
+                    const z = challenge.experiment.zScore;
+                    return diffRate + z * combinedStdErr;
+                }),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
@@ -832,20 +843,30 @@ function renderDifferenceChart(challenge) {
                 fill: false,
                 borderDash: [5, 5],
                 tension: 0.4
-            },
-            {
+            }, {
                 label: 'Cumulative Difference CI Lower',
-                // Use the cumulative difference CI values directly
-                data: timePoints.map(d => d.cumulativeDifferenceCIs ? d.cumulativeDifferenceCIs[0] : d.variant.cumulativeRate - d.base.cumulativeRate),
+                data: timePoints.map(d => {
+                    const diffRate = d.variant.cumulativeRate - d.base.cumulativeRate;
+                    const variantStdErr = Math.sqrt(d.variant.cumulativeRate * (1 - d.variant.cumulativeRate) / d.variant.cumulativeVisitors);
+                    const baseStdErr = Math.sqrt(d.base.cumulativeRate * (1 - d.base.cumulativeRate) / d.base.cumulativeVisitors);
+                    const combinedStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
+                    const z = challenge.experiment.zScore;
+                    return diffRate - z * combinedStdErr;
+                }),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(19, 90, 206, 0.1)',
                 fill: '+1',
                 tension: 0.4
-            },
-            {
+            }, {
                 label: 'Cumulative Difference CI Upper',
-                // Use the cumulative difference CI values directly
-                data: timePoints.map(d => d.cumulativeDifferenceCIs ? d.cumulativeDifferenceCIs[1] : d.variant.cumulativeRate - d.base.cumulativeRate),
+                data: timePoints.map(d => {
+                    const diffRate = d.variant.cumulativeRate - d.base.cumulativeRate;
+                    const variantStdErr = Math.sqrt(d.variant.cumulativeRate * (1 - d.variant.cumulativeRate) / d.variant.cumulativeVisitors);
+                    const baseStdErr = Math.sqrt(d.base.cumulativeRate * (1 - d.base.cumulativeRate) / d.base.cumulativeVisitors);
+                    const combinedStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
+                    const z = challenge.experiment.zScore;
+                    return diffRate + z * combinedStdErr;
+                }),
                 borderColor: 'transparent',
                 fill: false,
                 tension: 0.4
@@ -904,14 +925,21 @@ function renderDifferenceChart(challenge) {
                             const value = context.parsed.y;
                             const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
 
-                            let ciLow, ciHigh;
+                            // Calculate CIs for tooltip
+                            let diffRate, variantStdErr, baseStdErr, combinedStdErr;
                             if (isCumulative) {
-                                ciLow = timePoint.cumulativeDifferenceCIs ? timePoint.cumulativeDifferenceCIs[0] : value;
-                                ciHigh = timePoint.cumulativeDifferenceCIs ? timePoint.cumulativeDifferenceCIs[1] : value;
+                                diffRate = timePoint.variant.cumulativeRate - timePoint.base.cumulativeRate;
+                                variantStdErr = Math.sqrt(timePoint.variant.cumulativeRate * (1 - timePoint.variant.cumulativeRate) / timePoint.variant.cumulativeVisitors);
+                                baseStdErr = Math.sqrt(timePoint.base.cumulativeRate * (1 - timePoint.base.cumulativeRate) / timePoint.base.cumulativeVisitors);
                             } else {
-                                ciLow = timePoint.differenceCIs ? timePoint.differenceCIs[0] : value;
-                                ciHigh = timePoint.differenceCIs ? timePoint.differenceCIs[1] : value;
+                                diffRate = timePoint.variant.rate - timePoint.base.rate;
+                                variantStdErr = Math.sqrt(timePoint.variant.rate * (1 - timePoint.variant.rate) / timePoint.variant.visitors);
+                                baseStdErr = Math.sqrt(timePoint.base.rate * (1 - timePoint.base.rate) / timePoint.base.visitors);
                             }
+                            combinedStdErr = Math.sqrt(variantStdErr * variantStdErr + baseStdErr * baseStdErr);
+                            const z = challenge.experiment.zScore;
+                            const ciLow = diffRate - z * combinedStdErr;
+                            const ciHigh = diffRate + z * combinedStdErr;
 
                             const periodInfo = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)} ${timePoint.period.startDay}${timePoint.period.endDay !== timePoint.period.startDay ? `-${timePoint.period.endDay}` : ''}`;
                             const confidenceLevel = getConfidenceLevel(challenge.experiment.alpha);
@@ -940,28 +968,6 @@ function renderDifferenceChart(challenge) {
             }
         }
     });
-
-    // Add horizontal line at y=0
-    const zeroLine = {
-        id: 'zeroLine',
-        beforeDraw: function(chart) {
-            if (chart.config.type !== 'line') return;
-
-            const yScale = chart.scales.y;
-            const ctx = chart.ctx;
-            const zeroY = yScale.getPixelForValue(0);
-
-            ctx.save();
-            ctx.beginPath();
-            ctx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
-            ctx.lineWidth = 1;
-            ctx.moveTo(chart.chartArea.left, zeroY);
-            ctx.lineTo(chart.chartArea.right, zeroY);
-            ctx.stroke();
-            ctx.restore();
-        }
-    };
-    chart.options.plugins.zeroLine = zeroLine;
 
     // Add reset zoom button
     const chartContainer = ctx.parentElement;
