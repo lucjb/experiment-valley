@@ -243,6 +243,36 @@ function addYearlyPattern(monthlyVisitors) {
     return patternedVisitors;
 }
 
+function addNoiseToConversions(conversions, visitors) {
+    const numPeriods = conversions.length;
+    // Number of swaps to perform - about 20% of the periods
+    const numSwaps = Math.max(1, Math.floor(numPeriods * 0.2));
+
+    for (let swap = 0; swap < numSwaps; swap++) {
+        // Pick two random different periods
+        let period1 = Math.floor(Math.random() * numPeriods);
+        let period2 = Math.floor(Math.random() * (numPeriods - 1));
+        if (period2 >= period1) period2++; // Ensure different periods
+
+        // Calculate how many conversions we can move
+        const maxFromPeriod1 = Math.max(0, conversions[period1] - 1); // Keep at least 1 conversion
+        const maxToPeriod2 = visitors[period2] - conversions[period2]; // Can't exceed visitors
+
+        if (maxFromPeriod1 > 0 && maxToPeriod2 > 0) {
+            // Move a random amount up to the maximum possible
+            const amount = Math.min(
+                maxFromPeriod1,
+                maxToPeriod2,
+                Math.max(1, Math.floor(Math.random() * 5)) // 1-4 conversions
+            );
+
+            conversions[period1] -= amount;
+            conversions[period2] += amount;
+        }
+    }
+    return conversions;
+}
+
 function distributeConversions(totalConversions, dailyVisitors) {
     const numDays = dailyVisitors.length;
     const totalVisitors = dailyVisitors.reduce((sum, v) => sum + v, 0);
@@ -292,6 +322,9 @@ function distributeConversions(totalConversions, dailyVisitors) {
             }
         }
     }
+
+    // Add noise by swapping conversions between days
+    addNoiseToConversions(dailyConversions, dailyVisitors);
 
     // Final validation
     const finalTotal = dailyConversions.reduce((sum, v) => sum + v, 0);
