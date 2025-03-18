@@ -28,23 +28,6 @@
             transform: translateY(0);
             transition: opacity 0.5s ease, transform 0.5s ease;
         }
-        /* Add styles for modal transitions */
-        .modal-overlay {
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        .modal-content {
-            transform: translateY(-20px);
-            transition: transform 0.3s ease;
-        }
-        .modal-overlay.active .modal-content {
-            transform: translateY(0);
-        }
     </style>
 
     <!-- Application Scripts -->
@@ -402,8 +385,8 @@
                 </div>
             </div>
         </div>
-    <div id="cheat-sheet-modal" class="modal-overlay hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="modal-content relative top-20 mx-auto p-5 border w-[800px] shadow-lg rounded-md bg-white">
+    <div id="cheat-sheet-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-[800px] shadow-lg rounded-md bg-white">
             <div class="mt-3">
                 <div class="flex justify-between items-center border-b pb-3">
                     <h3 class="text-xl font-medium text-gray-900">Experiment Trustworthiness Guide</h3>
@@ -475,7 +458,7 @@
                                             </ul>
                                             <div class="mt-2">
                                                 <p class="text-sm font-medium">Common Patterns:</p>
-                                                <div class="bg-white p-2rounded mt-1">
+                                                <div class="bg-white p-2 rounded mt-1">
                                                     <p class="text-sm">✓ Higher traffic on weekdays</p>
                                                     <p class="text-sm">✓ Lower weekend conversion rates</p>
                                                     <p class="text-sm text-red-600">⚠ Sudden traffic drops</p>
@@ -937,7 +920,7 @@
 
         // Move cheat sheet event listeners to the top level scope
         function initializeCheatSheet() {
-            console.log('Initializing interactive cheat sheet...');
+            console.log('Initializing cheat sheet...');
             const cheatSheetBtn = document.getElementById('cheat-sheet-btn');
             const cheatSheetModal = document.getElementById('cheat-sheet-modal');
             const closeCheatSheet = document.getElementById('close-cheat-sheet');
@@ -951,45 +934,20 @@
                 return;
             }
 
-            function showModal() {
-                console.log('Showing modal');
-                document.body.style.overflow = 'hidden'; // Prevent background scrolling
-                requestAnimationFrame(() => {
-                    cheatSheetModal.classList.add('active');
-                });
-            }
-
-            function hideModal() {
-                console.log('Hiding modal');
-                cheatSheetModal.classList.remove('active');
-                document.body.style.overflow = '';
-
-                // Reset all expanded sections
-                document.querySelectorAll('[id$="-details"]').forEach(section => {
-                    section.classList.add('hidden');
-                });
-                document.querySelectorAll('[id$="-arrow"]').forEach(arrow => {
-                    arrow.classList.remove('rotate-180');
-                });
-            }
-
-            cheatSheetBtn.addEventListener('click', function(e) {
+            cheatSheetBtn.addEventListener('click', function() {
                 console.log('Cheat sheet button clicked');
-                e.preventDefault();
-                e.stopPropagation();
-                showModal();
+                cheatSheetModal.classList.remove('hidden');
             });
 
-            closeCheatSheet.addEventListener('click', function(e) {
+            closeCheatSheet.addEventListener('click', function() {
                 console.log('Close button clicked');
-                e.preventDefault();
-                e.stopPropagation();
-                hideModal();
+                cheatSheetModal.classList.add('hidden');
             });
 
+            // Close modal when clicking outside
             cheatSheetModal.addEventListener('click', function(e) {
                 if (e.target === this) {
-                    hideModal();
+                    this.classList.add('hidden');
                 }
             });
         }
@@ -1000,24 +958,8 @@
             const arrow = document.getElementById(sectionId.replace('details', 'arrow'));
 
             if (section && arrow) {
-                // Toggle visibility
-                const isExpanding = section.classList.contains('hidden');
                 section.classList.toggle('hidden');
                 arrow.classList.toggle('rotate-180');
-
-                // Animate expansion/collapse
-                if (isExpanding) {
-                    section.style.maxHeight = '0px';
-                    section.style.opacity = '0';
-                    requestAnimationFrame(() => {
-                        section.style.transition = 'max-height 0.3s ease-out, opacity 0.2s ease-out';
-                        section.style.maxHeight = section.scrollHeight + 'px';
-                        section.style.opacity = '1';
-                    });
-                } else {
-                    section.style.maxHeight = '0px';
-                    section.style.opacity = '0';
-                }
             }
         }
 
