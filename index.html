@@ -6,8 +6,8 @@
     <meta name="description" content="Interactive A/B Testing educational platform. Practice statistical analysis and decision making with simulated experiments.">
     <title>A/B Testing Gym</title>
 
-    <!-- Tailwind CSS via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Compiled Tailwind CSS -->
+    <link href="dist/output.css" rel="stylesheet">
 
     <!-- Application Dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js"></script>
@@ -19,7 +19,6 @@
     <script src="js/visualizations.js"></script>
     <script src="js/tooltips.js"></script>
     <script src="js/progress-tracker.js"></script>
-
     <style>
         .score-value {
             color: #f97316; /* Tailwind orange-500 */
@@ -642,6 +641,7 @@
 
 
                 updateExecutionSection(challenge)
+
 
 
                 showLoading('chart-loading');
