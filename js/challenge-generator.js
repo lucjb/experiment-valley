@@ -476,15 +476,8 @@ function generateABTestChallenge() {
     const adjustedVariantRate = Math.max(minimumRate, variantConversionRate);
 
     const actualVisitorsTotal = requiredRuntimeDays * VISITORS_PER_DAY + sampleBinomial(VISITORS_PER_DAY, 0.8);
-
-    // Sample current progress between 10% and 100% of total visitors
-    const progressPercentage = 0.1 + (Math.random() * 0.9);  // Random between 0.1 and 1.0
-    const currentVisitorsTotal = Math.floor(actualVisitorsTotal * progressPercentage);
-    const currentDaysElapsed = Math.floor(requiredRuntimeDays * progressPercentage);
-
-    // Use currentVisitorsTotal for actual calculations
-    const actualVisitorsBase = sampleBinomial(currentVisitorsTotal, 0.5);
-    const actualVisitorsVariant = currentVisitorsTotal - actualVisitorsBase;
+    const actualVisitorsBase = sampleBinomial(actualVisitorsTotal, 0.5);
+    const actualVisitorsVariant = actualVisitorsTotal - actualVisitorsBase;
 
     const actualConversionsBase = sampleBinomial(actualVisitorsBase, actualBaseConversionRate);
     const actualConversionsVariant = sampleBinomial(actualVisitorsVariant, adjustedVariantRate);
@@ -507,15 +500,16 @@ function generateABTestChallenge() {
         observedDifference + diffMarginOfError
     ];
 
-    // Generate timeline data using currentDaysElapsed instead of requiredRuntimeDays
+    // Generate timeline data
     const timelineData = generateTimelineData(
         actualVisitorsBase,
         actualVisitorsVariant,
         actualConversionsBase,
         actualConversionsVariant,
-        currentDaysElapsed,
+        requiredRuntimeDays,
         ALPHA
     );
+
 
     // Calculate uplift as relative percentage change
     const actualBaseRate = actualConversionsBase / actualVisitorsBase;
@@ -543,9 +537,7 @@ function generateABTestChallenge() {
             visitorsPerDay: VISITORS_PER_DAY,
             businessCycleDays: BUSINESS_CYCLE_DAYS,
             requiredSampleSizePerVariant: requiredSampleSizePerVariant,
-            requiredRuntimeDays: requiredRuntimeDays,
-            currentDaysElapsed: currentDaysElapsed,
-            progressPercentage: progressPercentage
+            requiredRuntimeDays: requiredRuntimeDays
         },
         simulation: {
             actualBaseConversionRate: actualBaseRate,
@@ -555,8 +547,6 @@ function generateABTestChallenge() {
             actualVisitorsVariant: actualVisitorsVariant,
             actualConversionsBase: actualConversionsBase,
             actualConversionsVariant: actualConversionsVariant,
-            totalVisitorsPlanned: actualVisitorsTotal,
-            currentVisitorsTotal: currentVisitorsTotal,
             pValue: pValue,
             confidenceIntervalBase: ciBase,
             confidenceIntervalVariant: ciVariant,
