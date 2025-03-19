@@ -6,24 +6,8 @@
     <meta name="description" content="Interactive A/B Testing educational platform. Practice statistical analysis and decision making with simulated experiments.">
     <title>A/B Testing Gym</title>
 
-    <!-- Tailwind Configuration -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        orange: {
-                            500: '#f97316',
-                            600: '#ea580c'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-
     <!-- CDN Resources -->
-    <link href="https://cdn.tailwindcss.com" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
@@ -35,6 +19,12 @@
     <style>
         .score-value {
             color: #f97316; /* Tailwind orange-500 */
+        }
+        .bg-orange-500 {
+            background-color: #f97316;
+        }
+        .hover\:bg-orange-600:hover {
+            background-color: #ea580c;
         }
     </style>
 </head>
