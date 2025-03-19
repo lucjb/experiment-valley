@@ -88,7 +88,7 @@
 
                 <div class="text-center mt-8">
                     <button id="start-btn" class="px-8 py-4 bg-blue-500 text-white text-xl font-bold rounded-lg shadow-lg hover:bg-blue-600 transform hover:scale-105 transition-all">
-                        Start Challenge
+                        Play
                     </button>
                 </div>
             </div>
@@ -331,7 +331,7 @@
             <div id="feedback" class="hidden mt-6 p-4 rounded-lg"></div>
             <div class="flex justify-center mt-6">
                 <button id="next-btn" class="hidden px-6 py-3 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition">
-                    Next Challenge
+                    Next!
                 </button>
             </div>
         </div>
@@ -368,7 +368,7 @@
                     </div>
                     <div class="items-center px-4 py-3">
                         <button id="next-challenge-btn" class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition">
-                            Next Challenge
+                            Next!
                         </button>
                     </div>
                 </div>
@@ -747,7 +747,7 @@
                     // Check if this was the last experiment of the session
                     console.log('Checking if last experiment:', currentExperiment, 'of', EXPERIMENTS_PER_SESSION);
                     if (currentExperiment === EXPERIMENTS_PER_SESSION) {
-                        document.getElementById('next-challenge-btn').textContent = 'Complete Session';
+                        document.getElementById('next-challenge-btn').textContent = 'Done!';
                     }
 
                 } finally {
@@ -895,7 +895,7 @@
                 // Reset the button text to "Next Challenge"
                 const nextButton = document.getElementById('next-challenge-btn');
                 if (nextButton) {
-                    nextButton.textContent = 'Next Challenge';
+                    nextButton.textContent = 'Next!';
                 }
 
                 // Start new challenge
