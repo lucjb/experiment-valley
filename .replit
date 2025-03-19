@@ -1,4 +1,4 @@
-modules = ["python-3.11"]
+modules = ["nodejs-20", "python-3.11"]
 
 [nix]
 channel = "stable-24_05"
@@ -33,6 +33,15 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Compile CSS"
+author = 40533908
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx tailwindcss -i ./styles.css -o ./dist/output.css --watch"
 
 [[ports]]
 localPort = 5000
