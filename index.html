@@ -573,8 +573,8 @@
             function updateProgress() {
                 console.log('Updating progress, current experiment:', currentExperiment);
                 const progressBar = document.getElementById('progress-bar');
-                const progressPercentage = ((currentExperiment - 1) / EXPERIMENTS_PER_SESSION) * 100;
-                progressBar.style.width = `${progressPercentage}%`;
+                const progressPercent = ((currentExperiment - 1) / EXPERIMENTS_PER_SESSION) * 100;
+                progressBar.style.width = `${progressPercent}%`;
                 document.getElementById('current-experiment').textContent = currentExperiment;
             }
 
