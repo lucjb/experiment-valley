@@ -460,6 +460,11 @@ function generateABTestChallenge() {
     requiredRuntimeDays = Math.max(7, requiredRuntimeDays);
     requiredRuntimeDays = Math.ceil(requiredRuntimeDays / BUSINESS_CYCLE_DAYS) * BUSINESS_CYCLE_DAYS;
 
+    currentRuntimeDays = requiredRuntimeDays;
+    // Create a partially executed experiment for half of the challenges
+    if ( Math.random() < 0.5 ):
+        currentRuntimeDays = Math.floor(requiredRuntimeDays / 2);
+        
     const actualBaseConversionRate = sampleBetaDistribution(
         100000 * BASE_CONVERSION_RATE,
         100000 * (1 - BASE_CONVERSION_RATE)
@@ -475,7 +480,7 @@ function generateABTestChallenge() {
     const minimumRate = actualBaseConversionRate * 0.2; // minimum 20% of base rate
     const adjustedVariantRate = Math.max(minimumRate, variantConversionRate);
 
-    const actualVisitorsTotal = requiredRuntimeDays * VISITORS_PER_DAY + sampleBinomial(VISITORS_PER_DAY, 0.8);
+    const actualVisitorsTotal = currentRuntimeDays * VISITORS_PER_DAY + sampleBinomial(VISITORS_PER_DAY, 0.8);
     const actualVisitorsBase = sampleBinomial(actualVisitorsTotal, 0.5);
     const actualVisitorsVariant = actualVisitorsTotal - actualVisitorsBase;
 
@@ -506,7 +511,7 @@ function generateABTestChallenge() {
         actualVisitorsVariant,
         actualConversionsBase,
         actualConversionsVariant,
-        requiredRuntimeDays,
+        currentRuntimeDays,
         ALPHA
     );
 
