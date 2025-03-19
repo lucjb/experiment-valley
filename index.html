@@ -403,122 +403,169 @@
                 </div>
             </div>
         </div>
-        <div id="cheat-sheet-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div class="relative top-32 mx-auto p-4 border max-w-sm shadow-lg rounded-md bg-white">
-                <div class="mt-2">
-                    <div class="flex justify-between items-center border-b pb-3">
-                        <h3 class="text-lg font-medium text-gray-900">Experiment Trustworthiness Cheat-sheet</h3>
-                        <button id="close-cheat-sheet" class="text-gray-400 hover:text-gray-500">
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        <!-- Cheat Sheet Modal -->
+<div id="cheat-sheet-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-32 mx-auto p-4 border max-w-sm shadow-lg rounded-md bg-white">
+        <div class="mt-2">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-lg font-medium text-gray-900">Experiment Trustworthiness Cheat-sheet</h3>
+                <button id="close-cheat-sheet" class="text-gray-400 hover:text-gray-500">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="mt-4">
+                <ul class="space-y-4 text-gray-600">
+                    <!-- Sample Ratio Mismatch Section -->
+                    <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer">
+                        <div class="flex items-start">
+                            <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
-                        </button>
-                    </div>
-                    <div class="mt-4">
-                        <ul class="space-y-4 text-gray-600">
-                            <!-- Sample Ratio Mismatch Section -->
-                            <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('srm-details')">
-                                <div class="flex items-start">
-                                    <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <div class="flex-grow pr-2">
+                                <div class="flex justify-between items-center" onclick="toggleSection('srm-details')">
+                                    <span class="font-semibold text-gray-900 text-sm">Sample Ratio Mismatch</span>
+                                    <svg class="h-4 w-4 transform transition-transform" id="srm-arrow">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                     </svg>
-                                    <div class="flex-grow pr-2">
-                                        <div class="flex justify-between items-center">
-                                            <span class="font-semibold text-gray-900 text-sm">Sample Ratio Mismatch</span>
-                                            <svg class="h-4 w-4 transform transition-transform" id="srm-arrow">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                            </svg>
-                                        </div>
-                                        <p class="text-xs mt-1">Check traffic split</p>
-                                        <div id="srm-details" class="hidden mt-2 bg-gray-100 rounded p-2">
-                                            <div class="space-y-2 text-xs">
-                                                <ul class="list-disc pl-4">
-                                                    <li>Compare visitor counts</li>
-                                                    <li>Look for approximate 50-50 split</li>
-                                                </ul>
-                                            </div>
-                                        </div>
+                                </div>
+                                <p class="text-xs mt-1">Check traffic split</p>
+                                <div id="srm-details" class="hidden mt-2 bg-gray-100 rounded p-2">
+                                    <div class="space-y-2 text-xs">
+                                        <ul class="list-disc pl-4">
+                                            <li>Compare visitor counts</li>
+                                            <li>Look for approximate 50-50 split</li>
+                                        </ul>
                                     </div>
                                 </div>
-                            </li>
+                            </div>
+                        </div>
+                    </li>
 
-                            <!-- Traffic Patterns Section -->
-                            <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('traffic-details')">
-                                <div class="flex items-start">
-                                    <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <!-- Traffic Patterns Section -->
+                    <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer">
+                        <div class="flex items-start">
+                            <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div class="flex-grow pr-2">
+                                <div class="flex justify-between items-center" onclick="toggleSection('traffic-details')">
+                                    <span class="font-semibold text-gray-900 text-sm">Traffic</span>
+                                    <svg class="h-4 w-4 transform transition-transform" id="traffic-arrow">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                     </svg>
-                                    <div class="flex-grow pr-2">
-                                        <div class="flex justify-between items-center">
-                                            <span class="font-semibold text-gray-900 text-sm">Traffic</span>
-                                            <svg class="h-4 w-4 transform transition-transform" id="traffic-arrow">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                            </svg>
-                                        </div>
-                                        <p class="text-xs mt-1">Compare experiment design to actual run </p>
-                                        <div id="traffic-details" class="hidden mt-2 bg-gray-100 rounded p-2">
-                                            <div class="space-y-2 text-xs">
-                                                <ul class="list-disc pl-4">
-                                                    <li>Daily Traffic</li>
-                                                    <li>Base Conversion Rate</li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>                            </div></li>
-
-                            <!-- Sample Size Section -->
-                            <li class="border rounded-lgp-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('sample-details')">
-                                <div class="flex items-start">                                    <svg class="h-5 w-5 text-green-500 mr-2flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    <div class="flex-growpr-2">
-                                        <div class="flex justify-between items-center">
-                                            <span class="font-semibold text-gray-900 text-smSample Size</span>
-                                            <svg class="h-4 w-4 transform transition-transform" id="sample-arrow">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                            </svg>
-                                        </div>
-                                        <p class="text-xs mt-1">Check required sample size</p>
-                                        <div id="sample-details" class="hidden mt-2 bg-gray-100 rounded p-2">
-                                            <div class="space-y-2 text-xs">
-                                                <ul class="list-disc pl-4">
-                                                    <li>Meet minimum visitors per variant</li>
-                                                </ul>
-                                            </div>
-                                        </div>
+                                </div>
+                                <p class="text-xs mt-1">Compare experiment design to actual run</p>
+                                <div id="traffic-details" class="hidden mt-2 bg-gray-100 rounded p-2">
+                                    <div class="space-y-2 text-xs">
+                                        <ul class="list-disc pl-4">
+                                            <li>Daily Traffic</li>
+                                            <li>Base Conversion Rate</li>
+                                        </ul>
                                     </div>
                                 </div>
-                            </li>
+                            </div>
+                        </div>
+                    </li>
 
-                            <!-- Business Cycles Section -->
-                            <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('cycles-details')">
-                                <div class="flex items-start">
-                                    <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <!-- Sample Size Section -->
+                    <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer">
+                        <div class="flex items-start">
+                            <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div class="flex-grow pr-2">
+                                <div class="flex justify-between items-center" onclick="toggleSection('sample-details')">
+                                    <span class="font-semibold text-gray-900 text-sm">Sample Size</span>
+                                    <svg class="h-4 w-4 transform transition-transform" id="sample-arrow">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                     </svg>
-                                    <div class="flex-grow pr-2">
-                                        <div class="flex justify-between items-center">
-                                            <span class="font-semibold text-gray-900 text-sm">Business Cycles</span>
-                                            <svg class="h-4 w-4 transform transition-transform" id="cycles-arrow">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                            </svg>
-                                        </div>
-                                        <p class="text-xs mt-1">Check cycle completion</p>
-                                        <div id="cycles-details" class="hidden mt-2 bg-gray-100 rounded p-2">
-                                            <div class="space-y-2 text-xs">
-                                                <ul class="list-disc pl-4">
-                                                    <li>At least 7 days</li>
-                                                    <li>Full business cycles</li>
-                                                </ul>
-                                            </div>
-                                        </div>
+                                </div>
+                                <p class="text-xs mt-1">Check required sample size</p>
+                                <div id="sample-details" class="hidden mt-2 bg-gray-100 rounded p-2">
+                                    <div class="space-y-2 text-xs">
+                                        <ul class="list-disc pl-4">
+                                            <li>Meet minimum visitors per variant</li>
+                                        </ul>
                                     </div>
                                 </div>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
+                            </div>
+                        </div>
+                    </li>
+
+                    <!-- Business Cycles Section -->
+                    <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer">
+                        <div class="flex items-start">
+                            <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div class="flex-grow pr-2">
+                                <div class="flex justify-between items-center" onclick="toggleSection('cycles-details')">
+                                    <span class="font-semibold text-gray-900 text-sm">Business Cycles</span>
+                                    <svg class="h-4 w-4 transform transition-transform" id="cycles-arrow">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-xs mt-1">Check cycle completion</p>
+                                <div id="cycles-details" class="hidden mt-2 bg-gray-100 rounded p-2">
+                                    <div class="space-y-2 text-xs">
+                                        <ul class="list-disc pl-4">
+                                            <li>At least 7 days</li>
+                                            <li>Full business cycles</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
             </div>
         </div>
+    </div>
+</div>
+
+<script>
+    function initializeCheatSheet() {
+        console.log('Initializing cheat sheet...');
+        const cheatSheetBtn = document.getElementById('cheat-sheet-btn');
+        const cheatSheetModal = document.getElementById('cheat-sheet-modal');
+        const closeCheatSheet = document.getElementById('close-cheat-sheet');
+
+        cheatSheetBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Cheat sheet button clicked');
+            cheatSheetModal.classList.remove('hidden');
+        });
+
+        closeCheatSheet.addEventListener('click', function() {
+            console.log('Close button clicked');
+            cheatSheetModal.classList.add('hidden');
+        });
+
+        // Close modal when clicking outside
+        cheatSheetModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+    }
+
+    function toggleSection(sectionId) {
+        console.log('Toggling section:', sectionId);
+        const section = document.getElementById(sectionId);
+        const arrow = document.getElementById(sectionId.replace('details', 'arrow'));
+
+        if (section && arrow) {
+            section.classList.toggle('hidden');
+            arrow.style.transform = section.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+    }
+
+    // Initialize cheat sheet when DOM is loaded
+    document.addEventListener('DOMContentLoaded', initializeCheatSheet);
+</script>
+
         <script>
             let score = 0;
             let streak = 0;
@@ -947,51 +994,9 @@
 
             }
 
-            // Move cheat sheet event listeners to the top level scope
-            function initializeCheatSheet() {
-                console.log('Initializing cheat sheet...');
-                const cheatSheetBtn = document.getElementById('cheat-sheet-btn');
-                const cheatSheetModal = document.getElementById('cheat-sheet-modal');
-                const closeCheatSheet = document.getElementById('close-cheat-sheet');
-
-                if (!cheatSheetBtn || !cheatSheetModal || !closeCheatSheet) {
-                    console.error('Cheat sheet elements not found:', {
-                        button: !!cheatSheetBtn,
-                        modal: !!cheatSheetModal,
-                        closeBtn: !!closeCheatSheet
-                    });
-                    return;
-                }
-
-                cheatSheetBtn.addEventListener('click', function() {
-                    console.log('Cheat sheet button clicked');
-                    cheatSheetModal.classList.remove('hidden');
-                });
-
-                closeCheatSheet.addEventListener('click', function() {
-                    console.log('Close button clicked');
-                    cheatSheetModal.classList.add('hidden');
-                });
-
-                // Close modal when clicking outside
-                cheatSheetModal.addEventListener('click', function(e) {
-                    if (e.target === this) {
-                        this.classList.add('hidden');
-                    }
-                });
-            }
-
-            function toggleSection(sectionId) {
-                console.log('Toggling section:', sectionId);
-                const section = document.getElementById(sectionId);
-                const arrow = document.getElementById(sectionId.replace('details', 'arrow'));
-
-                if (section && arrow) {
-                    section.classList.toggle('hidden');
-                    arrow.classList.toggle('rotate-180');
-                }
-            }
+            // Removed redundant initializeCheatSheet and toggleSection functions
 
         </script>
+    </div>
 </body>
 </html>
