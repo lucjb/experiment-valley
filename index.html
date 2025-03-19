@@ -8,29 +8,6 @@
 
     <!-- Tailwind CSS -->
     <link href="./dist/output.css" rel="stylesheet">
-    <script>
-        // Tailwind configuration can be removed as it's now in tailwind.config.js
-            theme: {
-                extend: {
-                    colors: {
-                        orange: {
-                            50: '#fff7ed',
-                            100: '#ffedd5',
-                            200: '#fed7aa',
-                            300: '#fdba74',
-                            400: '#fb923c',
-                            500: '#f97316',
-                            600: '#ea580c',
-                            700: '#c2410c',
-                            800: '#9a3412',
-                            900: '#7c2d12',
-                            950: '#431407'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
 
     <!-- CDN Resources -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js"></script>
@@ -476,9 +453,10 @@
 
                             <!-- Sample Size Section -->
                             <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('sample-details')">
-                                <div class="flex items-start">                                    <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                <div class="flex items-start">
+                                    <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
-                                    <div class="flex-grow pr-2">
+                                                                   <div class="flex-grow pr-2">
                                         <div class="flex justify-between items-center">
                                             <span class="font-semibold text-gray-900 text-sm">Sample Size</span>
                                             <svg class="h-4 w-4 transform transition-transform" id="sample-arrow">

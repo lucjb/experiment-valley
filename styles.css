@@ -1,4 +1,12 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom styles */
+.score-value {
+    @apply text-orange-500 font-bold;
+}
+
+.list-circle {
+    @apply list-disc;
+}
