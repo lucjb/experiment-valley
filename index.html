@@ -662,9 +662,7 @@
                     document.getElementById('conversion-uplift').textContent = formatUplift(challenge.simulation.conversionUplift);
                     document.getElementById('uplift-value').textContent = formatUplift(challenge.simulation.uplift);
 
-
                     updateExecutionSection(challenge)
-
 
                     showLoading('chart-loading');
 
@@ -873,36 +871,35 @@
 
             document.getElementById('start-new-session').addEventListener('click', function() {
                 console.log('Starting new session');
-                const completionModal = new bootstrap.Modal(document.getElementById('completion-modal'));
+                const completionModal = document.getElementById('completion-modal');
                 const experimentContainer = document.getElementById('challenge-container');
 
-                completionModal.hide();
+                // Hide the completion modal
+                completionModal.classList.add('hidden');
 
-                setTimeout(() => {
-                    experimentContainer.classList.remove('hidden');
-                    setTimeout(() => {
-                        experimentContainer.classList.add('fade-in');
-                    }, 10);
+                // Show experiment container
+                experimentContainer.classList.remove('hidden');
 
-                    // Reset session variables
-                    currentExperiment = 1;
-                    score = 0;
-                    streak = 0;
-                    totalAttempts = 0;
+                // Reset session variables
+                currentExperiment = 1;
+                score = 0;
+                streak = 0;
+                totalAttempts = 0;
 
-                    // Update displays
-                    document.getElementById('current-experiment').textContent = currentExperiment;
-                    document.getElementById('score').textContent = score;
-                    document.getElementById('streak').textContent = streak;
-                    document.getElementById('accuracy').textContent = '0%';
+                // Update displays
+                document.getElementById('current-experiment').textContent = currentExperiment;
+                document.getElementById('score').textContent = score;
+                document.getElementById('streak').textContent = streak;
+                document.getElementById('accuracy').textContent = '0%';
 
-                    // Reset the button text to "Next Challenge"
-                    const nextButton = document.getElementById('next-challenge-btn');
+                // Reset the button text to "Next Challenge"
+                const nextButton = document.getElementById('next-challenge-btn');
+                if (nextButton) {
                     nextButton.textContent = 'Next Challenge';
+                }
 
-                    // Start new challenge
-                    loadChallenge();
-                }, 500);
+                // Start new challenge
+                loadChallenge();
             });
 
             document.querySelectorAll('.tab-button').forEach(button => {
