@@ -18,14 +18,17 @@
 
     <style>
         .glow-orange {
-            text-shadow: 0 0 10px rgba(249,115,22,0.5);
-        }
-        .glow-orange {
             text-shadow: 0 0 10px rgba(249,115,22,0.7),
                          0 0 20px rgba(249,115,22,0.3);
         }
         .score-value {
             color: #f97316; /* Tailwind orange-500 */
+        }
+        .bg-orange-500{
+            background-color: rgb(249, 115, 22);
+        }
+        .hover\:bg-orange-600:hover {
+            background-color: rgb(234, 88, 12);
         }
     </style>
 
@@ -97,10 +100,10 @@
                             <span id="accuracy" class="text-2xl font-bold score-value">0%</span>
                         </div>
                     </div>
-                    <div class="text-sm font-medium text-white">Experiment <span id="current-experiment" class="score-value text-lg">1</span>/3</div>
+                    <div class="text-sm font-medium text-white">aExperiment <span id="current-experiment" class="score-value text-lg">1</span>/3</div>
                 </div>
                 <div class="w-full bg-gray-800 rounded-full h-3 mt-3">
-                    <div id="progress-bar" class="h-3 rounded-full transition-all duration-500" style="background-color: rgb(249, 115, 22); width: 0%"></div>
+                    <div id="progress-bar" class="bg-orange h-3 rounded-full transition-all duration-500" style=" width: 0%"></div>
                 </div>
             </header>
 
@@ -352,7 +355,7 @@
                         </div>
                     </div>
                     <div class="items-center px-4 py-3">
-                        <button id="next-challenge-btn" class="px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg shadow hover:bg-orange-600 transition">
+                        <button id="next-challenge-btn" class="px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg shadow hover:bg-white transition">
                             Next Challenge
                         </button>
                     </div>
@@ -387,7 +390,7 @@
                         </div>
                     </div>
                     <div class="items-center px-4 py-3">
-                        <button id="start-new-session" class="px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg shadow hover:bg-orange-600 transition">
+                        <button id="start-new-session" class="px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg shadow hover:bg-orange transition">
                             Start New Session
                         </button>
                     </div>
@@ -458,12 +461,12 @@
                                     </div>                            </div></li>
 
                             <!-- Sample Size Section -->
-                            <li class="border rounded-lgp-3 hover:bg-gray-50 transition-colorscursor-pointer" onclick="toggleSection('sample-details')">
-                                <div class="flex items-start">                                    <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none` stroke="currentColor" viewBox0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <li class="border rounded-lgp-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('sample-details')">
+                                <div class="flex items-start">                                    <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none` stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
                                     <div class="flex-growpr-2">
                                         <div class="flex justify-between items-center">
-                                            <span class="font-semibold text-gray-900 text-sm">Sample Size</span>
+                                            <span class="font-semibold text-gray-900 text-smSample Size</span>
                                             <svg class="h-4 w-4 transform transition-transform" id="sample-arrow">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                             </svg>
@@ -712,14 +715,11 @@
                         streak++;
                         document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';
                         document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-                        document.getElementById('feedback-title').textContent = 'Correct!';
                         document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-green-900 mt-4';
                     } else {
                         streak = 0;
                         document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100';
                         document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
-                        document.getElementById('feedback-title').textContent = 'Incorrect';
-                        document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-red-900 mt-4';
                     }
 
                     const accuracy = Math.round((score / totalAttempts) * 100);
