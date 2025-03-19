@@ -36,6 +36,20 @@
         .modal-active {
             overflow-y: hidden;
         }
+        .fade-out {
+            animation: fadeOut 0.5s ease-in-out forwards;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out forwards;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -117,7 +131,7 @@
                 <div class="flex items-center space-x-6">
                     <h2 class="text-xl font-semibold text-gray-800 whitespace-nowrap">Decision Making:</h2>
                     <div class="flex items-center space-x-2">
-                        <span class="font-medium">Is this Experiment Trustworthy? <a href="#" id="cheat-sheet-btn" class="text-gray-500 hover:text-gray-700 transition-colors" data-bs-toggle="modal" data-bs-target="#cheat-sheet-modal">ℹ</a></span>
+                        <span class="font-medium">Is this Experiment Trustworthy? <a href="#" id="cheat-sheet-btn" class="text-gray-500 hover:text-gray-700 transition-colors" >ℹ</a></span>
                         <button id="trust-yes" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition">Yes</button>
                         <button id="trust-no" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition">No</button>
                     </div>
@@ -179,21 +193,23 @@
                 <h2 class="text-2xl font-semibold text-gray-800 mb-3">Results Analysis</h2>
 
                 <!-- Tab Navigation -->
-                <ul class="nav nav-tabs border-b border-gray-200" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="metrics-tab-button" data-bs-toggle="tab" data-bs-target="#metrics-tab-pane" type="button" role="tab" aria-controls="metrics-tab-pane" aria-selected="true">Metrics Table</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="conversion-tab-button" data-bs-toggle="tab" data-bs-target="#conversion-tab-pane" type="button" role="tab" aria-controls="conversion-tab-pane" aria-selected="false">Conversion Rate</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="visitors-tab-button" data-bs-toggle="tab" data-bs-target="#visitors-tab-pane" type="button" role="tab" aria-controls="visitors-tab-pane" aria-selected="false">Visitors</button>
-                    </li>
-                </ul>
+                <div class="border-b border-gray-200">
+                    <nav class="flex space-x-4 -mb-px">
+                        <button class="tab-button px-4 py-2 font-medium text-sm leading-5 rounded-t-lg border-b-2 border-blue-500 text-blue-600 bg-white focus:outline-none" data-tab="metrics-tab-pane">
+                            Metrics Table
+                        </button>
+                        <button class="tab-button px-4 py-2 font-medium text-sm leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none" data-tab="conversion-tab-pane">
+                            Conversion Rate
+                        </button>
+                        <button class="tab-button px-4 py-2 font-medium text-sm leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none" data-tab="visitors-tab-pane">
+                            Visitors
+                        </button>
+                    </nav>
+                </div>
 
                 <!-- Tab Content -->
                 <div class="tab-content mt-4">
-                    <div class="tab-pane active" id="metrics-tab-pane" role="tabpanel" aria-labelledby="metrics-tab-button">
+                    <div class="tab-pane" id="metrics-tab-pane" role="tabpanel">
                         <div class="table-responsive">
                             <table class="table-auto w-full border border-collapse">
                                 <thead>
@@ -273,7 +289,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="tab-pane" id="conversion-tab-pane" role="tabpanel" aria-labelledby="conversion-tab-button">
+                    <div class="tab-pane hidden" id="conversion-tab-pane" role="tabpanel">
                         <div class="mt-4">
                             <div class="flex justify-between items-center mb-2">
                                 <div class="flex items-center space-x-2">
@@ -293,7 +309,7 @@
                             <canvas id="conversion-chart"></canvas>
                         </div>
                     </div>
-                    <div class="tab-pane" id="visitors-tab-pane" role="tabpanel" aria-labelledby="visitors-tab-button">
+                    <div class="tab-pane hidden" id="visitors-tab-pane" role="tabpanel">
                         <div class="mt-4">
                             <div class="flex justify-between items-center mb-2">
                                 <div class="flex items-center space-x-2">
@@ -853,17 +869,6 @@
             }, 500);
         });
 
-        const tabButtons = document.querySelectorAll('.nav-link');
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const tabPanes = document.querySelectorAll('.tab-pane');
-                tabPanes.forEach(pane => pane.classList.remove('active'));
-                const targetPane = document.querySelector(`#${button.dataset.bsTarget.replace('#','')}`);
-                targetPane.classList.add('active');
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-            })
-        })
 
         function showLoading(id) {
             console.log('Showing loading indicator:', id);
@@ -935,6 +940,40 @@
             }
         }
 
+        // Add this to your existing JavaScript
+        function setupTabs() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+
+            // Show first tab by default
+            document.querySelector('#metrics-tab-pane').classList.remove('hidden');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active states from all tabs
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('border-blue-500', 'text-blue-600');
+                        btn.classList.add('text-gray-500');
+                    });
+
+                    // Add active state to clicked tab
+                    button.classList.remove('text-gray-500');
+                    button.classList.add('border-blue-500', 'text-blue-600');
+
+                    // Hide all tab panes
+                    tabPanes.forEach(pane => {
+                        pane.classList.add('hidden');
+                    });
+
+                    // Show selected tab pane
+                    const targetId = button.getAttribute('data-tab');
+                    document.querySelector(`#${targetId}`).classList.remove('hidden');
+                });
+            });
+        }
+
+        // Call setupTabs after the DOM is loaded
+        document.addEventListener('DOMContentLoaded', setupTabs);
     </script>
 </body>
 </html>
