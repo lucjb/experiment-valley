@@ -146,30 +146,18 @@
 
             <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-4">
                 <h2 class="text-2xl font-semibold text-gray-800 mb-3">Execution</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div class="border rounded p-3">
-                        <h3 class="font-semibold mb-2 text-lg">Timeline</h3>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div><span class="font-medium">Start Date:</span> <span id="exp-start-date"></span></div>
-                            <div><span class="font-medium">Current Date:</span> <span id="exp-current-date"></span></div>
-                            <div><span class="font-medium">Days Elapsed:</span> <span id="exp-days-elapsed"></span></div>
-                            <div><span class="font-medium">Days Remaining:</span> <span id="exp-days-remaining"></span></div>
-                            <div><span class="font-medium">Expected Finish:</span> <span id="exp-finish-date"></span></div>
+                <div class="border rounded p-3">
+                    <div class="mt-2">
+                        <div class="w-full bg-gray-200 rounded-full h-8 relative">
+                            <div id="exp-progress-bar" class="bg-blue-600 h-8 rounded-full transition-all duration-500 flex items-center" style="width: 0%">
+                                <span id="exp-days-elapsed-text" class="text-xs text-white font-medium ml-3"></span>
+                                <span id="exp-complete-text" class="hidden text-xs text-white font-medium mx-auto">Experiment Complete</span>
+                            </div>
+                            <span id="exp-days-remaining-text" class="absolute text-xs text-gray-600 font-medium right-3 top-1/2 transform -translate-y-1/2"></span>
                         </div>
-                    </div>
-                    <div class="border rounded p-3">
-                        <h3 class="font-semibold mb-2 text-lg">Progress</h3>
-                        <div class="mt-2">
-                            <div class="w-full bg-gray-200 rounded-full h-8 relative">
-                                <div id="exp-progress-bar" class="bg-blue-600 h-8 rounded-full transition-all duration-500 flex items-center" style="width: 0%">
-                                    <span id="exp-days-elapsed-text" class="text-xs text-white font-medium ml-3"></span>
-                                </div>
-                                <span id="exp-days-remaining-text" class="absolute text-xs text-gray-600 font-medium right-3 top-1/2 transform -translate-y-1/2"></span>
-                            </div>
-                            <div class="flex justify-between mt-1">
-                                <span id="progress-start-date" class="text-xs text-gray-500"></span>
-                                <span id="progress-end-date" class="text-xs text-gray-500"></span>
-                            </div>
+                        <div class="flex justify-between mt-1">
+                            <span id="progress-start-date" class="text-xs text-gray-500"></span>
+                            <span id="progress-end-date" class="text-xs text-gray-500"></span>
                         </div>
                     </div>
                 </div>
@@ -463,9 +451,9 @@
                                 <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                <div class="flex-grow pr-2">
+                                <div class="flex-growpr-2">
                                     <div class="flex justify-between items-center">
-                                        <span class="font-semibold text-gray-900 text-sm">Sample Size</span>
+                                        <span class="font-semibold text-gray-900 text-smSample Size</span>
                                         <svg class="h-4 w-4 transform transition-transform" id="sample-arrow">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                         </svg>
@@ -544,24 +532,29 @@
                 day: 'numeric'
             });
 
-            // Update DOM elements
-            document.getElementById('exp-start-date').textContent = dateFormatter.format(startDate);
-            document.getElementById('exp-current-date').textContent = dateFormatter.format(currentDate);
-            document.getElementById('exp-days-elapsed').textContent = daysElapsed;
-            document.getElementById('exp-days-remaining').textContent = isComplete ? '0' : daysRemaining;
-            document.getElementById('exp-finish-date').textContent = dateFormatter.format(finishDate);
-
             // Update progress bar and annotations
             const progressPercent = Math.round((daysElapsed / totalDays) * 100);
             const progressBar = document.getElementById('exp-progress-bar');
             const daysElapsedText = document.getElementById('exp-days-elapsed-text');
             const daysRemainingText = document.getElementById('exp-days-remaining-text');
+            const completeText = document.getElementById('exp-complete-text');
             const progressStartDate = document.getElementById('progress-start-date');
             const progressEndDate = document.getElementById('progress-end-date');
 
             progressBar.style.width = `${Math.min(100, progressPercent)}%`;
-            daysElapsedText.textContent = `${daysElapsed} days elapsed`;
-            daysRemainingText.textContent = isComplete ? '' : `${daysRemaining} days remaining`;
+
+            if (isComplete) {
+                daysElapsedText.classList.add('hidden');
+                daysRemainingText.classList.add('hidden');
+                completeText.classList.remove('hidden');
+            } else {
+                daysElapsedText.classList.remove('hidden');
+                daysRemainingText.classList.remove('hidden');
+                completeText.classList.add('hidden');
+                daysElapsedText.textContent = `${daysElapsed} days elapsed`;
+                daysRemainingText.textContent = `${daysRemaining} days remaining`;
+            }
+
             progressStartDate.textContent = dateFormatter.format(startDate);
             progressEndDate.textContent = dateFormatter.format(finishDate);
         }
