@@ -7,12 +7,18 @@
     <title>A/B Testing Gym</title>
 
     <!-- Tailwind CSS via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
 
     <!-- Application Dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+
+    <!-- Tippy.js and its dependencies -->
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <link href="https://unpkg.com/tippy.js@6/themes/light.css" rel="stylesheet">
+
 
     <!-- Application Scripts -->
     <script src="js/challenge-generator.js"></script>
@@ -49,6 +55,17 @@
         @keyframes fadeIn {
             0% { opacity: 0; }
             100% { opacity: 1; }
+        }
+        .tippy-box {
+            background-color: white;
+            color: #374151;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .tippy-arrow {
+            color: white;
         }
     </style>
 </head>
@@ -522,7 +539,7 @@
             const isComplete = daysElapsed >= totalDays;
 
             // Calculate dates
-            const startDate = new Date(currentDate);
+                        const startDate = new Date(currentDate);
             startDate.setDate(startDate.getDate() - daysElapsed);
 
             const finishDate = new Date(currentDate);
@@ -539,7 +556,7 @@
             const progressPercent = Math.round((daysElapsed / totalDays) * 100);
             const progressBar = document.getElementById('exp-progress-bar');
             const daysElapsedText = document.getElementById('exp-days-elapsed-text');
-            const daysRemainingText = document.getElementById('exp-days-remaining-text');
+            const daysRemainingText = document.getElementById('exp-days-remaining-text');                
             const completeText = document.getElementById('exp-complete-text');
             const progressStartDate = document.getElementById('progress-start-date');
             const progressEndDate = document.getElementById('progress-end-date');
@@ -548,7 +565,8 @@
 
             if (isComplete) {
                 daysElapsedText.classList.add('hidden');
-                daysRemainingText.classList.add('hidden');                completeText.classList.remove('hidden');
+                daysRemainingText.classList.add('hidden');                
+                completeText.classList.remove('hidden');
             } else {
                 daysElapsedText.classList.remove('hidden');
                 daysRemainingText.classList.remove('hidden');
@@ -639,7 +657,6 @@
                 document.getElementById('visitor-uplift').textContent = formatUplift(challenge.simulation.visitorUplift);
                 document.getElementById('conversion-uplift').textContent = formatUplift(challenge.simulation.conversionUplift);
                 document.getElementById('uplift-value').textContent = formatUplift(challenge.simulation.uplift);
-
 
                 updateExecutionSection(challenge)
 
@@ -974,6 +991,15 @@
 
         // Call setupTabs after the DOM is loaded
         document.addEventListener('DOMContentLoaded', setupTabs);
+        // Initialize Tippy tooltips after the DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            tippy('#cheat-sheet-btn', {
+                content: 'Click to see experiment trustworthiness guidelines',
+                placement: 'right',
+                theme: 'light',
+                arrow: true
+            });
+        });
     </script>
 </body>
 </html>
