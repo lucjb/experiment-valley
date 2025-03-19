@@ -6,10 +6,8 @@
     <meta name="description" content="Interactive A/B Testing educational platform. Practice statistical analysis and decision making with simulated experiments.">
     <title>A/B Testing Gym</title>
 
-    <!-- Tailwind CSS -->
-    <link href="dist/output.css" rel="stylesheet">
-
     <!-- CDN Resources -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
@@ -17,13 +15,20 @@
     <!-- Application Scripts -->
     <script src="js/challenge-generator.js"></script>
     <script src="js/visualizations.js"></script>
-    <script src="js/tooltips.js"></script>
-    <script src="js/progress-tracker.js"></script>
+
     <style>
+        .glow-orange {
+            text-shadow: 0 0 10px rgba(249,115,22,0.5);
+        }
+        .glow-orange {
+            text-shadow: 0 0 10px rgba(249,115,22,0.7),
+                         0 0 20px rgba(249,115,22,0.3);
+        }
         .score-value {
             color: #f97316; /* Tailwind orange-500 */
         }
     </style>
+
 </head>
 <body class="bg-gray-50 text-gray-900">
     <div class="max-w-6xl mx-auto p-2 md:p-4">
@@ -92,10 +97,10 @@
                             <span id="accuracy" class="text-2xl font-bold score-value">0%</span>
                         </div>
                     </div>
-                    <div class="text-sm font-medium text-white">aExperiment <span id="current-experiment" class="score-value text-lg">1</span>/3</div>
+                    <div class="text-sm font-medium text-white">Experiment <span id="current-experiment" class="score-value text-lg">1</span>/3</div>
                 </div>
                 <div class="w-full bg-gray-800 rounded-full h-3 mt-3">
-                    <div id="progress-bar" class="bg-orange h-3 rounded-full transition-all duration-500" style=" width: 0%"></div>
+                    <div id="progress-bar" class="h-3 rounded-full transition-all duration-500" style="background-color: rgb(249, 115, 22); width: 0%"></div>
                 </div>
             </header>
 
@@ -329,60 +334,60 @@
                 <div class="mt-4 text-center text-gray-600">Loading challenge data...</div>
             </div>
         </div>
-        <!-- Feedback Modal -->
-        <div id="feedback-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-80 overflow-y-auto h-full w-full z-50">
-            <div class="relative top-20 mx-auto p-5 border border-gray-700 w-96 shadow-lg rounded-md bg-gray-900">
+        <div id="feedback-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
                 <div class="mt-3 text-center">
-                    <div id="feedback-icon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-800">
-                        <svg class="h-6 w-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div id="feedback-icon" class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                        <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
                     </div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4" id="feedback-title">Correct!</h3>
                     <div class="mt-2 px-7 py-3">
-                        <p class="text-sm text-gray-300" id="feedback-message"></p>
+                        <p class="text-sm text-gray-500" id="feedback-message"></p>
                         <div class="mt-3">
-                            <p class="font-medium text-white">Current Score: <span id="modal-score" class="score-value"></span></p>
-                            <p class="font-medium text-white">Streak: <span id="modal-streak" class="score-value"></span></p>
-                            <p class="font-medium text-white">Accuracy: <span id="modal-accuracy" class="score-value"></span></p>
+                            <p class="font-semibold">Current Score: <span id="modal-score" class="text-blue-600"></span></p>
+                            <p class="font-semibold">Streak: <span id="modal-streak" class="text-orange-600"></span></p>
+                            <p class="font-semibold">Accuracy: <span id="modal-accuracy" class="text-purple-600"></span></p>
                         </div>
                     </div>
                     <div class="items-center px-4 py-3">
-                        <button id="next-challenge-btn" class="px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg shadow hover:bg-white transition">
+                        <button id="next-challenge-btn" class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition">
                             Next Challenge
                         </button>
                     </div>
                 </div>
             </div>
         </div>
-        <div id="completion-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-80 overflow-y-auto h-full w-full z-50">
-            <div class="relative top-20 mx-auto p-5 border border-gray-700 w-96 shadow-lg rounded-md bg-gray-900">
+        <div id="completion-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
                 <div class="mt-3 text-center">
-                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-800">
-                        <svg class="h-6 w-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                        <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
                     </div>
-                    <h3 class="text-lg leading-6 font-medium text-white mt-4">Session Complete!</h3>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Session Complete!</h3>
                     <div class="mt-2 px-7 py-3">
-                        <p class="text-sm text-gray-300">Congratulations! You've completed all experiments.</p>
+                        <p class="text-sm text-gray-500">Congratulations! You've completed all experiments.</p>
                         <div class="mt-4">
-                            <p class="font-medium text-white">Final Score: <span id="final-score" class="score-value"></span></p>
-                            <p class="font-medium text-white">Accuracy: <span id="final-accuracy" class="score-value"></span></p>
+                            <p class="font-semibold">Final Score: <span id="final-score" class="text-blue-600"></span></p>
+                            <p class="font-semibold">Accuracy: <span id="final-accuracy" class="text-purple-600"></span></p>
                         </div>
                         <div class="mt-4">
-                            <p class="text-sm font-medium text-gray-300 mb-2">Share your achievement:</p>
+                            <p class="text-sm font-medium text-gray-700 mb-2">Share your achievement:</p>
                             <div class="flex justify-center space-x-4">
-                                <button onclick="shareOnTwitter()" class="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 border border-gray-700">
+                                <button onclick="shareOnTwitter()" class="bg-blue-400 text-white px-4 py-2 rounded hover:bg-blue-500">
                                     Twitter
                                 </button>
-                                <button onclick="shareOnLinkedIn()" class="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 border border-gray-700">
+                                <button onclick="shareOnLinkedIn()" class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800">
                                     LinkedIn
                                 </button>
                             </div>
                         </div>
                     </div>
                     <div class="items-center px-4 py-3">
-                        <button id="start-new-session" class="px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg shadow hover:bg-orange transition">
+                        <button id="start-new-session" class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition">
                             Start New Session
                         </button>
                     </div>
@@ -453,13 +458,12 @@
                                     </div>                            </div></li>
 
                             <!-- Sample Size Section -->
-                            <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('sample-details')">
-                                <div class="flex items-start">
-                                    <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 011-18 0 9 9 0 0118 0z"></path>
+                            <li class="border rounded-lgp-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('sample-details')">
+                                <div class="flex items-start">                                    <svg class="h-5 w-5 text-green-500 mr-2flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
-                                                                   <div class="flex-grow pr-2">
+                                    <div class="flex-growpr-2">
                                         <div class="flex justify-between items-center">
-                                            <span class="font-semibold text-gray-900 text-sm">Sample Size</span>
+                                            <span class="font-semibold text-gray-900 text-smSample Size</span>
                                             <svg class="h-4 w-4 transform transition-transform" id="sample-arrow">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                             </svg>
@@ -708,11 +712,14 @@
                         streak++;
                         document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';
                         document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                        document.getElementById('feedback-title').textContent = 'Correct!';
                         document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-green-900 mt-4';
                     } else {
                         streak = 0;
                         document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100';
                         document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+                        document.getElementById('feedback-title').textContent = 'Incorrect';
+                        document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-red-900 mt-4';
                     }
 
                     const accuracy = Math.round((score / totalAttempts) * 100);
