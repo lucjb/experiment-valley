@@ -86,18 +86,18 @@
                     <div class="flex space-x-8">
                         <div>
                             <span class="font-medium text-white">Score: </span>
-                            <span id="score" class="text-2xl font-bold text-orange-500">0</span>
+                            <span id="score" class="text-2xl font-bold score-value">0</span>
                         </div>
                         <div>
                             <span class="font-medium text-white">Streak: </span>
-                            <span id="streak" class="text-2xl font-bold text-orange-500">0</span>
+                            <span id="streak" class="text-2xl font-bold score-value">0</span>
                         </div>
                         <div>
                             <span class="font-medium text-white">Accuracy: </span>
-                            <span id="accuracy" class="text-2xl font-bold text-orange-500">0%</span>
+                            <span id="accuracy" class="text-2xl font-bold score-value">0%</span>
                         </div>
                     </div>
-                    <div class="text-sm font-medium text-white">Experiment <span id="current-experiment" class="text-orange-500 text-lg">1</span>/3</div>
+                    <div class="text-sm font-medium text-white">Experiment <span id="current-experiment" class="score-value text-lg">1</span>/3</div>
                 </div>
                 <div class="w-full bg-gray-800 rounded-full h-3 mt-3">
                     <div id="progress-bar" class="bg-orange-500 h-3 rounded-full transition-all duration-500" style="width: 33.33%"></div>
@@ -459,7 +459,7 @@
 
                             <!-- Sample Size Section -->
                             <li class="border rounded-lgp-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('sample-details')">
-                                <div class="flex items-start">                                    <svg class="h-5 w-5 text-green-500 mr-2flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                <div class="flex items-start">                                    <svg class="h-5 w-5 text-green-500 mr-2flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox0 0 24 24<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
                                     <div class="flex-growpr-2">
                                         <div class="flex justify-between items-center">
@@ -571,7 +571,7 @@
 
             function updateProgress() {
                 const progressBar = document.getElementById('progress-bar');
-                // Calculate progress based on completed experiments (currentExperiment - 1)
+                // Calculate progress based on completed experiments
                 const progressPercent = ((currentExperiment - 1) / EXPERIMENTS_PER_SESSION) * 100;
                 progressBar.style.width = `${progressPercent}%`;
                 document.getElementById('current-experiment').textContent = currentExperiment;
