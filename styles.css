@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+@layer components {
+  .score-value {
+    @apply text-orange-500;
+  }
+  .glow-orange {
+    text-shadow: 0 0 10px rgba(249,115,22,0.5);
+  }
+  [x-cloak] {
+    display: none !important;
+  }
+  .modal {
+    @apply fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50;
+  }
+  .modal-content {
+    @apply relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white;
+  }
+}
+
+.fade-out {
+    animation: fadeOut 0.5s ease-in-out forwards;
+}
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out forwards;
+}
+@keyframes fadeOut {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+@keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
