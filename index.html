@@ -42,62 +42,6 @@
             0% { opacity: 0; }
             100% { opacity: 1; }
         }
-
-        @keyframes celebrate {
-            0% {
-                transform: scale(1);
-                opacity: 1;
-            }
-            50% {
-                transform: scale(1.5);
-                opacity: 0.8;
-            }
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-
-        @keyframes floatUp {
-            0% {
-                transform: translateY(0);
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(-100px);
-                opacity: 0;
-            }
-        }
-
-        .milestone-animation {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 100;
-            font-size: 2rem;
-            font-weight: bold;
-            color: #f97316;
-            text-shadow: 0 0 10px rgba(249,115,22,0.5);
-            animation: celebrate 1s ease-out;
-        }
-
-        .score-popup {
-            position: absolute;
-            animation: floatUp 1s ease-out;
-            font-weight: bold;
-            color: #f97316;
-            pointer-events: none;
-        }
-
-        .confetti {
-            position: fixed;
-            width: 10px;
-            height: 10px;
-            background-color: #f97316;
-            border-radius: 50%;
-            pointer-events: none;
-        }
     </style>
 
 </head>
@@ -575,7 +519,6 @@
                 </div>
             </div>
         </div>
-        <div id="milestone-container"></div>
         <script>
             let score = 0;
             let streak = 0;
@@ -1049,119 +992,6 @@
                 }
             }
 
-            const MILESTONES = [100, 250, 500, 1000];
-
-            function createConfetti() {
-                const confettiCount = 50;
-                const container = document.body;
-
-                for (let i = 0; i < confettiCount; i++) {
-                    const confetti = document.createElement('div');
-                    confetti.className = 'confetti';
-
-                    // Random position
-                    confetti.style.left = Math.random() * 100 + 'vw';
-                    confetti.style.top = Math.random() * 100 + 'vh';
-
-                    // Random colors
-                    const colors = ['#f97316', '#fbbf24', '#4ade80', '#60a5fa'];
-                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-
-                    // Random animation
-                    confetti.style.animation = `
-                        floatUp ${1 + Math.random()}s ease-out forwards,
-                        celebrate ${0.5 + Math.random()}s ease-in-out infinite
-                    `;
-
-                    container.appendChild(confetti);
-
-                    // Remove after animation
-                    setTimeout(() => {
-                        container.removeChild(confetti);
-                    }, 2000);
-                }
-            }
-
-            function showMilestoneAnimation(milestone) {
-                const container = document.getElementById('milestone-container');
-                const animation = document.createElement('div');
-                animation.className = 'milestone-animation';
-                animation.textContent = `🎉 ${milestone} Points! 🎉`;
-
-                container.appendChild(animation);
-                createConfetti();
-
-                // Play celebration sound
-                const audio = new Audio('data:audio/wav;base64,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qJrx4KOQjahZxWbcZgztj2c49nKmkId44S71j0c8eV9yDK6uPRzx5X18eDvjvQ6yKo9ZSS6l//8elePK/Lf//IInrOF/FvDoADYAGBMGb7FtErm5MXMlmPAJQVgWta7Zx2go+8xJ0UiCb8LHHdftWyLJE0QIAIsI+UbXu67dZMjmgDGCGl1H+vpF4NSDckSIkk7Vd+sxEhBQMRU8j/12UIRhzSaUdQ+rQU5kGeFxm+hb1oh6pWWmv3uvmReDl0UnvtapVaIzo1jZbf/pD6ElLqSX+rUmOQNpJFa/r+sa4e/pBlAABoAAAAA3CUgShLdGIxsY7AUABPRrgCABdDuQ5GC7DqPQCgbbJUAoRSUj+NIEig0YfyWUho1VBBBA//uQZB4ABZx5zfMakeAAAAmwAAAAF5F3P0w9GtAAACfAAAAAwLhMDmAYWMgVEG1U0FIGCBgXBXAtfMH10000EEEEEECUBYln03TTTdNBDZopopYvrTTdNa325mImNg3TTPV9q3pmY0xoO6bv3r00y+IDGid/9aaaZTGMuj9mpu9Mpio1dXrr5HERTZSmqU36A3CumzN/9Robv/Xx4v9ijkSRSNLQhAWumap82WRSBUqXStV/YcS+XVLnSS+WLDroqArFkMEsAS+eWmrUzrO0oEmE40RlMZ5+ODIkAyKAGUwZ3mVKmcamcJnMW26MRPgUw6j+LkhyHGVGYjSUUKNpuJUQoOIAyDvEyG8S5yfK6dhZc0Tx1KI/gviKL6qvvFs1+bWtaz58uUNnryq6kt5RzOCkPWlVqVX2a/EEBUdU1KrXLf40GoiiFXK///qpoiDXrOgqDR38JB0bw7SoL+ZB9o1RCkQjQ2CBYZKd/+VJxZRRZlqSkKiws0WFxUyCwsKiMy7hUVFhIaCrNQsKkTIsLivwKKigsj8XYlwt/WKi2N4d//uQRCSAAjURNIHpMZBGYiaQPSYyAAABLAAAAAAAACWAAAAApUF/Mg+0aohSIRobBAsMlO//Kk4soosy1JSFRYWaLC4qZBYWFRGZdwqKiwkNBVmoWFSJkWFxX4FFRQWR+LsS4W/rFRb/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////VEFHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAU291bmRib3kuZGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMjAwNGh0dHA6Ly93d3cuc291bmRib3kuZGUAAAAAAAAAACU=');
-                audio.play();
-
-                // Remove after animation
-                setTimeout(() => {
-                    container.removeChild(animation);
-                }, 2000);
-            }
-
-            function checkMilestone(newScore, oldScore) {
-                for (const milestone of MILESTONES) {
-                    if (oldScore < milestone && newScore >= milestone) {
-                        showMilestoneAnimation(milestone);
-                        break;
-                    }
-                }
-            }
-
-            // Update the existing submitDecision function
-            async function submitDecision() {
-                if (!trustDecision || !implementDecision) {
-                    return;
-                }
-
-                const oldScore = score; // Store the old score
-
-                try {
-                    totalAttempts++;
-                    const correctTrust = !challenge.simulation.timeline.currentRuntimeDays < challenge.experiment.requiredRuntimeDays;
-                    const correctImplement = challenge.simulation.uplift > 0 && challenge.simulation.pValue < challenge.experiment.alpha;
-
-                    if (trustDecision === correctTrust && implementDecision === correctImplement) {
-                        score += (challenge.experiment.level * 10);
-                        streak++;
-                        document.getElementById('feedback-icon').innerHTML = `
-                            <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                        `;
-                        document.getElementById('feedback-title').textContent = 'Correct!';
-                        document.getElementById('feedback-message').textContent = 'Great job! Your analysis was spot on.';
-                    } else {
-                        streak = 0;
-                        document.getElementById('feedback-icon').innerHTML = `
-                            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        `;
-                        document.getElementById('feedback-title').textContent = 'Not quite right';
-                        document.getElementById('feedback-message').textContent = 'Keep practicing! Review the metrics carefully.';
-                    }
-
-                    // Update displays
-                    document.getElementById('score').textContent = score;
-                    document.getElementById('streak').textContent = streak;
-                    document.getElementById('accuracy').textContent = `${Math.round((score / (totalAttempts * 10)) * 100)}%`;
-                    document.getElementById('modal-score').textContent = score;
-                    document.getElementById('modal-streak').textContent = streak;
-                    document.getElementById('modal-accuracy').textContent = `${Math.round((score / (totalAttempts * 10)) * 100)}%`;
-
-                    // Check for milestones
-                    checkMilestone(score, oldScore);
-
-                    // Show feedback modal
-                    document.getElementById('feedback-modal').classList.remove('hidden');
-
-                } catch (error) {
-                    console.error('Error evaluating decision:', error);
-                }
-            }
         </script>
 </body>
 </html>
