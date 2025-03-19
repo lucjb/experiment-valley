@@ -57,5 +57,9 @@ task = "shell.exec"
 args = "npx tailwindcss -i ./styles.css -o ./dist/output.css --watch"
 
 [[ports]]
+localPort = 3000
+externalPort = 3000
+
+[[ports]]
 localPort = 5000
 externalPort = 80
