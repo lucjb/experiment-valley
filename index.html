@@ -20,6 +20,10 @@
         .glow-orange {
             text-shadow: 0 0 10px rgba(249,115,22,0.5);
         }
+        .glow-orange {
+            text-shadow: 0 0 10px rgba(249,115,22,0.7),
+                         0 0 20px rgba(249,115,22,0.3);
+        }
     </style>
 
 </head>
@@ -74,26 +78,26 @@
 
         <div id="challenge-container" class="hidden">
             <!-- Score and Progress Header -->
-            <header class="flex flex-col bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg shadow-lg p-3 mb-4">
+            <header class="flex flex-col bg-gradient-to-br from-gray-800 to-black rounded-lg shadow-lg p-4 mb-4 border border-gray-700">
                 <div class="flex justify-between items-center">
-                    <div class="flex space-x-6">
+                    <div class="flex space-x-8">
                         <div>
-                            <span class="font-semibold text-gray-400">Score: </span>
-                            <span id="score" class="text-xl text-orange-500 font-bold glow-orange">0</span>
+                            <span class="font-semibold text-gray-300">Score: </span>
+                            <span id="score" class="text-2xl text-orange-400 font-bold glow-orange">0</span>
                         </div>
                         <div>
-                            <span class="font-semibold text-gray-400">Streak: </span>
-                            <span id="streak" class="text-xl text-orange-500 font-bold glow-orange">0</span>
+                            <span class="font-semibold text-gray-300">Streak: </span>
+                            <span id="streak" class="text-2xl text-orange-400 font-bold glow-orange">0</span>
                         </div>
                         <div>
-                            <span class="font-semibold text-gray-400">Accuracy: </span>
-                            <span id="accuracy" class="text-xl text-orange-500 font-bold glow-orange">0%</span>
+                            <span class="font-semibold text-gray-300">Accuracy: </span>
+                            <span id="accuracy" class="text-2xl text-orange-400 font-bold glow-orange">0%</span>
                         </div>
                     </div>
-                    <div class="text-sm font-medium text-gray-400">Experiment <span id="current-experiment" class="text-orange-500">1</span>/3</div>
+                    <div class="text-sm font-medium text-gray-300">Experiment <span id="current-experiment" class="text-orange-400 text-lg">1</span>/3</div>
                 </div>
-                <div class="w-full bg-gradient-to-r from-gray-800 to-gray-700 rounded-full h-2 mt-2">
-                    <div id="progress-bar" class="bg-gradient-to-r from-orange-600 to-orange-400 h-2 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(249,115,22,0.5)]" style="width: 0%"></div>
+                <div class="w-full bg-black rounded-full h-3 mt-3 border border-gray-700">
+                    <div id="progress-bar" class="bg-gradient-to-r from-orange-500 via-orange-400 to-orange-500 h-3 rounded-full transition-all duration-500 shadow-[0_0_15px_rgba(249,115,22,0.7)]" style="width: 0%"></div>
                 </div>
             </header>
 
@@ -452,7 +456,7 @@
                                 </div>                            </div></li>
 
                         <!-- Sample Size Section -->
-                        <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('sample-details')">
+                        <li class="border rounded-lgp-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('sample-details')">
                             <div class="flex items-start">
                                 <svg class="h-5 w-5 text-green-500 mr-2flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
