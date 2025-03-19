@@ -378,9 +378,6 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
     const baseConversionsPerPeriod = distributeConversions(baseConversions, baseVisitorsPerPeriod);
     const variantConversionsPerPeriod = distributeConversions(variantConversions, variantVisitorsPerPeriod);
 
-    // Calculate total required periods for the experiment
-    const totalRequiredPeriods = Math.ceil(experimentData.experiment.requiredRuntimeDays / daysPerPeriod);
-
     // Calculate cumulative metrics
     let cumulativeBaseVisitors = 0;
     let cumulativeBaseConversions = 0;
@@ -388,54 +385,14 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
     let cumulativeVariantConversions = 0;
 
     return {
-        timePoints: Array.from({ length: totalRequiredPeriods }, (_, i) => {
-            // If this period is beyond our current data, return empty values
-            if (i >= numPeriods) {
-                return {
-                    period: {
-                        type: period,
-                        index: i,
-                        startDay: i * daysPerPeriod + 1,
-                        endDay: Math.min((i + 1) * daysPerPeriod, experimentData.experiment.requiredRuntimeDays)
-                    },
-                    base: {
-                        visitors: 0,
-                        conversions: 0,
-                        rate: null,
-                        rateCI: [null, null],
-                        cumulativeVisitors: cumulativeBaseVisitors,
-                        cumulativeConversions: cumulativeBaseConversions,
-                        cumulativeRate: cumulativeBaseVisitors === 0 ? 0 : cumulativeBaseConversions / cumulativeBaseVisitors,
-                        cumulativeRateCI: computeConfidenceInterval(
-                            cumulativeBaseVisitors === 0 ? 0 : cumulativeBaseConversions / cumulativeBaseVisitors,
-                            cumulativeBaseVisitors,
-                            alpha
-                        )
-                    },
-                    variant: {
-                        visitors: 0,
-                        conversions: 0,
-                        rate: null,
-                        rateCI: [null, null],
-                        cumulativeVisitors: cumulativeVariantVisitors,
-                        cumulativeConversions: cumulativeVariantConversions,
-                        cumulativeRate: cumulativeVariantVisitors === 0 ? 0 : cumulativeVariantConversions / cumulativeVariantVisitors,
-                        cumulativeRateCI: computeConfidenceInterval(
-                            cumulativeVariantVisitors === 0 ? 0 : cumulativeVariantConversions / cumulativeVariantVisitors,
-                            cumulativeVariantVisitors,
-                            alpha
-                        )
-                    }
-                };
-            }
-
+        timePoints: Array.from({ length: numPeriods }, (_, i) => {
             // Update cumulative counters
             cumulativeBaseVisitors += baseVisitorsPerPeriod[i];
             cumulativeBaseConversions += baseConversionsPerPeriod[i];
             cumulativeVariantVisitors += variantVisitorsPerPeriod[i];
             cumulativeVariantConversions += variantConversionsPerPeriod[i];
 
-            // Calculate rates and CIs for current period
+            // Calculate rates and CIs
             const baseRate = baseVisitorsPerPeriod[i] === 0 ? 0 : baseConversionsPerPeriod[i] / baseVisitorsPerPeriod[i];
             const variantRate = variantVisitorsPerPeriod[i] === 0 ? 0 : variantConversionsPerPeriod[i] / variantVisitorsPerPeriod[i];
             const baseCumulativeRate = cumulativeBaseVisitors === 0 ? 0 : cumulativeBaseConversions / cumulativeBaseVisitors;
@@ -471,8 +428,8 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
             };
         }),
         timePeriod: period,
-        periodsCount: totalRequiredPeriods,
-        totalDays: experimentData.experiment.requiredRuntimeDays
+        periodsCount: numPeriods,
+        totalDays: numDays
     };
 }
 
@@ -550,19 +507,6 @@ function generateABTestChallenge() {
     ];
 
     // Generate timeline data
-    const experimentData = {
-        experiment: {
-            alpha: ALPHA,
-            beta: BETA,
-            baseConversionRate: BASE_CONVERSION_RATE,
-            minimumRelevantEffect: MRE,
-            visitorsPerDay: VISITORS_PER_DAY,
-            businessCycleDays: BUSINESS_CYCLE_DAYS,
-            requiredSampleSizePerVariant: requiredSampleSizePerVariant,
-            requiredRuntimeDays: requiredRuntimeDays
-        }
-    };
-
     const timelineData = generateTimelineData(
         actualVisitorsBase,
         actualVisitorsVariant,
