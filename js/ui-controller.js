@@ -35,5 +35,29 @@ function updateExecutionSection(experimentData) {
     progressText.textContent = `${progressPercent}%`;
 }
 
+// Event Listeners and Initialization
+document.addEventListener('DOMContentLoaded', () => {
+    // Start button click handler
+    const startBtn = document.getElementById('start-btn');
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            const challenge = generateABTestChallenge();
+            updateExecutionSection(challenge);
+            // Hide tutorial and show challenge
+            document.getElementById('tutorial-section').classList.add('hidden');
+            document.getElementById('challenge-container').classList.remove('hidden');
+        });
+    }
+
+    // Next challenge button click handler
+    const nextBtn = document.getElementById('next-btn');
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            const challenge = generateABTestChallenge();
+            updateExecutionSection(challenge);
+        });
+    }
+});
+
 // Export functions for global use
 window.updateExecutionSection = updateExecutionSection;
