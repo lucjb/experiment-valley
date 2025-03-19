@@ -332,7 +332,7 @@ function distributeConversions(totalConversions, dailyVisitors) {
 
     // Final validation
     const finalTotal = dailyConversions.reduce((sum, v) => sum + v, 0);
-    console.assert(finalTotal === maxPossibleConversions, 
+    console.assert(finalTotal === maxPossibleConversions,
         `Total conversions mismatch: ${finalTotal} vs ${maxPossibleConversions}`);
 
     for (let i = 0; i < numDays; i++) {
