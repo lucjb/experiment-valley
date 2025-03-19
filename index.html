@@ -7,7 +7,7 @@
     <title>A/B Testing Gym</title>
 
     <!-- CDN Resources -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.tailwindcss.com" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
@@ -17,21 +17,10 @@
     <script src="js/visualizations.js"></script>
 
     <style>
-        .glow-orange {
-            text-shadow: 0 0 10px rgba(249,115,22,0.7),
-                         0 0 20px rgba(249,115,22,0.3);
-        }
         .score-value {
             color: #f97316; /* Tailwind orange-500 */
         }
-        .bg-orange-500{
-            background-color: rgb(249, 115, 22);
-        }
-        .hover\:bg-orange-600:hover {
-            background-color: rgb(234, 88, 12);
-        }
     </style>
-
 </head>
 <body class="bg-gray-50 text-gray-900">
     <div class="max-w-6xl mx-auto p-2 md:p-4">
@@ -465,8 +454,7 @@
                                 <div class="flex items-start">                                    <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none` stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                     </svg>
                                     <div class="flex-growpr-2">
-                                        <div class="flex justify-between items-center">
-                                            <span class="font-semibold text-gray-900 text-smSample Size</span>
+                                        <div class="flex justify-between items-center                                            <span class="font-semibold text-gray-900 text-sm">Sample Size</span>
                                             <svg class="h-4 w-4 transform transition-transform" id="sample-arrow">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                             </svg>
