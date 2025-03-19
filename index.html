@@ -7,7 +7,7 @@
     <title>A/B Testing Gym</title>
 
     <!-- Tailwind CSS -->
-    <link href="./dist/output.css" rel="stylesheet">
+    <link href="dist/output.css" rel="stylesheet">
 
     <!-- CDN Resources -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js"></script>
@@ -17,7 +17,8 @@
     <!-- Application Scripts -->
     <script src="js/challenge-generator.js"></script>
     <script src="js/visualizations.js"></script>
-
+    <script src="js/tooltips.js"></script>
+    <script src="js/progress-tracker.js"></script>
     <style>
         .score-value {
             color: #f97316; /* Tailwind orange-500 */
@@ -454,7 +455,7 @@
                             <!-- Sample Size Section -->
                             <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('sample-details')">
                                 <div class="flex items-start">
-                                    <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 011-18 0 9 9 0 0118 0z"></path>
                                     </svg>
                                                                    <div class="flex-grow pr-2">
                                         <div class="flex justify-between items-center">
