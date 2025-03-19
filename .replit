@@ -1,14 +1,14 @@
-modules = ["python-3.11"]
+modules = ["nodejs-20", "python-3.11"]
 
 [nix]
 channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
+run = ["sh", "-c", "serve -s ."]
 
 [workflows]
-runButton = "Project"
+runButton = "Static Server"
 
 [[workflows.workflow]]
 name = "Project"
@@ -33,6 +33,32 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Compile CSS"
+author = 40533908
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx tailwindcss -i ./styles.css -o ./dist/output.css --watch"
+
+[[workflows.workflow]]
+name = "Static Server"
+author = 40533908
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx serve ."
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npx tailwindcss -i ./styles.css -o ./dist/output.css --watch"
+
+[[ports]]
+localPort = 3000
+externalPort = 3000
 
 [[ports]]
 localPort = 5000

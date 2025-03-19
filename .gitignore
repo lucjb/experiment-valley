@@ -37,3 +37,5 @@ wheels/
 
 # Node modules (if we add any in future)
 node_modules/
+node_modules/
+dist/
