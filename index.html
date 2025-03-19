@@ -16,68 +16,6 @@
     <script src="js/challenge-generator.js"></script>
     <script src="js/visualizations.js"></script>
 
-    <script>
-        // UI Controller Functions
-        function updateExecutionSection(experimentData) {
-            const currentDate = new Date();
-            const daysElapsed = experimentData.simulation.timeline.currentRuntimeDays;
-            const totalDays = experimentData.experiment.requiredRuntimeDays;
-            const daysRemaining = totalDays - daysElapsed;
-
-            // Calculate dates
-            const startDate = new Date(currentDate);
-            startDate.setDate(startDate.getDate() - daysElapsed);
-
-            const finishDate = new Date(currentDate);
-            finishDate.setDate(finishDate.getDate() + daysRemaining);
-
-            // Format dates
-            const dateFormatter = new Intl.DateTimeFormat('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-
-            // Update DOM elements
-            document.getElementById('exp-start-date').textContent = dateFormatter.format(startDate);
-            document.getElementById('exp-current-date').textContent = dateFormatter.format(currentDate);
-            document.getElementById('exp-days-elapsed').textContent = daysElapsed;
-            document.getElementById('exp-days-remaining').textContent = daysRemaining;
-            document.getElementById('exp-finish-date').textContent = dateFormatter.format(finishDate);
-
-            // Update progress bar
-            const progressPercent = Math.round((daysElapsed / totalDays) * 100);
-            const progressBar = document.getElementById('exp-progress-bar');
-            const progressText = document.getElementById('exp-progress-text');
-
-            progressBar.style.width = `${progressPercent}%`;
-            progressText.textContent = `${progressPercent}%`;
-        }
-
-        // Initialize application when DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            // Start button click handler
-            const startBtn = document.getElementById('start-btn');
-            if (startBtn) {
-                startBtn.addEventListener('click', () => {
-                    const challenge = generateABTestChallenge();
-                    updateExecutionSection(challenge);
-                    // Hide tutorial and show challenge
-                    document.getElementById('tutorial-section').classList.add('hidden');
-                    document.getElementById('challenge-container').classList.remove('hidden');
-                });
-            }
-
-            // Next challenge button click handler
-            const nextBtn = document.getElementById('next-btn');
-            if (nextBtn) {
-                nextBtn.addEventListener('click', () => {
-                    const challenge = generateABTestChallenge();
-                    updateExecutionSection(challenge);
-                });
-            }
-        });
-    </script>
 </head>
 <body class="bg-gray-50 text-gray-900">
     <div class="max-w-6xl mx-auto p-2 md:p-4">
@@ -227,6 +165,10 @@
                             </div>
                             <div class="text-center mt-1 text-sm text-gray-600">
                                 <span id="exp-progress-text">0%</span> Complete
+                            </div>
+                            <div class="flex justify-between mt-1">
+                                <span id="progress-start-date" class="text-xs text-gray-500"></span>
+                                <span id="progress-end-date" class="text-xs text-gray-500"></span>
                             </div>
                         </div>
                     </div>
@@ -484,7 +426,7 @@
                                             <ul class="list-disc pl-4">
                                                 <li>Compare visitor counts</li>
                                                 <li>Look for approximate 50-50 split</li>
-                                                                           </ul>
+                                            </ul>
                                         </div>
                                     </div>
                                 </div>
@@ -582,6 +524,47 @@
         let currentExperiment = 1;
         const EXPERIMENTS_PER_SESSION = 3;  // Easy to modify for future changes (e.g., 10 or 15)
 
+        // UI Controller Functions
+        function updateExecutionSection(experimentData) {
+            const currentDate = new Date();
+            const daysElapsed = experimentData.simulation.timeline.currentRuntimeDays;
+            const totalDays = experimentData.experiment.requiredRuntimeDays;
+            const daysRemaining = totalDays - daysElapsed;
+
+            // Calculate dates
+            const startDate = new Date(currentDate);
+            startDate.setDate(startDate.getDate() - daysElapsed);
+
+            const finishDate = new Date(currentDate);
+            finishDate.setDate(finishDate.getDate() + daysRemaining);
+
+            // Format dates
+            const dateFormatter = new Intl.DateTimeFormat('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            // Update DOM elements
+            document.getElementById('exp-start-date').textContent = dateFormatter.format(startDate);
+            document.getElementById('exp-current-date').textContent = dateFormatter.format(currentDate);
+            document.getElementById('exp-days-elapsed').textContent = daysElapsed;
+            document.getElementById('exp-days-remaining').textContent = daysRemaining;
+            document.getElementById('exp-finish-date').textContent = dateFormatter.format(finishDate);
+
+            // Update progress bar and annotations
+            const progressPercent = Math.round((daysElapsed / totalDays) * 100);
+            const progressBar = document.getElementById('exp-progress-bar');
+            const progressText = document.getElementById('exp-progress-text');
+            const progressStartDate = document.getElementById('progress-start-date');
+            const progressEndDate = document.getElementById('progress-end-date');
+
+            progressBar.style.width = `${progressPercent}%`;
+            progressText.textContent = `${progressPercent}%`;
+            progressStartDate.textContent = dateFormatter.format(startDate);
+            progressEndDate.textContent = dateFormatter.format(finishDate);
+        }
+        
         function updateProgress() {
             console.log('Updating progress, current experiment:', currentExperiment);
             const progressBar = document.getElementById('progress-bar');
@@ -659,6 +642,10 @@
                 document.getElementById('visitor-uplift').textContent = formatUplift(challenge.simulation.visitorUplift);
                 document.getElementById('conversion-uplift').textContent = formatUplift(challenge.simulation.conversionUplift);
                 document.getElementById('uplift-value').textContent = formatUplift(challenge.simulation.uplift);
+                
+
+                updateExecutionSection(challenge)
+                
 
                 showLoading('chart-loading');
 
