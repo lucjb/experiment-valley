@@ -361,93 +361,104 @@ function renderChart(challenge) {
         let datasets = viewType === 'daily' ? [
             {
                 label: `Base ${timelineData.timePeriod}ly Rate`,
-                // Round to ensure consistent display with table
-                data: timePoints.map(d => Number((d.base.rate).toFixed(4))),
+                data: timePoints.map(d => d.base.rate === null ? NaN : Number((d.base.rate).toFixed(4))),
                 borderColor: 'rgb(147, 51, 234)',
                 backgroundColor: 'transparent',
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                spanGaps: true
             }, {
                 label: 'Base CI Lower',
-                data: timePoints.map(d => Number(d.base.rateCI[0].toFixed(4))),
+                data: timePoints.map(d => d.base.rateCI[0] === null ? NaN : Number(d.base.rateCI[0].toFixed(4))),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(147, 51, 234, 0.1)',
                 fill: '+1',
-                tension: 0.4
+                tension: 0.4,
+                spanGaps: true
             }, {
                 label: 'Base CI Upper',
-                data: timePoints.map(d => Number(d.base.rateCI[1].toFixed(4))),
+                data: timePoints.map(d => d.base.rateCI[1] === null ? NaN : Number(d.base.rateCI[1].toFixed(4))),
                 borderColor: 'transparent',
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                spanGaps: true
             }, {
                 label: `Test ${timelineData.timePeriod}ly Rate`,
-                data: timePoints.map(d => Number(d.variant.rate.toFixed(4))),
+                data: timePoints.map(d => d.variant.rate === null ? NaN : Number(d.variant.rate.toFixed(4))),
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'transparent',
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                spanGaps: true
             }, {
                 label: 'Test CI Lower',
-                data: timePoints.map(d => Number(d.variant.rateCI[0].toFixed(4))),
+                data: timePoints.map(d => d.variant.rateCI[0] === null ? NaN : Number(d.variant.rateCI[0].toFixed(4))),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                 fill: '+1',
-                tension: 0.4
+                tension: 0.4,
+                spanGaps: true
             }, {
                 label: 'Test CI Upper',
-                data: timePoints.map(d => Number(d.variant.rateCI[1].toFixed(4))),
+                data: timePoints.map(d => d.variant.rateCI[1] === null ? NaN : Number(d.variant.rateCI[1].toFixed(4))),
                 borderColor: 'transparent',
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                spanGaps: true
             }
         ] : [
             {
                 label: 'Base Cumulative Rate',
-                data: timePoints.map(d => Number(d.base.cumulativeRate.toFixed(4))),
+                data: timePoints.map(d => d.base.cumulativeRate === null ? NaN : Number(d.base.cumulativeRate.toFixed(4))),
                 borderColor: 'rgb(107, 11, 194)',
                 backgroundColor: 'transparent',
                 borderDash: [5, 5],
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                spanGaps: true
             }, {
                 label: 'Base CI Lower',
-                data: timePoints.map(d => Number(d.base.cumulativeRateCI[0].toFixed(4))),
+                data: timePoints.map(d => d.base.cumulativeRateCI[0] === null ? NaN : Number(d.base.cumulativeRateCI[0].toFixed(4))),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(107, 11, 194, 0.1)',
                 fill: '+1',
-                tension: 0.4
+                tension: 0.4,
+                spanGaps: true
             }, {
                 label: 'Base CI Upper',
-                data: timePoints.map(d => Number(d.base.cumulativeRateCI[1].toFixed(4))),
+                data: timePoints.map(d => d.base.cumulativeRateCI[1] === null ? NaN : Number(d.base.cumulativeRateCI[1].toFixed(4))),
                 borderColor: 'transparent',
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                spanGaps: true
             }, {
                 label: 'Test Cumulative Rate',
-                data: timePoints.map(d => Number(d.variant.cumulativeRate.toFixed(4))),
+                data: timePoints.map(d => d.variant.cumulativeRate === null ? NaN : Number(d.variant.cumulativeRate.toFixed(4))),
                 borderColor: 'rgb(19, 90, 206)',
                 backgroundColor: 'transparent',
                 borderDash: [5, 5],
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                spanGaps: true
             }, {
                 label: 'Test CI Lower',
-                data: timePoints.map(d => Number(d.variant.cumulativeRateCI[0].toFixed(4))),
+                data: timePoints.map(d => d.variant.cumulativeRateCI[0] === null ? NaN : Number(d.variant.cumulativeRateCI[0].toFixed(4))),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(19, 90, 206, 0.1)',
                 fill: '+1',
-                tension: 0.4
+                tension: 0.4,
+                spanGaps: true
             }, {
                 label: 'Test CI Upper',
-                data: timePoints.map(d => Number(d.variant.cumulativeRateCI[1].toFixed(4))),
+                data: timePoints.map(d => d.variant.cumulativeRateCI[1] === null ? NaN : Number(d.variant.cumulativeRateCI[1].toFixed(4))),
                 borderColor: 'transparent',
                 fill: false,
-                tension: 0.4
+                tension: 0.4,
+                spanGaps: true
             }
         ];
 
-        // Calculate y-axis range based on the datasets
+        // Calculate y-axis range based only on non-null values
         const yAxisRange = calculateYAxisRange(datasets);
         datasets.yAxisRange = yAxisRange;
 
@@ -458,7 +469,7 @@ function renderChart(challenge) {
         let allValues = [];
         datasets.forEach(dataset => {
             if (!dataset.label.includes('CI')) {
-                allValues = allValues.concat(dataset.data);
+                allValues = allValues.concat(dataset.data.filter(v => !isNaN(v))); //Filter out NaN values
             }
         });
         const maxValue = Math.max(...allValues);
@@ -528,10 +539,10 @@ function renderChart(challenge) {
                             const confidenceLevel = calculateConfidenceLevel(challenge.experiment.alpha);
 
                             return [
-                                `${context.dataset.label}: ${formatPercent(rate)}`,
-                                `${confidenceLevel}% CI: [${formatPercent(ci[0])}, ${formatPercent(ci[1])}]`,
-                                `Visitors: ${visitors.toLocaleString()}`,
-                                `Conversions: ${conversions.toLocaleString()}`
+                                `${context.dataset.label}: ${rate === null ? 'N/A' : formatPercent(rate)}`, //Handle null rates in tooltip
+                                `${confidenceLevel}% CI: [${ci[0] === null ? 'N/A' : formatPercent(ci[0])}, ${ci[1] === null ? 'N/A' : formatPercent(ci[1])}]`, //Handle null CI in tooltip
+                                `Visitors: ${visitors === null ? 'N/A' : visitors.toLocaleString()}`, //Handle null visitors in tooltip
+                                `Conversions: ${conversions === null ? 'N/A' : conversions.toLocaleString()}` //Handle null conversions in tooltip
                             ];
                         }
                     }
@@ -588,6 +599,48 @@ function renderChart(challenge) {
     return chart;
 }
 
+function createVisitorsDatasets(viewType) {
+    let datasets = viewType === 'daily' ? [
+        {
+            label: 'Base Visitors',
+            data: timePoints.map(d => d.base.visitors === 0 && d.base.rate === null ? NaN : d.base.visitors),
+            borderColor: 'rgb(147, 51, 234)',
+            backgroundColor: 'rgba(147, 51, 234, 0.1)',
+            fill: true,
+            spanGaps: true
+        },
+        {
+            label: 'Test Visitors',
+            data: timePoints.map(d => d.variant.visitors === 0 && d.variant.rate === null ? NaN : d.variant.visitors),
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            fill: true,
+            spanGaps: true
+        }
+    ] : [
+        {
+            label: 'Base Cumulative Visitors',
+            data: timePoints.map(d => d.base.cumulativeVisitors === 0 && d.base.cumulativeRate === null ? NaN : d.base.cumulativeVisitors),
+            borderColor: 'rgb(107, 11, 194)',
+            backgroundColor: 'rgba(107, 11, 194, 0.1)',
+            fill: true,
+            borderDash: [5, 5],
+            spanGaps: true
+        },
+        {
+            label: 'Test Cumulative Visitors',
+            data: timePoints.map(d => d.variant.cumulativeVisitors === 0 && d.variant.cumulativeRate === null ? NaN : d.variant.cumulativeVisitors),
+            borderColor: 'rgb(19, 90, 206)',
+            backgroundColor: 'rgba(19, 90, 206, 0.1)',
+            fill: true,
+            borderDash: [5, 5],
+            spanGaps: true
+        }
+    ];
+
+    return datasets;
+}
+
 function renderVisitorsChart(challenge) {
     const ctx = document.getElementById('visitors-chart');
     if (!ctx) {
@@ -617,50 +670,11 @@ function renderVisitorsChart(challenge) {
         }
     });
 
-    // Create datasets based on the view type
-    function createDatasets(viewType) {
-        let datasets = viewType === 'daily' ? [
-            {
-                label: 'Base Visitors',
-                data: timePoints.map(d => d.base.visitors),
-                borderColor: 'rgb(147, 51, 234)',
-                backgroundColor: 'rgba(147, 51, 234, 0.1)',
-                fill: true
-            },
-            {
-                label: 'Test Visitors',
-                data: timePoints.map(d => d.variant.visitors),
-                borderColor: 'rgb(59, 130, 246)',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: true
-            }
-        ] : [
-            {
-                label: 'Base Cumulative Visitors',
-                data: timePoints.map(d => d.base.cumulativeVisitors),
-                borderColor: 'rgb(107, 11, 194)',
-                backgroundColor: 'rgba(107, 11, 194, 0.1)',
-                fill: true,
-                borderDash: [5, 5]
-            },
-            {
-                label: 'Test Cumulative Visitors',
-                data: timePoints.map(d => d.variant.cumulativeVisitors),
-                borderColor: 'rgb(19, 90, 206)',
-                backgroundColor: 'rgba(19, 90, 206, 0.1)',
-                fill: true,
-                borderDash: [5, 5]
-            }
-        ];
-
-        return datasets;
-    }
-
     let chart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
-            datasets: createDatasets('daily')
+            datasets: createVisitorsDatasets('daily')
         },
         options: {
             responsive: true,
@@ -698,10 +712,9 @@ function renderVisitorsChart(challenge) {
                     position: 'nearest',
                     callbacks: {
                         label: function(context) {
-                            const timePoint = timePoints[context.dataIndex];
                             const value = context.parsed.y;
                             return [
-                                `${context.dataset.label}: ${value.toLocaleString()}`
+                                `${context.dataset.label}: ${isNaN(value) ? 'N/A' : value.toLocaleString()}` // Handle NaN values in tooltip
                             ];
                         }
                     }
@@ -745,7 +758,7 @@ function renderVisitorsChart(challenge) {
         // Add event listener for the toggle
         viewToggle.addEventListener('change', function(e) {
             const viewType = e.target.value;
-            const datasets = createDatasets(viewType);
+            const datasets = createVisitorsDatasets(viewType);
             chart.data.datasets = datasets;
             chart.options.plugins.title.text = viewType === 'daily' ? 
                 `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Visitors` : 
