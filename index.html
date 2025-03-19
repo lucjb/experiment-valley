@@ -144,6 +144,33 @@
             </div>
 
             <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-4">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-3">Execution</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="border rounded p-3">
+                        <h3 class="font-semibold mb-2 text-lg">Timeline</h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><span class="font-medium">Start Date:</span> <span id="exp-start-date"></span></div>
+                            <div><span class="font-medium">Current Date:</span> <span id="exp-current-date"></span></div>
+                            <div><span class="font-medium">Days Elapsed:</span> <span id="exp-days-elapsed"></span></div>
+                            <div><span class="font-medium">Days Remaining:</span> <span id="exp-days-remaining"></span></div>
+                            <div><span class="font-medium">Expected Finish:</span> <span id="exp-finish-date"></span></div>
+                        </div>
+                    </div>
+                    <div class="border rounded p-3">
+                        <h3 class="font-semibold mb-2 text-lg">Progress</h3>
+                        <div class="mt-2">
+                            <div class="w-full bg-gray-200 rounded-full h-4">
+                                <div id="exp-progress-bar" class="bg-blue-600 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                            <div class="text-center mt-1 text-sm text-gray-600">
+                                <span id="exp-progress-text">0%</span> Complete
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-4">
                 <h2 class="text-2xl font-semibold text-gray-800 mb-3">Results Analysis</h2>
 
                 <!-- Tab Navigation -->
@@ -431,7 +458,7 @@
                         <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" onclick="toggleSection('sample-details')">
                             <div class="flex items-start">
                                 <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                                 <div class="flex-grow pr-2">
                                     <div class="flex justify-between items-center">

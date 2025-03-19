@@ -433,6 +433,42 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
     };
 }
 
+function updateExecutionSection(experimentData) {
+    const currentDate = new Date();
+    const daysElapsed = experimentData.simulation.timeline.currentRuntimeDays;
+    const totalDays = experimentData.experiment.requiredRuntimeDays;
+    const daysRemaining = totalDays - daysElapsed;
+
+    // Calculate dates
+    const startDate = new Date(currentDate);
+    startDate.setDate(startDate.getDate() - daysElapsed);
+
+    const finishDate = new Date(currentDate);
+    finishDate.setDate(finishDate.getDate() + daysRemaining);
+
+    // Format dates
+    const dateFormatter = new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+
+    // Update DOM elements
+    document.getElementById('exp-start-date').textContent = dateFormatter.format(startDate);
+    document.getElementById('exp-current-date').textContent = dateFormatter.format(currentDate);
+    document.getElementById('exp-days-elapsed').textContent = daysElapsed;
+    document.getElementById('exp-days-remaining').textContent = daysRemaining;
+    document.getElementById('exp-finish-date').textContent = dateFormatter.format(finishDate);
+
+    // Update progress bar
+    const progressPercent = Math.round((daysElapsed / totalDays) * 100);
+    const progressBar = document.getElementById('exp-progress-bar');
+    const progressText = document.getElementById('exp-progress-text');
+
+    progressBar.style.width = `${progressPercent}%`;
+    progressText.textContent = `${progressPercent}%`;
+}
+
 function generateABTestChallenge() {
     // Predefined options for each parameter
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
@@ -460,6 +496,11 @@ function generateABTestChallenge() {
     requiredRuntimeDays = Math.max(7, requiredRuntimeDays);
     requiredRuntimeDays = Math.ceil(requiredRuntimeDays / BUSINESS_CYCLE_DAYS) * BUSINESS_CYCLE_DAYS;
 
+    var currentRuntimeDays = requiredRuntimeDays;
+    // Create a partially executed experiment for half of the challenges
+    if (Math.random() < 0.5) {
+        currentRuntimeDays = Math.floor(requiredRuntimeDays / 2);
+    }
     const actualBaseConversionRate = sampleBetaDistribution(
         100000 * BASE_CONVERSION_RATE,
         100000 * (1 - BASE_CONVERSION_RATE)
@@ -475,7 +516,7 @@ function generateABTestChallenge() {
     const minimumRate = actualBaseConversionRate * 0.2; // minimum 20% of base rate
     const adjustedVariantRate = Math.max(minimumRate, variantConversionRate);
 
-    const actualVisitorsTotal = requiredRuntimeDays * VISITORS_PER_DAY + sampleBinomial(VISITORS_PER_DAY, 0.8);
+    const actualVisitorsTotal = currentRuntimeDays * VISITORS_PER_DAY + sampleBinomial(VISITORS_PER_DAY, 0.8);
     const actualVisitorsBase = sampleBinomial(actualVisitorsTotal, 0.5);
     const actualVisitorsVariant = actualVisitorsTotal - actualVisitorsBase;
 
@@ -506,7 +547,7 @@ function generateABTestChallenge() {
         actualVisitorsVariant,
         actualConversionsBase,
         actualConversionsVariant,
-        requiredRuntimeDays,
+        currentRuntimeDays,
         ALPHA
     );
 
@@ -551,7 +592,10 @@ function generateABTestChallenge() {
             confidenceIntervalBase: ciBase,
             confidenceIntervalVariant: ciVariant,
             confidenceIntervalDifference: ciDifference,
-            timeline: timelineData,
+            timeline: {
+                ...timelineData,
+                currentRuntimeDays: currentRuntimeDays
+            },
             uplift: conversionRateUplift,
             upliftConfidenceInterval: upliftCI,
             visitorUplift: visitorUplift,
