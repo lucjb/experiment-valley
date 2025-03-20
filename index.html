@@ -403,597 +403,600 @@
                 </div>
             </div>
         </div>
+        <!-- Cheat Sheet Modal -->
         <div id="cheat-sheet-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-32 mx-auto p-4 border max-w-md shadow-lg rounded-md bg-white">
-        <div class="mt-2">
-            <div class="flex justify-between items-center border-b pb-3">
-                <h3 class="text-lg font-medium text-gray-900">Experiment Trustworthiness Cheat-sheet</h3>
-                <button id="close-cheat-sheet" class="text-gray-400 hover:text-gray-500">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
+            <div class="relative top-32 mx-auto p-4 border max-w-md shadow-lg rounded-md bg-white">
+                <div class="mt-2">
+                    <div class="flex justify-between items-center border-b pb-3">
+                        <h3 class="text-lg font-medium text-gray-900">Experiment Trustworthiness Cheat-sheet</h3>
+                        <button id="close-cheat-sheet" class="text-gray-400 hover:text-gray-500">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="mt-4">
+                        <div class="space-y-4">
+                            <!-- Sample Ratio Mismatch Section -->
+                            <div class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" data-section="srm">
+                                <div class="flex items-start">
+                                    <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <div class="flex-grow">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-medium text-gray-900">Sample Ratio Mismatch</span>
+                                            <svg class="h-5 w-5 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-sm text-gray-500 mt-1">Check traffic split</p>
+                                        <div class="hidden mt-2 bg-gray-100 rounded p-2">
+                                            <ul class="list-disc pl-4 text-sm text-gray-600">
+                                                <li>Compare visitor counts</li>
+                                                <li>Look for approximate 50-50 split</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Traffic Patterns Section -->
+                            <div class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" data-section="traffic">
+                                <div class="flex items-start">
+                                    <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <div class="flex-grow">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-medium text-gray-900">Traffic Patterns</span>
+                                            <svg class="h-5 w-5 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-sm text-gray-500 mt-1">Compare with design</p>
+                                        <div class="hidden mt-2 bg-gray-100 rounded p-2">
+                                            <ul class="list-disc pl-4 text-sm text-gray-600">
+                                                <li>Daily Traffic</li>
+                                                <li<li>Base Conversion Rate</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Sample Size Section -->
+                            <div class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" data-section="sample">
+                                <div class="flex items-start">
+                                    <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <div class="flex-grow">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-medium text-gray-900">Sample Size</span>
+                                            <svg class="h-5 w-5 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-sm text-gray-500 mt-1">Check required sample size</p>
+                                        <div class="hidden mt-2 bg-gray-100 rounded p-2">
+                                            <ul class="list-disc pl-4 text-sm text-gray-600">
+                                                <li>Meet minimum visitors per variant</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Business Cycles Section -->
+                            <div class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" data-section="cycles">
+                                <div class="flex items-start">
+                                    <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <div class="flex-grow">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-medium text-gray-900">Business Cycles</span>
+                                            <svg class="h-5 w-5 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-sm text-gray-500 mt-1">Check cycle completion</p>
+                                        <div class="hidden mt-2 bg-gray-100 rounded p-2">
+                                            <ul class="list-disc pl-4 text-sm text-gray-600">
+                                                <li>At least 7 days</li>
+                                                <li>Full business cycles</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="mt-4">
-                <ul class="space-y-4 text-gray-600">
-                    <!-- Sample Ratio Mismatch Section -->
-                    <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" data-section="srm">
-                        <div class="flex items-start">
-                            <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <div class="flex-grow pr-2">
-                                <div class="flex justify-between items-center">
-                                    <span class="font-semibold text-gray-900 text-sm">Sample Ratio Mismatch</span>
-                                    <svg class="arrow-icon h-5 w-5 ml-2 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                    </svg>
-                                </div>
-                                <p class="text-xs mt-1">Check traffic split</p>
-                                <div id="srm-details" class="hidden mt-2 bg-gray-100 rounded p-2">
-                                    <div class="space-y-2 text-xs">
-                                        <ul class="list-disc pl-4">
-                                            <li>Compare visitor counts</li>
-                                            <li>Look for approximate 50-50 split</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </li>
 
-                    <!-- Traffic Patterns Section -->
-                    <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" data-section="traffic">
-                        <div class="flex items-start">
-                            <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <div class="flex-grow pr-2">
-                                <div class="flex justify-between items-center">
-                                    <span class="font-semibold text-gray-900 text-sm">Traffic</span>
-                                    <svg class="arrow-icon h-5 w-5 ml-2 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                    </svg>
-                                </div>
-                                <p class="text-xs mt-1">Compare experiment design to actual run</p>
-                                <div id="traffic-details" class="hidden mt-2 bg-gray-100 rounded p-2">
-                                    <div class="space-y-2 text-xs">
-                                        <ul class="list-disc pl-4">
-                                            <li>Daily Traffic</li>
-                                            <li>Base Conversion Rate</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </li>
+            <script>
+                function initializeCheatSheet() {
+                    const cheatSheetBtn = document.getElementById('cheat-sheet-btn');
+                    const cheatSheetModal = document.getElementById('cheat-sheet-modal');
+                    const closeCheatSheet = document.getElementById('close-cheat-sheet');
 
-                    <!-- Sample Size Section -->
-                    <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" data-section="sample">
-                        <div class="flex items-start">
-                            <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <div class="flex-grow pr-2">
-                                <div class="flex justify-between items-center">
-                                    <span class="font-semibold text-gray-900 text-sm">Sample Size</span>
-                                    <svg class="arrow-icon h-5 w-5 ml-2 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                    </svg>
-                                </div>
-                                <p class="text-xs mt-1">Check required sample size</p>
-                                <div id="sample-details" class="hidden mt-2 bg-gray-100 rounded p-2">
-                                    <div class="space-y-2 text-xs">
-                                        <ul class="list-disc pl-4">
-                                            <li>Meet minimum visitors per variant</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </li>
+                    // Open the modal
+                    cheatSheetBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        cheatSheetModal.classList.remove('hidden');
+                    });
 
-                    <!-- Business Cycles Section -->
-                    <li class="border rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer" data-section="cycles">
-                        <div class="flex items-start">
-                            <svg class="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <div class="flex-grow pr-2">
-                                <div class="flex justify-between items-center">
-                                    <span class="font-semibold text-gray-900 text-sm">Business Cycles</span>
-                                    <svg class="arrow-icon h-5 w-5 ml-2 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                    </svg>
-                                </div>
-                                <p class="text-xs mt-1">Check cycle completion</p>
-                                <div id="cycles-details" class="hidden mt-2 bg-gray-100 rounded p-2">
-                                    <div class="space-y-2 text-xs">
-                                        <ul class="list-disc pl-4">
-                                            <li>At least 7 days</li>
-                                            <li>Full business cycles</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </li>
-                </ul>
-            </div>
+                    // Close the modal
+                    closeCheatSheet.addEventListener('click', () => {
+                        cheatSheetModal.classList.add('hidden');
+                    });
+
+                    // Close when clicking outside
+                    cheatSheetModal.addEventListener('click', (e) => {
+                        if (e.target === cheatSheetModal) {
+                            cheatSheetModal.classList.add('hidden');
+                        }
+                    });
+
+                    // Toggle sections
+                    const sections = document.querySelectorAll('[data-section]');
+                    sections.forEach(section => {
+                        section.addEventListener('click', () => {
+                            const content = section.querySelector('.flex-grow > div:last-child');
+                            const arrow = section.querySelector('svg:last-child');
+
+                            content.classList.toggle('hidden');
+                            if (content.classList.contains('hidden')) {
+                                arrow.style.transform = '';
+                            } else {
+                                arrow.style.transform = 'rotate(180deg)';
+                            }
+                        });
+                    });
+                }
+
+                // Initialize when DOM is loaded
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initializeCheatSheet);
+                } else {
+                    initializeCheatSheet();
+                }
+            </script>
         </div>
-    </div>
-</div>
 
 <script>
-    function initializeCheatSheet() {
-        const cheatSheetBtn = document.getElementById('cheat-sheet-btn');
-        const cheatSheetModal = document.getElementById('cheat-sheet-modal');
-        const closeCheatSheet = document.getElementById('close-cheat-sheet');
+    let score = 0;
+    let streak = 0;
+    let totalAttempts = 0;
+    let challenge = null;
+    let trustDecision = null;
+    let implementDecision = null;
+    let currentExperiment = 1;
+    const EXPERIMENTS_PER_SESSION = 3;  // Easy to modify for future changes (e.g., 10 or 15)
 
-        // Initialize section toggles
-        const sections = cheatSheetModal.querySelectorAll('li[data-section]');
-        sections.forEach(section => {
-            section.addEventListener('click', () => {
-                const sectionId = section.getAttribute('data-section');
-                const details = document.getElementById(`${sectionId}-details`);
-                const arrow = section.querySelector('.arrow-icon');
+    // UI Controller Functions
+    function updateExecutionSection(experimentData) {
+        const currentDate = new Date();
+        const daysElapsed = experimentData.simulation.timeline.currentRuntimeDays;
+        const totalDays = experimentData.experiment.requiredRuntimeDays;
+        const daysRemaining = totalDays - daysElapsed;
+        const isComplete = daysElapsed >= totalDays;
 
-                details.classList.toggle('hidden');
-                arrow.style.transform = details.classList.contains('hidden') ? '' : 'rotate(180deg)';
-            });
+        // Calculate dates
+        const startDate = new Date(currentDate);
+        startDate.setDate(startDate.getDate() - daysElapsed);
+
+        const finishDate = new Date(currentDate);
+        finishDate.setDate(finishDate.getDate() + daysRemaining);
+
+        // Format dates
+        const dateFormatter = new Intl.DateTimeFormat('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
         });
 
-        cheatSheetBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            cheatSheetModal.classList.remove('hidden');
-        });
+        // Update progress bar and annotations
+        const progressPercent = Math.round((daysElapsed / totalDays) * 100);
+        const progressBar = document.getElementById('exp-progress-bar');
+        const daysElapsedText = document.getElementById('exp-days-elapsed-text');
+        const daysRemainingText = document.getElementById('exp-days-remaining-text');
+        const completeText = document.getElementById('exp-complete-text');
+        const progressStartDate = document.getElementById('progress-start-date');
+        const progressEndDate = document.getElementById('progress-end-date');
 
-        closeCheatSheet.addEventListener('click', function() {
-            cheatSheetModal.classList.add('hidden');
-        });
+        progressBar.style.width = `${Math.min(100, progressPercent)}%`;
 
-        cheatSheetModal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                this.classList.add('hidden');
-            }
-        });
+        if (isComplete) {
+            daysElapsedText.classList.add('hidden');
+            daysRemainingText.classList.add('hidden');
+            completeText.classList.remove('hidden');
+        } else {
+            daysElapsedText.classList.remove('hidden');
+            daysRemainingText.classList.remove('hidden');
+            completeText.classList.add('hidden');
+            daysElapsedText.textContent = `${daysElapsed} days elapsed`;
+            daysRemainingText.textContent = `${daysRemaining} days remaining`;
+        }
+
+        progressStartDate.textContent = dateFormatter.format(startDate);
+        progressEndDate.textContent = dateFormatter.format(finishDate);
     }
 
-    // Initialize cheat sheet when DOM is loaded
-    document.addEventListener('DOMContentLoaded', initializeCheatSheet);
-</script>
+    function updateProgress() {
+        const progressBar = document.getElementById('progress-bar');
+        // Calculate progress percentage (33.33% per completed experiment)
+        const progressPercent = ((currentExperiment - 1) / EXPERIMENTS_PER_SESSION) * 100;
+        progressBar.style.width = `${progressPercent}%`;
+        document.getElementById('current-experiment').textContent = currentExperiment;
+    }
 
-<script>
-            let score = 0;
-            let streak = 0;
-            let totalAttempts = 0;
-            let challenge = null;
-            let trustDecision = null;
-            let implementDecision = null;
-            let currentExperiment = 1;
-            const EXPERIMENTS_PER_SESSION = 3;  // Easy to modify for future changes (e.g., 10 or 15)
+    async function loadChallenge() {
+        console.log('Loading challenge for experiment:', currentExperiment, 'of', EXPERIMENTS_PER_SESSION);
+        // Check if we've completed all experiments
+        if (currentExperiment > EXPERIMENTS_PER_SESSION) {
+            console.log('All experiments completed, showing modal');
+            showCompletionModal();
+            return;
+        }
 
-            // UI Controller Functions
-            function updateExecutionSection(experimentData) {
-                const currentDate = new Date();
-                const daysElapsed = experimentData.simulation.timeline.currentRuntimeDays;
-                const totalDays = experimentData.experiment.requiredRuntimeDays;
-                const daysRemaining = totalDays - daysElapsed;
-                const isComplete = daysElapsed >= totalDays;
+        const experimentContainer = document.getElementById('challenge-container');
+        experimentContainer.classList.add('fade-out');
 
-                // Calculate dates
-                const startDate = new Date(currentDate);
-                startDate.setDate(startDate.getDate() - daysElapsed);
+        // Wait for fade out animation
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-                const finishDate = new Date(currentDate);
-                finishDate.setDate(finishDate.getDate() + daysRemaining);
+        showLoading('loading-overlay');
+        resetDecisions();
+        updateProgress();
 
-                // Format dates
-                const dateFormatter = new Intl.DateTimeFormat('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                });
-
-                // Update progress bar and annotations
-                const progressPercent = Math.round((daysElapsed / totalDays) * 100);
-                const progressBar = document.getElementById('exp-progress-bar');
-                const daysElapsedText = document.getElementById('exp-days-elapsed-text');
-                const daysRemainingText = document.getElementById('exp-days-remaining-text');
-                const completeText = document.getElementById('exp-complete-text');
-                const progressStartDate = document.getElementById('progress-start-date');
-                const progressEndDate = document.getElementById('progress-end-date');
-
-                progressBar.style.width = `${Math.min(100, progressPercent)}%`;
-
-                if (isComplete) {
-                    daysElapsedText.classList.add('hidden');
-                    daysRemainingText.classList.add('hidden');
-                    completeText.classList.remove('hidden');
-                } else {
-                    daysElapsedText.classList.remove('hidden');
-                    daysRemainingText.classList.remove('hidden');
-                    completeText.classList.add('hidden');
-                    daysElapsedText.textContent = `${daysElapsed} days elapsed`;
-                    daysRemainingText.textContent = `${daysRemaining} days remaining`;
-                }
-
-                progressStartDate.textContent = dateFormatter.format(startDate);
-                progressEndDate.textContent = dateFormatter.format(finishDate);
+        try {
+            if (typeof generateABTestChallenge !== 'function') {
+                console.error("Challenge generator not found");
+                alert("Error: Challenge generator not found");
+                return;
             }
 
-            function updateProgress() {
-                const progressBar = document.getElementById('progress-bar');
-                // Calculate progress percentage (33.33% per completed experiment)
-                const progressPercent = ((currentExperiment - 1) / EXPERIMENTS_PER_SESSION) * 100;
-                progressBar.style.width = `${progressPercent}%`;
-                document.getElementById('current-experiment').textContent = currentExperiment;
-            }
+            challenge = generateABTestChallenge();
+            const formatPercentage = (value) => {
+                const percentage = value * 100;
+                return Number.isInteger(percentage) ? `${percentage}%` : `${percentage.toFixed(1)}%`;
+            };
 
-            async function loadChallenge() {
-                console.log('Loading challenge for experiment:', currentExperiment, 'of', EXPERIMENTS_PER_SESSION);
-                // Check if we've completed all experiments
-                if (currentExperiment > EXPERIMENTS_PER_SESSION) {
-                    console.log('All experiments completed, showing modal');
-                    showCompletionModal();
-                    return;
-                }
-
-                const experimentContainer = document.getElementById('challenge-container');
-                experimentContainer.classList.add('fade-out');
-
-                // Wait for fade out animation
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                showLoading('loading-overlay');
-                resetDecisions();
-                updateProgress();
-
-                try {
-                    if (typeof generateABTestChallenge !== 'function') {
-                        console.error("Challenge generator not found");
-                        alert("Error: Challenge generator not found");
-                        return;
-                    }
-
-                    challenge = generateABTestChallenge();
-                    const formatPercentage = (value) => {
-                        const percentage = value * 100;
-                        return Number.isInteger(percentage) ? `${percentage}%` : `${percentage.toFixed(1)}%`;
-                    };
-
-                    document.getElementById('exp-alpha').textContent = formatPercentage(challenge.experiment.alpha);
-                    document.getElementById('exp-beta').textContent = formatPercentage(1 - challenge.experiment.beta);
-                    document.getElementById('exp-base-rate').textContent = `${(challenge.experiment.baseConversionRate * 100).toFixed(2)}%`;
-                    document.getElementById('exp-min-effect').textContent = `${(challenge.experiment.minimumRelevantEffect * 100).toFixed(2)}%`;
-                    document.getElementById('exp-visitors').textContent = challenge.experiment.visitorsPerDay.toLocaleString();
-                    document.getElementById('exp-required-sample').textContent = challenge.experiment.requiredSampleSizePerVariant.toLocaleString();
-                    document.getElementById('exp-cycle-days').textContent = challenge.experiment.businessCycleDays === 1 ? '1 day' : '1 week';
-                    document.getElementById('exp-required-days').textContent = `${challenge.experiment.requiredRuntimeDays} days`;
+            document.getElementById('exp-alpha').textContent = formatPercentage(challenge.experiment.alpha);
+            document.getElementById('exp-beta').textContent = formatPercentage(1 - challenge.experiment.beta);
+            document.getElementById('exp-base-rate').textContent = `${(challenge.experiment.baseConversionRate * 100).toFixed(2)}%`;
+            document.getElementById('exp-min-effect').textContent = `${(challenge.experiment.minimumRelevantEffect * 100).toFixed(2)}%`;
+            document.getElementById('exp-visitors').textContent = challenge.experiment.visitorsPerDay.toLocaleString();
+            document.getElementById('exp-required-sample').textContent = challenge.experiment.requiredSampleSizePerVariant.toLocaleString();
+            document.getElementById('exp-cycle-days').textContent = challenge.experiment.businessCycleDays === 1 ? '1 day' : '1 week';
+            document.getElementById('exp-required-days').textContent = `${challenge.experiment.requiredRuntimeDays} days`;
 
 
-                    document.getElementById('base-visitors').textContent = challenge.simulation.actualVisitorsBase;
-                    document.getElementById('base-conversions').textContent = challenge.simulation.actualConversionsBase;
-                    document.getElementById('base-rate').textContent = `${(challenge.simulation.actualBaseConversionRate * 100).toFixed(2)}%`;
+            document.getElementById('base-visitors').textContent = challenge.simulation.actualVisitorsBase;
+            document.getElementById('base-conversions').textContent = challenge.simulation.actualConversionsBase;
+            document.getElementById('base-rate').textContent = `${(challenge.simulation.actualBaseConversionRate * 100).toFixed(2)}%`;
 
-                    document.getElementById('variant-visitors').textContent = challenge.simulation.actualVisitorsVariant;
-                    document.getElementById('variant-conversions').textContent = challenge.simulation.actualConversionsVariant;
-                    document.getElementById('variant-rate').textContent = `${(challenge.simulation.variantConversionRate * 100).toFixed(2)}%`;
+            document.getElementById('variant-visitors').textContent = challenge.simulation.actualVisitorsVariant;
+            document.getElementById('variant-conversions').textContent = challenge.simulation.actualConversionsVariant;
+            document.getElementById('variant-rate').textContent = `${(challenge.simulation.variantConversionRate * 100).toFixed(2)}%`;
 
-                    const formatDelta = (value, isPercentage = false) => {
-                        const sign = value > 0 ? '+' : '';
-                        return isPercentage ?
-                            `${sign}${(value * 100).toFixed(2)}%` :
-                            `${sign}${value}`;
-                    };
+            const formatDelta = (value, isPercentage = false) => {
+                const sign = value > 0 ? '+' : '';
+                return isPercentage ?
+                    `${sign}${(value * 100).toFixed(2)}%` :
+                    `${sign}${value}`;
+            };
 
-                    document.getElementById('delta-visitors').textContent = formatDelta(challenge.simulation.actualVisitorsVariant - challenge.simulation.actualVisitorsBase);
-                    document.getElementById('delta-conversions').textContent = formatDelta(challenge.simulation.actualConversionsVariant - challenge.simulation.actualConversionsBase);
-                    document.getElementById('delta-rate').textContent = formatDelta(challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate, true);
+            document.getElementById('delta-visitors').textContent = formatDelta(challenge.simulation.actualVisitorsVariant - challenge.simulation.actualVisitorsBase);
+            document.getElementById('delta-conversions').textContent = formatDelta(challenge.simulation.actualConversionsVariant - challenge.simulation.actualConversionsBase);
+            document.getElementById('delta-rate').textContent = formatDelta(challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate, true);
 
-                    const formatUplift = (value) => {
-                        const sign = value > 0 ? '+' : '';
-                        return `${sign}${(value * 100).toFixed(2)}%`;
-                    };
+            const formatUplift = (value) => {
+                const sign = value > 0 ? '+' : '';
+                return `${sign}${(value * 100).toFixed(2)}%`;
+            };
 
-                    document.getElementById('visitor-uplift').textContent = formatUplift(challenge.simulation.visitorUplift);
-                    document.getElementById('conversion-uplift').textContent = formatUplift(challenge.simulation.conversionUplift);
-                    document.getElementById('uplift-value').textContent = formatUplift(challenge.simulation.uplift);
+            document.getElementById('visitor-uplift').textContent = formatUplift(challenge.simulation.visitorUplift);
+            document.getElementById('conversion-uplift').textContent = formatUplift(challenge.simulation.conversionUplift);
+            document.getElementById('uplift-value').textContent = formatUplift(challenge.simulation.uplift);
 
-                    updateExecutionSection(challenge)
+            updateExecutionSection(challenge)
 
-                    showLoading('chart-loading');
+            showLoading('chart-loading');
 
-                    setTimeout(() => {
-                        hideLoading('chart-loading');
-                        initializeCharts(challenge);
+            setTimeout(() => {
+                hideLoading('chart-loading');
+                initializeCharts(challenge);
 
-                        // Fade in the new experiment
-                        experimentContainer.classList.remove('fade-out');
-                        experimentContainer.classList.add('fade-in');
-                        // Initialize cheat sheet right after showing the challenge
-                        initializeCheatSheet();
-                    }, 500);
+                // Fade in the new experiment
+                experimentContainer.classList.remove('fade-out');
+                experimentContainer.classList.add('fade-in');
+                // Initialize cheat sheet right after showing the challenge
+                initializeCheatSheet();
+            }, 500);
 
-                } catch (error) {
-                    console.error('Error loading challenge:', error);
-                    alert('Error loading challenge');
-                } finally {
-                    hideLoading('loading-overlay');
-                }
-            }
+        } catch (error) {
+            console.error('Error loading challenge:', error);
+            alert('Error loading challenge');
+        } finally {
+            hideLoading('loading-overlay');
+        }
+    }
 
-            function showCompletionModal() {
-                console.log('Showing completion modal');
-                const experimentContainer = document.getElementById('challenge-container');
-                const completionModal = document.getElementById('completion-modal');
+    function showCompletionModal() {
+        console.log('Showing completion modal');
+        const experimentContainer = document.getElementById('challenge-container');
+        const completionModal = document.getElementById('completion-modal');
 
-                // Fade out experiment container
-                experimentContainer.classList.add('fade-out');
+        // Fade out experiment container
+        experimentContainer.classList.add('fade-out');
 
-                setTimeout(() => {
-                    experimentContainer.classList.add('hidden');
-                    document.getElementById('final-score').textContent = score;
-                    document.getElementById('final-accuracy').textContent = `${Math.round((score / totalAttempts) * 100)}%`;
+        setTimeout(() => {
+            experimentContainer.classList.add('hidden');
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('final-accuracy').textContent = `${Math.round((score / totalAttempts) * 100)}%`;
 
-                    // Show and fade in completion modal
-                    completionModal.classList.remove('hidden');
-                    setTimeout(() => {
-                        completionModal.classList.add('fade-in');
-                    }, 10);
-                }, 500);
-            }
+            // Show and fade in completion modal
+            completionModal.classList.remove('hidden');
+            setTimeout(() => {
+                completionModal.classList.add('fade-in');
+            }, 10);
+        }, 500);
+    }
 
-            async function evaluateDecision(userChoice) {
-                console.log('Evaluating decision for experiment:', currentExperiment);
-                if (!challenge) {
-                    console.error("No challenge loaded");
-                    alert("No challenge available. Try reloading.");
-                    return;
-                }
+    async function evaluateDecision(userChoice) {
+        console.log('Evaluating decision for experiment:', currentExperiment);
+        if (!challenge) {
+            console.error("No challenge loaded");
+            alert("No challenge available. Try reloading.");
+            return;
+        }
 
-                showLoading('loading-overlay');
+        showLoading('loading-overlay');
 
-                try {
-                    totalAttempts++;
-                    const correctDecision = challenge.simulation.variantConversionRate > challenge.simulation.actualBaseConversionRate;
+        try {
+            totalAttempts++;
+            const correctDecision = challenge.simulation.variantConversionRate > challenge.simulation.actualBaseConversionRate;
 
-                    if (userChoice === correctDecision) {
-                        score++;
-                        streak++;
-                        document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';
-                        document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-                        document.getElementById('feedback-title').textContent = 'Correct!';
-                        document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-green-900 mt-4';
-                    } else {
-                        streak = 0;
-                        document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100';
-                        document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
-                        document.getElementById('feedback-title').textContent = 'Incorrect';
-                        document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-red-900 mt-4';
-                    }
-
-                    const accuracy = Math.round((score / totalAttempts) * 100);
-                    document.getElementById('score').textContent = score;
-                    document.getElementById('streak').textContent = streak;
-                    document.getElementById('accuracy').textContent = `${accuracy}%`;
-
-                    document.getElementById('modal-score').textContent = score;
-                    document.getElementById('modal-streak').textContent = streak;
-                    document.getElementById('modal-accuracy').textContent = `${accuracy}%`;
-
-                    // Check if this was the last experiment of the session
-                    console.log('Checking if last experiment:', currentExperiment, 'of', EXPERIMENTS_PER_SESSION);
-                    if (currentExperiment === EXPERIMENTS_PER_SESSION) {
-                        document.getElementById('next-challenge-btn').textContent = 'Done!';
-                    }
-
-                } finally {
-                    hideLoading('loading-overlay');
-                    document.getElementById('feedback-modal').classList.remove('hidden');
-                }
-            }
-
-            document.getElementById('start-btn').addEventListener('click', function(event) {
-                event.preventDefault();
-                console.log('Start button clicked');
-
-                // Fade out tutorial section
-                const tutorialSection = document.getElementById('tutorial-section');
-                tutorialSection.classList.add('fade-out');
-
-                // Wait for fade out animation
-                setTimeout(() => {
-                    tutorialSection.classList.add('hidden');
-                    document.getElementById('challenge-container').classList.remove('hidden');
-                    document.getElementById('challenge-container').classList.add('fade-in');
-                    loadChallenge();
-                }, 500);
-            });
-
-
-            function checkDecisions() {
-                const submitBtn = document.getElementById('submit-decision');
-                if (trustDecision !== null && implementDecision !== null) {
-                    submitBtn.disabled = false;
-                    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                } else {
-                    submitBtn.disabled = true;
-                    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                }
-            }
-
-            function handleDecision(decisionType, value) {
-                const trustButtons = [document.getElementById('trust-yes'), document.getElementById('trust-no')];
-                const implementButtons = [document.getElementById('implement-yes'), document.getElementById('implement-no')];
-
-                if (decisionType === 'trust') {
-                    trustDecision = value;
-                    trustButtons.forEach(btn => {
-                        btn.classList.remove('bg-green-700', 'bg-red-700');
-                        btn.disabled = false;
-                    });
-                    if (value) {
-                        document.getElementById('trust-yes').classList.add('bg-green-700');
-                    } else {
-                        document.getElementById('trust-no').classList.add('bg-red-700');
-                    }
-                } else if (decisionType === 'implement') {
-                    implementDecision = value;
-                    implementButtons.forEach(btn => {
-                        btn.classList.remove('bg-green-700', 'bg-red-700');
-                        btn.disabled = false;
-                    });
-                    if (value) {
-                        document.getElementById('implement-yes').classList.add('bg-green-700');
-                    } else {
-                        document.getElementById('implement-no').classList.add('bg-red-700');
-                    }
-                }
-
-                checkDecisions();
-            }
-
-            function resetDecisions() {
-                console.log('Resetting decisions');
-                trustDecision = null;
-                implementDecision = null;
-                const buttons = ['trust-yes', 'trust-no', 'implement-yes', 'implement-no'];
-                buttons.forEach(id => {
-                    const btn = document.getElementById(id);
-                    btn.classList.remove('bg-green-700', 'bg-red-700');
-                    btn.disabled = false;
-                });
-                checkDecisions();
-            }
-
-            document.getElementById('trust-yes').addEventListener('click', () => handleDecision('trust', true));
-            document.getElementById('trust-no').addEventListener('click', () => handleDecision('trust', false));
-            document.getElementById('implement-yes').addEventListener('click', () => handleDecision('implement', true));
-            document.getElementById('implement-no').addEventListener('click', () => handleDecision('implement', false));
-
-            document.getElementById('submit-decision').addEventListener('click', function() {
-                console.log('Decision submitted for experiment:', currentExperiment);
-                // First increment the counter
-                currentExperiment++;
-                console.log('Incremented to experiment:', currentExperiment);
-                updateProgress();
-                evaluateDecision(implementDecision);
-            });
-
-            document.getElementById('next-challenge-btn').addEventListener('click', async function() {
-                const feedbackModal = document.getElementById('feedback-modal');
-                feedbackModal.classList.add('fade-out');
-
-                // Wait for fade out animation
-                await new Promise(resolve => setTimeout(resolve, 500));
-                feedbackModal.classList.add('hidden');
-                feedbackModal.classList.remove('fade-out');
-
-                // Then check if we should show completion
-                if (currentExperiment > EXPERIMENTS_PER_SESSION) {
-                    console.log('Session complete, showing completion modal');
-                    const completionModal = document.getElementById('completion-modal');
-                    completionModal.classList.remove('hidden');
-                    setTimeout(() => {
-                        completionModal.classList.add('fade-in');
-                    }, 10);
-                    showCompletionModal();
-                } else {
-                    console.log('Loading next experiment:', currentExperiment);
-                    resetDecisions();
-                    loadChallenge();
-                }
-            });
-
-            document.getElementById('start-new-session').addEventListener('click', function() {
-                console.log('Starting new session');
-                const completionModal = document.getElementById('completion-modal');
-                const experimentContainer = document.getElementById('challenge-container');
-
-                // Hide the completion modal
-                completionModal.classList.add('hidden');
-
-                // Show experiment container
-                experimentContainer.classList.remove('hidden');
-
-                // Reset session variables
-                currentExperiment = 1;
-                score = 0;
+            if (userChoice === correctDecision) {
+                score++;
+                streak++;
+                document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';
+                document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                document.getElementById('feedback-title').textContent = 'Correct!';
+                document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-green-900 mt-4';
+            } else {
                 streak = 0;
-                totalAttempts = 0;
+                document.getElementById('feedback-icon').className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100';
+                document.getElementById('feedback-icon').innerHTML = '<svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+                document.getElementById('feedback-title').textContent = 'Incorrect';
+                document.getElementById('feedback-title').className = 'text-lg leading-6 font-medium text-red-900 mt-4';
+            }
 
-                // Update displays
-                document.getElementById('current-experiment').textContent = currentExperiment;
-                document.getElementById('score').textContent = score;
-                document.getElementById('streak').textContent = streak;
-                document.getElementById('accuracy').textContent = '0%';
+            const accuracy = Math.round((score / totalAttempts) * 100);
+            document.getElementById('score').textContent = score;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('accuracy').textContent = `${accuracy}%`;
 
-                // Reset the button text to "Next Challenge"
-                const nextButton = document.getElementById('next-challenge-btn');
-                if (nextButton) {
-                    nextButton.textContent = 'Next!';
-                }
+            document.getElementById('modal-score').textContent = score;
+            document.getElementById('modal-streak').textContent = streak;
+            document.getElementById('modal-accuracy').textContent = `${accuracy}%`;
 
-                // Start new challenge
-                loadChallenge();
+            // Check if this was the last experiment of the session
+            console.log('Checking if last experiment:', currentExperiment, 'of', EXPERIMENTS_PER_SESSION);
+            if (currentExperiment === EXPERIMENTS_PER_SESSION) {
+                document.getElementById('next-challenge-btn').textContent = 'Done!';
+            }
+
+        } finally {
+            hideLoading('loading-overlay');
+            document.getElementById('feedback-modal').classList.remove('hidden');
+        }
+    }
+
+    document.getElementById('start-btn').addEventListener('click', function(event) {
+        event.preventDefault();
+        console.log('Start button clicked');
+
+        // Fade out tutorial section
+        const tutorialSection = document.getElementById('tutorial-section');
+        tutorialSection.classList.add('fade-out');
+
+        // Wait for fade out animation
+        setTimeout(() => {
+            tutorialSection.classList.add('hidden');
+            document.getElementById('challenge-container').classList.remove('hidden');
+            document.getElementById('challenge-container').classList.add('fade-in');
+            loadChallenge();
+        }, 500);
+    });
+
+
+    function checkDecisions() {
+        const submitBtn = document.getElementById('submit-decision');
+        if (trustDecision !== null && implementDecision !== null) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    function handleDecision(decisionType, value) {
+        const trustButtons = [document.getElementById('trust-yes'), document.getElementById('trust-no')];
+        const implementButtons = [document.getElementById('implement-yes'), document.getElementById('implement-no')];
+
+        if (decisionType === 'trust') {
+            trustDecision = value;
+            trustButtons.forEach(btn => {
+                btn.classList.remove('bg-green-700', 'bg-red-700');
+                btn.disabled = false;
+            });
+            if (value) {
+                document.getElementById('trust-yes').classList.add('bg-green-700');
+            } else {
+                document.getElementById('trust-no').classList.add('bg-red-700');
+            }
+        } else if (decisionType === 'implement') {
+            implementDecision = value;
+            implementButtons.forEach(btn => {
+                btn.classList.remove('bg-green-700', 'bg-red-700');
+                btn.disabled = false;
+            });
+            if (value) {
+                document.getElementById('implement-yes').classList.add('bg-green-700');
+            } else {
+                document.getElementById('implement-no').classList.add('bg-red-700');
+            }
+        }
+
+        checkDecisions();
+    }
+
+    function resetDecisions() {
+        console.log('Resetting decisions');
+        trustDecision = null;
+        implementDecision = null;
+        const buttons = ['trust-yes', 'trust-no', 'implement-yes', 'implement-no'];
+        buttons.forEach(id => {
+            const btn = document.getElementById(id);
+            btn.classList.remove('bg-green-700', 'bg-red-700');
+            btn.disabled = false;
+        });
+        checkDecisions();
+    }
+
+    document.getElementById('trust-yes').addEventListener('click', () => handleDecision('trust', true));
+    document.getElementById('trust-no').addEventListener('click', () => handleDecision('trust', false));
+    document.getElementById('implement-yes').addEventListener('click', () => handleDecision('implement', true));
+    document.getElementById('implement-no').addEventListener('click', () => handleDecision('implement', false));
+
+    document.getElementById('submit-decision').addEventListener('click', function() {
+        console.log('Decision submitted for experiment:', currentExperiment);
+        // First increment the counter
+        currentExperiment++;
+        console.log('Incremented to experiment:', currentExperiment);
+        updateProgress();
+        evaluateDecision(implementDecision);
+    });
+
+    document.getElementById('next-challenge-btn').addEventListener('click', async function() {
+        const feedbackModal = document.getElementById('feedback-modal');
+        feedbackModal.classList.add('fade-out');
+
+        // Wait for fade out animation
+        await new Promise(resolve => setTimeout(resolve, 500));
+        feedbackModal.classList.add('hidden');
+        feedbackModal.classList.remove('fade-out');
+
+        // Then check if we should show completion
+        if (currentExperiment > EXPERIMENTS_PER_SESSION) {
+            console.log('Session complete, showing completion modal');
+            const completionModal = document.getElementById('completion-modal');
+            completionModal.classList.remove('hidden');
+            setTimeout(() => {
+                completionModal.classList.add('fade-in');
+            }, 10);
+            showCompletionModal();
+        } else {
+            console.log('Loading next experiment:', currentExperiment);
+            resetDecisions();
+            loadChallenge();
+        }
+    });
+
+    document.getElementById('start-new-session').addEventListener('click', function() {
+        console.log('Starting new session');
+        const completionModal = document.getElementById('completion-modal');
+        const experimentContainer = document.getElementById('challenge-container');
+
+        // Hide the completion modal
+        completionModal.classList.add('hidden');
+
+        // Show experiment container
+        experimentContainer.classList.remove('hidden');
+
+        // Reset session variables
+        currentExperiment = 1;
+        score = 0;
+        streak = 0;
+        totalAttempts = 0;
+
+        // Update displays
+        document.getElementById('current-experiment').textContent = currentExperiment;
+        document.getElementById('score').textContent = score;
+        document.getElementById('streak').textContent = streak;
+        document.getElementById('accuracy').textContent = '0%';
+
+        // Reset the button text to "Next Challenge"
+        const nextButton = document.getElementById('next-challenge-btn');
+        if (nextButton) {
+            nextButton.textContent = 'Next!';
+        }
+
+        // Start new challenge
+        loadChallenge();
+    });
+
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', () => {
+            // Remove active state from all tabs
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'text-blue-600');
+                btn.classList.add('text-gray-500');
             });
 
-            document.querySelectorAll('.tab-button').forEach(button => {
-                button.addEventListener('click', () => {
-                    // Remove active state from all tabs
-                    document.querySelectorAll('.tab-button').forEach(btn => {
-                        btn.classList.remove('border-blue-500', 'text-blue-600');
-                        btn.classList.add('text-gray-500');
-                    });
+            // Add active state to clicked tab
+            button.classList.add('border-blue-500', 'text-blue-600');
+            button.classList.remove('text-gray-500');
 
-                    // Add active state to clicked tab
-                    button.classList.add('border-blue-500', 'text-blue-600');
-                    button.classList.remove('text-gray-500');
-
-                    // Hide all tab content
-                    document.querySelectorAll('.tab-content').forEach(content => {
-                        content.classList.add('hidden');
-                    });
-
-                    // Show selected tab content
-                    const tabName = button.getAttribute('data-tab');
-                    document.getElementById(`${tabName}-tab`).classList.remove('hidden');
-                });
+            // Hide all tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
             });
 
-            function showLoading(id) {
-                console.log('Showing loading indicator:', id);
-                document.getElementById(id).classList.remove('hidden');
-            }
+            // Show selected tab content
+            const tabName = button.getAttribute('data-tab');
+            document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+        });
+    });
 
-            function hideLoading(id) {
-                console.log('Hiding loading indicator:', id);
-                document.getElementById(id).classList.add('hidden');
-            }
+    function showLoading(id) {
+        console.log('Showing loading indicator:', id);
+        document.getElementById(id).classList.remove('hidden');
+    }
 
-            function shareOnTwitter() {
-                const text = `I just completed the A/B Testing Gym challenge with a score of ${score} and ${Math.round((score / totalAttempts) * 100)}% accuracy! Try it yourself!`;
-                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`);
-            }
+    function hideLoading(id) {
+        console.log('Hiding loading indicator:', id);
+        document.getElementById(id).classList.add('hidden');
+    }
 
-            function shareOnLinkedIn() {
-                const text = `I just completed the A/B Testing Gym challenge with a score of ${score} and ${Math.round((score / totalAttempts) * 100)}% accuracy! Try it yourself!`;
-                window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(text)}`);
-            }
+    function shareOnTwitter() {
+        const text = `I just completed the A/B Testing Gym challenge with a score of ${score} and ${Math.round((score / totalAttempts) * 100)}% accuracy! Try it yourself!`;
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`);
+    }
 
-            function updateProgressBar() {
-                const progressBar = document.getElementById('progress-bar');
-                const progressPercentage = (currentExperiment / EXPERIMENTS_PER_SESSION) * 100;
-                progressBar.style.width = `${progressPercentage}%`;
-                document.getElementById('current-experiment').textContent = currentExperiment;
-                document.querySelector('#current-experiment').parentElement.parentElement.querySelector('.text-sm.font-medium.text-gray-700:nth-child(2)').textContent = `Experiment ${currentExperiment}/${EXPERIMENTS_PER_SESSION}`;
+    function shareOnLinkedIn() {
+        const text = `I just completed the A/B Testing Gym challenge with a score of ${score} and ${Math.round((score / totalAttempts) * 100)}% accuracy! Try it yourself!`;
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(text)}`);
+    }
 
-            }
+    function updateProgressBar() {
+        const progressBar = document.getElementById('progress-bar');
+        const progressPercentage = (currentExperiment / EXPERIMENTS_PER_SESSION) * 100;
+        progressBar.style.width = `${progressPercentage}%`;
+        document.getElementById('current-experiment').textContent = currentExperiment;
+        document.querySelector('#current-experiment').parentElement.parentElement.querySelector('.text-sm.font-medium.text-gray-700:nth-child(2)').textContent = `Experiment ${currentExperiment}/${EXPERIMENTS_PER_SESSION}`;
 
-            // Removed redundant initializeCheatSheet and toggleSection functions
+    }
 
-        </script>
+    // Removed redundant initializeCheatSheet and toggleSection functions
+
+</script>
     </div>
 </body>
 </html>
