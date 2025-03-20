@@ -707,191 +707,271 @@ function renderVisitorsChart(challenge) {
         return;
     }
 
-    // Clear any existing chart
-    const existingChart = Chart.getChart(ctx);
-    if (existingChart) {
-        existingChart.destroy();
+    const canvasContext = ctx.getContext('2d');
+    if (!canvasContext) {
+        console.error('Could not get canvas context for visitors chart');
+        return;
     }
 
-    // Get timeline data
-    const timelineData = challenge.simulation.timeline;
-    const timePoints = timelineData.timePoints;
-    const totalDays = challenge.experiment.requiredRuntimeDays;
-    const currentDays = challenge.simulation.timeline.currentRuntimeDays;
-
-    // Generate complete timeline including future empty periods
-    const completeTimeline = [...timePoints];
-    if (currentDays < totalDays) {
-        const lastPoint = timePoints[timePoints.length - 1];
-        const {type} = lastPoint.period;
-        const periodLength = type === 'day' ? 1 : type === 'week' ? 7 : 28;
-        let nextDay = lastPoint.period.startDay + periodLength;
-
-        while (nextDay <= totalDays) {
-            completeTimeline.push({
-                period: {type, startDay: nextDay},
-                base: {visitors: null, cumulativeVisitors: null},
-                variant: {visitors: null, cumulativeVisitors: null}
-            });
-            nextDay += periodLength;
+    try {
+        // Clear any existing chart
+        const existingChart = Chart.getChart(ctx);
+        if (existingChart) {
+            existingChart.destroy();
         }
-    }
 
-    // Create labels based on time period
-    const labels = completeTimeline.map(point => {
-        const {type, startDay} = point.period;
-        if (type === 'day') {
-            return `Day ${startDay}`;
-        } else if (type === 'week') {
-            return `Week ${Math.ceil(startDay / 7)}`;
-        } else {
-            return `Month ${Math.ceil(startDay / 28)}`;
-        }
-    });
+        // Get timeline data and setup datasets
+        const timelineData = challenge.simulation.timeline;
+        const timePoints = timelineData.timePoints;
+        const totalDays = challenge.experiment.requiredRuntimeDays;
+        const currentDays = challenge.simulation.timeline.currentRuntimeDays;
 
-    // Create datasets based on the view type
-    function createDatasets(viewType) {
-        let datasets = viewType === 'daily' ? [
-            {
-                label: 'Base Visitors',
-                data: completeTimeline.map(d => d.base.visitors),
-                borderColor: 'rgb(147, 51, 234)',
-                backgroundColor: 'rgba(147, 51, 234, 0.1)',
-                fill: true,
-                spanGaps: true
-            },
-            {
-                label: 'Test Visitors',
-                data: completeTimeline.map(d => d.variant.visitors),
-                borderColor: 'rgb(59, 130, 246)',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: true,
-                spanGaps: true
-            }
-        ] : [
-            {
-                label: 'Base Cumulative Visitors',
-                data: completeTimeline.map(d => d.base.cumulativeVisitors),
-                borderColor: 'rgb(107, 11, 194)',
-                backgroundColor: 'rgba(107, 11, 194, 0.1)',
-                fill: true,
-                borderDash: [5, 5],
-                spanGaps: true
-            },
-            {
-                label: 'Test Cumulative Visitors',
-                data: completeTimeline.map(d => d.variant.cumulativeVisitors),
-                borderColor: 'rgb(19, 90, 206)',
-                backgroundColor: 'rgba(19, 90, 206, 0.1)',
-                fill: true,
-                borderDash: [5, 5],
-                spanGaps: true
-            }
-        ];
+        // Generate complete timeline including future empty periods
+        const completeTimeline = [...timePoints];
+        if (currentDays < totalDays) {
+            const lastPoint = timePoints[timePoints.length - 1];
+            const {type} = lastPoint.period;
+            const periodLength = type === 'day' ? 1 : type === 'week' ? 7 : 28;
+            let nextDay = lastPoint.period.startDay + periodLength;
 
-        return datasets;
-    }
-
-    let chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: createDatasets('daily')
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                zoom: {
-                    pan: {
-                        enabled: true,
-                        mode: 'x',
-                        modifierKey: 'ctrl',
+            while (nextDay <= totalDays) {
+                completeTimeline.push({
+                    period: {type, startDay: nextDay},
+                    base: {
+                        visitors: null,
+                        cumulativeVisitors: null
                     },
+                    variant: {
+                        visitors: null,
+                        cumulativeVisitors: null
+                    }
+                });
+                nextDay += periodLength;
+            }
+        }
+
+        // Create labels
+        const labels = completeTimeline.map(point => {
+            const {type, startDay} = point.period;
+            if (type === 'day') {
+                return `Day ${startDay}`;
+            } else if (type === 'week') {
+                return `Week ${Math.ceil(startDay / 7)}`;
+            } else {
+                return `Month ${Math.ceil(startDay / 28)}`;
+            }
+        });
+
+        // Create datasets based on view type
+        function createDatasets(viewType) {
+            return viewType === 'daily' ? [
+                {
+                    label: 'Base Visitors',
+                    data: completeTimeline.map(d => d.base.visitors),
+                    borderColor: 'rgb(147, 51, 234)',
+                    backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                    fill: true,
+                    spanGaps: true
+                },
+                {
+                    label: 'Test Visitors',
+                    data: completeTimeline.map(d => d.variant.visitors),
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    spanGaps: true
+                }
+            ] : [
+                {
+                    label: 'Base Cumulative Visitors',
+                    data: completeTimeline.map(d => d.base.cumulativeVisitors),
+                    borderColor: 'rgb(107, 11, 194)',
+                    backgroundColor: 'rgba(107, 11, 194, 0.1)',
+                    fill: true,
+                    borderDash: [5, 5],
+                    spanGaps: true
+                },
+                {
+                    label: 'Test Cumulative Visitors',
+                    data: completeTimeline.map(d => d.variant.cumulativeVisitors),
+                    borderColor: 'rgb(19, 90, 206)',
+                    backgroundColor: 'rgba(19, 90, 206, 0.1)',
+                    fill: true,
+                    borderDash: [5, 5],
+                    spanGaps: true
+                }
+            ];
+        }
+
+        // Initialize chart with daily view
+        let chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: createDatasets('daily')
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
                     zoom: {
-                        wheel: {
+                        pan: {
                             enabled: true,
+                            mode: 'x',
                             modifierKey: 'ctrl',
                         },
-                        pinch: {
-                            enabled: true
-                        },
-                        mode: 'x',
+                        zoom: {
+                            wheel: {
+                                enabled: true,
+                                modifierKey: 'ctrl',
+                            },
+                            pinch: {
+                                enabled: true
+                            },
+                            mode: 'x',
+                        }
                     },
-                    onZoomComplete: function () {
-                        resetZoomButton.style.display = 'block';
+                    title: {
+                        display: true,
+                        text: `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Visitors`
                     },
-                    onResetZoom: function () {
-                        resetZoomButton.style.display = 'none';
-                    }
-                },
-                title: {
-                    display: true,
-                    text: `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Visitors`
-                },
-                tooltip: {
-                    mode: 'point',
-                    intersect: true,
-                    position: 'nearest',
-                    callbacks: {
-                        label: function (context) {
-                            const timePoint = completeTimeline[context.dataIndex];
-                            const value = context.parsed.y;
-                            return [
-                                `${context.dataset.label}: ${value.toLocaleString()}`
-                            ];
+                    tooltip: {
+                        mode: 'point',
+                        intersect: true,
+                        position: 'nearest',
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.parsed.y.toLocaleString()}`;
+                            }
                         }
                     }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: false // Remove y-axis title
-                    },
-                    ticks: {
-                        callback: function (value) {
-                            return value.toLocaleString();
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString();
+                            }
                         }
                     }
                 }
             }
-        }
-    });
-
-    // Add reset zoom button
-    const chartContainer = ctx.parentElement;
-    const resetZoomButton = document.createElement('button');
-    resetZoomButton.className = 'mt-2 px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm';
-    resetZoomButton.textContent = 'Reset Zoom';
-    resetZoomButton.style.display = 'none';
-    chartContainer.appendChild(resetZoomButton);
-
-    resetZoomButton.addEventListener('click', () => {
-        chart.resetZoom();
-    });
-
-    // Update view toggle with correct period type
-    const viewToggle = document.getElementById('visitors-view-toggle');
-    if (viewToggle) {
-        // Update first option based on time period
-        const periodOption = viewToggle.options[0];
-        periodOption.text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
-
-        // Add event listener for the toggle
-        viewToggle.addEventListener('change', function (e) {
-            const viewType = e.target.value;
-            const datasets = createDatasets(viewType);
-            chart.data.datasets = datasets;
-            chart.options.plugins.title.text = viewType === 'daily' ?
-                `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Visitors` :
-                'Cumulative Visitors';
-            chart.update();
         });
-    }
 
-    return chart;
+        // Add view toggle functionality
+        const viewToggle = document.getElementById('visitors-view-toggle');
+        if (viewToggle) {
+            viewToggle.options[0].text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
+
+            viewToggle.addEventListener('change', function(e) {
+                console.log('Visitors view toggle changed:', e.target.value);
+
+                setTimeout(() => {
+                    try {
+                        const canvas = document.getElementById('visitors-chart');
+                        if (!canvas) {
+                            console.error('Visitors canvas element not found during view change');
+                            return;
+                        }
+
+                        console.log('Visitors canvas dimensions:', {
+                            width: canvas.width,
+                            height: canvas.height,
+                            clientWidth: canvas.clientWidth,
+                            clientHeight: canvas.clientHeight
+                        });
+
+                        const viewType = e.target.value;
+                        const datasets = createDatasets(viewType);
+
+                        // Destroy existing chart
+                        const existingChart = Chart.getChart(canvas);
+                        if (existingChart) {
+                            existingChart.destroy();
+                        }
+
+                        // Create new chart
+                        chart = new Chart(canvas, {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: datasets
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    zoom: {
+                                        pan: {
+                                            enabled: true,
+                                            mode: 'x',
+                                            modifierKey: 'ctrl',
+                                        },
+                                        zoom: {
+                                            wheel: {
+                                                enabled: true,
+                                                modifierKey: 'ctrl',
+                                            },
+                                            pinch: {
+                                                enabled: true
+                                            },
+                                            mode: 'x',
+                                        }
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: viewType === 'daily' ?
+                                            `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Visitors` :
+                                            'Cumulative Visitors'
+                                    },
+                                    tooltip: {
+                                        mode: 'point',
+                                        intersect: true,
+                                        position: 'nearest',
+                                        callbacks: {
+                                            label: function(context) {
+                                                return `${context.dataset.label}: ${context.parsed.y.toLocaleString()}`;
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            callback: function(value) {
+                                                return value.toLocaleString();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+
+                        console.log('New visitors chart created successfully');
+                    } catch (error) {
+                        console.error('Error during visitors chart view change:', error);
+                    }
+                }, 100); // Small delay to ensure DOM is ready
+            });
+        }
+
+        return chart;
+    } catch (error) {
+        console.error('Error rendering visitors chart:', error);
+        return null;
+    }
 }
+
+// Make sure charts resize properly
+window.addEventListener('resize', function () {
+    const conversionChart = Chart.getChart('conversion-chart');
+    if (conversionChart) conversionChart.resize();
+
+    const visitorsChart = Chart.getChart('visitors-chart');
+    if (visitorsChart) visitorsChart.resize();
+});
 
 function initializeCharts(challenge) {
     try {
@@ -908,12 +988,3 @@ function initializeCharts(challenge) {
         console.error('Error initializing visualizations:', error);
     }
 }
-
-// Make sure charts resize properly
-window.addEventListener('resize', function () {
-    const conversionChart = Chart.getChart('conversion-chart');
-    if (conversionChart) conversionChart.resize();
-
-    const visitorsChart = Chart.getChart('visitors-chart');
-    if (visitorsChart) visitorsChart.resize();
-});
