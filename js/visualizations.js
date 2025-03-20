@@ -509,7 +509,6 @@ function renderChart(challenge) {
             datasets: createDatasets('daily')
         },
         options: {
-            animation: false,  // Disable animations
             responsive: true,
             plugins: {
                 zoom: {
@@ -712,14 +711,13 @@ function renderVisitorsChart(challenge) {
         return datasets;
     }
 
-    let visitorsChart = new Chart(ctx, {
+    let chart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: createDatasets('daily')
         },
         options: {
-            animation: false,  // Disable animations
             responsive: true,
             plugins: {
                 zoom: {
@@ -789,7 +787,7 @@ function renderVisitorsChart(challenge) {
     chartContainer.appendChild(resetZoomButton);
 
     resetZoomButton.addEventListener('click', () => {
-        visitorsChart.resetZoom();
+        chart.resetZoom();
     });
 
     // Update view toggle with correct period type
@@ -799,18 +797,19 @@ function renderVisitorsChart(challenge) {
         const periodOption = viewToggle.options[0];
         periodOption.text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
 
-        // Add event listener        viewToggle.addEventListener('change', function(e) {
+        // Add event listener for the toggle
+        viewToggle.addEventListener('change', function(e) {
             const viewType = e.target.value;
             const datasets = createDatasets(viewType);
-            visitorsChart.data.datasets = datasets;
-            visitorsChart.options.plugins.title.text = viewType === 'daily' ?
+            chart.data.datasets = datasets;
+            chart.options.plugins.title.text = viewType === 'daily' ?
                 `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Visitors` :
                 'Cumulative Visitors';
-            visitorsChart.update();
+            chart.update();
         });
     }
 
-    return visitorsChart;
+    return chart;
 }
 
 function initializeCharts(challenge) {
