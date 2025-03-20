@@ -334,289 +334,293 @@ function renderChart(challenge) {
         return;
     }
 
-    // Clear any existing chart
-    const existingChart = Chart.getChart(ctx);
-    if (existingChart) {
-        existingChart.destroy();
-    }
+    try {
+        // Clear any existing chart
+        const existingChart = Chart.getChart(ctx);
+        if (existingChart) {
+            existingChart.destroy();
+        }
 
-    // Get timeline data
-    const timelineData = challenge.simulation.timeline;
-    const timePoints = timelineData.timePoints;
-    const totalDays = challenge.experiment.requiredRuntimeDays;
-    const currentDays = challenge.simulation.timeline.currentRuntimeDays;
+        // Get timeline data
+        const timelineData = challenge.simulation.timeline;
+        const timePoints = timelineData.timePoints;
+        const totalDays = challenge.experiment.requiredRuntimeDays;
+        const currentDays = challenge.simulation.timeline.currentRuntimeDays;
 
-    // Generate complete timeline including future empty periods
-    const completeTimeline = [...timePoints];
-    if (currentDays < totalDays) {
-        const lastPoint = timePoints[timePoints.length - 1];
-        const { type } = lastPoint.period;
-        const periodLength = type === 'day' ? 1 : type === 'week' ? 7 : 28;
-        let nextDay = lastPoint.period.startDay + periodLength;
+        // Generate complete timeline including future empty periods
+        const completeTimeline = [...timePoints];
+        if (currentDays < totalDays) {
+            const lastPoint = timePoints[timePoints.length - 1];
+            const { type } = lastPoint.period;
+            const periodLength = type === 'day' ? 1 : type === 'week' ? 7 : 28;
+            let nextDay = lastPoint.period.startDay + periodLength;
 
-        while (nextDay <= totalDays) {
-            completeTimeline.push({
-                period: { type, startDay: nextDay },
-                base: { rate: null, rateCI: [null, null], visitors: null, conversions: null },
-                variant: { rate: null, rateCI: [null, null], visitors: null, conversions: null }
+            while (nextDay <= totalDays) {
+                completeTimeline.push({
+                    period: { type, startDay: nextDay },
+                    base: { 
+                        rate: null, 
+                        rateCI: [null, null], 
+                        visitors: null, 
+                        conversions: null,
+                        cumulativeRate: null,
+                        cumulativeRateCI: [null, null]
+                    },
+                    variant: { 
+                        rate: null, 
+                        rateCI: [null, null], 
+                        visitors: null, 
+                        conversions: null,
+                        cumulativeRate: null,
+                        cumulativeRateCI: [null, null]
+                    }
+                });
+                nextDay += periodLength;
+            }
+        }
+
+        // Create labels based on time period
+        const labels = completeTimeline.map(point => {
+            const { type, startDay } = point.period;
+            if (type === 'day') {
+                return `Day ${startDay}`;
+            } else if (type === 'week') {
+                return `Week ${Math.ceil(startDay/7)}`;
+            } else {
+                return `Month ${Math.ceil(startDay/28)}`;
+            }
+        });
+
+        // Create datasets based on the view type
+        function createDatasets(viewType) {
+            let datasets = [];
+
+            if (viewType === 'daily') {
+                datasets = [
+                    {
+                        label: `Base ${timelineData.timePeriod}ly Rate`,
+                        data: completeTimeline.map(d => d.base.rate ? Number(d.base.rate.toFixed(4)) : null),
+                        borderColor: 'rgb(147, 51, 234)',
+                        backgroundColor: 'transparent',
+                        fill: false,
+                        tension: 0.4,
+                        spanGaps: true
+                    },
+                    {
+                        label: 'Base CI Lower',
+                        data: completeTimeline.map(d => d.base.rateCI && d.base.rateCI[0] ? Number(d.base.rateCI[0].toFixed(4)) : null),
+                        borderColor: 'transparent',
+                        backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                        fill: '+1',
+                        tension: 0.4,
+                        spanGaps: true
+                    },
+                    {
+                        label: 'Base CI Upper',
+                        data: completeTimeline.map(d => d.base.rateCI && d.base.rateCI[1] ? Number(d.base.rateCI[1].toFixed(4)) : null),
+                        borderColor: 'transparent',
+                        fill: false,
+                        tension: 0.4,
+                        spanGaps: true
+                    },
+                    {
+                        label: `Test ${timelineData.timePeriod}ly Rate`,
+                        data: completeTimeline.map(d => d.variant.rate ? Number(d.variant.rate.toFixed(4)) : null),
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'transparent',
+                        fill: false,
+                        tension: 0.4,
+                        spanGaps: true
+                    },
+                    {
+                        label: 'Test CI Lower',
+                        data: completeTimeline.map(d => d.variant.rateCI && d.variant.rateCI[0] ? Number(d.variant.rateCI[0].toFixed(4)) : null),
+                        borderColor: 'transparent',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: '+1',
+                        tension: 0.4,
+                        spanGaps: true
+                    },
+                    {
+                        label: 'Test CI Upper',
+                        data: completeTimeline.map(d => d.variant.rateCI && d.variant.rateCI[1] ? Number(d.variant.rateCI[1].toFixed(4)) : null),
+                        borderColor: 'transparent',
+                        fill: false,
+                        tension: 0.4,
+                        spanGaps: true
+                    }
+                ];
+            } else {
+                datasets = [
+                    {
+                        label: 'Base Cumulative Rate',
+                        data: completeTimeline.map(d => d.base.cumulativeRate ? Number(d.base.cumulativeRate.toFixed(4)) : null),
+                        borderColor: 'rgb(107, 11, 194)',
+                        backgroundColor: 'transparent',
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.4,
+                        spanGaps: true
+                    },
+                    {
+                        label: 'Base CI Lower',
+                        data: completeTimeline.map(d => d.base.cumulativeRateCI && d.base.cumulativeRateCI[0] ? Number(d.base.cumulativeRateCI[0].toFixed(4)) : null),
+                        borderColor: 'transparent',
+                        backgroundColor: 'rgba(107, 11, 194, 0.1)',
+                        fill: '+1',
+                        tension: 0.4,
+                        spanGaps: true
+                    },
+                    {
+                        label: 'Base CI Upper',
+                        data: completeTimeline.map(d => d.base.cumulativeRateCI && d.base.cumulativeRateCI[1] ? Number(d.base.cumulativeRateCI[1].toFixed(4)) : null),
+                        borderColor: 'transparent',
+                        fill: false,
+                        tension: 0.4,
+                        spanGaps: true
+                    },
+                    {
+                        label: 'Test Cumulative Rate',
+                        data: completeTimeline.map(d => d.variant.cumulativeRate ? Number(d.variant.cumulativeRate.toFixed(4)) : null),
+                        borderColor: 'rgb(19, 90, 206)',
+                        backgroundColor: 'transparent',
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.4,
+                        spanGaps: true
+                    },
+                    {
+                        label: 'Test CI Lower',
+                        data: completeTimeline.map(d => d.variant.cumulativeRateCI && d.variant.cumulativeRateCI[0] ? Number(d.variant.cumulativeRateCI[0].toFixed(4)) : null),
+                        borderColor: 'transparent',
+                        backgroundColor: 'rgba(19, 90, 206, 0.1)',
+                        fill: '+1',
+                        tension: 0.4,
+                        spanGaps: true
+                    },
+                    {
+                        label: 'Test CI Upper',
+                        data: completeTimeline.map(d => d.variant.cumulativeRateCI && d.variant.cumulativeRateCI[1] ? Number(d.variant.cumulativeRateCI[1].toFixed(4)) : null),
+                        borderColor: 'transparent',
+                        fill: false,
+                        tension: 0.4,
+                        spanGaps: true
+                    }
+                ];
+            }
+
+            // Calculate y-axis range based on the datasets
+            const yAxisRange = calculateYAxisRange(datasets);
+            datasets.yAxisRange = yAxisRange;
+
+            return datasets;
+        }
+
+        // Initialize the chart with daily view
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: createDatasets('daily')
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    zoom: {
+                        pan: {
+                            enabled: true,
+                            mode: 'x',
+                            modifierKey: 'ctrl',
+                        },
+                        zoom: {
+                            wheel: {
+                                enabled: true,
+                                modifierKey: 'ctrl',
+                            },
+                            pinch: {
+                                enabled: true
+                            },
+                            mode: 'x',
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates`
+                    },
+                    tooltip: {
+                        mode: 'point',
+                        intersect: true,
+                        position: 'nearest'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return formatPercent(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Add view toggle functionality
+        const viewToggle = document.getElementById('chart-view-toggle');
+        if (viewToggle) {
+            viewToggle.options[0].text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
+
+            viewToggle.addEventListener('change', function(e) {
+                const viewType = e.target.value;
+                const datasets = createDatasets(viewType);
+
+                // Update chart data and options
+                chart.data.datasets = datasets;
+                chart.options.plugins.title.text = viewType === 'daily' ?
+                    `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates` :
+                    'Cumulative Conversion Rates';
+
+                if (datasets.yAxisRange) {
+                    chart.options.scales.y.min = datasets.yAxisRange.min;
+                    chart.options.scales.y.max = datasets.yAxisRange.max;
+                }
+
+                chart.update();
             });
-            nextDay += periodLength;
         }
+
+        return chart;
+    } catch (error) {
+        console.error('Error rendering chart:', error);
+        return null;
     }
+}
 
-    // Create labels based on time period
-    const labels = completeTimeline.map(point => {
-        const { type, startDay } = point.period;
-        if (type === 'day') {
-            return `Day ${startDay}`;
-        } else if (type === 'week') {
-            return `Week ${Math.ceil(startDay/7)}`;
-        } else {
-            return `Month ${Math.ceil(startDay/28)}`;
-        }
-    });
-
-    // Create datasets based on the view type
-    function createDatasets(viewType) {
-        let datasets = viewType === 'daily' ? [
-            {
-                label: `Base ${timelineData.timePeriod}ly Rate`,
-                data: completeTimeline.map(d => d.base.rate ? Number(d.base.rate.toFixed(4)) : null),
-                borderColor: 'rgb(147, 51, 234)',
-                backgroundColor: 'transparent',
-                fill: false,
-                tension: 0.4,
-                spanGaps: true
-            }, {
-                label: 'Base CI Lower',
-                data: completeTimeline.map(d => d.base.rateCI[0] ? Number(d.base.rateCI[0].toFixed(4)) : null),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(147, 51, 234, 0.1)',
-                fill: '+1',
-                tension: 0.4,
-                spanGaps: true
-            }, {
-                label: 'Base CI Upper',
-                data: completeTimeline.map(d => d.base.rateCI[1] ? Number(d.base.rateCI[1].toFixed(4)) : null),
-                borderColor: 'transparent',
-                fill: false,
-                tension: 0.4,
-                spanGaps: true
-            }, {
-                label: `Test ${timelineData.timePeriod}ly Rate`,
-                data: completeTimeline.map(d => d.variant.rate ? Number(d.variant.rate.toFixed(4)) : null),
-                borderColor: 'rgb(59, 130, 246)',
-                backgroundColor: 'transparent',
-                fill: false,
-                tension: 0.4,
-                spanGaps: true
-            }, {
-                label: 'Test CI Lower',
-                data: completeTimeline.map(d => d.variant.rateCI[0] ? Number(d.variant.rateCI[0].toFixed(4)) : null),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: '+1',
-                tension: 0.4,
-                spanGaps: true
-            }, {
-                label: 'Test CI Upper',
-                data: completeTimeline.map(d => d.variant.rateCI[1] ? Number(d.variant.rateCI[1].toFixed(4)) : null),
-                borderColor: 'transparent',
-                fill: false,
-                tension: 0.4,
-                spanGaps: true
-            }
-        ] : [
-            {
-                label: 'Base Cumulative Rate',
-                data: completeTimeline.map(d => d.base.cumulativeRate ? Number(d.base.cumulativeRate.toFixed(4)) : null),
-                borderColor: 'rgb(107, 11, 194)',
-                backgroundColor: 'transparent',
-                borderDash: [5, 5],
-                fill: false,
-                tension: 0.4,
-                spanGaps: true
-            }, {
-                label: 'Base CI Lower',
-                data: completeTimeline.map(d => d.base.cumulativeRateCI ? Number(d.base.cumulativeRateCI[0].toFixed(4)) : null),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(107, 11, 194, 0.1)',
-                fill: '+1',
-                tension: 0.4,
-                spanGaps: true
-            }, {
-                label: 'Base CI Upper',
-                data: completeTimeline.map(d => d.base.cumulativeRateCI ? Number(d.base.cumulativeRateCI[1].toFixed(4)) : null),
-                borderColor: 'transparent',
-                fill: false,
-                tension: 0.4,
-                spanGaps: true
-            }, {
-                label: 'Test Cumulative Rate',
-                data: completeTimeline.map(d => d.variant.cumulativeRate ? Number(d.variant.cumulativeRate.toFixed(4)) : null),
-                borderColor: 'rgb(19, 90, 206)',
-                backgroundColor: 'transparent',
-                borderDash: [5, 5],
-                fill: false,
-                tension: 0.4,
-                spanGaps: true
-            }, {
-                label: 'Test CI Lower',
-                data: completeTimeline.map(d => d.variant.cumulativeRateCI ? Number(d.variant.cumulativeRateCI[0].toFixed(4)) : null),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(19, 90, 206, 0.1)',
-                fill: '+1',
-                tension: 0.4,
-                spanGaps: true
-            }, {
-                label: 'Test CI Upper',
-                data: completeTimeline.map(d => d.variant.cumulativeRateCI ? Number(d.variant.cumulativeRateCI[1].toFixed(4)) : null),
-                borderColor: 'transparent',
-                fill: false,
-                tension: 0.4,
-                spanGaps: true
-            }
-        ];
-
-        // Calculate y-axis range based on the datasets
-        const yAxisRange = calculateYAxisRange(datasets);
-        datasets.yAxisRange = yAxisRange;
-
-        return datasets;
-    }
-
-    function calculateYAxisRange(datasets) {
+function calculateYAxisRange(datasets) {
+    try {
         let allValues = [];
         datasets.forEach(dataset => {
             if (!dataset.label.includes('CI')) {
-                allValues = allValues.concat(dataset.data);
+                allValues = allValues.concat(dataset.data.filter(v => v !== null));
             }
         });
-        const maxValue = Math.max(...allValues.filter(v => v !== null));
-        // Set minimum to 20% below the lowest non-zero value, or 0 if all values are 0
+
+        if (allValues.length === 0) return { min: 0, max: 1 };
+
+        const maxValue = Math.max(...allValues);
         const nonZeroValues = allValues.filter(v => v > 0);
         const minValue = nonZeroValues.length > 0 ? Math.min(...nonZeroValues) : 0;
+
         return {
             min: Math.max(0, minValue - (minValue * 0.2)),
             max: maxValue + (maxValue * 0.1)
         };
+    } catch (error) {
+        console.error('Error calculating Y axis range:', error);
+        return { min: 0, max: 1 };
     }
-
-    let chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: createDatasets('daily')
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                zoom: {
-                    pan: {
-                        enabled: true,
-                        mode: 'x',
-                        modifierKey: 'ctrl',
-                    },
-                    zoom: {
-                        wheel: {
-                            enabled: true,
-                            modifierKey: 'ctrl',
-                        },
-                        pinch: {
-                            enabled: true
-                        },
-                        mode: 'x',
-                    },
-                    onZoomComplete: function() {
-                        resetZoomButton.style.display = 'block';
-                    },
-                    onResetZoom: function() {
-                        resetZoomButton.style.display = 'none';
-                    }
-                },
-                title: {
-                    display: true,
-                    text: `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates`
-                },
-                tooltip: {
-                    mode: 'point',
-                    intersect: true,
-                    position: 'nearest',
-                    filter: function(tooltipItem) {
-                        return !tooltipItem.dataset.label.includes('CI');
-                    },
-                    callbacks: {
-                        label: function(context) {
-                            const timePoint = completeTimeline[context.dataIndex]; // Use completeTimeline here
-                            const dataPoint = context.dataset.label.toLowerCase().includes('base') ?
-                                timePoint.base : timePoint.variant;
-                            const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
-
-                            const visitors = isCumulative ? dataPoint.cumulativeVisitors : dataPoint.visitors;
-                            const conversions = isCumulative ? dataPoint.cumulativeConversions : dataPoint.conversions;
-                            const rate = isCumulative ? dataPoint.cumulativeRate : dataPoint.rate;
-                            const ci = isCumulative ? dataPoint.cumulativeRateCI : dataPoint.rateCI;
-                            const confidenceLevel = calculateConfidenceLevel(challenge.experiment.alpha);
-
-                            return [
-                                `${context.dataset.label}: ${rate !== null ? formatPercent(rate) : 'N/A'}`,
-                                `${confidenceLevel}% CI: [${ci !== null ? formatPercent(ci[0]) : 'N/A'}, ${ci !== null ? formatPercent(ci[1]) : 'N/A'}]`,
-                                `Visitors: ${visitors !== null ? visitors.toLocaleString() : 'N/A'}`,
-                                `Conversions: ${conversions !== null ? conversions.toLocaleString() : 'N/A'}`
-                            ];
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: false // Remove y-axis title
-                    },
-                    ticks: {
-                        callback: function(value) {
-                            return formatPercent(value);
-                        }
-                    }
-                }
-            }
-        }
-    });
-
-    // Add reset zoom button
-    const chartContainer = document.getElementById('conversion-chart').parentElement;
-    const resetZoomButton = document.createElement('button');
-    resetZoomButton.className = 'mt-2 px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm';
-    resetZoomButton.textContent = 'Reset Zoom';
-    resetZoomButton.style.display = 'none';
-    chartContainer.appendChild(resetZoomButton);
-
-    resetZoomButton.addEventListener('click', () => {
-        chart.resetZoom();
-    });
-
-
-    // Update first option text based on time period
-    const viewToggle = document.getElementById('chart-view-toggle');
-    if (viewToggle) {
-        viewToggle.options[0].text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
-
-        // Add event listener for the toggle
-        viewToggle.addEventListener('change', function(e) {
-            const viewType = e.target.value;
-            const datasets = createDatasets(viewType);
-            chart.data.datasets = datasets;
-            chart.options.plugins.title.text = viewType === 'daily' ?
-                `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates` :
-                'Cumulative Conversion Rates';
-            chart.options.scales.y.min = datasets.yAxisRange.min;
-            chart.options.scales.y.max = datasets.yAxisRange.max;
-            chart.update();
-        });
-    }
-
-    return chart;
 }
 
 function renderVisitorsChart(challenge) {
@@ -834,5 +838,5 @@ window.addEventListener('resize', function() {
     if (conversionChart) conversionChart.resize();
 
     const visitorsChart = Chart.getChart('visitors-chart');
-    if (visitorsChart) visitorsChart.resize();
+    if (visitorsChart)) visitorsChart.resize();
 });
