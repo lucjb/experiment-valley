@@ -842,9 +842,11 @@
 
         document.getElementById('submit-decision').addEventListener('click', function() {
             console.log('Decision submitted for experiment:', currentExperiment);
-            // First increment the counter
-            currentExperiment++;
-            console.log('Incremented to experiment:', currentExperiment);
+            if currentExperiment < EXPERIMENTS_PER_SESSION {
+                // First increment the counter
+                currentExperiment++;
+                console.log('Incremented to experiment:', currentExperiment);
+            }
             updateProgress();
             evaluateDecision(implementDecision);
         });
