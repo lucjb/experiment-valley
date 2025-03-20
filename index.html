@@ -595,7 +595,9 @@
             // Calculate progress percentage (33.33% per completed experiment)
             const progressPercent = ((currentExperiment - 1) / EXPERIMENTS_PER_SESSION) * 100;
             progressBar.style.width = `${progressPercent}%`;
-            document.getElementById('current-experiment').textContent = currentExperiment;
+            if ( currentExperiment <= EXPERIMENTS_PER_SESSION ) {
+                document.getElementById('current-experiment').textContent = currentExperiment;
+            }
         }
 
         async function loadChallenge() {
@@ -700,7 +702,6 @@
             experimentContainer.classList.add('fade-out');
 
             setTimeout(() => {
-                experimentContainer.classList.add('hidden');
                 document.getElementById('final-score').textContent = score;
                 document.getElementById('final-accuracy').textContent = `${Math.round((score / totalAttempts) * 100)}%`;
 
@@ -752,7 +753,7 @@
 
                 // Check if this was the last experiment of the session
                 console.log('Checking if last experiment:', currentExperiment, 'of', EXPERIMENTS_PER_SESSION);
-                if (currentExperiment === EXPERIMENTS_PER_SESSION) {
+                if (currentExperiment - 1 === EXPERIMENTS_PER_SESSION) {
                     document.getElementById('next-challenge-btn').textContent = 'Done!';
                 }
 
@@ -948,15 +949,6 @@
         function shareOnLinkedIn() {
             const text = `I just completed the A/B Testing Gym challenge with a score of ${score} and ${Math.round((score / totalAttempts) * 100)}% accuracy! Try it yourself!`;
             window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(text)}`);
-        }
-
-        function updateProgressBar() {
-            const progressBar = document.getElementById('progress-bar');
-            const progressPercentage = (currentExperiment / EXPERIMENTS_PER_SESSION) * 100;
-            progressBar.style.width = `${progressPercentage}%`;
-            document.getElementById('current-experiment').textContent = currentExperiment;
-            document.querySelector('#current-experiment').parentElement.parentElement.querySelector('.text-sm.font-medium.text-gray-700:nth-child(2)').textContent = `Experiment ${currentExperiment}/${EXPERIMENTS_PER_SESSION}`;
-
         }
     </script>
 
