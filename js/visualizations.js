@@ -392,111 +392,6 @@ function updateConfidenceIntervals(challenge) {
     }
 }
 
-function renderChart(challenge) {
-    const ctx = document.getElementById('conversion-chart');
-    if (!ctx) {
-        console.error('Conversion chart canvas not found');
-        return;
-    }
-
-    // Initialize chart with daily view
-    let chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: createDatasets('daily')
-        },
-        options: {
-            ...chartOptions,
-            plugins: {
-                ...chartOptions.plugins,
-                title: {
-                    display: true,
-                    text: `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates`
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return formatPercent(value);
-                        }
-                    }
-                }
-            }
-        }
-    });
-
-    // Add view toggle functionality
-    const viewToggle = document.getElementById('chart-view-toggle');
-    if (viewToggle) {
-        viewToggle.options[0].text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
-
-        viewToggle.addEventListener('change', function(e) {
-            console.log('View toggle changed:', e.target.value);
-
-            setTimeout(() => {
-                try {
-                    const canvas = document.getElementById('conversion-chart');
-                    if (!canvas) {
-                        console.error('Canvas element not found during view change');
-                        return;
-                    }
-
-                    const viewType = e.target.value;
-                    const datasets = createDatasets(viewType);
-
-                    // Destroy existing chart
-                    const existingChart = Chart.getChart(canvas);
-                    if (existingChart) {
-                        existingChart.destroy();
-                    }
-
-                    // Create new chart
-                    chart = new Chart(canvas, {
-                        type: 'line',
-                        data: {
-                            labels: labels,
-                            datasets: datasets
-                        },
-                        options: {
-                            ...chartOptions,
-                            plugins: {
-                                ...chartOptions.plugins,
-                                title: {
-                                    display: true,
-                                    text: viewType === 'daily' ?
-                                        `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates` :
-                                        'Cumulative Conversion Rates'
-                                }
-                            },
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    min: datasets.yAxisRange ? datasets.yAxisRange.min : undefined,
-                                    max: datasets.yAxisRange ? datasets.yAxisRange.max : undefined,
-                                    ticks: {
-                                        callback: function(value) {
-                                            return formatPercent(value);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-
-                    console.log('New chart created successfully');
-                } catch (error) {
-                    console.error('Error during chart view change:', error);
-                }
-            }, 100); // Small delay to ensure DOM is ready
-        });
-    }
-
-    return chart;
-}
-
 function calculateYAxisRange(datasets) {
     try {
         let allValues = [];
@@ -605,7 +500,7 @@ function renderVisitorsChart(challenge) {
                 }
             ] : [
                 {
-                                        label: 'Base Cumulative Visitors',
+                    label: 'Base Cumulative Visitors',
                     data: completeTimeline.map(d => d.base.cumulativeVisitors),
                     borderColor: 'rgb(107, 11, 194)',
                     backgroundColor: 'rgba(107, 11, 194, 0.1)',
