@@ -555,16 +555,42 @@ function renderChart(challenge) {
                         text: `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates`
                     },
                     tooltip: {
-                        mode: 'point',
-                        intersect: true,
-                        position: 'nearest'
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            beforeTitle: function(context) {
+                                const timePoint = completeTimeline[context[0].dataIndex];
+                                const variant = context[0].dataset.label.toLowerCase().includes('base') ? 'base' : 'variant';
+                                const dataPoint = timePoint[variant];
+                                const isCumulative = context[0].dataset.label.toLowerCase().includes('cumulative');
+
+                                const rate = isCumulative ? dataPoint.cumulativeRate : dataPoint.rate;
+                                const ci = isCumulative ? dataPoint.cumulativeRateCI : dataPoint.rateCI;
+                                const visitors = isCumulative ? dataPoint.cumulativeVisitors : dataPoint.visitors;
+                                const conversions = isCumulative ? dataPoint.cumulativeConversions : dataPoint.conversions;
+
+                                if (!rate) return null;
+
+                                // Create a comprehensive tooltip
+                                return [
+                                    `${variant.charAt(0).toUpperCase() + variant.slice(1)} Metrics`,
+                                    '─────────────────────',
+                                    `Rate: ${formatPercent(rate)}`,
+                                    `CI: [${formatPercent(ci[0])}, ${formatPercent(ci[1])}]`,
+                                    `Visitors: ${visitors.toLocaleString()}`,
+                                    `Conversions: ${conversions.toLocaleString()}`
+                                ];
+                            },
+                            title: function() { return ''; },
+                            label: function() { return ''; }
+                        }
                     }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            callback: function (value) {
+                            callback: function(value) {
                                 return formatPercent(value);
                             }
                         }
@@ -640,9 +666,35 @@ function renderChart(challenge) {
                                             'Cumulative Conversion Rates'
                                     },
                                     tooltip: {
-                                        mode: 'point',
-                                        intersect: true,
-                                        position: 'nearest'
+                                        mode: 'index',
+                                        intersect: false,
+                                        callbacks: {
+                                            beforeTitle: function(context) {
+                                                const timePoint = completeTimeline[context[0].dataIndex];
+                                                const variant = context[0].dataset.label.toLowerCase().includes('base') ? 'base' : 'variant';
+                                                const dataPoint = timePoint[variant];
+                                                const isCumulative = context[0].dataset.label.toLowerCase().includes('cumulative');
+
+                                                const rate = isCumulative ? dataPoint.cumulativeRate : dataPoint.rate;
+                                                const ci = isCumulative ? dataPoint.cumulativeRateCI : dataPoint.rateCI;
+                                                const visitors = isCumulative ? dataPoint.cumulativeVisitors : dataPoint.visitors;
+                                                const conversions = isCumulative ? dataPoint.cumulativeConversions : dataPoint.conversions;
+
+                                                if (!rate) return null;
+
+                                                // Create a comprehensive tooltip
+                                                return [
+                                                    `${variant.charAt(0).toUpperCase() + variant.slice(1)} Metrics`,
+                                                    '─────────────────────',
+                                                    `Rate: ${formatPercent(rate)}`,
+                                                    `CI: [${formatPercent(ci[0])}, ${formatPercent(ci[1])}]`,
+                                                    `Visitors: ${visitors.toLocaleString()}`,
+                                                    `Conversions: ${conversions.toLocaleString()}`
+                                                ];
+                                            },
+                                            title: function() { return ''; },
+                                            label: function() { return ''; }
+                                        }
                                     }
                                 },
                                 scales: {
@@ -776,7 +828,7 @@ function renderVisitorsChart(challenge) {
                 {
                     label: 'Test Visitors',
                     data: completeTimeline.map(d => d.variant.visitors),
-                    borderColor: 'rgb(59, 130, 246)',
+                    borderColor: ''rgb(59, 130, 246)',
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
                     fill: true,
                     spanGaps: true
