@@ -521,46 +521,7 @@
     </div>
 </div>
 
-<script>
-    function initializeCheatSheet() {
-        console.log('Initializing cheat sheet...');
-        const cheatSheetBtn = document.getElementById('cheat-sheet-btn');
-        const cheatSheetModal = document.getElementById('cheat-sheet-modal');
-        const closeCheatSheet = document.getElementById('close-cheat-sheet');
 
-        cheatSheetBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('Cheat sheet button clicked');
-            cheatSheetModal.classList.remove('hidden');
-        });
-
-        closeCheatSheet.addEventListener('click', function() {
-            console.log('Close button clicked');
-            cheatSheetModal.classList.add('hidden');
-        });
-
-        // Close modal when clicking outside
-        cheatSheetModal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                this.classList.add('hidden');
-            }
-        });
-    }
-
-    function toggleSection(sectionId) {
-        console.log('Toggling section:', sectionId);
-        const section = document.getElementById(sectionId);
-        const arrow = document.getElementById(sectionId.replace('details', 'arrow'));
-
-        if (section && arrow) {
-            section.classList.toggle('hidden');
-            arrow.style.transform = section.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
-        }
-    }
-
-    // Initialize cheat sheet when DOM is loaded
-    document.addEventListener('DOMContentLoaded', initializeCheatSheet);
-</script>
 
 <script>
             const state = {
