@@ -235,19 +235,19 @@
                         <table class="w-full border-collapse border metrics-table">
                             <thead>
                                 <tr class="bg-gray-100">
-                                    <th class="border px-2 py-2 text-left">Variant</th>
-                                    <th class="border px-2 py-2 text-left">Visitors</th>
-                                    <th class="border px-2 py-2 text-left">Conversions</th>
-                                    <th class="border px-2 py-2 text-left">Rate</th>
-                                    <th class="border px-2 py-2 text-left">95% CI</th>
+                                    <th class="border px-2 py-2 text-left w-24">Variant</th>
+                                    <th class="border px-2 py-2 text-right w-28">Visitors</th>
+                                    <th class="border px-2 py-2 text-right w-28">Conversions</th>
+                                    <th class="border px-2 py-2 text-right w-28">Rate</th>
+                                    <th class="border px-2 py-2 text-left flex-grow">95% CI</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
                                     <td class="border px-2 py-1 font-semibold">Base</td>
-                                    <td class="border px-2 py-1" id="base-visitors"></td>
-                                    <td class="border px-2 py-1" id="base-conversions"></td>
-                                    <td class="border px-2 py-1" id="base-rate"></td>
+                                    <td class="border px-2 py-1 text-right" id="base-visitors"></td>
+                                    <td class="border px-2 py-1 text-right" id="base-conversions"></td>
+                                    <td class="border px-2 py-1 text-right" id="base-rate"></td>
                                     <td class="border px-2 py-1">
                                         <div id="base-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
                                             <div class="absolute h-full bg-blue-200 rounded-md"></div>
@@ -259,9 +259,9 @@
                                 </tr>
                                 <tr>
                                     <td class="border px-2 py-1 font-semibold">Variant</td>
-                                    <td class="border px-2 py-1" id="variant-visitors"></td>
-                                    <td class="border px-2 py-1" id="variant-conversions"></td>
-                                    <td class="border px-2 py-1" id="variant-rate"></td>
+                                    <td class="border px-2 py-1 text-right" id="variant-visitors"></td>
+                                    <td class="border px-2 py-1 text-right" id="variant-conversions"></td>
+                                    <td class="border px-2 py-1 text-right" id="variant-rate"></td>
                                     <td class="border px-2 py-1">
                                         <div id="variant-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
                                             <div class="absolute h-full bg-purple-200 rounded-md"></div>
@@ -272,10 +272,10 @@
                                     </td>
                                 </tr>
                                 <tr class="bg-gray-50">
-                                    <td class="border px-2 py-1 fontsemibold">Delta</td>
-                                    <td class="border px-2 py-1" id="delta-visitors"></td>
-                                    <td class="border px-2 py-1" id="delta-conversions"></td>
-                                    <td class="border px-2 py-1" id="delta-rate"></td>
+                                    <td class="border px-2 py-1 font-semibold">Delta</td>
+                                    <td class="border px-2 py-1 text-right" id="delta-visitors"></td>
+                                    <td class="border px-2 py-1 text-right" id="delta-conversions"></td>
+                                    <td class="border px-2 py-1 text-right" id="delta-rate"></td>
                                     <td class="border px-2 py-1">
                                         <div id="diff-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
                                             <div id="diff-ci-bar" class="absolute h-full rounded-md"></div>
@@ -287,9 +287,9 @@
                                 </tr>
                                 <tr class="bg-gray-50">
                                     <td class="border px-2 py-1 font-semibold">Uplift</td>
-                                    <td class="border px-2 py-1" id="visitor-uplift"></td>
-                                    <td class="border px-2 py-1" id="conversion-uplift"></td>
-                                    <td class="border px-2 py-1" id="uplift-value"></td>
+                                    <td class="border px-2 py-1 text-right" id="visitor-uplift"></td>
+                                    <td class="border px-2 py-1 text-right" id="conversion-uplift"></td>
+                                    <td class="border px-2 py-1 text-right" id="uplift-value"></td>
                                     <td class="border px-2 py-1">
                                         <div id="uplift-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
                                             <div id="uplift-ci-bar" class="absolute h-full rounded-md"></div>
