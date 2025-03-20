@@ -836,7 +836,7 @@ function renderVisitorsChart(challenge) {
                     try {
                         const canvas = document.getElementById('visitors-chart');
                         if (!canvas) {
-                            console.error('Visitors canvas element not found during view change');
+                            consoleerror('Visitors canvas element not found during view change');
                             return;
                         }
 
@@ -904,6 +904,12 @@ window.addEventListener('resize', function () {
 
 function initializeCharts(challenge) {
     try {
+        // Reset view toggle to 'daily' first
+        const viewToggle = document.getElementById('chart-view-toggle');
+        if (viewToggle) {
+            viewToggle.value = 'daily';
+        }
+
         // Clean up any existing charts first
         const conversionCanvas = document.getElementById('conversion-chart');
         if (conversionCanvas) {
