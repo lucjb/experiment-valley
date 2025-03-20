@@ -838,5 +838,5 @@ window.addEventListener('resize', function() {
     if (conversionChart) conversionChart.resize();
 
     const visitorsChart = Chart.getChart('visitors-chart');
-    if (visitorsChart)) visitorsChart.resize();
+    if (visitorsChart) visitorsChart.resize();
 });
