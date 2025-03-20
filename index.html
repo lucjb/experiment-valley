@@ -42,22 +42,42 @@
             0% { opacity: 0; }
             100% { opacity: 1; }
         }
-    </style>
 
+        /* Mobile-specific styles */
+        @media (max-width: 640px) {
+            .decision-button {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+
+            .metrics-table {
+                font-size: 0.875rem;
+            }
+
+            .metrics-table th,
+            .metrics-table td {
+                padding: 0.5rem 0.25rem;
+            }
+
+            .chart-container {
+                height: 200px;
+            }
+        }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-900">
     <div class="max-w-6xl mx-auto p-2 md:p-4">
         <!-- Tutorial Section -->
-        <div id="tutorial-section" class="bg-white rounded-lg shadow-lg border border-gray-200 p-8 mb-6">
-            <h2 class="text-3xl font-bold text-gray-900 mb-6 text-center">Welcome to A/B Testing Gym!</h2>
+        <div id="tutorial-section" class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 md:p-8 mb-6">
+            <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6 text-center">Welcome to A/B Testing Gym!</h2>
 
-            <div class="space-y-8 max-w-4xl mx-auto">
+            <div class="space-y-6 md:space-y-8 max-w-4xl mx-auto">
                 <div>
-                    <h3 class="text-xl font-semibold text-blue-600 mb-3">How to Play</h3>
-                    <ul class="list-disc pl-6 space-y-2 text-gray-700 text-lg">
+                    <h3 class="text-lg md:text-xl font-semibold text-blue-600 mb-3">How to Play</h3>
+                    <ul class="list-disc pl-4 md:pl-6 space-y-2 text-gray-700 text-base md:text-lg">
                         <li>You'll face 3 different experiments</li>
                         <li>For each experiment, you'll need to make two decisions:
-                            <ul class="list-circle pl-6 mt-2">
+                            <ul class="list-circle pl-4 md:pl-6 mt-2">
                                 <li>Is the experiment trustworthy?</li>
                                 <li>Should we implement the new variant?</li>
                             </ul>
@@ -67,8 +87,8 @@
                 </div>
 
                 <div>
-                    <h3 class="text-xl font-semibold text-blue-600 mb-3">What You'll See</h3>
-                    <ul class="list-disc pl-6 space-y-2 text-gray-700 text-lg">
+                    <h3 class="text-lg md:text-xl font-semibold text-blue-600 mb-3">What You'll See</h3>
+                    <ul class="list-disc pl-4 md:pl-6 space-y-2 text-gray-700 text-base md:text-lg">
                         <li><span class="font-medium">Experiment Design:</span> Shows statistical parameters and sample size requirements</li>
                         <li><span class="font-medium">Results Analysis:</span> Includes detailed metrics and interactive visualizations</li>
                         <li><span class="font-medium">Confidence Intervals:</span> Visual representation of statistical uncertainty</li>
@@ -76,18 +96,8 @@
                     </ul>
                 </div>
 
-                <div>
-                    <h3 class="text-xl font-semibold text-blue-600 mb-3">Tips for Success</h3>
-                    <ul class="list-disc pl-6 space-y-2 text-gray-700 text-lg">
-                        <li>Check if the sample size is large enough</li>
-                        <li>Look for overlapping confidence intervals</li>
-                        <li>Consider both statistical significance (p-value) and practical significance</li>
-                        <li>Watch for unusual patterns in the conversion charts</li>
-                    </ul>
-                </div>
-
                 <div class="text-center mt-8">
-                    <button id="start-btn" class="px-8 py-4 bg-blue-500 text-white text-xl font-bold rounded-lg shadow-lg hover:bg-blue-600 transform hover:scale-105 transition-all">
+                    <button id="start-btn" class="px-6 md:px-8 py-3 md:py-4 bg-blue-500 text-white text-lg md:text-xl font-bold rounded-lg shadow-lg hover:bg-blue-600 transform hover:scale-105 transition-all">
                         Play
                     </button>
                 </div>
@@ -96,20 +106,20 @@
 
         <div id="challenge-container" class="hidden">
             <!-- Score and Progress Header -->
-            <header class="flex flex-col bg-gray-900 rounded-lg shadow-lg p-4 mb-4">
-                <div class="flex justify-between items-center">
-                    <div class="flex space-x-8">
+            <header class="flex flex-col bg-gray-900 rounded-lg shadow-lg p-3 md:p-4 mb-4">
+                <div class="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
+                    <div class="flex flex-wrap gap-4 md:gap-8">
                         <div>
                             <span class="font-medium text-white">Score: </span>
-                            <span id="score" class="text-2xl font-bold score-value">0</span>
+                            <span id="score" class="text-xl md:text-2xl font-bold score-value">0</span>
                         </div>
                         <div>
                             <span class="font-medium text-white">Streak: </span>
-                            <span id="streak" class="text-2xl font-bold score-value">0</span>
+                            <span id="streak" class="text-xl md:text-2xl font-bold score-value">0</span>
                         </div>
                         <div>
                             <span class="font-medium text-white">Accuracy: </span>
-                            <span id="accuracy" class="text-2xl font-bold score-value">0%</span>
+                            <span id="accuracy" class="text-xl md:text-2xl font-bold score-value">0%</span>
                         </div>
                     </div>
                     <div class="text-sm font-medium text-white">Experiment <span id="current-experiment" class="score-value text-lg">1</span>/3</div>
@@ -119,39 +129,47 @@
                 </div>
             </header>
 
-            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-4">
-                <div class="flex items-center space-x-6">
-                    <h2 class="text-xl font-semibold text-gray-800 whitespace-nowrap">Decision Making:</h2>
-                    <div class="flex items-center space-x-2">
-                        <span class="font-medium">Is this Experiment Trustworthy? <a href="#" id="cheat-sheet-btn" class="text-gray-500 hover:text-gray-700 transition-colors">ℹ</a></span>
-                        <button id="trust-yes" class="px-4 py-1 bg-green-500 text-white text-sm rounded shadow hover:bg-green-600 transition">
-                            Yes
-                        </button>
-                        <button id="trust-no" class="px-4 py-1 bg-red-500 text-white text-sm rounded shadow hover:bg-red-600 transition">
-                            No
+            <!-- Decision Making Section -->
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 md:p-4 mb-4">
+                <div class="flex flex-col space-y-3 md:space-y-0 md:flex-row md:items-center md:space-x-6">
+                    <h2 class="text-lg md:text-xl font-semibold text-gray-800">Decision Making:</h2>
+                    <div class="flex flex-col space-y-3 md:space-y-0 md:flex-row md:items-center md:space-x-4 w-full">
+                        <div class="flex flex-col space-y-2 md:flex-row md:items-center md:space-x-2 md:flex-1">
+                            <span class="font-medium whitespace-nowrap">Is this Experiment Trustworthy? <a href="#" id="cheat-sheet-btn" class="text-gray-500 hover:text-gray-700 transition-colors">ℹ</a></span>
+                            <div class="flex space-x-2">
+                                <button id="trust-yes" class="decision-button px-4 py-2 bg-green-500 text-white text-sm rounded shadow hover:bg-green-600 transition flex-1 md:flex-none">
+                                    Yes
+                                </button>
+                                <button id="trust-no" class="decision-button px-4 py-2 bg-red-500 text-white text-sm rounded shadow hover:bg-red-600 transition flex-1 md:flex-none">
+                                    No
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col space-y-2 md:flex-row md:items-center md:space-x-2 md:flex-1 md:border-l md:pl-4">
+                            <span class="font-medium">Would you implement the new variant?</span>
+                            <div class="flex space-x-2">
+                                <button id="implement-yes" class="decision-button px-4 py-2 bg-green-500 text-white text-sm rounded shadow hover:bg-green-600 transition flex-1 md:flex-none">
+                                    Yes
+                                </button>
+                                <button id="implement-no" class="decision-button px-4 py-2 bg-red-500 text-white text-sm rounded shadow hover:bg-red-600 transition flex-1 md:flex-none">
+                                    No
+                                </button>
+                            </div>
+                        </div>
+                        <button id="submit-decision" disabled class="decision-button px-6 py-2 bg-blue-500 text-white text-sm rounded shadow hover:bg-blue-600 transition opacity-50 cursor-not-allowed">
+                            Submit Decision
                         </button>
                     </div>
-                    <div class="flex items-center space-x-2 border-l pl-4">
-                        <span class="font-medium">Would you implement the new variant?</span>
-                        <button id="implement-yes" class="px-4 py-1 bg-green-500 text-white text-sm rounded shadow hover:bg-green-600 transition">
-                            Yes
-                        </button>
-                        <button id="implement-no" class="px-4 py-1 bg-red-500 text-white text-sm rounded shadow hover:bg-red-600 transition">
-                            No
-                        </button>
-                    </div>
-                    <button id="submit-decision" disabled class="px-6 py-1 bg-blue-500 text-white text-sm rounded shadow hover:bg-blue-600 transition opacity-50 cursor-not-allowed">
-                        Submit Decision
-                    </button>
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-4">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-3">Experiment Design</h2>
+            <!-- Experiment Design Section -->
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 md:p-4 mb-4">
+                <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Experiment Design</h2>
                 <div id="experiment-card" class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div class="border rounded p-3">
-                        <h3 class="font-semibold mb-2 text-lg">Statistical Parameters</h3>
-                        <div class="grid grid-cols-2 gap-2">
+                        <h3 class="font-semibold mb-2 text-base md:text-lg">Statistical Parameters</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm md:text-base">
                             <div><span class="font-medium">Significance Level:</span> <span id="exp-alpha"></span></div>
                             <div><span class="font-medium">Power:</span> <span id="exp-beta"></span></div>
                             <div><span class="font-medium">Experiment Type:</span> <span>2-sided Test</span></div>
@@ -159,12 +177,12 @@
                         </div>
                     </div>
                     <div class="border rounded p-3">
-                        <h3 class="font-semibold mb-2 text-lg">Sample Size Parameters</h3>
-                        <div class="grid grid-cols-2 gap-2">
+                        <h3 class="font-semibold mb-2 text-base md:text-lg">Sample Size Parameters</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm md:text-base">
                             <div><span class="font-medium">Base Conversion Rate:</span> <span id="exp-base-rate"></span></div>
-                            <div><span class="font-medium">Minimum Relevant Effect (absolute):</span> <span id="exp-min-effect"></span></div>
+                            <div><span class="font-medium">Minimum Relevant Effect:</span> <span id="exp-min-effect"></span></div>
                             <div><span class="font-medium">Daily Visitors:</span> <span id="exp-visitors"></span></div>
-                            <div><span class="font-medium">Required Visitors per Variant:</span> <span id="exp-required-sample"></span></div>
+                            <div><span class="font-medium">Required Visitors:</span> <span id="exp-required-sample"></span></div>
                             <div><span class="font-medium">Business Cycle:</span> <span id="exp-cycle-days"></span></div>
                             <div><span class="font-medium">Runtime:</span> <span id="exp-required-days"></span></div>
                         </div>
@@ -172,38 +190,20 @@
                 </div>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-4">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-3">Execution</h2>
-                <div>
-                    <div class="mt-2">
-                        <div class="w-full bg-gray-200 rounded-full h-8 relative">
-                            <div id="exp-progress-bar" class="bg-blue-600 h-8 rounded-full transition-all duration-500 flex items-center" style="width: 0%">
-                                <span id="exp-days-elapsed-text" class="text-xs text-white font-medium ml-3"></span>
-                                <span id="exp-complete-text" class="hidden text-xs text-white font-medium mx-auto">Experiment Complete</span>
-                            </div>
-                            <span id="exp-days-remaining-text" class="absolute text-xs text-gray-600 font-medium right-3 top-1/2 transform -translate-y-1/2"></span>
-                        </div>
-                        <div class="flex justify-between mt-1">
-                            <span id="progress-start-date" class="text-xs text-gray-500"></span>
-                            <span id="progress-end-date" class="text-xs text-gray-500"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 mb-4">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-3">Results Analysis</h2>
+            <!-- Results Analysis Section -->
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 md:p-4 mb-4">
+                <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Results Analysis</h2>
 
                 <!-- Tab Navigation -->
-                <div class="border-b border-gray-200">
-                    <nav class="flex -mb-px">
-                        <button class="tab-button px-4 py-2 font-medium text-sm leading-5 rounded-t-lg border-b-2 border-blue-500 text-blue-600 bg-white focus:outline-none" data-tab="metrics">
+                <div class="border-b border-gray-200 overflow-x-auto">
+                    <nav class="flex -mb-px min-w-max">
+                        <button class="tab-button px-4 py-2 font-medium text-sm leading-5 rounded-t-lg border-b-2 border-blue-500 text-blue-600 bg-white focus:outline-none whitespace-nowrap" data-tab="metrics">
                             Metrics Table
                         </button>
-                        <button class="tab-button px-4 py-2 font-medium text-sm leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none ml-4" data-tab="conversion">
+                        <button class="tab-button px-4 py-2 font-medium text-sm leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none ml-4 whitespace-nowrap" data-tab="conversion">
                             Conversion Rate
                         </button>
-                        <button class="tab-button px-4 py-2 font-medium text-sm leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none ml-4" data-tab="visitors">
+                        <button class="tab-button px-4 py-2 font-medium text-sm leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none ml-4 whitespace-nowrap" data-tab="visitors">
                             Visitors
                         </button>
                     </nav>
@@ -212,22 +212,22 @@
                 <!-- Tab Content -->
                 <div id="metrics-tab" class="tab-content">
                     <div class="overflow-x-auto mt-4">
-                        <table class="w-full border-collapse border">
+                        <table class="w-full border-collapse border metrics-table">
                             <thead>
                                 <tr class="bg-gray-100">
-                                    <th class="border px-3 py-2 text-left w-24">Variant</th>
-                                    <th class="border px-3 py-2 text-left w-24">Visitors</th>
-                                    <th class="border px-3 py-2 text-left w-24">Conversions</th>
-                                    <th class="border px-3 py-2 text-left w-28">Rate</th>
-                                    <th class="border px-3 py-2 text-left">95% Confidence Interval</th>
+                                    <th class="border px-2 py-2 text-left">Variant</th>
+                                    <th class="border px-2 py-2 text-left">Visitors</th>
+                                    <th class="border px-2 py-2 text-left">Conversions</th>
+                                    <th class="border px-2 py-2 text-left">Rate</th>
+                                    <th class="border px-2 py-2 text-left">95% CI</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td class="border px-4 py-1 font-semibold min-w-[6rem]">Base</td>
-                                    <td class="border px-4 py-1 min-w-[6rem]" id="base-visitors"></td>
-                                    <td class="border px-4 py-1 min-w-[6rem]" id="base-conversions"></td>
-                                    <td class="border px-4 py-1 min-w-[7rem]" id="base-rate"></td>
+                                    <td class="border px-2 py-1 font-semibold">Base</td>
+                                    <td class="border px-2 py-1" id="base-visitors"></td>
+                                    <td class="border px-2 py-1" id="base-conversions"></td>
+                                    <td class="border px-2 py-1" id="base-rate"></td>
                                     <td class="border px-2 py-1">
                                         <div id="base-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
                                             <div class="absolute h-full bg-blue-200 rounded-md"></div>
@@ -238,10 +238,10 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td class="border px-4 py-1 font-semibold min-w-[6rem]">Variant</td>
-                                    <td class="border px-4 py-1 min-w-[6rem]" id="variant-visitors"></td>
-                                    <td class="border px-4 py-1 min-w-[6rem]" id="variant-conversions"></td>
-                                    <td class="border px-4 py-1 min-w-[7rem]" id="variant-rate"></td>
+                                    <td class="border px-2 py-1 font-semibold">Variant</td>
+                                    <td class="border px-2 py-1" id="variant-visitors"></td>
+                                    <td class="border px-2 py-1" id="variant-conversions"></td>
+                                    <td class="border px-2 py-1" id="variant-rate"></td>
                                     <td class="border px-2 py-1">
                                         <div id="variant-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
                                             <div class="absolute h-full bg-purple-200 rounded-md"></div>
@@ -252,10 +252,10 @@
                                     </td>
                                 </tr>
                                 <tr class="bg-gray-50">
-                                    <td class="border px-4 py-1 fontsemibold min-w-[6rem]">Delta</td>
-                                    <td class="border px-4 py-1 min-w-[6rem]" id="delta-visitors"></td>
-                                    <td class="border px-4 py-1 min-w-[6rem]" id="delta-conversions"></td>
-                                    <td class="border px-4 py-1 min-w-[7rem]" id="delta-rate"></td>
+                                    <td class="border px-2 py-1 fontsemibold">Delta</td>
+                                    <td class="border px-2 py-1" id="delta-visitors"></td>
+                                    <td class="border px-2 py-1" id="delta-conversions"></td>
+                                    <td class="border px-2 py-1" id="delta-rate"></td>
                                     <td class="border px-2 py-1">
                                         <div id="diff-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
                                             <div id="diff-ci-bar" class="absolute h-full rounded-md"></div>
@@ -266,10 +266,10 @@
                                     </td>
                                 </tr>
                                 <tr class="bg-gray-50">
-                                    <td class="border px-4 py-1 font-semibold min-w-[6rem]">Uplift</td>
-                                    <td class="border px-4 py-1 min-w-[6rem]" id="visitor-uplift"></td>
-                                    <td class="border px-4 py-1 min-w-[6rem]" id="conversion-uplift"></td>
-                                    <td class="border px-4 py-1 min-w-[7rem]" id="uplift-value"></td>
+                                    <td class="border px-2 py-1 font-semibold">Uplift</td>
+                                    <td class="border px-2 py-1" id="visitor-uplift"></td>
+                                    <td class="border px-2 py-1" id="conversion-uplift"></td>
+                                    <td class="border px-2 py-1" id="uplift-value"></td>
                                     <td class="border px-2 py-1">
                                         <div id="uplift-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
                                             <div id="uplift-ci-bar" class="absolute h-full rounded-md"></div>
@@ -293,8 +293,8 @@
 
                 <div id="conversion-tab" class="tab-content hidden">
                     <div class="mt-4">
-                        <div class="flex justify-between items-center mb-2">
-                            <div class="flex items-center space-x-2">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
+                            <div class="flex items-center space-x-2 mb-2 md:mb-0">
                                 <label class="text-sm text-gray-600">View:</label>
                                 <select id="chart-view-toggle" class="form-select text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                                     <option value="daily">Daily View</option>
@@ -308,14 +308,16 @@
                                 <div class="h-4 bg-gray-200 rounded w-1/2"></div>
                             </div>
                         </div>
-                        <canvas id="conversion-chart"></canvas>
+                        <div class="chart-container">
+                            <canvas id="conversion-chart"></canvas>
+                        </div>
                     </div>
                 </div>
 
                 <div id="visitors-tab" class="tab-content hidden">
                     <div class="mt-4">
-                        <div class="flex justify-between items-center mb-2">
-                            <div class="flex items-center space-x-2">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
+                            <div class="flex items-center space-x-2 mb-2 md:mb-0">
                                 <label class="text-sm text-gray-600">View:</label>
                                 <select id="visitors-view-toggle" class="form-select text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                                     <option value="daily">Daily View</option>
@@ -323,7 +325,9 @@
                                 </select>
                             </div>
                         </div>
-                        <canvas id="visitors-chart"></canvas>
+                        <div class="chart-container">
+                            <canvas id="visitors-chart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
