@@ -334,6 +334,12 @@ function renderChart(challenge) {
         return;
     }
 
+    const canvasContext = ctx.getContext('2d');
+    if (!canvasContext) {
+        console.error('Could not get canvas context');
+        return;
+    }
+
     try {
         // Clear any existing chart
         const existingChart = Chart.getChart(ctx);
@@ -358,18 +364,18 @@ function renderChart(challenge) {
             while (nextDay <= totalDays) {
                 completeTimeline.push({
                     period: { type, startDay: nextDay },
-                    base: { 
-                        rate: null, 
-                        rateCI: [null, null], 
-                        visitors: null, 
+                    base: {
+                        rate: null,
+                        rateCI: [null, null],
+                        visitors: null,
                         conversions: null,
                         cumulativeRate: null,
                         cumulativeRateCI: [null, null]
                     },
-                    variant: { 
-                        rate: null, 
-                        rateCI: [null, null], 
-                        visitors: null, 
+                    variant: {
+                        rate: null,
+                        rateCI: [null, null],
+                        visitors: null,
                         conversions: null,
                         cumulativeRate: null,
                         cumulativeRateCI: [null, null]
@@ -385,9 +391,9 @@ function renderChart(challenge) {
             if (type === 'day') {
                 return `Day ${startDay}`;
             } else if (type === 'week') {
-                return `Week ${Math.ceil(startDay/7)}`;
+                return `Week ${Math.ceil(startDay / 7)}`;
             } else {
-                return `Month ${Math.ceil(startDay/28)}`;
+                return `Month ${Math.ceil(startDay / 28)}`;
             }
         });
 
@@ -517,7 +523,7 @@ function renderChart(challenge) {
         }
 
         // Initialize the chart with daily view
-        const chart = new Chart(ctx, {
+        let chart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
@@ -558,7 +564,7 @@ function renderChart(challenge) {
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            callback: function(value) {
+                            callback: function (value) {
                                 return formatPercent(value);
                             }
                         }
@@ -573,21 +579,92 @@ function renderChart(challenge) {
             viewToggle.options[0].text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
 
             viewToggle.addEventListener('change', function(e) {
-                const viewType = e.target.value;
-                const datasets = createDatasets(viewType);
+                console.log('View toggle changed:', e.target.value);
 
-                // Update chart data and options
-                chart.data.datasets = datasets;
-                chart.options.plugins.title.text = viewType === 'daily' ?
-                    `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates` :
-                    'Cumulative Conversion Rates';
+                setTimeout(() => {
+                    try {
+                        const canvas = document.getElementById('conversion-chart');
+                        if (!canvas) {
+                            console.error('Canvas element not found during view change');
+                            return;
+                        }
 
-                if (datasets.yAxisRange) {
-                    chart.options.scales.y.min = datasets.yAxisRange.min;
-                    chart.options.scales.y.max = datasets.yAxisRange.max;
-                }
+                        console.log('Canvas dimensions:', {
+                            width: canvas.width,
+                            height: canvas.height,
+                            clientWidth: canvas.clientWidth,
+                            clientHeight: canvas.clientHeight
+                        });
 
-                chart.update();
+                        const viewType = e.target.value;
+                        const datasets = createDatasets(viewType);
+
+                        // Destroy existing chart
+                        const existingChart = Chart.getChart(canvas);
+                        if (existingChart) {
+                            existingChart.destroy();
+                        }
+
+                        // Create new chart
+                        chart = new Chart(canvas, {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: datasets
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    zoom: {
+                                        pan: {
+                                            enabled: true,
+                                            mode: 'x',
+                                            modifierKey: 'ctrl',
+                                        },
+                                        zoom: {
+                                            wheel: {
+                                                enabled: true,
+                                                modifierKey: 'ctrl',
+                                            },
+                                            pinch: {
+                                                enabled: true
+                                            },
+                                            mode: 'x',
+                                        }
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: viewType === 'daily' ?
+                                            `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates` :
+                                            'Cumulative Conversion Rates'
+                                    },
+                                    tooltip: {
+                                        mode: 'point',
+                                        intersect: true,
+                                        position: 'nearest'
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        min: datasets.yAxisRange ? datasets.yAxisRange.min : undefined,
+                                        max: datasets.yAxisRange ? datasets.yAxisRange.max : undefined,
+                                        ticks: {
+                                            callback: function(value) {
+                                                return formatPercent(value);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+
+                        console.log('New chart created successfully');
+                    } catch (error) {
+                        console.error('Error during chart view change:', error);
+                    }
+                }, 100); // Small delay to ensure DOM is ready
             });
         }
 
@@ -607,7 +684,7 @@ function calculateYAxisRange(datasets) {
             }
         });
 
-        if (allValues.length === 0) return { min: 0, max: 1 };
+        if (allValues.length === 0) return {min: 0, max: 1};
 
         const maxValue = Math.max(...allValues);
         const nonZeroValues = allValues.filter(v => v > 0);
@@ -619,7 +696,7 @@ function calculateYAxisRange(datasets) {
         };
     } catch (error) {
         console.error('Error calculating Y axis range:', error);
-        return { min: 0, max: 1 };
+        return {min: 0, max: 1};
     }
 }
 
@@ -646,15 +723,15 @@ function renderVisitorsChart(challenge) {
     const completeTimeline = [...timePoints];
     if (currentDays < totalDays) {
         const lastPoint = timePoints[timePoints.length - 1];
-        const { type } = lastPoint.period;
+        const {type} = lastPoint.period;
         const periodLength = type === 'day' ? 1 : type === 'week' ? 7 : 28;
         let nextDay = lastPoint.period.startDay + periodLength;
 
         while (nextDay <= totalDays) {
             completeTimeline.push({
-                period: { type, startDay: nextDay },
-                base: { visitors: null, cumulativeVisitors: null },
-                variant: { visitors: null, cumulativeVisitors: null }
+                period: {type, startDay: nextDay},
+                base: {visitors: null, cumulativeVisitors: null},
+                variant: {visitors: null, cumulativeVisitors: null}
             });
             nextDay += periodLength;
         }
@@ -662,13 +739,13 @@ function renderVisitorsChart(challenge) {
 
     // Create labels based on time period
     const labels = completeTimeline.map(point => {
-        const { type, startDay } = point.period;
+        const {type, startDay} = point.period;
         if (type === 'day') {
             return `Day ${startDay}`;
         } else if (type === 'week') {
-            return `Week ${Math.ceil(startDay/7)}`;
+            return `Week ${Math.ceil(startDay / 7)}`;
         } else {
-            return `Month ${Math.ceil(startDay/28)}`;
+            return `Month ${Math.ceil(startDay / 28)}`;
         }
     });
 
@@ -740,10 +817,10 @@ function renderVisitorsChart(challenge) {
                         },
                         mode: 'x',
                     },
-                    onZoomComplete: function() {
+                    onZoomComplete: function () {
                         resetZoomButton.style.display = 'block';
                     },
-                    onResetZoom: function() {
+                    onResetZoom: function () {
                         resetZoomButton.style.display = 'none';
                     }
                 },
@@ -756,7 +833,7 @@ function renderVisitorsChart(challenge) {
                     intersect: true,
                     position: 'nearest',
                     callbacks: {
-                        label: function(context) {
+                        label: function (context) {
                             const timePoint = completeTimeline[context.dataIndex];
                             const value = context.parsed.y;
                             return [
@@ -773,7 +850,7 @@ function renderVisitorsChart(challenge) {
                         display: false // Remove y-axis title
                     },
                     ticks: {
-                        callback: function(value) {
+                        callback: function (value) {
                             return value.toLocaleString();
                         }
                     }
@@ -802,7 +879,7 @@ function renderVisitorsChart(challenge) {
         periodOption.text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
 
         // Add event listener for the toggle
-        viewToggle.addEventListener('change', function(e) {
+        viewToggle.addEventListener('change', function (e) {
             const viewType = e.target.value;
             const datasets = createDatasets(viewType);
             chart.data.datasets = datasets;
@@ -833,7 +910,7 @@ function initializeCharts(challenge) {
 }
 
 // Make sure charts resize properly
-window.addEventListener('resize', function() {
+window.addEventListener('resize', function () {
     const conversionChart = Chart.getChart('conversion-chart');
     if (conversionChart) conversionChart.resize();
 
