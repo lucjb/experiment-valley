@@ -828,14 +828,14 @@ function renderVisitorsChart(challenge) {
                 {
                     label: 'Test Visitors',
                     data: completeTimeline.map(d => d.variant.visitors),
-                    borderColor: ''rgb(59, 130, 246)',
+                    borderColor: 'rgb(59, 130, 246)',
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
                     fill: true,
                     spanGaps: true
                 }
             ] : [
                 {
-                    label: 'Base Cumulative Visitors',
+                                        label: 'Base Cumulative Visitors',
                     data: completeTimeline.map(d => d.base.cumulativeVisitors),
                     borderColor: 'rgb(107, 11, 194)',
                     backgroundColor: 'rgba(107, 11, 194, 0.1)',
