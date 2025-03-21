@@ -353,6 +353,33 @@ function determineTimePeriod(numDays) {
     }
 }
 
+function computeDifferenceConfidenceInterval(baseRate, variantRate, baseVisitors, variantVisitors, alpha) {
+    if (baseVisitors === 0 || variantVisitors === 0) {
+        return [0, 0];
+    }
+
+    const epsilon = 1e-10;
+    const pA = Math.max(epsilon, Math.min(1 - epsilon, baseRate));
+    const pB = Math.max(epsilon, Math.min(1 - epsilon, variantRate));
+
+    const varA = (pA * (1 - pA)) / baseVisitors;
+    const varB = (pB * (1 - pB)) / variantVisitors;
+    const pooledSE = Math.sqrt(varA + varB);
+
+    if (pooledSE === 0) {
+        return [0, 0];
+    }
+
+    const observedDifference = pB - pA;
+    const zScore = jStat.normal.inv(1 - alpha / 2, 0, 1);
+    const marginOfError = zScore * pooledSE;
+
+    return [
+        observedDifference - marginOfError,
+        observedDifference + marginOfError
+    ];
+}
+
 function generateTimelineData(baseVisitors, variantVisitors, baseConversions, variantConversions, numDays, alpha) {
     // Determine appropriate time period
     const { period, numPeriods } = determineTimePeriod(numDays);
@@ -398,6 +425,43 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
             const baseCumulativeRate = cumulativeBaseVisitors === 0 ? 0 : cumulativeBaseConversions / cumulativeBaseVisitors;
             const variantCumulativeRate = cumulativeVariantVisitors === 0 ? 0 : cumulativeVariantConversions / cumulativeVariantVisitors;
 
+            // Calculate difference and its CI for both daily and cumulative rates
+            const dailyDiffCI = computeDifferenceConfidenceInterval(
+                baseRate,
+                variantRate,
+                baseVisitorsPerPeriod[i],
+                variantVisitorsPerPeriod[i],
+                alpha
+            );
+
+            const cumulativeDiffCI = computeDifferenceConfidenceInterval(
+                baseCumulativeRate,
+                variantCumulativeRate,
+                cumulativeBaseVisitors,
+                cumulativeVariantVisitors,
+                alpha
+            );
+
+            // Calculate uplift and its CI for both daily and cumulative rates
+            const dailyUplift = baseRate === 0 ? 0 : (variantRate / baseRate) - 1;
+            const cumulativeUplift = baseCumulativeRate === 0 ? 0 : (variantCumulativeRate / baseCumulativeRate) - 1;
+
+            const dailyUpliftCI = computeUpliftConfidenceInterval(
+                baseRate,
+                variantRate,
+                baseVisitorsPerPeriod[i],
+                variantVisitorsPerPeriod[i],
+                alpha
+            );
+
+            const cumulativeUpliftCI = computeUpliftConfidenceInterval(
+                baseCumulativeRate,
+                variantCumulativeRate,
+                cumulativeBaseVisitors,
+                cumulativeVariantVisitors,
+                alpha
+            );
+
             return {
                 period: {
                     type: period,
@@ -424,6 +488,18 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
                     cumulativeConversions: cumulativeVariantConversions,
                     cumulativeRate: variantCumulativeRate,
                     cumulativeRateCI: computeConfidenceInterval(variantCumulativeRate, cumulativeVariantVisitors, alpha)
+                },
+                difference: {
+                    rate: variantRate - baseRate,
+                    rateCI: dailyDiffCI,
+                    cumulativeRate: variantCumulativeRate - baseCumulativeRate,
+                    cumulativeRateCI: cumulativeDiffCI
+                },
+                uplift: {
+                    rate: dailyUplift,
+                    rateCI: dailyUpliftCI,
+                    cumulativeRate: cumulativeUplift,
+                    cumulativeRateCI: cumulativeUpliftCI
                 }
             };
         }),
@@ -432,7 +508,6 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
         totalDays: numDays
     };
 }
-
 
 function generateABTestChallenge() {
     // Predefined options for each parameter
@@ -493,18 +568,14 @@ function generateABTestChallenge() {
     const ciBase = computeConfidenceInterval(actualConversionsBase / actualVisitorsBase, actualVisitorsBase, ALPHA);
     const ciVariant = computeConfidenceInterval(actualConversionsVariant / actualVisitorsVariant, actualVisitorsVariant, ALPHA);
 
-    // Calculate difference CI directly using pooled standard error
-    const observedDifference = (actualConversionsVariant / actualVisitorsVariant) - (actualConversionsBase / actualVisitorsBase);
-    const pooledSE = Math.sqrt(
-        ((actualConversionsBase / actualVisitorsBase) * (1 - actualConversionsBase / actualVisitorsBase)) / actualVisitorsBase +
-        ((actualConversionsVariant / actualVisitorsVariant) * (1 - actualConversionsVariant / actualVisitorsVariant)) / actualVisitorsVariant
+    // Calculate difference CI using the computeDifferenceConfidenceInterval function
+    const ciDifference = computeDifferenceConfidenceInterval(
+        actualConversionsBase / actualVisitorsBase,
+        actualConversionsVariant / actualVisitorsVariant,
+        actualVisitorsBase,
+        actualVisitorsVariant,
+        ALPHA
     );
-    const zScoreCI = jStat.normal.inv(1 - ALPHA / 2, 0, 1);
-    const diffMarginOfError = zScoreCI * pooledSE;
-    const ciDifference = [
-        observedDifference - diffMarginOfError,
-        observedDifference + diffMarginOfError
-    ];
 
     // Generate timeline data
     const timelineData = generateTimelineData(
