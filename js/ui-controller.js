@@ -131,7 +131,6 @@ const UIController = {
 
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        ModalManager.show('loading-overlay');
         this.resetDecisions();
         this.updateProgress();
 
@@ -157,8 +156,6 @@ const UIController = {
         } catch (error) {
             console.error('Error loading challenge:', error);
             alert('Error loading challenge');
-        } finally {
-            ModalManager.hide('loading-overlay');
         }
     },
 
@@ -337,8 +334,6 @@ const UIController = {
             return;
         }
 
-        ModalManager.show('loading-overlay');
-
         try {
             this.state.totalAttempts++;
             const correctDecision = this.state.challenge.simulation.variantConversionRate > this.state.challenge.simulation.actualBaseConversionRate;
@@ -361,9 +356,9 @@ const UIController = {
             if (this.state.currentExperiment - 1 === this.state.EXPERIMENTS_PER_SESSION) {
                 document.getElementById('next-challenge-btn').textContent = 'Done!';
             }
-
-        } finally {
-            ModalManager.hide('loading-overlay');
+        } catch (error) {
+            console.error('Error evaluating decision:', error);
+            alert('Error evaluating decision');
         }
     },
 

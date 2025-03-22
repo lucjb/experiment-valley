@@ -54,7 +54,6 @@ const UIState = {
 // Modal Management
 const ModalManager = {
     modals: {
-        loading: 'loading-overlay',
         feedback: 'feedback-modal',
         completion: 'completion-modal',
         cheatSheet: 'cheat-sheet-modal'
