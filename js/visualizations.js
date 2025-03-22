@@ -132,8 +132,8 @@ const chartOptions = {
         },
         tooltip: {
             enabled: true,
-            mode: 'nearest',
-            intersect: true,
+            mode: 'index',
+            intersect: false,
             filter: function(tooltipItem) {
                 // Only show tooltips for main data lines (not CI bounds)
                 return !tooltipItem.dataset.isCI;
@@ -164,6 +164,7 @@ const chartOptions = {
                     return [
                         `${isBase ? 'Base' : 'Test'} Metrics:`,
                         `Rate: ${formatPercent(rate)}`,
+                        `CI: ${formatPercent(ci[0])} - ${formatPercent(ci[1])}`,
                         `Visitors: ${visitors.toLocaleString()}`,
                         `Conversions: ${conversions.toLocaleString()}`
                     ];
@@ -359,13 +360,13 @@ function renderChart(challenge) {
     // Initialize chart with daily view
     const chart = ChartManager.createChart('conversion-chart', 'line', {
         labels,
-        datasets: createDatasets('daily')
+            datasets: createDatasets('daily')
     }, {
-        plugins: {
-            ...chartOptions.plugins,
-            title: {
-                display: true,
-                text: `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates`
+            plugins: {
+                ...chartOptions.plugins,
+                title: {
+                    display: true,
+                    text: `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates`
             },
             tooltip: {
                 ...chartOptions.plugins.tooltip,
@@ -395,19 +396,20 @@ function renderChart(challenge) {
                         return [
                             `${isBase ? 'Base' : 'Test'} Metrics:`,
                             `Rate: ${formatPercent(rate)}`,
+                            `CI: ${formatPercent(ci[0])} - ${formatPercent(ci[1])}`,
                             `Visitors: ${visitors.toLocaleString()}`,
                             `Conversions: ${conversions.toLocaleString()}`
                         ];
                     }
                 }
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    callback: function(value) {
-                        return formatPercent(value);
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return formatPercent(value);
                     }
                 }
             }
@@ -420,35 +422,35 @@ function renderChart(challenge) {
         viewToggle.options[0].text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
 
         viewToggle.addEventListener('change', function(e) {
-            const viewType = e.target.value;
-            const datasets = createDatasets(viewType);
+                    const viewType = e.target.value;
+                    const datasets = createDatasets(viewType);
 
             ChartManager.updateChart('conversion-chart', {
                 labels,
                 datasets
             }, {
-                plugins: {
-                    ...chartOptions.plugins,
-                    title: {
-                        display: true,
-                        text: viewType === 'daily' ?
-                            `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates` :
-                            'Cumulative Conversion Rates'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        min: datasets.yAxisRange ? datasets.yAxisRange.min : undefined,
-                        max: datasets.yAxisRange ? datasets.yAxisRange.max : undefined,
-                        ticks: {
-                            callback: function(value) {
-                                return formatPercent(value);
+                            plugins: {
+                                ...chartOptions.plugins,
+                                title: {
+                                    display: true,
+                                    text: viewType === 'daily' ?
+                                        `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates` :
+                                        'Cumulative Conversion Rates'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    min: datasets.yAxisRange ? datasets.yAxisRange.min : undefined,
+                                    max: datasets.yAxisRange ? datasets.yAxisRange.max : undefined,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return formatPercent(value);
+                                    }
+                                }
                             }
                         }
-                    }
-                }
-            });
+                    });
         });
     }
 
@@ -908,16 +910,16 @@ function renderVisitorsChart(challenge) {
 
         // Initialize chart with daily view
         const chart = ChartManager.createChart('visitors-chart', 'line', {
-            labels: labels,
-            datasets: createDatasets('daily')
+                labels: labels,
+                datasets: createDatasets('daily')
         }, {
-            ...chartOptions,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return value.toLocaleString();
+                ...chartOptions,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString();
                         }
                     }
                 }
@@ -1120,8 +1122,8 @@ function renderDifferenceChart(challenge) {
                 intersect: false,
                 mode: 'index'
             },
-            scales: {
-                y: {
+                                scales: {
+                                    y: {
                     beginAtZero: false,
                     title: {
                         display: true,
@@ -1189,9 +1191,9 @@ function renderDifferenceChart(challenge) {
                             return null;
                         }
                     }
-                }
-            }
-        });
+                                }
+                            }
+                        });
 
         // Add view toggle functionality
         const viewToggle = document.getElementById('difference-view-toggle');
@@ -1334,10 +1336,10 @@ function initializeCharts(challenge) {
             const canvas = document.getElementById(chartId);
             if (canvas) {
                 const existingChart = Chart.getChart(canvas);
-                if (existingChart) {
-                    existingChart.destroy();
-                }
+            if (existingChart) {
+                existingChart.destroy();
             }
+        }
         });
 
         // Destroy all charts in ChartManager
