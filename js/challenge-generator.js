@@ -640,4 +640,157 @@ function generateABTestChallenge() {
     };
 }
 
+function checkSampleRatioMismatch(baseVisitors, variantVisitors) {
+    // Calculate total visitors and expected ratio
+    const totalVisitors = baseVisitors + variantVisitors;
+    const expectedRatio = 0.5; // 50-50 split
+    const actualRatio = baseVisitors / totalVisitors;
+    
+    // Calculate chi-square statistic for statistical significance
+    const expectedBase = totalVisitors * expectedRatio;
+    const expectedVariant = totalVisitors * expectedRatio;
+    const chiSquare = Math.pow(baseVisitors - expectedBase, 2) / expectedBase +
+                     Math.pow(variantVisitors - expectedVariant, 2) / expectedVariant;
+    
+    // Calculate p-value using chi-square distribution
+    const pValue = 1 - jStat.chisquare.cdf(chiSquare, 1);
+    
+    return {
+        actualRatio,
+        chiSquare,
+        pValue
+    };
+}
+
+// Constants for analyzeExperiment outputs
+const EXPERIMENT_TRUSTWORTHY = {
+    YES: true,
+    NO: false
+};
+
+const EXPERIMENT_DECISION = {
+    KEEP_BASE: "Conclude experiment and keep base",
+    KEEP_VARIANT: "Conclude experiment and keep variant",
+    KEEP_RUNNING: "Keep the experiment running"
+};
+
+const EXPERIMENT_FOLLOW_UP = {
+    DEBUG_RETEST: "Debug fix and retest",
+    ITERATE: "Iterate implementation",
+    RETEST: "Retest to validate",
+    DO_NOTHING: "Do Nothing"
+};
+
+function analyzeExperiment(experiment) {
+    const {
+        simulation: {
+            actualVisitorsBase,
+            actualVisitorsVariant,
+            actualConversionsBase,
+            actualConversionsVariant,
+            pValue,
+            confidenceIntervalDifference,
+            timeline: { currentRuntimeDays }
+        },
+        experiment: {
+            alpha,
+            businessCycleDays,
+            baseConversionRate,
+            visitorsPerDay,
+            requiredSampleSizePerVariant,
+            requiredRuntimeDays
+        }
+    } = experiment;
+
+    // 1. Check sample ratio mismatch
+    const { pValue: ratioPValue } = checkSampleRatioMismatch(actualVisitorsBase, actualVisitorsVariant);
+    const hasSignificantRatioMismatch = ratioPValue < alpha;
+
+    // 2. Check if experiment run matches the design
+    // 2.a Check if actual base conversion is similar to design (within 20%)
+    const actualBaseRate = actualConversionsBase / actualVisitorsBase;
+    const baseRateDifference = Math.abs(actualBaseRate - baseConversionRate) / baseConversionRate;
+    const hasBaseRateMismatch = baseRateDifference > 0.2;
+
+    // 2.b Check if actual daily traffic matches design (within 20%)
+    const actualDailyTraffic = (actualVisitorsBase + actualVisitorsVariant) / currentRuntimeDays;
+    const trafficDifference = Math.abs(actualDailyTraffic - visitorsPerDay) / visitorsPerDay;
+    const hasTrafficMismatch = trafficDifference > 0.2;
+
+    // 3. Check if actual sample size per variant meets requirements
+    const hasInsufficientSampleSize = actualVisitorsBase < requiredSampleSizePerVariant || 
+                                    actualVisitorsVariant < requiredSampleSizePerVariant;
+
+    // 4. Check if runtime is integer number of business cycles
+    const hasIncompleteBusinessCycle = currentRuntimeDays % businessCycleDays !== 0;
+
+    // Determine trustworthiness based on all criteria
+    const isTrustworthy = !hasSignificantRatioMismatch && 
+                         !hasBaseRateMismatch && 
+                         !hasTrafficMismatch && 
+                         !hasInsufficientSampleSize && 
+                         !hasIncompleteBusinessCycle;
+
+    // Determine decision
+    let decision;
+    if (!isTrustworthy) {
+        decision = EXPERIMENT_DECISION.KEEP_BASE;
+    } else if (pValue >= alpha) {
+        decision = EXPERIMENT_DECISION.KEEP_BASE;
+    } else {
+        const [ciLower, ciUpper] = confidenceIntervalDifference;
+        const hasPositiveEffect = ciLower > 0;
+        decision = hasPositiveEffect ? EXPERIMENT_DECISION.KEEP_VARIANT : EXPERIMENT_DECISION.KEEP_BASE;
+    }
+
+    // Determine follow-up action
+    let followUp;
+    if (!isTrustworthy) {
+        followUp = EXPERIMENT_FOLLOW_UP.DEBUG_RETEST;
+    } else if (decision === EXPERIMENT_DECISION.KEEP_BASE) {
+        followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
+    } else {
+        // For variant decision, check if p-value is borderline (within 20% of alpha)
+        const isBorderlinePValue = pValue >= alpha * 0.8 && pValue < alpha;
+        followUp = isBorderlinePValue ? EXPERIMENT_FOLLOW_UP.RETEST : EXPERIMENT_FOLLOW_UP.ITERATE;
+    }
+
+    return {
+        isTrustworthy,
+        decision,
+        followUp,
+        analysis: {
+            hasSignificantRatioMismatch,
+            hasBaseRateMismatch,
+            hasTrafficMismatch,
+            hasInsufficientSampleSize,
+            hasIncompleteBusinessCycle,
+            ratioMismatch: {
+                pValue: ratioPValue
+            },
+            baseRate: {
+                expected: baseConversionRate,
+                actual: actualBaseRate,
+                difference: baseRateDifference
+            },
+            traffic: {
+                expected: visitorsPerDay,
+                actual: actualDailyTraffic,
+                difference: trafficDifference
+            },
+            sampleSize: {
+                required: requiredSampleSizePerVariant,
+                actualBase: actualVisitorsBase,
+                actualVariant: actualVisitorsVariant
+            },
+            runtime: {
+                current: currentRuntimeDays,
+                required: requiredRuntimeDays,
+                businessCycleDays
+            }
+        }
+    };
+}
+
 window.generateABTestChallenge = generateABTestChallenge;
+window.analyzeExperiment = analyzeExperiment;
