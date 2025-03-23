@@ -202,24 +202,45 @@ const UIController = {
         // Update progress bar and annotations
         const progressPercent = Math.round((daysElapsed / totalDays) * 100);
         const progressBar = document.getElementById('exp-progress-bar');
+        const remainingBar = document.getElementById('exp-remaining-bar');
         const daysElapsedText = document.getElementById('exp-days-elapsed-text');
         const daysRemainingText = document.getElementById('exp-days-remaining-text');
         const completeText = document.getElementById('exp-complete-text');
+        const visitorsText = document.getElementById('exp-visitors-text');
+        const remainingVisitorsText = document.getElementById('exp-remaining-visitors-text');
         const progressStartDate = document.getElementById('progress-start-date');
         const progressEndDate = document.getElementById('progress-end-date');
 
+        // Reset all text content first
+        daysElapsedText.textContent = '';
+        visitorsText.textContent = '';
+        remainingVisitorsText.textContent = '';
+        daysRemainingText.textContent = '';
+        completeText.textContent = '';
+
+        // Update bar widths
         progressBar.style.width = `${Math.min(100, progressPercent)}%`;
+        remainingBar.style.width = `${Math.max(0, 100 - progressPercent)}%`;
+
+        // Calculate visitor counts
+        const totalVisitors = challenge.simulation.actualVisitorsBase + challenge.simulation.actualVisitorsVariant;
+        const requiredVisitors = challenge.experiment.requiredSampleSizePerVariant * 2;
+        const remainingVisitors = requiredVisitors - totalVisitors;
 
         if (isComplete) {
             daysElapsedText.classList.add('hidden');
             daysRemainingText.classList.add('hidden');
+            remainingVisitorsText.classList.add('hidden');
             completeText.classList.remove('hidden');
-            completeText.textContent = `Experiment Complete (${totalDays} days)`;
+            completeText.textContent = `Experiment Complete (${totalDays} days, ${totalVisitors.toLocaleString()} visitors)`;
         } else {
             daysElapsedText.classList.remove('hidden');
             daysRemainingText.classList.remove('hidden');
+            remainingVisitorsText.classList.remove('hidden');
             completeText.classList.add('hidden');
-            daysElapsedText.textContent = `${daysElapsed} days elapsed`;
+            daysElapsedText.textContent = `${daysElapsed} days`;
+            visitorsText.textContent = `${totalVisitors.toLocaleString()} visitors`;
+            remainingVisitorsText.textContent = `${remainingVisitors.toLocaleString()} visitors remaining`;
             daysRemainingText.textContent = `${daysRemaining} days remaining`;
         }
 
