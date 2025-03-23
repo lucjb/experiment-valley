@@ -702,69 +702,77 @@ function analyzeExperiment(experiment) {
         }
     } = experiment;
 
-    // 1. Check sample ratio mismatch
-    const { pValue: ratioPValue } = checkSampleRatioMismatch(actualVisitorsBase, actualVisitorsVariant);
-    const hasSignificantRatioMismatch = ratioPValue < alpha;
+    let analysisDone = false;
+    let trustworthy = false;
+    let decision = EXPERIMENT_DECISION.KEEP_RUNNING;
+    let followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
 
-    // 2. Check if experiment run matches the design
-    // 2.a Check if actual base conversion is similar to design (within 20%)
+    const { pValue: ratioPValue } = checkSampleRatioMismatch(actualVisitorsBase, actualVisitorsVariant);
+    const hasSampleRatioMismatch = ratioPValue < 0.0001;
+
     const actualBaseRate = actualConversionsBase / actualVisitorsBase;
     const baseRateDifference = Math.abs(actualBaseRate - baseConversionRate) / baseConversionRate;
-    const hasBaseRateMismatch = baseRateDifference > 0.2;
+    const hasBaseRateMismatch = baseRateDifference > 0.05;
 
-    // 2.b Check if actual daily traffic matches design (within 20%)
     const actualDailyTraffic = (actualVisitorsBase + actualVisitorsVariant) / currentRuntimeDays;
     const trafficDifference = Math.abs(actualDailyTraffic - visitorsPerDay) / visitorsPerDay;
-    const hasTrafficMismatch = trafficDifference > 0.2;
+    const hasTrafficMismatch = trafficDifference > 0.05;
+    const lowSampleSize = actualVisitorsBase < requiredSampleSizePerVariant || actualVisitorsVariant < requiredSampleSizePerVariant;
 
-    // 3. Check if actual sample size per variant meets requirements
-    const hasInsufficientSampleSize = actualVisitorsBase < requiredSampleSizePerVariant || 
-                                    actualVisitorsVariant < requiredSampleSizePerVariant;
+    const businessCycleComplete = currentRuntimeDays % businessCycleDays === 0;
+    const fullWeek = currentRuntimeDays >= 7;
 
-    // 4. Check if runtime is integer number of business cycles
-    const hasIncompleteBusinessCycle = currentRuntimeDays % businessCycleDays !== 0;
+    const mismatch = hasSampleRatioMismatch || 
+                     hasBaseRateMismatch || 
+                     hasTrafficMismatch;
 
-    // Determine trustworthiness based on all criteria
-    const isTrustworthy = !hasSignificantRatioMismatch && 
-                         !hasBaseRateMismatch && 
-                         !hasTrafficMismatch && 
-                         !hasInsufficientSampleSize && 
-                         !hasIncompleteBusinessCycle;
-
-    // Determine decision
-    let decision;
-    if (!isTrustworthy) {
+    if (mismatch) {
+        trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
         decision = EXPERIMENT_DECISION.KEEP_BASE;
-    } else if (pValue >= alpha) {
-        decision = EXPERIMENT_DECISION.KEEP_BASE;
+        followUp = EXPERIMENT_FOLLOW_UP.DEBUG_RETEST;
+        analysisDone = true;
+    } else if (lowSampleSize) {
+        trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
+        decision = EXPERIMENT_DECISION.KEEP_RUNNING;
+        analysisDone = true;
+    } else if (!businessCycleComplete || !fullWeek) {
+        trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
+        decision = EXPERIMENT_DECISION.KEEP_RUNNING;
+        analysisDone = true;
     } else {
-        const [ciLower, ciUpper] = confidenceIntervalDifference;
-        const hasPositiveEffect = ciLower > 0;
-        decision = hasPositiveEffect ? EXPERIMENT_DECISION.KEEP_VARIANT : EXPERIMENT_DECISION.KEEP_BASE;
+        trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
     }
 
-    // Determine follow-up action
-    let followUp;
-    if (!isTrustworthy) {
-        followUp = EXPERIMENT_FOLLOW_UP.DEBUG_RETEST;
-    } else if (decision === EXPERIMENT_DECISION.KEEP_BASE) {
+    // trustworthy, complete, and enough sample size, compute the decision and follow up
+    const isSignificant = pValue < alpha;
+    if (!analysisDone && !isSignificant) {
+        decision = EXPERIMENT_DECISION.KEEP_BASE;
         followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
+        analysisDone = true;
+    }
+
+    // trustworthy, complete, and significant, check if the effect is positive
+    const isEffectPositive = actualConversionsBase < actualConversionsVariant;
+    if (!analysisDone && !isEffectPositive) {
+        decision = EXPERIMENT_DECISION.KEEP_BASE;
+        followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
+        analysisDone = true;
     } else {
-        // For variant decision, check if p-value is borderline (within 20% of alpha)
-        const isBorderlinePValue = pValue >= alpha * 0.8 && pValue < alpha;
-        followUp = isBorderlinePValue ? EXPERIMENT_FOLLOW_UP.RETEST : EXPERIMENT_FOLLOW_UP.ITERATE;
+        if (!analysisDone) {
+            decision = EXPERIMENT_DECISION.KEEP_VARIANT; 
+        }
     }
 
     return {
-        isTrustworthy,
+        trustworthy,
         decision,
         followUp,
         analysis: {
-            hasSignificantRatioMismatch,
+            hasSignificantRatioMismatch: hasSampleRatioMismatch,
             hasBaseRateMismatch,
             hasTrafficMismatch,
-            hasInsufficientSampleSize,
-            hasIncompleteBusinessCycle,
+            hasInsufficientSampleSize: lowSampleSize,
+            hasIncompleteBusinessCycle: !businessCycleComplete,
             ratioMismatch: {
                 pValue: ratioPValue
             },
