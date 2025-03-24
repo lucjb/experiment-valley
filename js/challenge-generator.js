@@ -539,7 +539,7 @@ function generateABTestChallenge() {
     var currentRuntimeDays = requiredRuntimeDays;
     // Create a partially executed experiment for half of the challenges
     if (Math.random() < 0.5) {
-        currentRuntimeDays = Math.floor(requiredRuntimeDays / 2);
+        currentRuntimeDays = Math.floor(requiredRuntimeDays / (1/Math.random()));
     }
     const actualBaseConversionRate = sampleBetaDistribution(
         100000 * BASE_CONVERSION_RATE,

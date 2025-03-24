@@ -194,7 +194,6 @@ const UIController = {
 
         // Format dates
         const dateFormatter = new Intl.DateTimeFormat('en-US', {
-            year: 'numeric',
             month: 'short',
             day: 'numeric'
         });
@@ -202,23 +201,33 @@ const UIController = {
         // Update progress bar and annotations
         const progressPercent = Math.round((daysElapsed / totalDays) * 100);
         const progressBar = document.getElementById('exp-progress-bar');
+        const progressBarInvisible = document.getElementById('exp-progress-bar-invisible');
         const remainingBar = document.getElementById('exp-remaining-bar');
+        const remainingBarInvisible = document.getElementById('exp-remaining-bar-invisible');
         const visitorsText = document.getElementById('exp-visitors-text');
         const remainingText = document.getElementById('exp-remaining-text');
         const totalText = document.getElementById('exp-total-text');
         const completeText = document.getElementById('exp-complete-text');
         const progressStartDate = document.getElementById('progress-start-date');
         const progressEndDate = document.getElementById('progress-end-date');
+        const daysElapsedText = document.getElementById('exp-days-elapsed-text');
+        const daysRemainingText = document.getElementById('exp-days-remaining-text');
+        const totalDaysText = document.getElementById('exp-total-days-text');
 
         // Reset all text content first
         visitorsText.textContent = '';
         remainingText.textContent = '';
         totalText.textContent = '';
         completeText.textContent = '';
+        daysElapsedText.textContent = '';
+        daysRemainingText.textContent = '';
+        totalDaysText.textContent = '';
 
         // Update bar widths
         progressBar.style.width = `${Math.min(100, progressPercent)}%`;
+        progressBarInvisible.style.width = `${Math.min(100, progressPercent)}%`;
         remainingBar.style.width = `${Math.max(0, 100 - progressPercent)}%`;
+        remainingBarInvisible.style.width = `${Math.max(0, 100 - progressPercent)}%`;
 
         // Calculate visitor counts
         const totalVisitors = challenge.simulation.actualVisitorsBase + challenge.simulation.actualVisitorsVariant;
@@ -230,17 +239,22 @@ const UIController = {
             totalText.classList.add('hidden');
             completeText.classList.remove('hidden');
             completeText.textContent = `Complete (${totalDays}d | ${totalVisitors.toLocaleString()}v)`;
+            // Show dates in the filled invisible bar
+            progressStartDate.textContent = dateFormatter.format(startDate);
+            daysElapsedText.textContent = dateFormatter.format(finishDate);
         } else {
             remainingText.classList.remove('hidden');
             totalText.classList.remove('hidden');
             completeText.classList.add('hidden');
-            visitorsText.textContent = `${daysElapsed}d | ${totalVisitors.toLocaleString()}v`;
-            remainingText.textContent = `${daysRemaining}d | ${remainingVisitors.toLocaleString()}v`;
-            totalText.textContent = `${totalDays}d | ${requiredVisitors.toLocaleString()}v`;
+            visitorsText.textContent = `${totalVisitors.toLocaleString()}v`;
+            remainingText.textContent = `${remainingVisitors.toLocaleString()}v`;
+            totalText.textContent = `${requiredVisitors.toLocaleString()}v`;
+            progressStartDate.textContent = dateFormatter.format(startDate);
+            daysElapsedText.textContent = `${daysElapsed}d`;
+            daysRemainingText.textContent = `${daysRemaining}d`;
+            totalDaysText.textContent = `${totalDays}d`;
+            progressEndDate.textContent = dateFormatter.format(finishDate);
         }
-
-        progressStartDate.textContent = dateFormatter.format(startDate);
-        progressEndDate.textContent = dateFormatter.format(finishDate);
     },
 
     updateMetricsTable() {

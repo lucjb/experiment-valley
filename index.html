@@ -150,6 +150,7 @@
                 <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Execution</h2>
                 <div>
                     <div class="mt-2">
+                        <!-- Execution Bar -->
                         <div class="w-full bg-gray-200 rounded-full h-6 md:h-8 relative">
                             <!-- Progress Bar -->
                             <div id="exp-progress-bar" class="bg-blue-600 h-full rounded-full transition-all duration-500 flex items-center justify-end" style="width: 0%">
@@ -163,9 +164,28 @@
                             <!-- Complete Text -->
                             <span id="exp-complete-text" class="hidden absolute inset-0 flex items-center justify-center text-xs text-white font-medium">Experiment Complete</span>
                         </div>
+                        <!-- Invisible Bar for Text Positioning -->
+                        <div class="w-full h-6 md:h-8 relative">
+                            <!-- Invisible Progress Bar -->
+                            <div id="exp-progress-bar-invisible" class="h-full rounded-l-full transition-all duration-500 flex items-center justify-between" style="width: 0%">
+                                <span id="progress-start-date" class="text-xs text-gray-500 font-medium ml-3"></span>
+                                <span id="exp-days-elapsed-text" class="text-xs text-gray-500 font-medium mr-3"></span>
+                            </div>
+                            <!-- Invisible Remaining Bar -->
+                            <div id="exp-remaining-bar-invisible" class="absolute top-0 right-0 h-full rounded-r-full transition-all duration-500 flex items-center justify-between" style="width: 100%">
+                                <span id="exp-days-remaining-text" class="text-xs text-gray-500 font-medium ml-3"></span>
+                                <div class="flex items-center space-x-2">
+                                    <span id="exp-total-days-text" class="text-xs text-gray-500 font-medium"></span>
+                                    <span id="progress-end-date" class="text-xs text-gray-500 font-medium mr-3"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Days Info -->
                         <div class="flex justify-between mt-1">
-                            <span id="progress-start-date" class="text-xs text-gray-500"></span>
-                            <span id="progress-end-date" class="text-xs text-gray-500"></span>
+                            <div class="flex items-center space-x-2">
+                            </div>
+                            <div class="flex items-center space-x-2">
+                            </div>
                         </div>
                     </div>
                 </div>
