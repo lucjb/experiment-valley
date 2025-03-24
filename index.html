@@ -151,17 +151,16 @@
                 <div>
                     <div class="mt-2">
                         <div class="w-full bg-gray-200 rounded-full h-6 md:h-8 relative">
-                            <!-- Filled portion -->
-                            <div id="exp-progress-bar" class="bg-blue-600 h-full rounded-full transition-all duration-500 flex items-center justify-between" style="width: 0%">
-                                <span id="exp-days-elapsed-text" class="text-xs text-white font-medium ml-3"></span>
+                            <!-- Progress Bar -->
+                            <div id="exp-progress-bar" class="bg-blue-600 h-full rounded-full transition-all duration-500 flex items-center justify-end" style="width: 0%">
                                 <span id="exp-visitors-text" class="text-xs text-white font-medium mr-3"></span>
                             </div>
-                            <!-- Unfilled portion -->
+                            <!-- Remaining Bar -->
                             <div id="exp-remaining-bar" class="absolute top-0 right-0 h-full rounded-full transition-all duration-500 flex items-center justify-between bg-gray-200" style="width: 100%">
-                                <span id="exp-remaining-visitors-text" class="text-xs text-gray-600 font-medium ml-3"></span>
-                                <span id="exp-days-remaining-text" class="text-xs text-gray-600 font-medium mr-3"></span>
+                                <span id="exp-remaining-text" class="text-xs text-gray-600 font-medium ml-3"></span>
+                                <span id="exp-total-text" class="text-xs text-gray-600 font-medium mr-3"></span>
                             </div>
-                            <!-- Complete text -->
+                            <!-- Complete Text -->
                             <span id="exp-complete-text" class="hidden absolute inset-0 flex items-center justify-center text-xs text-white font-medium">Experiment Complete</span>
                         </div>
                         <div class="flex justify-between mt-1">
