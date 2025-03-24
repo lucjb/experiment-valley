@@ -145,6 +145,82 @@
                 </div>
             </header>
 
+            <!-- Decision Making Section -->
+            <div class="bg-gray-900 rounded-lg shadow-lg p-3 md:p-4 mb-4">
+                <h2 class="text-xl md:text-2xl font-semibold text-white mb-3">Decision Making</h2>
+                
+                <!-- Trustworthiness Section -->
+                <div class="mb-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-medium text-white">Is this Experiment Trustworthy?</span>
+                            <a href="#" id="cheat-sheet-btn" class="text-gray-400 hover:text-gray-300 transition-colors">ℹ</a>
+                        </div>
+                        <div class="flex space-x-1">
+                            <button type="button" name="trust" value="yes" class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200" style="background-color: #f97316; opacity: 0.7;">
+                                Yes
+                            </button>
+                            <button type="button" name="trust" value="no" class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200" style="background-color: #f97316; opacity: 0.7;">
+                                No
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Decision Section -->
+                <div class="mb-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-medium text-white">What is your Decision?</span>
+                        </div>
+                        <div class="flex space-x-1">
+                            <button type="button" name="decision" value="keep_base" class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200" style="background-color: #f97316; opacity: 0.7;">
+                                Keep Base
+                            </button>
+                            <button type="button" name="decision" value="keep_variant" class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200" style="background-color: #f97316; opacity: 0.7;">
+                                Keep Variant
+                            </button>
+                            <button type="button" name="decision" value="keep_running" class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200" style="background-color: #f97316; opacity: 0.7;">
+                                Keep Running
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Follow Up Section -->
+                <div class="mb-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-medium text-white">What's your Follow Up?</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1">
+                            <button type="button" name="follow_up" value="celebrate" class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200" style="background-color: #f97316; opacity: 0.7;">
+                                Celebrate
+                            </button>
+                            <button type="button" name="follow_up" value="iterate" class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200" style="background-color: #f97316; opacity: 0.7;">
+                                Iterate
+                            </button>
+                            <button type="button" name="follow_up" value="validate" class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200" style="background-color: #f97316; opacity: 0.7;">
+                                Validate
+                            </button>
+                            <button type="button" name="follow_up" value="rerun" class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200" style="background-color: #f97316; opacity: 0.7;">
+                                Rerun
+                            </button>
+                            <button type="button" name="follow_up" value="none" class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200" style="background-color: #f97316; opacity: 0.7;">
+                                None
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex justify-end">
+                    <button id="submit-decision" disabled class="px-6 py-2 text-white text-sm rounded shadow transition opacity-50 cursor-not-allowed hover:opacity-90" style="background-color: #f97316" onmouseover="this.style.backgroundColor='#ea580c'" onmouseout="this.style.backgroundColor='#f97316'">
+                        Submit Decision
+                    </button>
+                </div>
+            </div>
+
             <!-- Execution Section -->
             <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 md:p-4 mb-4">
                 <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Execution</h2>
@@ -195,39 +271,6 @@
                 </div>
             </div>
 
-            <!-- Decision Making Section -->
-            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 md:p-4 mb-4">
-                <div class="flex flex-col space-y-3 md:space-y-0 md:flex-row md:items-center md:space-x-6">
-                    <h2 class="text-lg md:text-xl font-semibold text-gray-800">Decision Making:</h2>
-                    <div class="flex flex-col space-y-3 md:space-y-0 md:flex-row md:items-center md:space-x-4 w-full">
-                        <div class="flex flex-col space-y-2 md:flex-row md:items-center md:space-x-2 md:flex-1">
-                            <span class="font-medium whitespace-nowrap">Is this Experiment Trustworthy? <a href="#" id="cheat-sheet-btn" class="text-gray-500 hover:text-gray-700 transition-colors">ℹ</a></span>
-                            <div class="flex space-x-2">
-                                <button id="trust-yes" class="decision-button px-4 py-2 bg-green-500 text-white text-sm rounded shadow hover:bg-green-600 transition flex-1 md:flex-none">
-                                    Yes
-                                </button>
-                                <button id="trust-no" class="decision-button px-4 py-2 bg-red-500 text-white text-sm rounded shadow hover:bg-red-600 transition flex-1 md:flex-none">
-                                    No
-                                </button>
-                            </div>
-                        </div>
-                        <div class="flex flex-col space-y-2 md:flex-row md:items-center md:space-x-2 md:flex-1 md:border-l md:pl-4">
-                            <span class="font-medium">Would you implement the new variant?</span>
-                            <div class="flex space-x-2">
-                                <button id="implement-yes" class="decision-button px-4 py-2 bg-green-500 text-white text-sm rounded shadow hover:bg-green-600 transition flex-1 md:flex-none">
-                                    Yes
-                                </button>
-                                <button id="implement-no" class="decision-button px-4 py-2 bg-red-500 text-white text-sm rounded shadow hover:bg-red-600 transition flex-1 md:flex-none">
-                                    No
-                                </button>
-                            </div>
-                        </div>
-                        <button id="submit-decision" disabled class="decision-button px-6 py-2 bg-blue-500 text-white text-sm rounded shadow hover:bg-blue-600 transition opacity-50 cursor-not-allowed">
-                            Submit Decision
-                        </button>
-                    </div>
-                </div>
-            </div>
 
             <!-- Experiment Design Section -->
             <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 md:p-4 mb-4">

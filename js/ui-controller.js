@@ -25,16 +25,55 @@ const UIController = {
         });
 
         // Decision buttons
-        document.getElementById('trust-yes').addEventListener('click', () => this.handleDecision('trust', true));
-        document.getElementById('trust-no').addEventListener('click', () => this.handleDecision('trust', false));
-        document.getElementById('implement-yes').addEventListener('click', () => this.handleDecision('implement', true));
-        document.getElementById('implement-no').addEventListener('click', () => this.handleDecision('implement', false));
+        document.querySelectorAll('.decision-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active state from all buttons in the same group
+                const name = button.getAttribute('name');
+                document.querySelectorAll(`.decision-btn[name="${name}"]`).forEach(btn => {
+                    btn.style.opacity = '0.7';
+                    btn.style.transform = 'scale(1)';
+                    btn.classList.remove('selected');
+                });
+                
+                // Add active state to clicked button
+                button.style.opacity = '1';
+                button.style.transform = 'scale(1.05)';
+                button.classList.add('selected');
+                
+                this.handleDecision(name, button.getAttribute('value'));
+            });
+
+            // Add hover effects
+            button.addEventListener('mouseenter', () => {
+                // Only change opacity if button is not selected
+                if (!button.classList.contains('selected')) {
+                    button.style.opacity = '1';
+                }
+            });
+
+            button.addEventListener('mouseleave', () => {
+                // Only reset opacity if button is not selected
+                if (!button.classList.contains('selected')) {
+                    button.style.opacity = '0.7';
+                }
+            });
+        });
 
         // Submit decision
         document.getElementById('submit-decision').addEventListener('click', () => {
-            this.state.currentExperiment++;
-            this.updateProgress();
-            this.evaluateDecision(this.state.implementDecision);
+            if (this.state.implementDecision === 'keep_variant') {
+                this.state.currentExperiment++;
+                this.updateProgress();
+                this.evaluateDecision(true);
+            } else if (this.state.implementDecision === 'keep_base') {
+                this.state.currentExperiment++;
+                this.updateProgress();
+                this.evaluateDecision(false);
+            } else if (this.state.implementDecision === 'keep_running') {
+                this.state.currentExperiment++;
+                this.updateProgress();
+                this.evaluateDecision(null);
+            }
         });
 
         // Next challenge
@@ -298,58 +337,55 @@ const UIController = {
     },
 
     handleDecision(decisionType, value) {
-        const trustButtons = [document.getElementById('trust-yes'), document.getElementById('trust-no')];
-        const implementButtons = [document.getElementById('implement-yes'), document.getElementById('implement-no')];
-
         if (decisionType === 'trust') {
-            this.state.trustDecision = value;
-            trustButtons.forEach(btn => {
-                btn.classList.remove('bg-green-700', 'bg-red-700');
-                btn.disabled = false;
-            });
-            if (value) {
-                document.getElementById('trust-yes').classList.add('bg-green-700');
-            } else {
-                document.getElementById('trust-no').classList.add('bg-red-700');
-            }
-        } else if (decisionType === 'implement') {
+            this.state.trustDecision = value === 'yes';
+        } else if (decisionType === 'decision') {
             this.state.implementDecision = value;
-            implementButtons.forEach(btn => {
-                btn.classList.remove('bg-green-700', 'bg-red-700');
-                btn.disabled = false;
-            });
-            if (value) {
-                document.getElementById('implement-yes').classList.add('bg-green-700');
-            } else {
-                document.getElementById('implement-no').classList.add('bg-red-700');
-            }
+        } else if (decisionType === 'follow_up') {
+            this.state.followUpDecision = value;
         }
 
         this.checkDecisions();
     },
 
     checkDecisions() {
-        const submitBtn = document.getElementById('submit-decision');
-        if (this.state.trustDecision !== null && this.state.implementDecision !== null) {
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        const submitButton = document.getElementById('submit-decision');
+        
+        // Check if any button in each group is selected
+        const trustSelected = Array.from(document.querySelectorAll('.decision-btn[name="trust"]')).some(btn => btn.classList.contains('selected'));
+        const decisionSelected = Array.from(document.querySelectorAll('.decision-btn[name="decision"]')).some(btn => btn.classList.contains('selected'));
+        const followUpSelected = Array.from(document.querySelectorAll('.decision-btn[name="follow_up"]')).some(btn => btn.classList.contains('selected'));
+
+        console.log('Trust selected:', trustSelected);
+        console.log('Decision selected:', decisionSelected);
+        console.log('Follow up selected:', followUpSelected);
+
+        if (trustSelected && decisionSelected && followUpSelected) {
+            submitButton.disabled = false;
+            submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
         } else {
-            submitBtn.disabled = true;
-            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            submitButton.disabled = true;
+            submitButton.classList.add('opacity-50', 'cursor-not-allowed');
         }
     },
 
     resetDecisions() {
-        console.log('Resetting decisions');
+        // Reset all decision buttons
+        document.querySelectorAll('.decision-btn').forEach(button => {
+            button.style.opacity = '0.7';
+            button.style.transform = 'scale(1)';
+            button.classList.remove('selected');
+        });
+
+        // Reset state
         this.state.trustDecision = null;
         this.state.implementDecision = null;
-        const buttons = ['trust-yes', 'trust-no', 'implement-yes', 'implement-no'];
-        buttons.forEach(id => {
-            const btn = document.getElementById(id);
-            btn.classList.remove('bg-green-700', 'bg-red-700');
-            btn.disabled = false;
-        });
-        this.checkDecisions();
+        this.state.followUpDecision = null;
+
+        // Reset submit button
+        const submitButton = document.getElementById('submit-decision');
+        submitButton.disabled = true;
+        submitButton.classList.add('opacity-50', 'cursor-not-allowed');
     },
 
     async evaluateDecision(userChoice) {
