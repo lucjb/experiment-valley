@@ -234,26 +234,22 @@ const UIController = {
         const requiredVisitors = challenge.experiment.requiredSampleSizePerVariant * 2;
         const remainingVisitors = requiredVisitors - totalVisitors;
 
+        // Update text content
         if (isComplete) {
-            remainingText.classList.add('hidden');
-            totalText.classList.add('hidden');
-            completeText.classList.remove('hidden');
-            completeText.textContent = `Complete (${totalDays}d | ${totalVisitors.toLocaleString()}v)`;
-            // Show dates in the filled invisible bar
-            progressStartDate.textContent = dateFormatter.format(startDate);
-            daysElapsedText.textContent = dateFormatter.format(finishDate);
+            document.getElementById('exp-complete-text').classList.remove('hidden');
+            document.getElementById('exp-complete-text').textContent = `Complete | ${totalDays} days | ${totalVisitors.toLocaleString()} visitors`;
+            document.getElementById('progress-start-date').textContent = dateFormatter.format(startDate);
+            document.getElementById('exp-visitors-text').textContent = dateFormatter.format(finishDate);
+            document.getElementById('progress-end-date').textContent = '';
         } else {
-            remainingText.classList.remove('hidden');
-            totalText.classList.remove('hidden');
-            completeText.classList.add('hidden');
-            visitorsText.textContent = `${totalVisitors.toLocaleString()}v`;
-            remainingText.textContent = `${remainingVisitors.toLocaleString()}v`;
-            totalText.textContent = `${requiredVisitors.toLocaleString()}v`;
-            progressStartDate.textContent = dateFormatter.format(startDate);
-            daysElapsedText.textContent = `${daysElapsed}d`;
-            daysRemainingText.textContent = `${daysRemaining}d`;
-            totalDaysText.textContent = `${totalDays}d`;
-            progressEndDate.textContent = dateFormatter.format(finishDate);
+            document.getElementById('progress-start-date').textContent = dateFormatter.format(startDate);
+            document.getElementById('exp-visitors-text').textContent = `${totalVisitors.toLocaleString()} visitors`;
+            document.getElementById('exp-remaining-text').textContent = `${remainingVisitors.toLocaleString()} remaining`;
+            document.getElementById('exp-total-text').textContent = `${requiredVisitors.toLocaleString()} total`;
+            document.getElementById('exp-days-elapsed-text').textContent = `${daysElapsed} days`;
+            document.getElementById('exp-days-remaining-text').textContent = `${daysRemaining} remaining`;
+            document.getElementById('exp-total-days-text').textContent = `${totalDays} total`;
+            document.getElementById('progress-end-date').textContent = dateFormatter.format(finishDate);
         }
     },
 
