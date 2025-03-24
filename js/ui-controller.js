@@ -276,18 +276,18 @@ const UIController = {
         // Update text content
         if (isComplete) {
             document.getElementById('exp-complete-text').classList.remove('hidden');
-            document.getElementById('exp-complete-text').textContent = `Complete | ${totalDays} days | ${totalVisitors.toLocaleString()} visitors`;
+            document.getElementById('exp-complete-text').textContent = `Complete | ${totalDays}d | ${totalVisitors.toLocaleString()}v`;
             document.getElementById('progress-start-date').textContent = dateFormatter.format(startDate);
             document.getElementById('exp-visitors-text').textContent = dateFormatter.format(finishDate);
             document.getElementById('progress-end-date').textContent = '';
         } else {
             document.getElementById('progress-start-date').textContent = dateFormatter.format(startDate);
-            document.getElementById('exp-visitors-text').textContent = `${totalVisitors.toLocaleString()} visitors`;
-            document.getElementById('exp-remaining-text').textContent = `${remainingVisitors.toLocaleString()} remaining`;
-            document.getElementById('exp-total-text').textContent = `${requiredVisitors.toLocaleString()} total`;
-            document.getElementById('exp-days-elapsed-text').textContent = `${daysElapsed} days`;
-            document.getElementById('exp-days-remaining-text').textContent = `${daysRemaining} remaining`;
-            document.getElementById('exp-total-days-text').textContent = `${totalDays} total`;
+            document.getElementById('exp-visitors-text').textContent = `${totalVisitors.toLocaleString()}v`;
+            document.getElementById('exp-remaining-text').textContent = `${remainingVisitors.toLocaleString()}v`;
+            document.getElementById('exp-total-text').textContent = `${requiredVisitors.toLocaleString()}v`;
+            document.getElementById('exp-days-elapsed-text').textContent = `${daysElapsed}d`;
+            document.getElementById('exp-days-remaining-text').textContent = `${daysRemaining}d`;
+            document.getElementById('exp-total-days-text').textContent = `${totalDays}d`;
             document.getElementById('progress-end-date').textContent = dateFormatter.format(finishDate);
         }
     },

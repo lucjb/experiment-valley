@@ -1447,8 +1447,8 @@ function updateProgressBar(challenge) {
     progressBar.style.width = `${progress}%`;
 
     // Update text displays
-    daysElapsedText.textContent = `${currentDays} days`;
-    daysRemainingText.textContent = `${totalDays - currentDays} days remaining`;
+    daysElapsedText.textContent = `${currentDays}d`;
+    daysRemainingText.textContent = `${totalDays - currentDays}d`;
 
     // Show/hide complete text
     if (currentDays >= totalDays) {
