@@ -764,9 +764,11 @@ function analyzeExperiment(experiment) {
     }
 
     return {
-        trustworthy,
-        decision,
-        followUp,
+        decision:{
+            trustworthy: trustworthy,
+            decision: decision,
+            follwUp: followUp
+        },
         analysis: {
             hasSignificantRatioMismatch: hasSampleRatioMismatch,
             hasBaseRateMismatch,

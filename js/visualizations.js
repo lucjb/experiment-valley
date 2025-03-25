@@ -97,7 +97,7 @@ const ModalManager = {
             title.className = 'text-lg leading-6 font-medium text-red-900 mt-4';
         }
         
-        document.getElementById('feedback-message').textContent = message;
+        document.getElementById('feedback-message').innerHTML = message;
         this.show(this.modals.feedback);
     },
     

@@ -8,6 +8,7 @@ const UIController = {
         EXPERIMENTS_PER_SESSION: 3,
         trustDecision: null,
         implementDecision: null,
+        followUpDecision: null,
         challenge: null
     },
 
@@ -61,19 +62,9 @@ const UIController = {
 
         // Submit decision
         document.getElementById('submit-decision').addEventListener('click', () => {
-            if (this.state.implementDecision === 'keep_variant') {
-                this.state.currentExperiment++;
-                this.updateProgress();
-                this.evaluateDecision(true);
-            } else if (this.state.implementDecision === 'keep_base') {
-                this.state.currentExperiment++;
-                this.updateProgress();
-                this.evaluateDecision(false);
-            } else if (this.state.implementDecision === 'keep_running') {
-                this.state.currentExperiment++;
-                this.updateProgress();
-                this.evaluateDecision(null);
-            }
+            this.state.currentExperiment++;
+            this.updateProgress();
+            this.evaluateDecision();
         });
 
         // Next challenge
@@ -338,7 +329,7 @@ const UIController = {
 
     handleDecision(decisionType, value) {
         if (decisionType === 'trust') {
-            this.state.trustDecision = value === 'yes';
+            this.state.trustDecision = value === 'true';
         } else if (decisionType === 'decision') {
             this.state.implementDecision = value;
         } else if (decisionType === 'follow_up') {
@@ -388,7 +379,7 @@ const UIController = {
         submitButton.classList.add('opacity-50', 'cursor-not-allowed');
     },
 
-    async evaluateDecision(userChoice) {
+    async evaluateDecision() {
         console.log('Evaluating decision for experiment:', this.state.currentExperiment);
         if (!this.state.challenge) {
             console.error("No challenge loaded");
@@ -398,15 +389,84 @@ const UIController = {
 
         try {
             this.state.totalAttempts++;
-            const correctDecision = this.state.challenge.simulation.variantConversionRate > this.state.challenge.simulation.actualBaseConversionRate;
+            
+            // Get the analysis result from the current challenge data
+            const analysis = analyzeExperiment(this.state.challenge);
 
-            if (userChoice === correctDecision) {
+            console.log('Analysis result:', analysis);
+            console.log('User decisions:', {
+                trust: this.state.trustDecision,
+                decision: this.state.implementDecision,
+                followUp: this.state.followUpDecision
+            });
+
+            // Compare user's choices with analysis result
+            let correctChoices = 0;
+            const totalChoices = 3;
+            let feedbackMessage = '';
+
+            // Check trustworthiness
+            const userTrust = this.state.trustDecision; // true or false
+            const analysisTrust = analysis.decision.trustworthy;
+            
+            if (userTrust === analysisTrust) {
+                correctChoices++;
+                feedbackMessage += '<p>Trustworthiness: <span class="text-green-500">Correct ✓</span></p>';
+            } else {
+                feedbackMessage += `<p>Trustworthiness: <span class="text-red-500">Incorrect ✗</span> (Should be: ${analysisTrust ? 'Yes' : 'No'})</p>`;
+            }
+
+            // Check decision
+            const userDecision = this.state.implementDecision; // Full string value
+            const analysisDecision = analysis.decision.decision;
+            
+            // Map the decision to a simpler format for display
+            const displayDecision = analysisDecision === "Conclude experiment and keep base" ? "Keep Base" :
+                                   analysisDecision === "Conclude experiment and keep variant" ? "Keep Variant" :
+                                   analysisDecision === "Keep the experiment running" ? "Keep Running" : 
+                                   analysisDecision;
+            
+            if (userDecision === analysisDecision) {
+                correctChoices++;
+                feedbackMessage += '<p>Decision: <span class="text-green-500">Correct ✓</span></p>';
+            } else {
+                feedbackMessage += `<p>Decision: <span class="text-red-500">Incorrect ✗</span> (Should be: ${displayDecision})</p>`;
+            }
+
+            // Check follow-up
+            const userFollowUp = this.state.followUpDecision;
+            const analysisFollowUp = analysis.decision.followUp || analysis.decision.follwUp; // Handle both spellings
+            
+            // Map the follow-up to a simpler format for display
+            const displayFollowUp = analysisFollowUp === "Celebrate" ? "Celebrate" :
+                                   analysisFollowUp === "Iterate implementation" ? "Iterate" :
+                                   analysisFollowUp === "Retest to validate" ? "Validate" :
+                                   analysisFollowUp === "Debug fix and retest" ? "Rerun" :
+                                   analysisFollowUp === "Do Nothing" ? "None" :
+                                   analysisFollowUp;
+            
+            if (userFollowUp === analysisFollowUp) {
+                correctChoices++;
+                feedbackMessage += '<p>Follow-up: <span class="text-green-500">Correct ✓</span></p>';
+            } else {
+                feedbackMessage += `<p>Follow-up: <span class="text-red-500">Incorrect ✗</span> (Should be: ${displayFollowUp})</p>`;
+            }
+
+            // Calculate score based on performance
+            const isPerfect = (correctChoices === totalChoices);
+            const isGood = (correctChoices >= 2);
+            
+            if (isPerfect) {
                 this.state.score++;
                 this.state.streak++;
-                ModalManager.showFeedback(true, 'Correct!');
+                ModalManager.showFeedback(true, `<p class="text-xl font-semibold mb-4">Perfect! All decisions were correct.</p>${feedbackMessage}`);
+            } else if (isGood) {
+                this.state.score += 0.5; // Half point for getting most right
+                this.state.streak++;
+                ModalManager.showFeedback(true, `<p class="text-xl font-semibold mb-4">Good job! You got ${correctChoices}/${totalChoices} decisions correct.</p>${feedbackMessage}`);
             } else {
                 this.state.streak = 0;
-                ModalManager.showFeedback(false, 'Incorrect');
+                ModalManager.showFeedback(false, `<p class="text-xl font-semibold mb-4">You got ${correctChoices}/${totalChoices} decisions correct.</p>${feedbackMessage}`);
             }
 
             const accuracy = Math.round((this.state.score / this.state.totalAttempts) * 100);
