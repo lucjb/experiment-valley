@@ -715,8 +715,8 @@ function analyzeExperiment(experiment) {
     const hasBaseRateMismatch = baseRateDifference > 0.05;
 
     const actualDailyTraffic = (actualVisitorsBase + actualVisitorsVariant) / currentRuntimeDays;
-    const trafficDifference = Math.abs(actualDailyTraffic - visitorsPerDay) / visitorsPerDay;
-    const hasTrafficMismatch = trafficDifference > 0.05;
+    const trafficDifference = (actualDailyTraffic - visitorsPerDay) / visitorsPerDay;
+    const hasTrafficMismatch = trafficDifference < -0.05;
     const lowSampleSize = actualVisitorsBase < requiredSampleSizePerVariant || actualVisitorsVariant < requiredSampleSizePerVariant;
 
     const businessCycleComplete = currentRuntimeDays % businessCycleDays === 0;
