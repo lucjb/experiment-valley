@@ -51,6 +51,17 @@ const UIState = {
     }
 };
 
+function formatTimeLabel(period) {
+    const { type, startDay } = period;
+    if (type === 'day') {
+        return `Day ${startDay}`;
+    } else if (type === 'week') {
+        return `Week ${Math.ceil(startDay / 7)}`;
+    } else {
+        return `Month ${Math.ceil(startDay / 28)}`;
+    }
+}
+
 // Modal Management
 const ModalManager = {
     modals: {
@@ -214,16 +225,31 @@ function renderChart(challenge) {
     }
 
     // Create labels based on time period
-    const labels = completeTimeline.map(point => {
+    const labels = completeTimeline.map((point, index) => {
         const {type, startDay} = point.period;
+        let label;
         if (type === 'day') {
-            return `Day ${startDay}`;
+            label = `Day ${startDay}`;
         } else if (type === 'week') {
-            return `Week ${Math.ceil(startDay / 7)}`;
+            label = `Week ${Math.ceil(startDay / 7)}`;
         } else {
-            return `Month ${Math.ceil(startDay / 28)}`;
+            label = `Month ${Math.ceil(startDay / 28)}`;
         }
+        // Add brackets around the label if it's the last full business cycle
+        if (index === timelineData.lastFullBusinessCycleIndex) {
+            label = `[${label}]`;
+        }
+        return label;
     });
+
+    // Configure x-axis
+    const xAxis = {
+        type: 'category',
+        data: labels,
+        axisLabel: {
+            formatter: (value) => value
+        }
+    };
 
     // Create datasets based on the view type
     function createDatasets(viewType) {
@@ -855,15 +881,21 @@ function renderVisitorsChart(challenge) {
         }
 
         // Create labels
-        const labels = completeTimeline.map(point => {
+        const labels = completeTimeline.map((point, index) => {
             const {type, startDay} = point.period;
+            let label;
             if (type === 'day') {
-                return `Day ${startDay}`;
+                label = `Day ${startDay}`;
             } else if (type === 'week') {
-                return `Week ${Math.ceil(startDay / 7)}`;
+                label = `Week ${Math.ceil(startDay / 7)}`;
             } else {
-                return `Month ${Math.ceil(startDay / 28)}`;
+                label = `Month ${Math.ceil(startDay / 28)}`;
             }
+            // Add brackets around the label if it's the last full business cycle
+            if (index === timelineData.lastFullBusinessCycleIndex) {
+                label = `[${label}]`;
+            }
+            return label;
         });
 
         // Create datasets based on view type
@@ -1014,15 +1046,21 @@ function renderDifferenceChart(challenge) {
         }
 
         // Create labels
-        const labels = completeTimeline.map(point => {
+        const labels = completeTimeline.map((point, index) => {
             const {type, startDay} = point.period;
+            let label;
             if (type === 'day') {
-                return `Day ${startDay}`;
+                label = `Day ${startDay}`;
             } else if (type === 'week') {
-                return `Week ${Math.ceil(startDay / 7)}`;
+                label = `Week ${Math.ceil(startDay / 7)}`;
             } else {
-                return `Month ${Math.ceil(startDay / 28)}`;
+                label = `Month ${Math.ceil(startDay / 28)}`;
             }
+            // Add brackets around the label if it's the last full business cycle
+            if (index === timelineData.lastFullBusinessCycleIndex) {
+                label = `[${label}]`;
+            }
+            return label;
         });
 
         // Create datasets based on view type and difference type

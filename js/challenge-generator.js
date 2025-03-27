@@ -506,7 +506,7 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
         timePeriod: period,
         periodsCount: numPeriods,
         totalDays: numDays,
-        lastFullBusinessCycleIndex: Math.floor((Math.floor(currentRuntimeDays / businessCycleDays) * businessCycleDays) / daysPerPeriod) - 1
+        lastFullBusinessCycleIndex: Math.floor((Math.floor(currentRuntimeDays / 7)*7)/daysPerPeriod) - 1
     };
 }
 
