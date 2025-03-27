@@ -123,6 +123,9 @@ const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
+        legend: {
+            display: false
+        },
         zoom: {
             pan: {
                 enabled: true,
@@ -186,11 +189,15 @@ const chartOptions = {
 
 // Define the renderChart function before it's used
 function renderChart(challenge) {
+    try {
+        validateChallenge(challenge);
     const timelineData = challenge.simulation.timeline;
+        validateTimelineData(timelineData);
+        
     const timePoints = timelineData.timePoints;
     const totalDays = challenge.experiment.requiredRuntimeDays;
     const currentDays = challenge.simulation.timeline.currentRuntimeDays;
-    const confidenceLevel = calculateConfidenceLevel(challenge.experiment.alpha);
+        const confidenceLevel = calculateConfidenceLevel(challenge.experiment.alpha);
 
     // Generate complete timeline including future empty periods
     window.completeTimeline = [...timePoints];
@@ -225,43 +232,53 @@ function renderChart(challenge) {
     }
 
     // Create labels based on time period
-    const labels = completeTimeline.map((point, index) => {
+        const labels = completeTimeline.map((point, index) => {
         const {type, startDay} = point.period;
-        let label;
+            let label;
         if (type === 'day') {
-            label = `Day ${startDay}`;
+                label = `Day ${startDay}`;
         } else if (type === 'week') {
-            label = `Week ${Math.ceil(startDay / 7)}`;
+                label = `Week ${Math.ceil(startDay / 7)}`;
         } else {
-            label = `Month ${Math.ceil(startDay / 28)}`;
-        }
-        // Add brackets around the label if it's the last full business cycle
-        if (index === timelineData.lastFullBusinessCycleIndex) {
-            label = `[${label}]`;
-        }
-        return label;
-    });
+                label = `Month ${Math.ceil(startDay / 28)}`;
+            }
+            // Add brackets around the label if it's the last full business cycle
+            if (index === timelineData.lastFullBusinessCycleIndex) {
+                label = `[${label}]`;
+            }
+            return label;
+        });
 
-    // Configure x-axis
-    const xAxis = {
-        type: 'category',
-        data: labels,
-        axisLabel: {
-            formatter: (value) => value
-        }
-    };
+        // Configure x-axis
+        const xAxis = {
+            type: 'category',
+            data: labels,
+            axisLabel: {
+                formatter: (value) => value
+            }
+        };
 
     // Create datasets based on the view type
     function createDatasets(viewType) {
-        const datasets = viewType === 'daily' ? [
+            const datasets = viewType === 'daily' ? [
             {
                 label: `Base ${timelineData.timePeriod}ly Rate`,
-                data: completeTimeline.map(d => {
-                    if (!d || !d.base || d.base.rate === null) return null;
-                    return Number(d.base.rate.toFixed(4));
-                }),
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.base || d.base.rate === null) return null;
+                        return Number(d.base.rate.toFixed(4));
+                    }),
                 borderColor: 'rgb(147, 51, 234)',
-                backgroundColor: 'transparent',
+                backgroundColor: 'rgb(147, 51, 234)',
+                pointBackgroundColor: completeTimeline.map((_, i) => 
+                    i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)'
+                ),
+                pointBorderColor: completeTimeline.map((_, i) => 
+                    i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)'
+                ),
+                segment: {
+                    borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)',
+                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)',
+                },
                 fill: false,
                 tension: 0.4,
                 spanGaps: true,
@@ -269,12 +286,15 @@ function renderChart(challenge) {
             },
             {
                 label: 'Base CI Lower',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.base || !d.base.rateCI || d.base.rateCI[0] === null) return null;
-                    return Number(d.base.rateCI[0].toFixed(4));
-                }),
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.base || !d.base.rateCI || d.base.rateCI[0] === null) return null;
+                        return Number(d.base.rateCI[0].toFixed(4));
+                    }),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                segment: {
+                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(128, 128, 128, 0.1)' : 'rgba(147, 51, 234, 0.1)',
+                },
                 fill: 1,
                 tension: 0.4,
                 spanGaps: true,
@@ -282,12 +302,15 @@ function renderChart(challenge) {
             },
             {
                 label: 'Base CI Upper',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.base || !d.base.rateCI || d.base.rateCI[1] === null) return null;
-                    return Number(d.base.rateCI[1].toFixed(4));
-                }),
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.base || !d.base.rateCI || d.base.rateCI[1] === null) return null;
+                        return Number(d.base.rateCI[1].toFixed(4));
+                    }),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                segment: {
+                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(128, 128, 128, 0.1)' : 'rgba(147, 51, 234, 0.1)',
+                },
                 fill: '-1',
                 tension: 0.4,
                 spanGaps: true,
@@ -295,12 +318,22 @@ function renderChart(challenge) {
             },
             {
                 label: `Test ${timelineData.timePeriod}ly Rate`,
-                data: completeTimeline.map(d => {
-                    if (!d || !d.variant || d.variant.rate === null) return null;
-                    return Number(d.variant.rate.toFixed(4));
-                }),
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.variant || d.variant.rate === null) return null;
+                        return Number(d.variant.rate.toFixed(4));
+                    }),
                 borderColor: 'rgb(59, 130, 246)',
-                backgroundColor: 'transparent',
+                backgroundColor: 'rgb(59, 130, 246)',
+                pointBackgroundColor: completeTimeline.map((_, i) => 
+                    i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)'
+                ),
+                pointBorderColor: completeTimeline.map((_, i) => 
+                    i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)'
+                ),
+                segment: {
+                    borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)',
+                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)',
+                },
                 fill: false,
                 tension: 0.4,
                 spanGaps: true,
@@ -308,12 +341,15 @@ function renderChart(challenge) {
             },
             {
                 label: 'Test CI Lower',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.variant || !d.variant.rateCI || d.variant.rateCI[0] === null) return null;
-                    return Number(d.variant.rateCI[0].toFixed(4));
-                }),
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.variant || !d.variant.rateCI || d.variant.rateCI[0] === null) return null;
+                        return Number(d.variant.rateCI[0].toFixed(4));
+                    }),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                segment: {
+                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(192, 192, 192, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                },
                 fill: 4,
                 tension: 0.4,
                 spanGaps: true,
@@ -321,12 +357,15 @@ function renderChart(challenge) {
             },
             {
                 label: 'Test CI Upper',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.variant || !d.variant.rateCI || d.variant.rateCI[1] === null) return null;
-                    return Number(d.variant.rateCI[1].toFixed(4));
-                }),
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.variant || !d.variant.rateCI || d.variant.rateCI[1] === null) return null;
+                        return Number(d.variant.rateCI[1].toFixed(4));
+                    }),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                segment: {
+                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(192, 192, 192, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                },
                 fill: '-1',
                 tension: 0.4,
                 spanGaps: true,
@@ -335,12 +374,22 @@ function renderChart(challenge) {
         ] : [
             {
                 label: 'Base Cumulative Rate',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.base || d.base.cumulativeRate === null) return null;
-                    return Number(d.base.cumulativeRate.toFixed(4));
-                }),
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.base || d.base.cumulativeRate === null) return null;
+                        return Number(d.base.cumulativeRate.toFixed(4));
+                    }),
                 borderColor: 'rgb(107, 11, 194)',
-                backgroundColor: 'transparent',
+                backgroundColor: 'rgb(107, 11, 194)',
+                pointBackgroundColor: completeTimeline.map((_, i) => 
+                    i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)'
+                ),
+                pointBorderColor: completeTimeline.map((_, i) => 
+                    i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)'
+                ),
+                segment: {
+                    borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)',
+                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)',
+                },
                 borderDash: [5, 5],
                 fill: false,
                 tension: 0.4,
@@ -349,12 +398,15 @@ function renderChart(challenge) {
             },
             {
                 label: 'Base CI Lower',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.base || !d.base.cumulativeRateCI || d.base.cumulativeRateCI[0] === null) return null;
-                    return Number(d.base.cumulativeRateCI[0].toFixed(4));
-                }),
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.base || !d.base.cumulativeRateCI || d.base.cumulativeRateCI[0] === null) return null;
+                        return Number(d.base.cumulativeRateCI[0].toFixed(4));
+                    }),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(107, 11, 194, 0.1)',
+                segment: {
+                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(128, 128, 128, 0.1)' : 'rgba(107, 11, 194, 0.1)',
+                },
                 fill: 1,
                 tension: 0.4,
                 spanGaps: true,
@@ -362,12 +414,15 @@ function renderChart(challenge) {
             },
             {
                 label: 'Base CI Upper',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.base || !d.base.cumulativeRateCI || d.base.cumulativeRateCI[1] === null) return null;
-                    return Number(d.base.cumulativeRateCI[1].toFixed(4));
-                }),
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.base || !d.base.cumulativeRateCI || d.base.cumulativeRateCI[1] === null) return null;
+                        return Number(d.base.cumulativeRateCI[1].toFixed(4));
+                    }),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(107, 11, 194, 0.1)',
+                segment: {
+                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(128, 128, 128, 0.1)' : 'rgba(107, 11, 194, 0.1)',
+                },
                 fill: '-1',
                 tension: 0.4,
                 spanGaps: true,
@@ -375,12 +430,22 @@ function renderChart(challenge) {
             },
             {
                 label: 'Test Cumulative Rate',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.variant || d.variant.cumulativeRate === null) return null;
-                    return Number(d.variant.cumulativeRate.toFixed(4));
-                }),
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.variant || d.variant.cumulativeRate === null) return null;
+                        return Number(d.variant.cumulativeRate.toFixed(4));
+                    }),
                 borderColor: 'rgb(19, 90, 206)',
-                backgroundColor: 'transparent',
+                backgroundColor: 'rgb(19, 90, 206)',
+                pointBackgroundColor: completeTimeline.map((_, i) => 
+                    i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)'
+                ),
+                pointBorderColor: completeTimeline.map((_, i) => 
+                    i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)'
+                ),
+                segment: {
+                    borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)',
+                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)',
+                },
                 borderDash: [5, 5],
                 fill: false,
                 tension: 0.4,
@@ -389,12 +454,15 @@ function renderChart(challenge) {
             },
             {
                 label: 'Test CI Lower',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.variant || !d.variant.cumulativeRateCI || d.variant.cumulativeRateCI[0] === null) return null;
-                    return Number(d.variant.cumulativeRateCI[0].toFixed(4));
-                }),
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.variant || !d.variant.cumulativeRateCI || d.variant.cumulativeRateCI[0] === null) return null;
+                        return Number(d.variant.cumulativeRateCI[0].toFixed(4));
+                    }),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(19, 90, 206, 0.1)',
+                segment: {
+                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(192, 192, 192, 0.1)' : 'rgba(19, 90, 206, 0.1)',
+                },
                 fill: 4,
                 tension: 0.4,
                 spanGaps: true,
@@ -402,12 +470,15 @@ function renderChart(challenge) {
             },
             {
                 label: 'Test CI Upper',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.variant || !d.variant.cumulativeRateCI || d.variant.cumulativeRateCI[1] === null) return null;
-                    return Number(d.variant.cumulativeRateCI[1].toFixed(4));
-                }),
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.variant || !d.variant.cumulativeRateCI || d.variant.cumulativeRateCI[1] === null) return null;
+                        return Number(d.variant.cumulativeRateCI[1].toFixed(4));
+                    }),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(19, 90, 206, 0.1)',
+                segment: {
+                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(192, 192, 192, 0.1)' : 'rgba(19, 90, 206, 0.1)',
+                },
                 fill: '-1',
                 tension: 0.4,
                 spanGaps: true,
@@ -423,50 +494,50 @@ function renderChart(challenge) {
     }
 
     // Initialize chart with daily view
-    const chart = ChartManager.createChart('conversion-chart', 'line', {
-        labels,
+        const chart = ChartManager.createChart('conversion-chart', 'line', {
+            labels,
             datasets: createDatasets('daily')
-    }, {
+        }, {
             plugins: {
                 ...chartOptions.plugins,
                 title: {
                     display: true,
                     text: `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates`
-            },
-            tooltip: {
-                ...chartOptions.plugins.tooltip,
-                callbacks: {
-                    title: function(context) {
-                        if (context.length === 0) return '';
-                        return context[0].label;
-                    },
-                    label: function(context) {
-                        // Skip CI datasets
-                        if (context.dataset.isCI) return null;
+                },
+                tooltip: {
+                    ...chartOptions.plugins.tooltip,
+                    callbacks: {
+                        title: function(context) {
+                            if (context.length === 0) return '';
+                            return context[0].label;
+                        },
+                        label: function(context) {
+                            // Skip CI datasets
+                            if (context.dataset.isCI) return null;
 
-                        const timePoint = completeTimeline[context.dataIndex];
-                        const isBase = context.dataset.label.toLowerCase().includes('base');
-                        const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
-                        const data = isBase ? timePoint.base : timePoint.variant;
+                            const timePoint = completeTimeline[context.dataIndex];
+                            const isBase = context.dataset.label.toLowerCase().includes('base');
+                            const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
+                            const data = isBase ? timePoint.base : timePoint.variant;
 
-                        if (!data) return null;
+                            if (!data) return null;
 
-                        // Get the appropriate metrics based on view type
-                        const rate = isCumulative ? data.cumulativeRate : data.rate;
-                        const ci = isCumulative ? data.cumulativeRateCI : data.rateCI;
-                        const visitors = isCumulative ? data.cumulativeVisitors : data.visitors;
-                        const conversions = isCumulative ? data.cumulativeConversions : data.conversions;
+                            // Get the appropriate metrics based on view type
+                            const rate = isCumulative ? data.cumulativeRate : data.rate;
+                            const ci = isCumulative ? data.cumulativeRateCI : data.rateCI;
+                            const visitors = isCumulative ? data.cumulativeVisitors : data.visitors;
+                            const conversions = isCumulative ? data.cumulativeConversions : data.conversions;
 
-                        // Format the tooltip lines
-                        return [
-                            `${isBase ? 'Base' : 'Test'} Metrics:`,
-                            `Rate: ${formatPercent(rate)}`,
-                            `CI: ${formatPercent(ci[0])} - ${formatPercent(ci[1])}`,
-                            `Visitors: ${visitors.toLocaleString()}`,
-                            `Conversions: ${conversions.toLocaleString()}`
-                        ];
+                            // Format the tooltip lines
+                            return [
+                                `${isBase ? 'Base' : 'Test'} Metrics:`,
+                                `Rate: ${formatPercent(rate)}`,
+                                `CI: ${formatPercent(ci[0])} - ${formatPercent(ci[1])}`,
+                                `Visitors: ${visitors.toLocaleString()}`,
+                                `Conversions: ${conversions.toLocaleString()}`
+                            ];
+                        }
                     }
-                }
                 }
             },
             scales: {
@@ -490,10 +561,10 @@ function renderChart(challenge) {
                     const viewType = e.target.value;
                     const datasets = createDatasets(viewType);
 
-            ChartManager.updateChart('conversion-chart', {
-                labels,
-                datasets
-            }, {
+                ChartManager.updateChart('conversion-chart', {
+                    labels,
+                    datasets
+                }, {
                             plugins: {
                                 ...chartOptions.plugins,
                                 title: {
@@ -520,6 +591,23 @@ function renderChart(challenge) {
     }
 
     return chart;
+    } catch (error) {
+        console.error('Error rendering chart:', error);
+        showChartError(error);
+        return null;
+    }
+}
+
+function validateChallenge(challenge) {
+    if (!challenge?.simulation?.timeline) {
+        throw new Error('Invalid challenge data structure');
+    }
+}
+
+function validateTimelineData(timelineData) {
+    if (!timelineData || !timelineData.timePoints || !timelineData.timePoints.length) {
+        throw new Error('Invalid timeline data');
+    }
 }
 
 function showLoading(chartId) {
@@ -942,38 +1030,82 @@ function renderVisitorsChart(challenge) {
         function createDatasets(viewType) {
             return viewType === 'daily' ? [
                 {
-                    label: 'Base Visitors',
-                    data: completeTimeline.map(d => d.base.visitors),
+                    label: `Base ${timelineData.timePeriod}ly Visitors`,
+                    data: completeTimeline.map(d => d?.base?.visitors ?? null),
                     borderColor: 'rgb(147, 51, 234)',
-                    backgroundColor: 'rgba(147, 51, 234, 0.1)',
-                    fill: true,
+                    backgroundColor: 'rgb(147, 51, 234)',
+                    pointBackgroundColor: completeTimeline.map((_, i) => 
+                        i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)'
+                    ),
+                    pointBorderColor: completeTimeline.map((_, i) => 
+                        i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)'
+                    ),
+                    segment: {
+                        borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)',
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)',
+                    },
+                    fill: false,
+                    tension: 0.4,
                     spanGaps: true
                 },
                 {
-                    label: 'Test Visitors',
-                    data: completeTimeline.map(d => d.variant.visitors),
+                    label: `Test ${timelineData.timePeriod}ly Visitors`,
+                    data: completeTimeline.map(d => d?.variant?.visitors ?? null),
                     borderColor: 'rgb(59, 130, 246)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    fill: true,
+                    backgroundColor: 'rgb(59, 130, 246)',
+                    pointBackgroundColor: completeTimeline.map((_, i) => 
+                        i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)'
+                    ),
+                    pointBorderColor: completeTimeline.map((_, i) => 
+                        i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)'
+                    ),
+                    segment: {
+                        borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)',
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)',
+                    },
+                    fill: false,
+                    tension: 0.4,
                     spanGaps: true
                 }
             ] : [
                 {
                     label: 'Base Cumulative Visitors',
-                    data: completeTimeline.map(d => d.base.cumulativeVisitors),
+                    data: completeTimeline.map(d => d?.base?.cumulativeVisitors ?? null),
                     borderColor: 'rgb(107, 11, 194)',
-                    backgroundColor: 'rgba(107, 11, 194, 0.1)',
-                    fill: true,
+                    backgroundColor: 'rgb(107, 11, 194)',
+                    pointBackgroundColor: completeTimeline.map((_, i) => 
+                        i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)'
+                    ),
+                    pointBorderColor: completeTimeline.map((_, i) => 
+                        i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)'
+                    ),
+                    segment: {
+                        borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)',
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)',
+                    },
                     borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.4,
                     spanGaps: true
                 },
                 {
                     label: 'Test Cumulative Visitors',
-                    data: completeTimeline.map(d => d.variant.cumulativeVisitors),
+                    data: completeTimeline.map(d => d?.variant?.cumulativeVisitors ?? null),
                     borderColor: 'rgb(19, 90, 206)',
-                    backgroundColor: 'rgba(19, 90, 206, 0.1)',
-                    fill: true,
+                    backgroundColor: 'rgb(19, 90, 206)',
+                    pointBackgroundColor: completeTimeline.map((_, i) => 
+                        i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)'
+                    ),
+                    pointBorderColor: completeTimeline.map((_, i) => 
+                        i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)'
+                    ),
+                    segment: {
+                        borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)',
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)',
+                    },
                     borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.4,
                     spanGaps: true
                 }
             ];
@@ -985,6 +1117,11 @@ function renderVisitorsChart(challenge) {
                 datasets: createDatasets('daily')
         }, {
                 ...chartOptions,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
                 scales: {
                     y: {
                         beginAtZero: true,
@@ -1009,6 +1146,11 @@ function renderVisitorsChart(challenge) {
                     datasets
                 }, {
                     ...chartOptions,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true,
@@ -1114,7 +1256,17 @@ function renderDifferenceChart(challenge) {
                         return isUplift ? d[diffType].rate * 100 : d[diffType].rate * 100;
                     }),
                     borderColor: isUplift ? 'rgb(16, 185, 129)' : 'rgb(59, 130, 246)',
-                    backgroundColor: 'transparent',
+                    backgroundColor: isUplift ? 'rgb(16, 185, 129)' : 'rgb(59, 130, 246)',
+                    pointBackgroundColor: completeTimeline.map((_, i) => 
+                        i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : (isUplift ? 'rgb(16, 185, 129)' : 'rgb(59, 130, 246)')
+                    ),
+                    pointBorderColor: completeTimeline.map((_, i) => 
+                        i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : (isUplift ? 'rgb(16, 185, 129)' : 'rgb(59, 130, 246)')
+                    ),
+                    segment: {
+                        borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : (isUplift ? 'rgb(16, 185, 129)' : 'rgb(59, 130, 246)'),
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : (isUplift ? 'rgb(16, 185, 129)' : 'rgb(59, 130, 246)'),
+                    },
                     fill: false,
                     tension: 0.4,
                     spanGaps: true
@@ -1127,6 +1279,9 @@ function renderDifferenceChart(challenge) {
                     }),
                     borderColor: 'transparent',
                     backgroundColor: isUplift ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                    segment: {
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(128, 128, 128, 0.1)' : (isUplift ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)'),
+                    },
                     fill: '+1',
                     tension: 0.4,
                     spanGaps: true,
@@ -1139,6 +1294,10 @@ function renderDifferenceChart(challenge) {
                         return d[diffType].rateCI[0] * 100;
                     }),
                     borderColor: 'transparent',
+                    backgroundColor: isUplift ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                    segment: {
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(128, 128, 128, 0.1)' : (isUplift ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)'),
+                    },
                     fill: false,
                     tension: 0.4,
                     spanGaps: true,
@@ -1152,7 +1311,17 @@ function renderDifferenceChart(challenge) {
                         return isUplift ? d[diffType].cumulativeRate * 100 : d[diffType].cumulativeRate * 100;
                     }),
                     borderColor: isUplift ? 'rgb(5, 150, 105)' : 'rgb(19, 90, 206)',
-                    backgroundColor: 'transparent',
+                    backgroundColor: isUplift ? 'rgb(5, 150, 105)' : 'rgb(19, 90, 206)',
+                    pointBackgroundColor: completeTimeline.map((_, i) => 
+                        i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : (isUplift ? 'rgb(5, 150, 105)' : 'rgb(19, 90, 206)')
+                    ),
+                    pointBorderColor: completeTimeline.map((_, i) => 
+                        i >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : (isUplift ? 'rgb(5, 150, 105)' : 'rgb(19, 90, 206)')
+                    ),
+                    segment: {
+                        borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : (isUplift ? 'rgb(5, 150, 105)' : 'rgb(19, 90, 206)'),
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : (isUplift ? 'rgb(5, 150, 105)' : 'rgb(19, 90, 206)'),
+                    },
                     fill: false,
                     tension: 0.4,
                     borderDash: [5, 5],
@@ -1166,6 +1335,9 @@ function renderDifferenceChart(challenge) {
                     }),
                     borderColor: 'transparent',
                     backgroundColor: isUplift ? 'rgba(5, 150, 105, 0.1)' : 'rgba(19, 90, 206, 0.1)',
+                    segment: {
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(128, 128, 128, 0.1)' : (isUplift ? 'rgba(5, 150, 105, 0.1)' : 'rgba(19, 90, 206, 0.1)'),
+                    },
                     fill: '+1',
                     tension: 0.4,
                     spanGaps: true,
@@ -1178,6 +1350,10 @@ function renderDifferenceChart(challenge) {
                         return d[diffType].cumulativeRateCI[0] * 100;
                     }),
                     borderColor: 'transparent',
+                    backgroundColor: isUplift ? 'rgba(5, 150, 105, 0.1)' : 'rgba(19, 90, 206, 0.1)',
+                    segment: {
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(128, 128, 128, 0.1)' : (isUplift ? 'rgba(5, 150, 105, 0.1)' : 'rgba(19, 90, 206, 0.1)'),
+                    },
                     fill: false,
                     tension: 0.4,
                     spanGaps: true,
@@ -1199,27 +1375,9 @@ function renderDifferenceChart(challenge) {
                 intersect: false,
                 mode: 'index'
             },
-                                scales: {
-                                    y: {
-                    beginAtZero: false,
-                    title: {
-                        display: true,
-                        text: 'Rate Difference (%)'
-                    },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.1)'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
-            },
             plugins: {
                 legend: {
-                    display: true,
-                    position: 'top'
+                    display: false
                 },
                 tooltip: {
                     mode: 'index',
@@ -1268,9 +1426,26 @@ function renderDifferenceChart(challenge) {
                             return null;
                         }
                     }
-                                }
-                            }
-                        });
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    title: {
+                        display: true,
+                        text: 'Rate Difference (%)'
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        });
 
         // Add view toggle functionality
         const viewToggle = document.getElementById('difference-view-toggle');
@@ -1290,27 +1465,9 @@ function renderDifferenceChart(challenge) {
                     intersect: false,
                     mode: 'index'
                 },
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        title: {
-                            display: true,
-                            text: yAxisTitle
-                        },
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.1)'
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                },
                 plugins: {
                     legend: {
-                        display: true,
-                        position: 'top'
+                        display: false
                     },
                     tooltip: {
                         mode: 'index',
@@ -1358,6 +1515,23 @@ function renderDifferenceChart(challenge) {
                                 }
                                 return null;
                             }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: yAxisTitle
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
                         }
                     }
                 }
@@ -1462,18 +1636,27 @@ const ChartManager = {
         return this.charts[canvasId];
     },
     
-    updateChart(canvasId, data, options = {}) {
+    updateChart(canvasId, newData, newOptions = {}) {
         const chart = this.charts[canvasId];
-        if (!chart) return;
-        
-        chart.data = data;
-        if (options) {
-            chart.options = {
-                ...chart.options,
-                ...options
-            };
+        if (!chart) {
+            console.warn(`Chart ${canvasId} not found`);
+            return;
         }
-        chart.update();
+
+        // Preserve animations
+        const animation = chart.options.animation;
+        chart.options = {
+            ...chart.options,
+            ...newOptions,
+            animation
+        };
+
+        // Update datasets while preserving references
+        chart.data.datasets.forEach((dataset, i) => {
+            Object.assign(dataset, newData.datasets[i]);
+        });
+        
+        chart.update('none'); // Update without animation for better performance
     },
     
     destroyChart(canvasId) {
@@ -1500,6 +1683,18 @@ const ChartManager = {
     resizeCharts() {
         Object.values(this.charts).forEach(chart => {
             chart.resize();
+        });
+    },
+    
+    cleanup() {
+        Object.entries(this.charts).forEach(([id, chart]) => {
+            // Remove event listeners
+            chart.options.plugins.tooltip.callbacks = {};
+            chart.options.onClick = null;
+            
+            // Destroy chart
+            chart.destroy();
+            delete this.charts[id];
         });
     }
 };
@@ -1547,4 +1742,118 @@ function updateProgressBar(challenge) {
 
     startDateText.textContent = startDate.toLocaleDateString();
     endDateText.textContent = endDate.toLocaleDateString();
+}
+
+class ChartDataManager {
+    constructor() {
+        this.completeTimeline = [];
+        this.lastFullBusinessCycleIndex = -1;
+    }
+
+    initializeTimeline(timePoints, totalDays, currentDays, periodType) {
+        this.completeTimeline = [...timePoints];
+        if (currentDays < totalDays) {
+            this.appendFutureTimePoints(timePoints, totalDays, currentDays, periodType);
+        }
+    }
+
+    appendFutureTimePoints(timePoints, totalDays, currentDays, periodType) {
+        const lastPoint = timePoints[timePoints.length - 1];
+        const periodLength = this.getPeriodLength(periodType);
+        let nextDay = lastPoint.period.startDay + periodLength;
+
+        while (nextDay <= totalDays) {
+            this.completeTimeline.push(this.createEmptyTimePoint(nextDay, periodType));
+            nextDay += periodLength;
+        }
+    }
+}
+
+class ChartConfigFactory {
+    static getBaseConfig() {
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                zoom: {
+                    pan: { enabled: true, mode: 'x', modifierKey: 'ctrl' },
+                    zoom: {
+                        wheel: { enabled: true, modifierKey: 'ctrl' },
+                        pinch: { enabled: true },
+                        mode: 'x'
+                    }
+                }
+            }
+        };
+    }
+
+    static getTooltipConfig(timelineData) {
+        return {
+            enabled: true,
+            mode: 'index',
+            intersect: false,
+            // ... other tooltip configurations
+        };
+    }
+}
+
+class DatasetFactory {
+    static createConversionDataset(data, type, colors) {
+        return {
+            label: `${type} Rate`,
+            data: this.safeMapData(data, d => d[type.toLowerCase()].rate),
+            borderColor: colors.border,
+            backgroundColor: colors.background,
+            fill: false,
+            tension: 0.4,
+            spanGaps: true
+        };
+    }
+
+    static safeMapData(data, mapper) {
+        return data.map(d => {
+            try {
+                if (!d) return null;
+                const value = mapper(d);
+                return value !== null ? Number(value.toFixed(4)) : null;
+            } catch (e) {
+                console.warn('Error mapping data point:', e);
+                return null;
+            }
+        });
+    }
+}
+
+class ViewToggleManager {
+    constructor(toggleIds) {
+        this.toggles = new Map();
+        toggleIds.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                this.toggles.set(id, element);
+            }
+        });
+    }
+
+    synchronizeViews(viewType) {
+        this.toggles.forEach(toggle => {
+            toggle.value = viewType;
+        });
+    }
+
+    addChangeListener(callback) {
+        this.toggles.forEach(toggle => {
+            toggle.addEventListener('change', callback);
+        });
+    }
+}
+
+function enhanceChartAccessibility(chart) {
+    const canvas = chart.canvas;
+    canvas.setAttribute('role', 'img');
+    canvas.setAttribute('aria-label', chart.options.plugins.title.text);
+    
+    // Add keyboard navigation
+    canvas.tabIndex = 0;
+    canvas.addEventListener('keydown', handleChartKeyboardNavigation);
 }
