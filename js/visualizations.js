@@ -256,7 +256,10 @@ function renderChart(challenge) {
         const datasets = viewType === 'daily' ? [
             {
                 label: `Base ${timelineData.timePeriod}ly Rate`,
-                data: completeTimeline.map(d => d.base.rate ? Number(d.base.rate.toFixed(4)) : null),
+                data: completeTimeline.map(d => {
+                    if (!d || !d.base || d.base.rate === null) return null;
+                    return Number(d.base.rate.toFixed(4));
+                }),
                 borderColor: 'rgb(147, 51, 234)',
                 backgroundColor: 'transparent',
                 fill: false,
@@ -266,26 +269,36 @@ function renderChart(challenge) {
             },
             {
                 label: 'Base CI Lower',
-                data: completeTimeline.map(d => d.base.rateCI && d.base.rateCI[0] ? Number(d.base.rateCI[0].toFixed(4)) : null),
+                data: completeTimeline.map(d => {
+                    if (!d || !d.base || !d.base.rateCI || d.base.rateCI[0] === null) return null;
+                    return Number(d.base.rateCI[0].toFixed(4));
+                }),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(147, 51, 234, 0.1)',
-                fill: '+1',
+                fill: 1,
                 tension: 0.4,
                 spanGaps: true,
                 isCI: true
             },
             {
                 label: 'Base CI Upper',
-                data: completeTimeline.map(d => d.base.rateCI && d.base.rateCI[1] ? Number(d.base.rateCI[1].toFixed(4)) : null),
+                data: completeTimeline.map(d => {
+                    if (!d || !d.base || !d.base.rateCI || d.base.rateCI[1] === null) return null;
+                    return Number(d.base.rateCI[1].toFixed(4));
+                }),
                 borderColor: 'transparent',
-                fill: false,
+                backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                fill: '-1',
                 tension: 0.4,
                 spanGaps: true,
                 isCI: true
             },
             {
                 label: `Test ${timelineData.timePeriod}ly Rate`,
-                data: completeTimeline.map(d => d.variant.rate ? Number(d.variant.rate.toFixed(4)) : null),
+                data: completeTimeline.map(d => {
+                    if (!d || !d.variant || d.variant.rate === null) return null;
+                    return Number(d.variant.rate.toFixed(4));
+                }),
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'transparent',
                 fill: false,
@@ -295,19 +308,26 @@ function renderChart(challenge) {
             },
             {
                 label: 'Test CI Lower',
-                data: completeTimeline.map(d => d.variant.rateCI && d.variant.rateCI[0] ? Number(d.variant.rateCI[0].toFixed(4)) : null),
+                data: completeTimeline.map(d => {
+                    if (!d || !d.variant || !d.variant.rateCI || d.variant.rateCI[0] === null) return null;
+                    return Number(d.variant.rateCI[0].toFixed(4));
+                }),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: '+1',
+                fill: 4,
                 tension: 0.4,
                 spanGaps: true,
                 isCI: true
             },
             {
                 label: 'Test CI Upper',
-                data: completeTimeline.map(d => d.variant.rateCI && d.variant.rateCI[1] ? Number(d.variant.rateCI[1].toFixed(4)) : null),
+                data: completeTimeline.map(d => {
+                    if (!d || !d.variant || !d.variant.rateCI || d.variant.rateCI[1] === null) return null;
+                    return Number(d.variant.rateCI[1].toFixed(4));
+                }),
                 borderColor: 'transparent',
-                fill: false,
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: '-1',
                 tension: 0.4,
                 spanGaps: true,
                 isCI: true
@@ -315,7 +335,10 @@ function renderChart(challenge) {
         ] : [
             {
                 label: 'Base Cumulative Rate',
-                data: completeTimeline.map(d => d.base.cumulativeRate ? Number(d.base.cumulativeRate.toFixed(4)) : null),
+                data: completeTimeline.map(d => {
+                    if (!d || !d.base || d.base.cumulativeRate === null) return null;
+                    return Number(d.base.cumulativeRate.toFixed(4));
+                }),
                 borderColor: 'rgb(107, 11, 194)',
                 backgroundColor: 'transparent',
                 borderDash: [5, 5],
@@ -326,26 +349,36 @@ function renderChart(challenge) {
             },
             {
                 label: 'Base CI Lower',
-                data: completeTimeline.map(d => d.base.cumulativeRateCI && d.base.cumulativeRateCI[0] ? Number(d.base.cumulativeRateCI[0].toFixed(4)) : null),
+                data: completeTimeline.map(d => {
+                    if (!d || !d.base || !d.base.cumulativeRateCI || d.base.cumulativeRateCI[0] === null) return null;
+                    return Number(d.base.cumulativeRateCI[0].toFixed(4));
+                }),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(107, 11, 194, 0.1)',
-                fill: '+1',
+                fill: 1,
                 tension: 0.4,
                 spanGaps: true,
                 isCI: true
             },
             {
                 label: 'Base CI Upper',
-                data: completeTimeline.map(d => d.base.cumulativeRateCI && d.base.cumulativeRateCI[1] ? Number(d.base.cumulativeRateCI[1].toFixed(4)) : null),
+                data: completeTimeline.map(d => {
+                    if (!d || !d.base || !d.base.cumulativeRateCI || d.base.cumulativeRateCI[1] === null) return null;
+                    return Number(d.base.cumulativeRateCI[1].toFixed(4));
+                }),
                 borderColor: 'transparent',
-                fill: false,
+                backgroundColor: 'rgba(107, 11, 194, 0.1)',
+                fill: '-1',
                 tension: 0.4,
                 spanGaps: true,
                 isCI: true
             },
             {
                 label: 'Test Cumulative Rate',
-                data: completeTimeline.map(d => d.variant.cumulativeRate ? Number(d.variant.cumulativeRate.toFixed(4)) : null),
+                data: completeTimeline.map(d => {
+                    if (!d || !d.variant || d.variant.cumulativeRate === null) return null;
+                    return Number(d.variant.cumulativeRate.toFixed(4));
+                }),
                 borderColor: 'rgb(19, 90, 206)',
                 backgroundColor: 'transparent',
                 borderDash: [5, 5],
@@ -356,19 +389,26 @@ function renderChart(challenge) {
             },
             {
                 label: 'Test CI Lower',
-                data: completeTimeline.map(d => d.variant.cumulativeRateCI && d.variant.cumulativeRateCI[0] ? Number(d.variant.cumulativeRateCI[0].toFixed(4)) : null),
+                data: completeTimeline.map(d => {
+                    if (!d || !d.variant || !d.variant.cumulativeRateCI || d.variant.cumulativeRateCI[0] === null) return null;
+                    return Number(d.variant.cumulativeRateCI[0].toFixed(4));
+                }),
                 borderColor: 'transparent',
                 backgroundColor: 'rgba(19, 90, 206, 0.1)',
-                fill: '+1',
+                fill: 4,
                 tension: 0.4,
                 spanGaps: true,
                 isCI: true
             },
             {
                 label: 'Test CI Upper',
-                data: completeTimeline.map(d => d.variant.cumulativeRateCI && d.variant.cumulativeRateCI[1] ? Number(d.variant.cumulativeRateCI[1].toFixed(4)) : null),
+                data: completeTimeline.map(d => {
+                    if (!d || !d.variant || !d.variant.cumulativeRateCI || d.variant.cumulativeRateCI[1] === null) return null;
+                    return Number(d.variant.cumulativeRateCI[1].toFixed(4));
+                }),
                 borderColor: 'transparent',
-                fill: false,
+                backgroundColor: 'rgba(19, 90, 206, 0.1)',
+                fill: '-1',
                 tension: 0.4,
                 spanGaps: true,
                 isCI: true
