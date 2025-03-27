@@ -380,7 +380,7 @@ function computeDifferenceConfidenceInterval(baseRate, variantRate, baseVisitors
     ];
 }
 
-function generateTimelineData(baseVisitors, variantVisitors, baseConversions, variantConversions, numDays, alpha) {
+function generateTimelineData(baseVisitors, variantVisitors, baseConversions, variantConversions, numDays, alpha, currentRuntimeDays, businessCycleDays) {
     // Determine appropriate time period
     const { period, numPeriods } = determineTimePeriod(numDays);
     const daysPerPeriod = period === 'day' ? 1 : period === 'week' ? 7 : 28;
@@ -505,7 +505,8 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
         }),
         timePeriod: period,
         periodsCount: numPeriods,
-        totalDays: numDays
+        totalDays: numDays,
+        lastFullBusinessCycleIndex: Math.floor((Math.floor(currentRuntimeDays / businessCycleDays) * businessCycleDays) / daysPerPeriod) - 1
     };
 }
 
@@ -537,9 +538,8 @@ function generateABTestChallenge() {
     requiredRuntimeDays = Math.ceil(requiredRuntimeDays / BUSINESS_CYCLE_DAYS) * BUSINESS_CYCLE_DAYS;
 
     var currentRuntimeDays = requiredRuntimeDays;
-    // Create a partially executed experiment for half of the challenges
     if (Math.random() < 0.5) {
-        currentRuntimeDays = Math.floor(requiredRuntimeDays / (1/Math.random()));
+        currentRuntimeDays = Math.floor(requiredRuntimeDays * (Math.random()*0.4+0.5));
     }
     const actualBaseConversionRate = sampleBetaDistribution(
         100000 * BASE_CONVERSION_RATE,
@@ -584,9 +584,14 @@ function generateABTestChallenge() {
         actualConversionsBase,
         actualConversionsVariant,
         currentRuntimeDays,
-        ALPHA
+        ALPHA,
+        currentRuntimeDays,
+        BUSINESS_CYCLE_DAYS
     );
 
+    // Calculate the base conversion rate for full business cycles
+    const lastFullBusinessCycleIndex = Math.max(0, Math.floor((Math.floor(currentRuntimeDays / BUSINESS_CYCLE_DAYS) * BUSINESS_CYCLE_DAYS) / (timelineData.timePeriod === 'day' ? 7 : timelineData.timePeriod === 'week' ? 7 : 28)) - 1);
+    const fullBusinessCyclesBaseConversionRate = timelineData.timePoints[Math.min(lastFullBusinessCycleIndex, timelineData.periodsCount - 1)].base.cumulativeRate;
 
     // Calculate uplift as relative percentage change
     const actualBaseRate = actualConversionsBase / actualVisitorsBase;
@@ -630,7 +635,8 @@ function generateABTestChallenge() {
             confidenceIntervalDifference: ciDifference,
             timeline: {
                 ...timelineData,
-                currentRuntimeDays: currentRuntimeDays
+                currentRuntimeDays: currentRuntimeDays,
+                fullBusinessCyclesBaseConversionRate: fullBusinessCyclesBaseConversionRate
             },
             uplift: conversionRateUplift,
             upliftConfidenceInterval: upliftCI,
@@ -664,21 +670,22 @@ function checkSampleRatioMismatch(baseVisitors, variantVisitors) {
 
 // Constants for analyzeExperiment outputs
 const EXPERIMENT_TRUSTWORTHY = {
-    YES: true,
-    NO: false
+    YES: 'TRUSTWORTHY',
+    NO: 'UNTRUSTWORTHY'
 };
 
 const EXPERIMENT_DECISION = {
-    KEEP_BASE: "Conclude experiment and keep base",
-    KEEP_VARIANT: "Conclude experiment and keep variant",
-    KEEP_RUNNING: "Keep the experiment running"
+    KEEP_BASE: "KEEP_BASE",
+    KEEP_VARIANT: "KEEP_VARIANT",
+    KEEP_RUNNING: "KEEP_RUNNING"
 };
 
 const EXPERIMENT_FOLLOW_UP = {
-    DEBUG_RETEST: "Debug fix and retest",
-    ITERATE: "Iterate implementation",
-    RETEST: "Retest to validate",
-    DO_NOTHING: "Do Nothing"
+    CELEBRATE: "CELEBRATE",
+    ITERATE: "ITERATE",
+    VALIDATE: "VALIDATE",
+    RERUN: "RERUN",
+    DO_NOTHING: "DO_NOTHING",
 };
 
 function analyzeExperiment(experiment) {
@@ -703,7 +710,7 @@ function analyzeExperiment(experiment) {
     } = experiment;
 
     let analysisDone = false;
-    let trustworthy = false;
+    let trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
     let decision = EXPERIMENT_DECISION.KEEP_RUNNING;
     let followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
 
@@ -729,7 +736,7 @@ function analyzeExperiment(experiment) {
     if (mismatch) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
         decision = EXPERIMENT_DECISION.KEEP_BASE;
-        followUp = EXPERIMENT_FOLLOW_UP.DEBUG_RETEST;
+        followUp = EXPERIMENT_FOLLOW_UP.RERUN;
         analysisDone = true;
     } else if (lowSampleSize) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
@@ -760,6 +767,7 @@ function analyzeExperiment(experiment) {
     } else {
         if (!analysisDone) {
             decision = EXPERIMENT_DECISION.KEEP_VARIANT; 
+            followUp = EXPERIMENT_FOLLOW_UP.CELEBRATE;
         }
     }
 

@@ -329,7 +329,7 @@ const UIController = {
 
     handleDecision(decisionType, value) {
         if (decisionType === 'trust') {
-            this.state.trustDecision = value === 'true';
+            this.state.trustDecision = value;
         } else if (decisionType === 'decision') {
             this.state.implementDecision = value;
         } else if (decisionType === 'follow_up') {
@@ -413,7 +413,7 @@ const UIController = {
                 correctChoices++;
                 feedbackMessage += '<p>Trustworthiness: <span class="text-green-500">Correct ✓</span></p>';
             } else {
-                feedbackMessage += `<p>Trustworthiness: <span class="text-red-500">Incorrect ✗</span> (Should be: ${analysisTrust ? 'Yes' : 'No'})</p>`;
+                feedbackMessage += `<p>Trustworthiness: <span class="text-red-500">Incorrect ✗</span> (Should be: ${analysisTrust==='TRUSTWORTHY' ? 'Yes' : 'No'})</p>`;
             }
 
             // Check decision
@@ -421,9 +421,9 @@ const UIController = {
             const analysisDecision = analysis.decision.decision;
             
             // Map the decision to a simpler format for display
-            const displayDecision = analysisDecision === "Conclude experiment and keep base" ? "Keep Base" :
-                                   analysisDecision === "Conclude experiment and keep variant" ? "Keep Variant" :
-                                   analysisDecision === "Keep the experiment running" ? "Keep Running" : 
+            const displayDecision = analysisDecision === "KEEP_BASE" ? "Keep Base" :
+                                   analysisDecision === "KEEP_VARIANT" ? "Keep Variant" :
+                                   analysisDecision === "KEEP_RUNNING" ? "Keep Running" : 
                                    analysisDecision;
             
             if (userDecision === analysisDecision) {
@@ -438,11 +438,11 @@ const UIController = {
             const analysisFollowUp = analysis.decision.followUp || analysis.decision.follwUp; // Handle both spellings
             
             // Map the follow-up to a simpler format for display
-            const displayFollowUp = analysisFollowUp === "Celebrate" ? "Celebrate" :
-                                   analysisFollowUp === "Iterate implementation" ? "Iterate" :
-                                   analysisFollowUp === "Retest to validate" ? "Validate" :
-                                   analysisFollowUp === "Debug fix and retest" ? "Rerun" :
-                                   analysisFollowUp === "Do Nothing" ? "None" :
+            const displayFollowUp = analysisFollowUp === "CELEBRATE" ? "Celebrate" :
+                                   analysisFollowUp === "ITERATE" ? "Iterate" :
+                                   analysisFollowUp === "VALIDATE" ? "Validate" :
+                                   analysisFollowUp === "RERUN" ? "Fix &Rerun" :
+                                   analysisFollowUp === "DO_NOTHING" ? "None" :
                                    analysisFollowUp;
             
             if (userFollowUp === analysisFollowUp) {
