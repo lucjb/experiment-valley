@@ -30,18 +30,109 @@
             color: #f97316; /* Tailwind orange-500 */
         }
         .fade-out {
-            animation: fadeOut 0.5s ease-in-out forwards;
+            animation: fadeOut 0.5s ease-out;
         }
         .fade-in {
-            animation: fadeIn 0.5s ease-in-out forwards;
+            animation: fadeIn 0.5s ease-in;
         }
         @keyframes fadeOut {
-            0% { opacity: 1; }
-            100% { opacity: 0; }
+            from { opacity: 1; }
+            to { opacity: 0; }
         }
         @keyframes fadeIn {
-            0% { opacity: 0; }
-            100% { opacity: 1; }
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .hidden {
+            display: none;
+        }
+        .decision-btn {
+            background-color: rgb(249, 115, 22);
+        }
+        .decision-btn.selected {
+            background-color: rgb(249, 115, 22);
+            opacity: 1 !important;
+            transform: scale(1.05);
+        }
+        .decision-btn:hover {
+            transform: scale(1.05);
+        }
+        .decision-btn:active {
+            transform: scale(0.95);
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid rgb(249, 115, 22);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Tooltip styles */
+        .tooltip-trigger {
+            position: relative;
+            cursor: help;
+            border-bottom: 1px dotted #666;
+        }
+        .tooltip-content {
+            visibility: hidden;
+            position: absolute;
+            z-index: 100;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            text-align: left;
+            padding: 12px 16px;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            white-space: normal;
+            width: 300px;
+            max-width: 90vw;
+            opacity: 0;
+            transition: opacity 0.2s;
+            line-height: 1.4;
+        }
+        .tooltip-trigger:hover .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+        .tooltip-content::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+        }
+        .tooltip-content a {
+            display: inline-block;
+            margin-top: 8px;
+            text-decoration: underline;
         }
 
         /* Progress bar text visibility */
@@ -147,14 +238,14 @@
 
             <!-- Decision Making Section -->
             <div class="bg-gray-900 rounded-lg shadow-lg p-3 md:p-4 mb-4">
-                <h2 class="text-xl md:text-2xl font-semibold text-white mb-3">Decision Making</h2>
-                
+                <h2 class="text-xl md:text-2xl font-semibold text-white mb-3">Decision Making
+                <a href="#" id="cheat-sheet-btn" class="text-gray-400 hover:text-gray-300 transition-colors">ℹ</a>
+                </h2>
                 <!-- Trustworthiness Section -->
                 <div class="mb-4">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
                             <span class="font-medium text-white">Is this Experiment Trustworthy?</span>
-                            <a href="#" id="cheat-sheet-btn" class="text-gray-400 hover:text-gray-300 transition-colors">ℹ</a>
                         </div>
                         <div class="flex space-x-1">
                             <button type="button" name="trust" value="TRUSTWORTHY" class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200" style="background-color: #f97316; opacity: 0.7;">
@@ -279,8 +370,30 @@
                     <div class="border rounded p-3">
                         <h3 class="font-semibold mb-2 text-base md:text-lg">Statistical Parameters</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-sm md:text-base">
-                            <div><span class="font-medium">Significance Level:</span> <span id="exp-alpha"></span></div>
-                            <div><span class="font-medium">Power:</span> <span id="exp-beta"></span></div>
+                            <div>
+                                <span class="font-medium">
+                                    <span class="tooltip-trigger">
+                                        Significance Level
+                                        <span class="tooltip-content">
+                                            The probability threshold (α) used to determine if a result is statistically significant. A lower value (e.g., 0.05) means we require stronger evidence to reject the null hypothesis.
+                                            <a href="https://en.wikipedia.org/wiki/Statistical_significance" target="_blank" class="text-blue-500 hover:text-blue-700">Learn more →</a>
+                                        </span>
+                                    </span>:
+                                </span> 
+                                <span id="exp-alpha"></span>
+                            </div>
+                            <div>
+                                <span class="font-medium">
+                                    <span class="tooltip-trigger">
+                                        Power
+                                        <span class="tooltip-content">
+                                            The probability (1-β) of correctly detecting a true effect when it exists. A higher power (e.g., 0.80) means we're more likely to detect meaningful differences between variants.
+                                            <a href="https://en.wikipedia.org/wiki/Power_(statistics)" target="_blank" class="text-blue-500 hover:text-blue-700">Learn more →</a>
+                                        </span>
+                                    </span>:
+                                </span>
+                                <span id="exp-beta"></span>
+                            </div>
                             <div><span class="font-medium">Experiment Type:</span> <span>2-sided Test</span></div>
                             <div><span class="font-medium">Null Hypothesis:</span> <span>No difference</span></div>
                         </div>
@@ -397,7 +510,15 @@
 
                     <div class="mt-4 p-3 bg-gray-50 rounded-lg">
                         <div class="flex items-center space-x-2">
-                            <span class="text-lg font-medium">p-value:</span>
+                            <span class="text-lg font-medium">
+                                <span class="tooltip-trigger">
+                                    p-value
+                                    <span class="tooltip-content">
+                                        The probability of observing the observed difference (or a more extreme one) if there is no real difference between variants. A p-value below the significance level (α) suggests the difference is statistically significant.
+                                        <a href="https://en.wikipedia.org/wiki/P-value" target="_blank" class="text-blue-500 hover:text-blue-700">Learn more →</a>
+                                    </span>
+                                </span>:
+                            </span>
                             <span id="p-value-display" class="text-2xl font-bold"></span>
                         </div>
                     </div>
