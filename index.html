@@ -245,7 +245,21 @@
                 <div class="mb-4">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
-                            <span class="font-medium text-white">Is this Experiment Trustworthy?</span>
+                            <span class="font-medium text-white">
+                                <span class="tooltip-trigger">
+                                    Is this Experiment Trustworthy?
+                                    <span class="tooltip-content">
+                                        Evaluate if the experiment was conducted properly. Consider:
+                                        <ul class="list-disc pl-4 mt-2">
+                                            <li>Sample size requirements</li>
+                                            <li>Traffic split between variants</li>
+                                            <li>Business cycle completion</li>
+                                            <li>Statistical validity</li>
+                                        </ul>
+                                        <a href="#" id="cheat-sheet-btn" class="text-blue-500 hover:text-blue-700 mt-2 block">View detailed checklist →</a>
+                                    </span>
+                                </span>
+                            </span>
                         </div>
                         <div class="flex space-x-1">
                             <button type="button" name="trust" value="TRUSTWORTHY" class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200" style="background-color: #f97316; opacity: 0.7;">
@@ -262,7 +276,20 @@
                 <div class="mb-4">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
-                            <span class="font-medium text-white">What is your Decision?</span>
+                            <span class="font-medium text-white">
+                                <span class="tooltip-trigger">
+                                    What is your Decision?
+                                    <span class="tooltip-content">
+                                        Based on the experiment results, choose whether to:
+                                        <ul class="list-disc pl-4 mt-2">
+                                            <li><strong>Keep Base:</strong> Stick with the original version</li>
+                                            <li><strong>Keep Variant:</strong> Implement the new version</li>
+                                            <li><strong>Keep Running:</strong> Continue the experiment to gather more data</li>
+                                        </ul>
+                                        Consider statistical significance, business impact, and confidence intervals when making your decision.
+                                    </span>
+                                </span>
+                            </span>
                         </div>
                         <div class="flex space-x-1">
                             <button type="button" name="decision" value="KEEP_BASE" class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200" style="background-color: #f97316; opacity: 0.7;">
@@ -282,7 +309,22 @@
                 <div class="mb-4">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
-                            <span class="font-medium text-white">What's your Follow Up?</span>
+                            <span class="font-medium text-white">
+                                <span class="tooltip-trigger">
+                                    What's your Follow Up?
+                                    <span class="tooltip-content">
+                                        Choose the next steps based on your decision:
+                                        <ul class="list-disc pl-4 mt-2">
+                                            <li><strong>Celebrate:</strong> Successfully implemented a winning variant</li>
+                                            <li><strong>Iterate:</strong> Make improvements to the winning variant</li>
+                                            <li><strong>Validate:</strong> Run additional tests to confirm results</li>
+                                            <li><strong>Fix & Rerun:</strong> Address issues and restart the experiment</li>
+                                            <li><strong>None:</strong> No immediate action needed</li>
+                                        </ul>
+                                        Consider business impact and resource allocation when choosing follow-up actions.
+                                    </span>
+                                </span>
+                            </span>
                         </div>
                         <div class="flex flex-wrap gap-1">
                             <button type="button" name="follow_up" value="CELEBRATE" class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200" style="background-color: #f97316; opacity: 0.7;">
