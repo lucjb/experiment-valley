@@ -515,7 +515,7 @@ function generateABTestChallenge() {
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
     const BETA_OPTIONS = [0.2];
     const BASE_CONVERSION_RATE_OPTIONS = [0.0127, 0.0523, 0.0814, 0.102, 0.146];
-    const MRE_OPTIONS = [0.01, 0.02];
+    const MRE_OPTIONS = [0.005, 0.01, 0.02];
     const VISITORS_PER_DAY_OPTIONS = [150, 1200];
     const BUSINESS_CYCLE_DAYS_OPTIONS = [1, 7];
 
@@ -533,9 +533,9 @@ function generateABTestChallenge() {
     var requiredSampleSizePerVariant = solveSampleSizeTTest(MRE, 1 - BETA, varianceA, varianceB, ALPHA);
     var requiredRuntimeDays = Math.ceil((requiredSampleSizePerVariant * 2) / VISITORS_PER_DAY);
 
-    // Ensure runtime is at least 7 days and aligned with business cycles
+    // Ensure runtime is at least 7 days full weeks
     requiredRuntimeDays = Math.max(7, requiredRuntimeDays);
-    requiredRuntimeDays = Math.ceil(requiredRuntimeDays / BUSINESS_CYCLE_DAYS) * BUSINESS_CYCLE_DAYS;
+    requiredRuntimeDays = Math.floor(requiredRuntimeDays / 7) * 7;
 
     var currentRuntimeDays = requiredRuntimeDays;
     if (Math.random() < 0.5) {
@@ -718,8 +718,11 @@ function analyzeExperiment(experiment) {
     const hasSampleRatioMismatch = ratioPValue < 0.0001;
 
     const actualBaseRate = actualConversionsBase / actualVisitorsBase;
-    const baseRateDifference = Math.abs(actualBaseRate - baseConversionRate) / baseConversionRate;
-    const hasBaseRateMismatch = baseRateDifference > 0.05;
+    const standardError = Math.sqrt((baseConversionRate * (1 - baseConversionRate)) / actualVisitorsBase);
+    const zScore = Math.abs(actualBaseRate - baseConversionRate) / standardError;
+    // Two-tailed p-value computation using normal distribution
+    const baseRateTestpValue = 2 * (1 - jStat.normal.cdf(zScore, 0, 1));
+    const hasBaseRateMismatch = baseRateTestpValue < 0.5;
 
     const actualDailyTraffic = (actualVisitorsBase + actualVisitorsVariant) / currentRuntimeDays;
     const trafficDifference = (actualDailyTraffic - visitorsPerDay) / visitorsPerDay;
@@ -779,8 +782,8 @@ function analyzeExperiment(experiment) {
         },
         analysis: {
             hasSignificantRatioMismatch: hasSampleRatioMismatch,
-            hasBaseRateMismatch,
-            hasTrafficMismatch,
+            hasBaseRateMismatch: hasBaseRateMismatch,
+            hasTrafficMismatch: hasTrafficMismatch,
             hasInsufficientSampleSize: lowSampleSize,
             hasIncompleteBusinessCycle: !businessCycleComplete,
             ratioMismatch: {
@@ -789,7 +792,8 @@ function analyzeExperiment(experiment) {
             baseRate: {
                 expected: baseConversionRate,
                 actual: actualBaseRate,
-                difference: baseRateDifference
+                difference: actualBaseRate - baseConversionRate,
+                pValue: baseRateTestpValue
             },
             traffic: {
                 expected: visitorsPerDay,

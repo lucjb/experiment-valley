@@ -13,6 +13,9 @@ const UIController = {
     },
 
     init() {
+        // Initialize debug mode first
+        UIState.initializeDebugMode();
+        
         this.initializeEventListeners();
         this.initializeCheatSheet();
         this.initializeTabs();
@@ -20,10 +23,13 @@ const UIController = {
 
     initializeEventListeners() {
         // Start button
-        document.getElementById('start-btn').addEventListener('click', (event) => {
-            event.preventDefault();
-            this.startSession();
-        });
+        const startBtn = document.getElementById('start-btn');
+        if (startBtn) {
+            startBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.startSession();
+            });
+        }
 
         // Decision buttons
         document.querySelectorAll('.decision-btn').forEach(button => {
@@ -46,14 +52,12 @@ const UIController = {
 
             // Add hover effects
             button.addEventListener('mouseenter', () => {
-                // Only change opacity if button is not selected
                 if (!button.classList.contains('selected')) {
                     button.style.opacity = '1';
                 }
             });
 
             button.addEventListener('mouseleave', () => {
-                // Only reset opacity if button is not selected
                 if (!button.classList.contains('selected')) {
                     button.style.opacity = '0.7';
                 }
@@ -137,55 +141,46 @@ const UIController = {
 
     startSession() {
         const tutorialSection = document.getElementById('tutorial-section');
-        tutorialSection.classList.add('fade-out');
-
-        setTimeout(() => {
-            tutorialSection.classList.add('hidden');
-            document.getElementById('challenge-container').classList.remove('hidden');
-            document.getElementById('challenge-container').classList.add('fade-in');
+        const challengeContainer = document.getElementById('challenge-container');
+        
+        tutorialSection.classList.add('hidden');
+        challengeContainer.classList.remove('hidden');
+        
+        // Only load the challenge if it hasn't been loaded yet
+        if (!window.currentExperiment) {
             this.loadChallenge();
-        }, 500);
+        }
     },
 
     async loadChallenge() {
-        console.log('Loading challenge for experiment:', this.state.currentExperiment, 'of', this.state.EXPERIMENTS_PER_SESSION);
-        
-        if (this.state.currentExperiment > this.state.EXPERIMENTS_PER_SESSION) {
-            console.log('All experiments completed, showing modal');
-            this.showCompletionModal();
-            return;
-        }
-
-        const experimentContainer = document.getElementById('challenge-container');
-        experimentContainer.classList.add('fade-out');
-
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        this.resetDecisions();
-        this.updateProgress();
-
         try {
             if (typeof generateABTestChallenge !== 'function') {
-                throw new Error("Challenge generator not found");
+                throw new Error("generateABTestChallenge function is not defined");
             }
 
-            this.state.challenge = generateABTestChallenge();
+            // Generate a new challenge and store it globally
+            window.currentExperiment = generateABTestChallenge();
+            this.state.challenge = window.currentExperiment;
+            
+            // Analyze the experiment and store it globally
+            window.currentAnalysis = analyzeExperiment(window.currentExperiment);
+            
+            // Update the UI with the new challenge
             this.updateExperimentDisplay();
             this.updateExecutionSection();
             this.updateMetricsTable();
-
-            ModalManager.show('chart-loading');
-
-            setTimeout(() => {
-                ModalManager.hide('chart-loading');
-                initializeCharts(this.state.challenge);
-                experimentContainer.classList.remove('fade-out');
-                experimentContainer.classList.add('fade-in');
-            }, 500);
-
+            this.updateProgress();
+            
+            // Initialize visualizations
+            initializeCharts(window.currentExperiment);
+            
+            // Reset decisions
+            this.resetDecisions();
+            
+            return true;
         } catch (error) {
             console.error('Error loading challenge:', error);
-            alert('Error loading challenge');
+            return false;
         }
     },
 
@@ -300,7 +295,6 @@ const UIController = {
         // Update base metrics
         document.getElementById('base-visitors').textContent = challenge.simulation.actualVisitorsBase;
         document.getElementById('base-conversions').textContent = challenge.simulation.actualConversionsBase;
-        document.getElementById('base-rate').textContent = `${(challenge.simulation.actualBaseConversionRate * 100).toFixed(2)}%`;
 
         // Update variant metrics
         document.getElementById('variant-visitors').textContent = challenge.simulation.actualVisitorsVariant;
@@ -380,24 +374,20 @@ const UIController = {
     },
 
     async evaluateDecision() {
-        console.log('Evaluating decision for experiment:', this.state.currentExperiment);
-        if (!this.state.challenge) {
-            console.error("No challenge loaded");
-            alert("No challenge available. Try reloading.");
+        if (!this.state.trustDecision || !this.state.implementDecision) {
             return;
         }
 
         try {
             this.state.totalAttempts++;
             
-            // Get the analysis result from the current challenge data
-            const analysis = analyzeExperiment(this.state.challenge);
+            // Use the global analysis
+            const analysis = window.currentAnalysis;
 
             console.log('Analysis result:', analysis);
             console.log('User decisions:', {
                 trust: this.state.trustDecision,
-                decision: this.state.implementDecision,
-                followUp: this.state.followUpDecision
+                implement: this.state.implementDecision
             });
 
             // Compare user's choices with analysis result
@@ -480,7 +470,7 @@ const UIController = {
             }
         } catch (error) {
             console.error('Error evaluating decision:', error);
-            alert('Error evaluating decision');
+            ModalManager.showFeedback(false, 'Error evaluating decision. Please try again.');
         }
     },
 
@@ -576,7 +566,12 @@ const UIController = {
 
 // Initialize UI Controller when DOM is loaded
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => UIController.init());
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize debug mode
+        UIState.initializeDebugMode();
+
+        UIController.init();
+    });
 } else {
     UIController.init();
 } 

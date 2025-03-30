@@ -7,6 +7,7 @@ const UIState = {
     trustDecision: null,
     implementDecision: null,
     EXPERIMENTS_PER_SESSION: 3,
+    debugMode: true,  // Set debug mode to true by default
     
     updateScore(newScore) {
         this.score = newScore;
@@ -48,6 +49,21 @@ const UIState = {
         this.updateScoreDisplay();
         this.updateStreakDisplay();
         this.updateAccuracyDisplay(0);
+    },
+
+    initializeDebugMode() {
+        const debugCheckbox = document.getElementById('debug-mode');
+        if (debugCheckbox) {
+            // Set initial state
+            this.debugMode = debugCheckbox.checked;
+            
+            // Add change event listener
+            debugCheckbox.addEventListener('change', (e) => {
+                this.debugMode = e.target.checked;
+                // Disable the checkbox after initial selection
+                debugCheckbox.disabled = true;
+            });
+        }
     }
 };
 
@@ -191,55 +207,55 @@ const chartOptions = {
 function renderChart(challenge) {
     try {
         validateChallenge(challenge);
-    const timelineData = challenge.simulation.timeline;
+        const timelineData = challenge.simulation.timeline;
         validateTimelineData(timelineData);
         
-    const timePoints = timelineData.timePoints;
-    const totalDays = challenge.experiment.requiredRuntimeDays;
-    const currentDays = challenge.simulation.timeline.currentRuntimeDays;
+        const timePoints = timelineData.timePoints;
+        const totalDays = challenge.experiment.requiredRuntimeDays;
+        const currentDays = challenge.simulation.timeline.currentRuntimeDays;
         const confidenceLevel = calculateConfidenceLevel(challenge.experiment.alpha);
 
-    // Generate complete timeline including future empty periods
-    window.completeTimeline = [...timePoints];
-    if (currentDays < totalDays) {
-        const lastPoint = timePoints[timePoints.length - 1];
-        const {type} = lastPoint.period;
-        const periodLength = type === 'day' ? 1 : type === 'week' ? 7 : 28;
-        let nextDay = lastPoint.period.startDay + periodLength;
+        // Generate complete timeline including future empty periods
+        window.completeTimeline = [...timePoints];
+        if (currentDays < totalDays) {
+            const lastPoint = timePoints[timePoints.length - 1];
+            const {type} = lastPoint.period;
+            const periodLength = type === 'day' ? 1 : type === 'week' ? 7 : 28;
+            let nextDay = lastPoint.period.startDay + periodLength;
 
-        while (nextDay <= totalDays) {
-            completeTimeline.push({
-                period: {type, startDay: nextDay},
-                base: {
-                    rate: null,
-                    rateCI: [null, null],
-                    visitors: null,
-                    conversions: null,
-                    cumulativeRate: null,
-                    cumulativeRateCI: [null, null]
-                },
-                variant: {
-                    rate: null,
-                    rateCI: [null, null],
-                    visitors: null,
-                    conversions: null,
-                    cumulativeRate: null,
-                    cumulativeRateCI: [null, null]
-                }
-            });
-            nextDay += periodLength;
+            while (nextDay <= totalDays) {
+                completeTimeline.push({
+                    period: {type, startDay: nextDay},
+                    base: {
+                        rate: null,
+                        rateCI: [null, null],
+                        visitors: null,
+                        conversions: null,
+                        cumulativeRate: null,
+                        cumulativeRateCI: [null, null]
+                    },
+                    variant: {
+                        rate: null,
+                        rateCI: [null, null],
+                        visitors: null,
+                        conversions: null,
+                        cumulativeRate: null,
+                        cumulativeRateCI: [null, null]
+                    }
+                });
+                nextDay += periodLength;
+            }
         }
-    }
 
-    // Create labels based on time period
+        // Create labels based on time period
         const labels = completeTimeline.map((point, index) => {
-        const {type, startDay} = point.period;
+            const {type, startDay} = point.period;
             let label;
-        if (type === 'day') {
+            if (type === 'day') {
                 label = `Day ${startDay}`;
-        } else if (type === 'week') {
+            } else if (type === 'week') {
                 label = `Week ${Math.ceil(startDay / 7)}`;
-        } else {
+            } else {
                 label = `Month ${Math.ceil(startDay / 28)}`;
             }
             // Add brackets around the label if it's the last full business cycle
@@ -591,6 +607,7 @@ function renderChart(challenge) {
     }
 
     return chart;
+
     } catch (error) {
         console.error('Error rendering chart:', error);
         showChartError(error);
@@ -631,12 +648,74 @@ function formatDecimal(value) {
     return value.toFixed(4);
 }
 
+function checkBaseConversionRateMismatch() {
+    // First check if debug mode is enabled
+    if (!UIState.debugMode) return false;
+    
+    // Check if we have valid analysis data
+    const analysis = window.currentAnalysis;
+    if (!analysis || !analysis.analysis || !analysis.analysis.hasBaseRateMismatch) {
+        return false;
+    }
+    
+    // Return the mismatch flag
+    return analysis.analysis.hasBaseRateMismatch;
+}
+
 function updateConfidenceIntervals(challenge) {
     // Update CI column header
     const ciHeader = document.getElementById('ci-header');
     if (ciHeader) {
         const confidenceLevel = calculateConfidenceLevel(challenge.experiment.alpha);
         ciHeader.textContent = `${confidenceLevel}% Confidence Intervals`;
+    }
+
+    // Update base rate cell and alert
+    const baseRateCell = document.getElementById('base-rate-cell');
+    baseRateCell.textContent = '';
+
+    if (baseRateCell) {
+        const hasMismatch = checkBaseConversionRateMismatch();
+        
+        if (hasMismatch) {
+            // Create base rate span
+            const baseRateSpan = document.createElement('span');
+            baseRateSpan.id = 'base-rate';
+            baseRateSpan.className = 'font-medium';
+            baseRateSpan.textContent = formatPercent(challenge.simulation.actualBaseConversionRate);
+            baseRateCell.appendChild(baseRateSpan);
+
+            // Create alert span
+            const alertSpan = document.createElement('span');
+            alertSpan.id = 'base-rate-alert';
+            alertSpan.className = 'ml-2 text-yellow-500 cursor-help tooltip-trigger';
+            alertSpan.textContent = '⚠️';
+            
+            // Create tooltip content
+            const analysis = window.currentAnalysis;
+            const { expected, actual, difference, pValue } = analysis.analysis.baseRate;
+            const tooltipContent = document.createElement('span');
+            tooltipContent.className = 'tooltip-content';
+            tooltipContent.innerHTML = `Design Base Rate: ${formatPercent(expected)}<br>Actual Base Rate: ${formatPercent(actual)}<br>Difference: ${formatPercent(difference)}<br>p-value: ${pValue.toFixed(4)}`;
+            alertSpan.appendChild(tooltipContent);
+
+            // Add mousemove event listener for tooltip positioning
+            alertSpan.addEventListener('mousemove', function(e) {
+                const tooltip = this.querySelector('.tooltip-content');
+                if (!tooltip) return;
+
+                // Get trigger position
+                const rect = this.getBoundingClientRect();
+                
+                // Position tooltip above the trigger
+                tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
+                tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+            });
+            
+            baseRateCell.appendChild(alertSpan);
+        } else {
+            baseRateCell.textContent = formatPercent(challenge.simulation.actualBaseConversionRate);
+        }
     }
 
     // Display p-value
@@ -1428,8 +1507,8 @@ function renderDifferenceChart(challenge) {
                     }
                 }
             },
-            scales: {
-                y: {
+                                scales: {
+                                    y: {
                     beginAtZero: false,
                     title: {
                         display: true,
@@ -1532,10 +1611,10 @@ function renderDifferenceChart(challenge) {
                     x: {
                         grid: {
                             display: false
-                        }
-                    }
-                }
-            });
+                                    }
+                                }
+                            }
+                        });
         }
 
         if (viewToggle) {

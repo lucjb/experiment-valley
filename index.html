@@ -92,49 +92,50 @@
         /* Tooltip styles */
         .tooltip-trigger {
             position: relative;
+            display: inline-block;
             cursor: help;
-            border-bottom: 1px dotted #666;
         }
         .tooltip-content {
             visibility: hidden;
-            position: absolute;
-            z-index: 100;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #333;
+            position: fixed;
+            background-color: #1f2937;
             color: white;
             text-align: left;
             padding: 12px 16px;
-            border-radius: 4px;
-            font-size: 0.875rem;
-            white-space: normal;
+            border-radius: 6px;
+            z-index: 9999;
             width: 300px;
             max-width: 90vw;
-            opacity: 0;
-            transition: opacity 0.2s;
+            white-space: normal;
             line-height: 1.4;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+            pointer-events: none;
         }
         .tooltip-trigger:hover .tooltip-content {
             visibility: visible;
             opacity: 1;
         }
-        .tooltip-content::after {
-            content: "";
+        .tooltip-content::before {
+            content: '';
             position: absolute;
-            top: 100%;
+            top: -6px;
             left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
+            transform: translateX(-50%);
+            border-width: 6px;
             border-style: solid;
-            border-color: #333 transparent transparent transparent;
+            border-color: transparent transparent #1f2937 transparent;
         }
         .tooltip-content a {
+            color: #60a5fa;
+            text-decoration: underline;
             display: inline-block;
             margin-top: 8px;
-            text-decoration: underline;
         }
-
+        .tooltip-content a:hover {
+            color: #93c5fd;
+        }
         /* Progress bar text visibility */
         #exp-progress-bar {
             z-index: 2;
@@ -149,23 +150,19 @@
         #exp-progress-bar + div span:not(:empty) {
             opacity: 1;
         }
-
         /* Mobile-specific styles */
         @media (max-width: 640px) {
             .decision-button {
                 width: 100%;
                 margin-bottom: 0.5rem;
             }
-
             .metrics-table {
                 font-size: 0.875rem;
             }
-
             .metrics-table th,
             .metrics-table td {
                 padding: 0.5rem 0.25rem;
             }
-
             .chart-container {
                 height: 200px;
             }
@@ -191,6 +188,23 @@
                         </li>
                         <li>Your score increases when you make correct implementation decisions</li>
                     </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-lg md:text-xl font-semibold text-blue-600 mb-3">Debug Mode</h3>
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="debug-mode" class="form-checkbox h-5 w-5 text-blue-600" checked>
+                        <label for="debug-mode" class="text-gray-700 text-base md:text-lg">
+                            Enable Debug Mode
+                            <span class="tooltip-trigger">
+                                ℹ
+                                <span class="tooltip-content">
+                                    When enabled, debug mode will highlight potential issues in the experiment data and analysis. This helps identify discrepancies between design parameters and actual results.
+                                    <a href="#" class="text-blue-500 hover:text-blue-700 mt-2 block">Learn more →</a>
+                                </span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
 
                 <div>
@@ -364,20 +378,20 @@
                             <!-- Bars Container -->
                             <div class="flex-1">
                                 <!-- Visible Bars -->
-                                <div class="w-full bg-gray-200 rounded-full h-6 md:h-8 relative">
+                        <div class="w-full bg-gray-200 rounded-full h-6 md:h-8 relative">
                                     <!-- Progress Bar -->
                                     <div id="exp-progress-bar" class="bg-blue-600 h-full rounded-full transition-all duration-500 flex items-center justify-between" style="width: 0%">
                                         <span id="progress-start-date" class="text-xs text-white font-medium ml-3"></span>
                                         <span id="exp-visitors-text" class="text-xs text-white font-medium mr-3"></span>
-                                    </div>
+                            </div>
                                     <!-- Remaining Bar -->
                                     <div id="exp-remaining-bar" class="absolute top-0 right-0 h-full rounded-full transition-all duration-500 flex items-center justify-between bg-gray-200" style="width: 100%">
                                         <span id="exp-remaining-text" class="text-xs text-gray-600 font-medium ml-3"></span>
                                         <span id="exp-total-text" class="text-xs text-gray-600 font-medium mr-3"></span>
-                                    </div>
+                        </div>
                                     <!-- Complete Text -->
                                     <span id="exp-complete-text" class="hidden absolute inset-0 flex items-center justify-center text-xs text-white font-medium">Experiment Complete</span>
-                                </div>
+                        </div>
                                 <!-- Invisible Bar for Text Positioning -->
                                 <div class="w-full h-6 md:h-8 relative">
                                     <!-- Invisible Progress Bar -->
@@ -388,18 +402,18 @@
                                     <div id="exp-remaining-bar-invisible" class="absolute top-0 right-0 h-full rounded-r-full transition-all duration-500 flex items-center justify-between" style="width: 100%">
                                         <span id="exp-days-remaining-text" class="text-xs text-gray-500 font-medium ml-3"></span>
                                         <span id="exp-total-days-text" class="text-xs text-gray-500 font-medium mr-3"></span>
-                                    </div>
-                                </div>
-                            </div>
+                    </div>
+                </div>
+            </div>
 
                             <!-- End Date Container -->
                             <div class="flex flex-col space-y-0">
                                 <div class="h-6 md:h-8 flex items-center">
                                     <span id="progress-end-date" class="text-xs text-gray-500 font-medium"></span>
-                                </div>
-                                <div class="h-6 md:h-8"></div>
                             </div>
+                                <div class="h-6 md:h-8"></div>
                         </div>
+                            </div>
                     </div>
                 </div>
             </div>
@@ -494,7 +508,7 @@
                                     <td class="border px-2 py-1 font-semibold whitespace-nowrap">Base</td>
                                     <td class="border px-2 py-1 text-right whitespace-nowrap" id="base-visitors"></td>
                                     <td class="border px-2 py-1 text-right whitespace-nowrap" id="base-conversions"></td>
-                                    <td class="border px-2 py-1 text-right whitespace-nowrap" id="base-rate"></td>
+                                    <td class="border px-2 py-1 text-right whitespace-nowrap" id="base-rate-cell"></td>
                                     <td class="border px-2 py-1">
                                         <div id="base-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
                                             <div class="absolute h-full bg-blue-200 rounded-md"></div>
@@ -704,129 +718,147 @@
 
         <!-- Cheat Sheet Modal -->
         <div id="cheat-sheet-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div class="relative top-32 mx-auto p-4 border w-full max-w-md md:w-auto shadow-lg rounded-md bg-white m-4">
-                <div class="mt-2">
-                    <div class="flex justify-between items-center border-b pb-3">
-                        <h3 class="text-base md:text-lg font-medium text-gray-900">Experiment Trustworthiness Cheat-sheet</h3>
-                        <button id="close-cheat-sheet" class="text-gray-400 hover:text-gray-500 p-2">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+    <div class="relative top-32 mx-auto p-4 border w-full max-w-md md:w-auto shadow-lg rounded-md bg-white m-4">
+        <div class="mt-2">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-base md:text-lg font-medium text-gray-900">Experiment Trustworthiness Cheat-sheet</h3>
+                <button id="close-cheat-sheet" class="text-gray-400 hover:text-gray-500 p-2">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="mt-4">
+                <div class="space-y-3">
+                    <!-- Sample Ratio Mismatch Section -->
+                    <div class="border rounded-lg hover:bg-gray-50">
+                        <button class="w-full text-left flex items-start p-3 md:p-4" onclick="toggleContent(this)">
+                            <svg class="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
+                            <div class="flex-grow">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-medium text-gray-900 text-sm md:text-base">Sample Ratio Mismatch</span>
+                                    <svg class="toggle-arrow h-5 w-5 ml-2 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-xs md:text-sm text-gray-500 mt-1">Check traffic split</p>
+                                <div class="toggle-content hidden mt-2 bg-gray-100 rounded p-2">
+                                    <ul class="list-disc pl-4 text-xs md:text-sm text-gray-600">
+                                        <li>Compare visitor counts</li>
+                                        <li>Look for approximate 50-50 split</li>
+                                    </ul>
+                                </div>
+                            </div>
                         </button>
                     </div>
-                    <div class="mt-4">
-                        <div class="space-y-3">
-                            <!-- Sample Ratio Mismatch Section -->
-                            <div class="border rounded-lg hover:bg-gray-50">
-                                <button class="w-full text-left flex items-start p-3 md:p-4" onclick="toggleContent(this)">
-                                    <svg class="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    <div class="flex-grow">
-                                        <div class="flex justify-between items-center">
-                                            <span class="font-medium text-gray-900 text-sm md:text-base">Sample Ratio Mismatch</span>
-                                            <svg class="toggle-arrow h-5 w-5 ml-2 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                            </svg>
-                                        </div>
-                                        <p class="text-xs md:text-sm text-gray-500 mt-1">Check traffic split</p>
-                                        <div class="toggle-content hidden mt-2 bg-gray-100 rounded p-2">
-                                            <ul class="list-disc pl-4 text-xs md:text-sm text-gray-600">
-                                                <li>Compare visitor counts</li>
-                                                <li>Look for approximate 50-50 split</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </button>
-                            </div>
 
-                            <!-- Traffic Patterns Section -->
-                            <div class="border rounded-lg hover:bg-gray-50">
-                                <button class="w-full text-left flex items-start p-3 md:p-4" onclick="toggleContent(this)">
-                                    <svg class="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <!-- Traffic Patterns Section -->
+                    <div class="border rounded-lg hover:bg-gray-50">
+                        <button class="w-full text-left flex items-start p-3 md:p-4" onclick="toggleContent(this)">
+                            <svg class="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div class="flex-grow">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-medium text-gray-900 text-sm md:text-base">Traffic Patterns</span>
+                                    <svg class="toggle-arrow h-5 w-5 ml-2 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                     </svg>
-                                    <div class="flex-grow">
-                                        <div class="flex justify-between items-center">
-                                            <span class="font-medium text-gray-900 text-sm md:text-base">Traffic Patterns</span>
-                                            <svg class="toggle-arrow h-5 w-5 ml-2 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                            </svg>
-                                        </div>
-                                        <p class="text-xs md:text-sm text-gray-500 mt-1">Compare with design</p>
-                                        <div class="toggle-content hidden mt-2 bg-gray-100 rounded p-2">
-                                            <ul class="list-disc pl-4 text-xs md:text-sm text-gray-600">
-                                                <li>Daily Traffic</li>
-                                                <li>Base Conversion Rate</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </button>
+                                </div>
+                                <p class="text-xs md:text-sm text-gray-500 mt-1">Compare with design</p>
+                                <div class="toggle-content hidden mt-2 bg-gray-100 rounded p-2">
+                                    <ul class="list-disc pl-4 text-xs md:text-sm text-gray-600">
+                                        <li>Daily Traffic</li>
+                                        <li>Base Conversion Rate</li>
+                                    </ul>
+                                </div>
                             </div>
+                        </button>
+                    </div>
 
-                            <!-- Sample Size Section -->
-                            <div class="border rounded-lg hover:bg-gray-50">
-                                <button class="w-full text-left flex items-start p-3 md:p-4" onclick="toggleContent(this)">
-                                    <svg class="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <!-- Sample Size Section -->
+                    <div class="border rounded-lg hover:bg-gray-50">
+                        <button class="w-full text-left flex items-start p-3 md:p-4" onclick="toggleContent(this)">
+                            <svg class="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div class="flex-grow">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-medium text-gray-900 text-sm md:text-base">Sample Size</span>
+                                    <svg class="toggle-arrow h-5 w-5 ml-2 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                     </svg>
-                                    <div class="flex-grow">
-                                        <div class="flex justify-between items-center">
-                                            <span class="font-medium text-gray-900 text-sm md:text-base">Sample Size</span>
-                                            <svg class="toggle-arrow h-5 w-5 ml-2 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                            </svg>
-                                        </div>
-                                        <p class="text-xs md:text-sm text-gray-500 mt-1">Check required sample size</p>
-                                        <div class="toggle-content hidden mt-2 bg-gray-100 rounded p-2">
-                                            <ul class="list-disc pl-4 text-xs md:text-sm text-gray-600">
-                                                <li>Meet minimum visitors per variant</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </button>
+                                </div>
+                                <p class="text-xs md:text-sm text-gray-500 mt-1">Check required sample size</p>
+                                <div class="toggle-content hidden mt-2 bg-gray-100 rounded p-2">
+                                    <ul class="list-disc pl-4 text-xs md:text-sm text-gray-600">
+                                        <li>Meet minimum visitors per variant</li>
+                                    </ul>
+                                </div>
                             </div>
+                        </button>
+                    </div>
 
-                            <!-- Business Cycles Section -->
-                            <div class="border rounded-lg hover:bg-gray-50">
-                                <button class="w-full text-left flex items-start p-3 md:p-4" onclick="toggleContent(this)">
-                                    <svg class="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <!-- Business Cycles Section -->
+                    <div class="border rounded-lg hover:bg-gray-50">
+                        <button class="w-full text-left flex items-start p-3 md:p-4" onclick="toggleContent(this)">
+                            <svg class="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div class="flex-grow">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-medium text-gray-900 text-sm md:text-base">Business Cycles</span>
+                                    <svg class="toggle-arrow h-5 w-5 ml-2 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                     </svg>
-                                    <div class="flex-grow">
-                                        <div class="flex justify-between items-center">
-                                            <span class="font-medium text-gray-900 text-sm md:text-base">Business Cycles</span>
-                                            <svg class="toggle-arrow h-5 w-5 ml-2 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                            </svg>
-                                        </div>
-                                        <p class="text-xs md:text-sm text-gray-500 mt-1">Check cycle completion</p>
-                                        <div class="toggle-content hidden mt-2 bg-gray-100 rounded p-2">
-                                            <ul class="list-disc pl-4 text-xs md:text-sm text-gray-600">
-                                                <li>At least 7 days</li>
-                                                <li>Full business cycles</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </button>
+                                </div>
+                                <p class="text-xs md:text-sm text-gray-500 mt-1">Check cycle completion</p>
+                                <div class="toggle-content hidden mt-2 bg-gray-100 rounded p-2">
+                                    <ul class="list-disc pl-4 text-xs md:text-sm text-gray-600">
+                                        <li>At least 7 days</li>
+                                        <li>Full business cycles</li>
+                                    </ul>
+                                </div>
                             </div>
-                        </div>
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
+        </div>
 
-    <script>
-        function toggleContent(button) {
-            const content = button.querySelector('.toggle-content');
-            const arrow = button.querySelector('.toggle-arrow');
+        <script>
+            function toggleContent(button) {
+                const content = button.querySelector('.toggle-content');
+                const arrow = button.querySelector('.toggle-arrow');
 
-            if (content && arrow) {
-                content.classList.toggle('hidden');
-                arrow.style.transform = content.classList.contains('hidden') ? '' : 'rotate(180deg)';
+                if (content && arrow) {
+                    content.classList.toggle('hidden');
+                    arrow.style.transform = content.classList.contains('hidden') ? '' : 'rotate(180deg)';
+                }
             }
-        }
-    </script>
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const tooltipTriggers = document.querySelectorAll('.tooltip-trigger');
+            
+            tooltipTriggers.forEach(trigger => {
+                trigger.addEventListener('mousemove', function(e) {
+                    const tooltip = this.querySelector('.tooltip-content');
+                    if (!tooltip) return;
+
+                    // Get trigger position
+                    const rect = this.getBoundingClientRect();
+                    
+                    // Position tooltip above the trigger
+                    tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
+                    tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+                });
+            });
+        });
+        </script>
 </body>
 </html>
