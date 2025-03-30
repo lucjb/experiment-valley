@@ -1,81 +1,12 @@
-// UI State Management
-const UIState = {
-    currentExperiment: 1,
-    score: 0,
-    streak: 0,
-    totalAttempts: 0,
-    trustDecision: null,
-    implementDecision: null,
-    EXPERIMENTS_PER_SESSION: 3,
-    debugMode: true,  // Set debug mode to true by default
-    
-    updateScore(newScore) {
-        this.score = newScore;
-        this.updateScoreDisplay();
-    },
-    
-    updateStreak(newStreak) {
-        this.streak = newStreak;
-        this.updateStreakDisplay();
-    },
-    
-    updateAccuracy() {
-        const accuracy = Math.round((this.score / this.totalAttempts) * 100);
-        this.updateAccuracyDisplay(accuracy);
-    },
-    
-    updateScoreDisplay() {
-        const scoreElement = document.getElementById('score');
-        if (scoreElement) scoreElement.textContent = this.score;
-    },
-    
-    updateStreakDisplay() {
-        const streakElement = document.getElementById('streak');
-        if (streakElement) streakElement.textContent = this.streak;
-    },
-    
-    updateAccuracyDisplay(accuracy) {
-        const accuracyElement = document.getElementById('accuracy');
-        if (accuracyElement) accuracyElement.textContent = `${accuracy}%`;
-    },
-    
-    reset() {
-        this.currentExperiment = 1;
-        this.score = 0;
-        this.streak = 0;
-        this.totalAttempts = 0;
-        this.trustDecision = null;
-        this.implementDecision = null;
-        this.updateScoreDisplay();
-        this.updateStreakDisplay();
-        this.updateAccuracyDisplay(0);
-    },
-
-    initializeDebugMode() {
-        const debugCheckbox = document.getElementById('debug-mode');
-        if (debugCheckbox) {
-            // Set initial state
-            this.debugMode = debugCheckbox.checked;
-            
-            // Add change event listener
-            debugCheckbox.addEventListener('change', (e) => {
-                this.debugMode = e.target.checked;
-                // Disable the checkbox after initial selection
-                debugCheckbox.disabled = true;
-            });
-        }
-    }
-};
 
 function formatTimeLabel(period) {
-    const { type, startDay } = period;
-    if (type === 'day') {
-        return `Day ${startDay}`;
-    } else if (type === 'week') {
-        return `Week ${Math.ceil(startDay / 7)}`;
-    } else {
-        return `Month ${Math.ceil(startDay / 28)}`;
-    }
+    const date = new Date(period);
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 }
 
 // Modal Management
@@ -85,7 +16,7 @@ const ModalManager = {
         completion: 'completion-modal',
         cheatSheet: 'cheat-sheet-modal'
     },
-    
+
     show(modalId) {
         const modal = document.getElementById(modalId);
         if (modal) {
@@ -93,7 +24,7 @@ const ModalManager = {
             setTimeout(() => modal.classList.add('fade-in'), 10);
         }
     },
-    
+
     hide(modalId) {
         const modal = document.getElementById(modalId);
         if (modal) {
@@ -104,14 +35,14 @@ const ModalManager = {
             }, 500);
         }
     },
-    
+
     showFeedback(correct, message) {
         const modal = document.getElementById(this.modals.feedback);
         if (!modal) return;
-        
+
         const icon = document.getElementById('feedback-icon');
         const title = document.getElementById('feedback-title');
-        
+
         if (correct) {
             icon.className = 'mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100';
             icon.innerHTML = '<svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
@@ -123,11 +54,11 @@ const ModalManager = {
             title.textContent = 'Incorrect';
             title.className = 'text-lg leading-6 font-medium text-red-900 mt-4';
         }
-        
+
         document.getElementById('feedback-message').innerHTML = message;
         this.show(this.modals.feedback);
     },
-    
+
     showCompletion(score, accuracy) {
         document.getElementById('final-score').textContent = score;
         document.getElementById('final-accuracy').textContent = `${accuracy}%`;
@@ -135,73 +66,6 @@ const ModalManager = {
     }
 };
 
-const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-        legend: {
-            display: false
-        },
-        zoom: {
-            pan: {
-                enabled: true,
-                mode: 'x',
-                modifierKey: 'ctrl',
-            },
-            zoom: {
-                wheel: {
-                    enabled: true,
-                    modifierKey: 'ctrl',
-                },
-                pinch: {
-                    enabled: true
-                },
-                mode: 'x',
-            }
-        },
-        tooltip: {
-            enabled: true,
-            mode: 'index',
-            intersect: false,
-            filter: function(tooltipItem) {
-                // Only show tooltips for main data lines (not CI bounds)
-                return !tooltipItem.dataset.isCI;
-            },
-            callbacks: {
-                title: function(context) {
-                    if (context.length === 0) return '';
-                    return context[0].label;
-                },
-                label: function(context) {
-                    // Skip CI datasets
-                    if (context.dataset.isCI) return null;
-
-                    const timePoint = completeTimeline[context.dataIndex];
-                    const isBase = context.dataset.label.toLowerCase().includes('base');
-                    const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
-                    const data = isBase ? timePoint.base : timePoint.variant;
-
-                    if (!data) return null;
-
-                    // Get the appropriate metrics based on view type
-                    const rate = isCumulative ? data.cumulativeRate : data.rate;
-                    const ci = isCumulative ? data.cumulativeRateCI : data.rateCI;
-                    const visitors = isCumulative ? data.cumulativeVisitors : data.visitors;
-                    const conversions = isCumulative ? data.cumulativeConversions : data.conversions;
-
-                    // Format the tooltip lines
-                    return [
-                        `${isBase ? 'Base' : 'Test'} Metrics:`,
-                        `Rate: ${formatPercent(rate)}`,
-                        `CI: ${formatPercent(ci[0])} - ${formatPercent(ci[1])}`,
-                        `Visitors: ${visitors.toLocaleString()}`,
-                        `Conversions: ${conversions.toLocaleString()}`
-                    ];
-                }
-            }
-        }
-    }
-};
 
 // Define the renderChart function before it's used
 function renderChart(challenge) {
@@ -209,7 +73,7 @@ function renderChart(challenge) {
         validateChallenge(challenge);
         const timelineData = challenge.simulation.timeline;
         validateTimelineData(timelineData);
-        
+
         const timePoints = timelineData.timePoints;
         const totalDays = challenge.experiment.requiredRuntimeDays;
         const currentDays = challenge.simulation.timeline.currentRuntimeDays;
@@ -219,13 +83,13 @@ function renderChart(challenge) {
         window.completeTimeline = [...timePoints];
         if (currentDays < totalDays) {
             const lastPoint = timePoints[timePoints.length - 1];
-            const {type} = lastPoint.period;
+            const { type } = lastPoint.period;
             const periodLength = type === 'day' ? 1 : type === 'week' ? 7 : 28;
             let nextDay = lastPoint.period.startDay + periodLength;
 
             while (nextDay <= totalDays) {
                 completeTimeline.push({
-                    period: {type, startDay: nextDay},
+                    period: { type, startDay: nextDay },
                     base: {
                         rate: null,
                         rateCI: [null, null],
@@ -249,7 +113,7 @@ function renderChart(challenge) {
 
         // Create labels based on time period
         const labels = completeTimeline.map((point, index) => {
-            const {type, startDay} = point.period;
+            const { type, startDay } = point.period;
             let label;
             if (type === 'day') {
                 label = `Day ${startDay}`;
@@ -274,242 +138,242 @@ function renderChart(challenge) {
             }
         };
 
-    // Create datasets based on the view type
-    function createDatasets(viewType) {
-        const datasets = viewType === 'daily' ? [
-            {
-                label: `Base ${timelineData.timePeriod}ly Rate`,
-                data: completeTimeline.map(d => {
-                    if (!d || !d.base || d.base.rate === null) return null;
-                    return Number(d.base.rate.toFixed(4));
-                }),
-                borderColor: 'rgb(147, 51, 234)',
-                backgroundColor: 'rgb(147, 51, 234)',
-                pointBackgroundColor: completeTimeline.map((_, i) => 
-                    i > timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)'
-                ),
-                pointBorderColor: completeTimeline.map((_, i) => 
-                    i > timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)'
-                ),
-                segment: {
-                    borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)',
-                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)',
+        // Create datasets based on the view type
+        function createDatasets(viewType) {
+            const datasets = viewType === 'daily' ? [
+                {
+                    label: `Base ${timelineData.timePeriod}ly Rate`,
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.base || d.base.rate === null) return null;
+                        return Number(d.base.rate.toFixed(4));
+                    }),
+                    borderColor: 'rgb(147, 51, 234)',
+                    backgroundColor: 'rgb(147, 51, 234)',
+                    pointBackgroundColor: completeTimeline.map((_, i) =>
+                        i > timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)'
+                    ),
+                    pointBorderColor: completeTimeline.map((_, i) =>
+                        i > timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)'
+                    ),
+                    segment: {
+                        borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)',
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)',
+                    },
+                    fill: false,
+                    tension: 0.4,
+                    spanGaps: true,
+                    isCI: false
                 },
-                fill: false,
-                tension: 0.4,
-                spanGaps: true,
-                isCI: false
-            },
-            {
-                label: 'Base CI Upper',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.base || d.base.rateCI === null || d.base.rate === null) return null;
-                    return d.base.rateCI[1];
-                }),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(147, 51, 234, 0.1)',
-                segment: {
-                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(128, 128, 128, 0.1)' : 'rgba(147, 51, 234, 0.1)',
+                {
+                    label: 'Base CI Upper',
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.base || d.base.rateCI === null || d.base.rate === null) return null;
+                        return d.base.rateCI[1];
+                    }),
+                    borderColor: 'transparent',
+                    backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                    segment: {
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(128, 128, 128, 0.1)' : 'rgba(147, 51, 234, 0.1)',
+                    },
+                    fill: '+1',
+                    tension: 0.4,
+                    spanGaps: true,
+                    isCI: true
                 },
-                fill: '+1',
-                tension: 0.4,
-                spanGaps: true,
-                isCI: true
-            },
-            {
-                label: 'Base CI Lower',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.base || d.base.rateCI === null || d.base.rate === null) return null;
-                    return d.base.rateCI[0];
-                }),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(147, 51, 234, 0.1)',
-                segment: {
-                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(128, 128, 128, 0.1)' : 'rgba(147, 51, 234, 0.1)',
+                {
+                    label: 'Base CI Lower',
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.base || d.base.rateCI === null || d.base.rate === null) return null;
+                        return d.base.rateCI[0];
+                    }),
+                    borderColor: 'transparent',
+                    backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                    segment: {
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(128, 128, 128, 0.1)' : 'rgba(147, 51, 234, 0.1)',
+                    },
+                    fill: false,
+                    tension: 0.4,
+                    spanGaps: true,
+                    isCI: true
                 },
-                fill: false,
-                tension: 0.4,
-                spanGaps: true,
-                isCI: true
-            },
-            {
-                label: `Test ${timelineData.timePeriod}ly Rate`,
-                data: completeTimeline.map(d => {
-                    if (!d || !d.variant || d.variant.rate === null) return null;
-                    return Number(d.variant.rate.toFixed(4));
-                }),
-                borderColor: 'rgb(59, 130, 246)',
-                backgroundColor: 'rgb(59, 130, 246)',
-                pointBackgroundColor: completeTimeline.map((_, i) => 
-                    i > timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)'
-                ),
-                pointBorderColor: completeTimeline.map((_, i) => 
-                    i > timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)'
-                ),
-                segment: {
-                    borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)',
-                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)',
+                {
+                    label: `Test ${timelineData.timePeriod}ly Rate`,
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.variant || d.variant.rate === null) return null;
+                        return Number(d.variant.rate.toFixed(4));
+                    }),
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgb(59, 130, 246)',
+                    pointBackgroundColor: completeTimeline.map((_, i) =>
+                        i > timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)'
+                    ),
+                    pointBorderColor: completeTimeline.map((_, i) =>
+                        i > timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)'
+                    ),
+                    segment: {
+                        borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)',
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)',
+                    },
+                    fill: false,
+                    tension: 0.4,
+                    spanGaps: true,
+                    isCI: false
                 },
-                fill: false,
-                tension: 0.4,
-                spanGaps: true,
-                isCI: false
-            },
-            {
-                label: 'Test CI Upper',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.variant || d.variant.rateCI === null || d.variant.rate === null) return null;
-                    return d.variant.rateCI[1];
-                }),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                segment: {
-                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(192, 192, 192, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                {
+                    label: 'Test CI Upper',
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.variant || d.variant.rateCI === null || d.variant.rate === null) return null;
+                        return d.variant.rateCI[1];
+                    }),
+                    borderColor: 'transparent',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    segment: {
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(192, 192, 192, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                    },
+                    fill: '+1',
+                    tension: 0.4,
+                    spanGaps: true,
+                    isCI: true
                 },
-                fill: '+1',
-                tension: 0.4,
-                spanGaps: true,
-                isCI: true
-            },
-            {
-                label: 'Test CI Lower',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.variant || d.variant.rateCI === null || d.variant.rate === null) return null;
-                    return d.variant.rateCI[0];
-                }),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                segment: {
-                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(192, 192, 192, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                {
+                    label: 'Test CI Lower',
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.variant || d.variant.rateCI === null || d.variant.rate === null) return null;
+                        return d.variant.rateCI[0];
+                    }),
+                    borderColor: 'transparent',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    segment: {
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(192, 192, 192, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                    },
+                    fill: false,
+                    tension: 0.4,
+                    spanGaps: true,
+                    isCI: true
+                }
+            ] : [
+                {
+                    label: 'Base Cumulative Rate',
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.base || d.base.cumulativeRate === null) return null;
+                        return Number(d.base.cumulativeRate.toFixed(4));
+                    }),
+                    borderColor: 'rgb(107, 11, 194)',
+                    backgroundColor: 'rgb(107, 11, 194)',
+                    pointBackgroundColor: completeTimeline.map((_, i) =>
+                        i > timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)'
+                    ),
+                    pointBorderColor: completeTimeline.map((_, i) =>
+                        i > timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)'
+                    ),
+                    segment: {
+                        borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)',
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)',
+                    },
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.4,
+                    spanGaps: true,
+                    isCI: false
                 },
-                fill: false,
-                tension: 0.4,
-                spanGaps: true,
-                isCI: true
-            }
-        ] : [
-            {
-                label: 'Base Cumulative Rate',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.base || d.base.cumulativeRate === null) return null;
-                    return Number(d.base.cumulativeRate.toFixed(4));
-                }),
-                borderColor: 'rgb(107, 11, 194)',
-                backgroundColor: 'rgb(107, 11, 194)',
-                pointBackgroundColor: completeTimeline.map((_, i) => 
-                    i > timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)'
-                ),
-                pointBorderColor: completeTimeline.map((_, i) => 
-                    i > timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)'
-                ),
-                segment: {
-                    borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)',
-                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)',
+                {
+                    label: 'Base CI Upper',
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.base || d.base.cumulativeRateCI === null || d.base.cumulativeRate === null) return null;
+                        return d.base.cumulativeRateCI[1];
+                    }),
+                    borderColor: 'transparent',
+                    backgroundColor: 'rgba(107, 11, 194, 0.1)',
+                    segment: {
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(128, 128, 128, 0.1)' : 'rgba(107, 11, 194, 0.1)',
+                    },
+                    fill: '+1',
+                    tension: 0.4,
+                    spanGaps: true,
+                    isCI: true
                 },
-                borderDash: [5, 5],
-                fill: false,
-                tension: 0.4,
-                spanGaps: true,
-                isCI: false
-            },
-            {
-                label: 'Base CI Upper',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.base || d.base.cumulativeRateCI === null || d.base.cumulativeRate === null) return null;
-                    return d.base.cumulativeRateCI[1];
-                }),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(107, 11, 194, 0.1)',
-                segment: {
-                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(128, 128, 128, 0.1)' : 'rgba(107, 11, 194, 0.1)',
+                {
+                    label: 'Base CI Lower',
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.base || d.base.cumulativeRateCI === null || d.base.cumulativeRate === null) return null;
+                        return d.base.cumulativeRateCI[0];
+                    }),
+                    borderColor: 'transparent',
+                    backgroundColor: 'rgba(107, 11, 194, 0.1)',
+                    segment: {
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(128, 128, 128, 0.1)' : 'rgba(107, 11, 194, 0.1)',
+                    },
+                    fill: false,
+                    tension: 0.4,
+                    spanGaps: true,
+                    isCI: true
                 },
-                fill: '+1',
-                tension: 0.4,
-                spanGaps: true,
-                isCI: true
-            },
-            {
-                label: 'Base CI Lower',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.base || d.base.cumulativeRateCI === null || d.base.cumulativeRate === null) return null;
-                    return d.base.cumulativeRateCI[0];
-                }),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(107, 11, 194, 0.1)',
-                segment: {
-                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(128, 128, 128, 0.1)' : 'rgba(107, 11, 194, 0.1)',
+                {
+                    label: 'Test Cumulative Rate',
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.variant || d.variant.cumulativeRate === null) return null;
+                        return Number(d.variant.cumulativeRate.toFixed(4));
+                    }),
+                    borderColor: 'rgb(19, 90, 206)',
+                    backgroundColor: 'rgb(19, 90, 206)',
+                    pointBackgroundColor: completeTimeline.map((_, i) =>
+                        i > timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)'
+                    ),
+                    pointBorderColor: completeTimeline.map((_, i) =>
+                        i > timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)'
+                    ),
+                    segment: {
+                        borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)',
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)',
+                    },
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.4,
+                    spanGaps: true,
+                    isCI: false
                 },
-                fill: false,
-                tension: 0.4,
-                spanGaps: true,
-                isCI: true
-            },
-            {
-                label: 'Test Cumulative Rate',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.variant || d.variant.cumulativeRate === null) return null;
-                    return Number(d.variant.cumulativeRate.toFixed(4));
-                }),
-                borderColor: 'rgb(19, 90, 206)',
-                backgroundColor: 'rgb(19, 90, 206)',
-                pointBackgroundColor: completeTimeline.map((_, i) => 
-                    i > timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)'
-                ),
-                pointBorderColor: completeTimeline.map((_, i) => 
-                    i > timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)'
-                ),
-                segment: {
-                    borderColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)',
-                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)',
+                {
+                    label: 'Test CI Upper',
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.variant || d.variant.cumulativeRateCI === null || d.variant.cumulativeRate === null) return null;
+                        return d.variant.cumulativeRateCI[1];
+                    }),
+                    borderColor: 'transparent',
+                    backgroundColor: 'rgba(19, 90, 206, 0.1)',
+                    segment: {
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(192, 192, 192, 0.1)' : 'rgba(19, 90, 206, 0.1)',
+                    },
+                    fill: '+1',
+                    tension: 0.4,
+                    spanGaps: true,
+                    isCI: true
                 },
-                borderDash: [5, 5],
-                fill: false,
-                tension: 0.4,
-                spanGaps: true,
-                isCI: false
-            },
-            {
-                label: 'Test CI Upper',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.variant || d.variant.cumulativeRateCI === null || d.variant.cumulativeRate === null) return null;
-                    return d.variant.cumulativeRateCI[1];
-                }),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(19, 90, 206, 0.1)',
-                segment: {
-                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(192, 192, 192, 0.1)' : 'rgba(19, 90, 206, 0.1)',
-                },
-                fill: '+1',
-                tension: 0.4,
-                spanGaps: true,
-                isCI: true
-            },
-            {
-                label: 'Test CI Lower',
-                data: completeTimeline.map(d => {
-                    if (!d || !d.variant || d.variant.cumulativeRateCI === null || d.variant.cumulativeRate === null) return null;
-                    return d.variant.cumulativeRateCI[0];
-                }),
-                borderColor: 'transparent',
-                backgroundColor: 'rgba(19, 90, 206, 0.1)',
-                segment: {
-                    backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(192, 192, 192, 0.1)' : 'rgba(19, 90, 206, 0.1)',
-                },
-                fill: false,
-                tension: 0.4,
-                spanGaps: true,
-                isCI: true
-            }
-        ];
+                {
+                    label: 'Test CI Lower',
+                    data: completeTimeline.map(d => {
+                        if (!d || !d.variant || d.variant.cumulativeRateCI === null || d.variant.cumulativeRate === null) return null;
+                        return d.variant.cumulativeRateCI[0];
+                    }),
+                    borderColor: 'transparent',
+                    backgroundColor: 'rgba(19, 90, 206, 0.1)',
+                    segment: {
+                        backgroundColor: (ctx) => ctx.p0DataIndex >= timelineData.lastFullBusinessCycleIndex ? 'rgba(192, 192, 192, 0.1)' : 'rgba(19, 90, 206, 0.1)',
+                    },
+                    fill: false,
+                    tension: 0.4,
+                    spanGaps: true,
+                    isCI: true
+                }
+            ];
 
-        // Calculate y-axis range based on the datasets
-        const yAxisRange = calculateYAxisRange(datasets);
-        datasets.yAxisRange = yAxisRange;
+            // Calculate y-axis range based on the datasets
+            const yAxisRange = calculateYAxisRange(datasets);
+            datasets.yAxisRange = yAxisRange;
 
-        return datasets;
-    }
+            return datasets;
+        }
 
-    // Initialize chart with daily view
+        // Initialize chart with daily view
         const chart = ChartManager.createChart('conversion-chart', 'line', {
             labels,
             datasets: createDatasets('daily')
@@ -523,11 +387,11 @@ function renderChart(challenge) {
                 tooltip: {
                     ...chartOptions.plugins.tooltip,
                     callbacks: {
-                        title: function(context) {
+                        title: function (context) {
                             if (context.length === 0) return '';
                             return context[0].label;
                         },
-                        label: function(context) {
+                        label: function (context) {
                             // Skip CI datasets
                             if (context.dataset.isCI) return null;
 
@@ -560,53 +424,53 @@ function renderChart(challenge) {
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        callback: function(value) {
+                        callback: function (value) {
                             return formatPercent(value);
+                        }
                     }
                 }
             }
-        }
-    });
+        });
 
-    // Add view toggle functionality
-    const viewToggle = document.getElementById('chart-view-toggle');
-    if (viewToggle) {
-        viewToggle.options[0].text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
+        // Add view toggle functionality
+        const viewToggle = document.getElementById('chart-view-toggle');
+        if (viewToggle) {
+            viewToggle.options[0].text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
 
-        viewToggle.addEventListener('change', function(e) {
-                    const viewType = e.target.value;
-                    const datasets = createDatasets(viewType);
+            viewToggle.addEventListener('change', function (e) {
+                const viewType = e.target.value;
+                const datasets = createDatasets(viewType);
 
                 ChartManager.updateChart('conversion-chart', {
                     labels,
                     datasets
                 }, {
-                            plugins: {
-                                ...chartOptions.plugins,
-                                title: {
-                                    display: true,
-                                    text: viewType === 'daily' ?
-                                        `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates` :
-                                        'Cumulative Conversion Rates'
-                                }
-                            },
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    min: datasets.yAxisRange ? datasets.yAxisRange.min : undefined,
-                                    max: datasets.yAxisRange ? datasets.yAxisRange.max : undefined,
-                                    ticks: {
-                                        callback: function(value) {
-                                            return formatPercent(value);
-                                    }
+                    plugins: {
+                        ...chartOptions.plugins,
+                        title: {
+                            display: true,
+                            text: viewType === 'daily' ?
+                                `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates` :
+                                'Cumulative Conversion Rates'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            min: datasets.yAxisRange ? datasets.yAxisRange.min : undefined,
+                            max: datasets.yAxisRange ? datasets.yAxisRange.max : undefined,
+                            ticks: {
+                                callback: function (value) {
+                                    return formatPercent(value);
                                 }
                             }
                         }
-                    });
-        });
-    }
+                    }
+                });
+            });
+        }
 
-    return chart;
+        return chart;
 
     } catch (error) {
         console.error('Error rendering chart:', error);
@@ -627,14 +491,6 @@ function validateTimelineData(timelineData) {
     }
 }
 
-function showLoading(chartId) {
-    document.getElementById(`${chartId}-loading`).classList.remove('hidden');
-}
-
-function hideLoading(chartId) {
-    document.getElementById(`${chartId}-loading`).classList.add('hidden');
-}
-
 function calculateConfidenceLevel(alpha) {
     return ((1 - alpha) * 100).toFixed(0);
 }
@@ -648,74 +504,12 @@ function formatDecimal(value) {
     return value.toFixed(4);
 }
 
-function checkBaseConversionRateMismatch() {
-    // First check if debug mode is enabled
-    if (!UIState.debugMode) return false;
-    
-    // Check if we have valid analysis data
-    const analysis = window.currentAnalysis;
-    if (!analysis || !analysis.analysis || !analysis.analysis.hasBaseRateMismatch) {
-        return false;
-    }
-    
-    // Return the mismatch flag
-    return analysis.analysis.hasBaseRateMismatch;
-}
-
 function updateConfidenceIntervals(challenge) {
     // Update CI column header
     const ciHeader = document.getElementById('ci-header');
     if (ciHeader) {
         const confidenceLevel = calculateConfidenceLevel(challenge.experiment.alpha);
         ciHeader.textContent = `${confidenceLevel}% Confidence Intervals`;
-    }
-
-    // Update base rate cell and alert
-    const baseRateCell = document.getElementById('base-rate-cell');
-    baseRateCell.textContent = '';
-
-    if (baseRateCell) {
-        const hasMismatch = checkBaseConversionRateMismatch();
-        
-        if (hasMismatch) {
-            // Create base rate span
-            const baseRateSpan = document.createElement('span');
-            baseRateSpan.id = 'base-rate';
-            baseRateSpan.className = 'font-medium';
-            baseRateSpan.textContent = formatPercent(challenge.simulation.actualBaseConversionRate);
-            baseRateCell.appendChild(baseRateSpan);
-
-            // Create alert span
-            const alertSpan = document.createElement('span');
-            alertSpan.id = 'base-rate-alert';
-            alertSpan.className = 'ml-2 text-yellow-500 cursor-help tooltip-trigger';
-            alertSpan.textContent = '⚠️';
-            
-            // Create tooltip content
-            const analysis = window.currentAnalysis;
-            const { expected, actual, difference, pValue } = analysis.analysis.baseRate;
-            const tooltipContent = document.createElement('span');
-            tooltipContent.className = 'tooltip-content';
-            tooltipContent.innerHTML = `Design Base Rate: ${formatPercent(expected)}<br>Actual Base Rate: ${formatPercent(actual)}<br>Difference: ${formatPercent(difference)}<br>p-value: ${pValue.toFixed(4)}`;
-            alertSpan.appendChild(tooltipContent);
-
-            // Add mousemove event listener for tooltip positioning
-            alertSpan.addEventListener('mousemove', function(e) {
-                const tooltip = this.querySelector('.tooltip-content');
-                if (!tooltip) return;
-
-                // Get trigger position
-                const rect = this.getBoundingClientRect();
-                
-                // Position tooltip above the trigger
-                tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
-                tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
-            });
-            
-            baseRateCell.appendChild(alertSpan);
-        } else {
-            baseRateCell.textContent = formatPercent(challenge.simulation.actualBaseConversionRate);
-        }
     }
 
     // Display p-value
@@ -1033,7 +827,7 @@ function calculateYAxisRange(datasets) {
             }
         });
 
-        if (allValues.length === 0) return {min: 0, max: 1};
+        if (allValues.length === 0) return { min: 0, max: 1 };
 
         const maxValue = Math.max(...allValues);
         const nonZeroValues = allValues.filter(v => v > 0);
@@ -1045,7 +839,7 @@ function calculateYAxisRange(datasets) {
         };
     } catch (error) {
         console.error('Error calculating Y axis range:', error);
-        return {min: 0, max: 1};
+        return { min: 0, max: 1 };
     }
 }
 
@@ -1067,13 +861,13 @@ function renderVisitorsChart(challenge) {
         const completeTimeline = [...timePoints];
         if (currentDays < totalDays) {
             const lastPoint = timePoints[timePoints.length - 1];
-            const {type} = lastPoint.period;
+            const { type } = lastPoint.period;
             const periodLength = type === 'day' ? 1 : type === 'week' ? 7 : 28;
             let nextDay = lastPoint.period.startDay + periodLength;
 
             while (nextDay <= totalDays) {
                 completeTimeline.push({
-                    period: {type, startDay: nextDay},
+                    period: { type, startDay: nextDay },
                     base: {
                         visitors: null,
                         cumulativeVisitors: null
@@ -1089,7 +883,7 @@ function renderVisitorsChart(challenge) {
 
         // Create labels
         const labels = completeTimeline.map((point, index) => {
-            const {type, startDay} = point.period;
+            const { type, startDay } = point.period;
             let label;
             if (type === 'day') {
                 label = `Day ${startDay}`;
@@ -1113,10 +907,10 @@ function renderVisitorsChart(challenge) {
                     data: completeTimeline.map(d => d?.base?.visitors ?? null),
                     borderColor: 'rgb(147, 51, 234)',
                     backgroundColor: 'rgb(147, 51, 234)',
-                    pointBackgroundColor: completeTimeline.map((_, i) => 
+                    pointBackgroundColor: completeTimeline.map((_, i) =>
                         i > timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)'
                     ),
-                    pointBorderColor: completeTimeline.map((_, i) => 
+                    pointBorderColor: completeTimeline.map((_, i) =>
                         i > timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(147, 51, 234)'
                     ),
                     segment: {
@@ -1132,10 +926,10 @@ function renderVisitorsChart(challenge) {
                     data: completeTimeline.map(d => d?.variant?.visitors ?? null),
                     borderColor: 'rgb(59, 130, 246)',
                     backgroundColor: 'rgb(59, 130, 246)',
-                    pointBackgroundColor: completeTimeline.map((_, i) => 
+                    pointBackgroundColor: completeTimeline.map((_, i) =>
                         i > timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)'
                     ),
-                    pointBorderColor: completeTimeline.map((_, i) => 
+                    pointBorderColor: completeTimeline.map((_, i) =>
                         i > timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(59, 130, 246)'
                     ),
                     segment: {
@@ -1152,10 +946,10 @@ function renderVisitorsChart(challenge) {
                     data: completeTimeline.map(d => d?.base?.cumulativeVisitors ?? null),
                     borderColor: 'rgb(107, 11, 194)',
                     backgroundColor: 'rgb(107, 11, 194)',
-                    pointBackgroundColor: completeTimeline.map((_, i) => 
+                    pointBackgroundColor: completeTimeline.map((_, i) =>
                         i > timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)'
                     ),
-                    pointBorderColor: completeTimeline.map((_, i) => 
+                    pointBorderColor: completeTimeline.map((_, i) =>
                         i > timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : 'rgb(107, 11, 194)'
                     ),
                     segment: {
@@ -1172,10 +966,10 @@ function renderVisitorsChart(challenge) {
                     data: completeTimeline.map(d => d?.variant?.cumulativeVisitors ?? null),
                     borderColor: 'rgb(19, 90, 206)',
                     backgroundColor: 'rgb(19, 90, 206)',
-                    pointBackgroundColor: completeTimeline.map((_, i) => 
+                    pointBackgroundColor: completeTimeline.map((_, i) =>
                         i > timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)'
                     ),
-                    pointBorderColor: completeTimeline.map((_, i) => 
+                    pointBorderColor: completeTimeline.map((_, i) =>
                         i > timelineData.lastFullBusinessCycleIndex ? 'rgb(192, 192, 192)' : 'rgb(19, 90, 206)'
                     ),
                     segment: {
@@ -1192,21 +986,21 @@ function renderVisitorsChart(challenge) {
 
         // Initialize chart with daily view
         const chart = ChartManager.createChart('visitors-chart', 'line', {
-                labels: labels,
-                datasets: createDatasets('daily')
+            labels: labels,
+            datasets: createDatasets('daily')
         }, {
-                ...chartOptions,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return value.toLocaleString();
+            ...chartOptions,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function (value) {
+                            return value.toLocaleString();
                         }
                     }
                 }
@@ -1216,7 +1010,7 @@ function renderVisitorsChart(challenge) {
         // Add view toggle functionality
         const viewToggle = document.getElementById('visitors-view-toggle');
         if (viewToggle) {
-            viewToggle.addEventListener('change', function(e) {
+            viewToggle.addEventListener('change', function (e) {
                 const viewType = e.target.value;
                 const datasets = createDatasets(viewType);
 
@@ -1234,7 +1028,7 @@ function renderVisitorsChart(challenge) {
                         y: {
                             beginAtZero: true,
                             ticks: {
-                                callback: function(value) {
+                                callback: function (value) {
                                     return value.toLocaleString();
                                 }
                             }
@@ -1266,13 +1060,13 @@ function renderDifferenceChart(challenge) {
         const completeTimeline = [...timePoints];
         if (currentDays < totalDays) {
             const lastPoint = timePoints[timePoints.length - 1];
-            const {type} = lastPoint.period;
+            const { type } = lastPoint.period;
             const periodLength = type === 'day' ? 1 : type === 'week' ? 7 : 28;
             let nextDay = lastPoint.period.startDay + periodLength;
 
             while (nextDay <= totalDays) {
                 completeTimeline.push({
-                    period: {type, startDay: nextDay},
+                    period: { type, startDay: nextDay },
                     base: {
                         rate: null,
                         rateCI: [null, null],
@@ -1308,7 +1102,7 @@ function renderDifferenceChart(challenge) {
 
         // Create labels
         const labels = completeTimeline.map((point, index) => {
-            const {type, startDay} = point.period;
+            const { type, startDay } = point.period;
             let label;
             if (type === 'day') {
                 label = `Day ${startDay}`;
@@ -1336,10 +1130,10 @@ function renderDifferenceChart(challenge) {
                     }),
                     borderColor: isUplift ? 'rgb(16, 185, 129)' : 'rgb(59, 130, 246)',
                     backgroundColor: isUplift ? 'rgb(16, 185, 129)' : 'rgb(59, 130, 246)',
-                    pointBackgroundColor: completeTimeline.map((_, i) => 
+                    pointBackgroundColor: completeTimeline.map((_, i) =>
                         i > timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : (isUplift ? 'rgb(16, 185, 129)' : 'rgb(59, 130, 246)')
                     ),
-                    pointBorderColor: completeTimeline.map((_, i) => 
+                    pointBorderColor: completeTimeline.map((_, i) =>
                         i > timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : (isUplift ? 'rgb(16, 185, 129)' : 'rgb(59, 130, 246)')
                     ),
                     segment: {
@@ -1391,10 +1185,10 @@ function renderDifferenceChart(challenge) {
                     }),
                     borderColor: isUplift ? 'rgb(5, 150, 105)' : 'rgb(19, 90, 206)',
                     backgroundColor: isUplift ? 'rgb(5, 150, 105)' : 'rgb(19, 90, 206)',
-                    pointBackgroundColor: completeTimeline.map((_, i) => 
+                    pointBackgroundColor: completeTimeline.map((_, i) =>
                         i > timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : (isUplift ? 'rgb(5, 150, 105)' : 'rgb(19, 90, 206)')
                     ),
-                    pointBorderColor: completeTimeline.map((_, i) => 
+                    pointBorderColor: completeTimeline.map((_, i) =>
                         i > timelineData.lastFullBusinessCycleIndex ? 'rgb(128, 128, 128)' : (isUplift ? 'rgb(5, 150, 105)' : 'rgb(19, 90, 206)')
                     ),
                     segment: {
@@ -1465,11 +1259,11 @@ function renderDifferenceChart(challenge) {
                     diffType: 'difference',
                     confidenceLevel: confidenceLevel,
                     callbacks: {
-                        title: function(context) {
+                        title: function (context) {
                             if (context.length === 0) return '';
                             return context[0].label;
                         },
-                        label: function(context) {
+                        label: function (context) {
                             const timePoint = completeTimeline[context.dataIndex];
                             if (!timePoint || !timePoint.base || !timePoint.variant) return null;
 
@@ -1483,7 +1277,7 @@ function renderDifferenceChart(challenge) {
                             const variantVisitors = isCumulative ? timePoint.variant.cumulativeVisitors : timePoint.variant.visitors;
 
                             // Check if any required data is missing
-                            if (baseRate === null || variantRate === null || 
+                            if (baseRate === null || variantRate === null ||
                                 baseVisitors === null || variantVisitors === null ||
                                 !baseCI || !variantCI) {
                                 return null;
@@ -1507,8 +1301,8 @@ function renderDifferenceChart(challenge) {
                     }
                 }
             },
-                                scales: {
-                                    y: {
+            scales: {
+                y: {
                     beginAtZero: false,
                     title: {
                         display: true,
@@ -1555,11 +1349,11 @@ function renderDifferenceChart(challenge) {
                         diffType: diffType,
                         confidenceLevel: confidenceLevel,
                         callbacks: {
-                            title: function(context) {
+                            title: function (context) {
                                 if (context.length === 0) return '';
                                 return context[0].label;
                             },
-                            label: function(context) {
+                            label: function (context) {
                                 const timePoint = completeTimeline[context.dataIndex];
                                 if (!timePoint || !timePoint.base || !timePoint.variant) return null;
 
@@ -1573,7 +1367,7 @@ function renderDifferenceChart(challenge) {
                                 const variantVisitors = isCumulative ? timePoint.variant.cumulativeVisitors : timePoint.variant.visitors;
 
                                 // Check if any required data is missing
-                                if (baseRate === null || variantRate === null || 
+                                if (baseRate === null || variantRate === null ||
                                     baseVisitors === null || variantVisitors === null ||
                                     !baseCI || !variantCI) {
                                     return null;
@@ -1611,14 +1405,14 @@ function renderDifferenceChart(challenge) {
                     x: {
                         grid: {
                             display: false
-                                    }
-                                }
-                            }
-                        });
+                        }
+                    }
+                }
+            });
         }
 
         if (viewToggle) {
-            viewToggle.addEventListener('change', function(e) {
+            viewToggle.addEventListener('change', function (e) {
                 const viewType = e.target.value;
                 const diffType = diffTypeToggle ? diffTypeToggle.value : 'difference';
                 updateChart(viewType, diffType);
@@ -1626,7 +1420,7 @@ function renderDifferenceChart(challenge) {
         }
 
         if (diffTypeToggle) {
-            diffTypeToggle.addEventListener('change', function(e) {
+            diffTypeToggle.addEventListener('change', function (e) {
                 const diffType = e.target.value;
                 const viewType = viewToggle ? viewToggle.value : 'daily';
                 updateChart(viewType, diffType);
@@ -1666,10 +1460,10 @@ function initializeCharts(challenge) {
             const canvas = document.getElementById(chartId);
             if (canvas) {
                 const existingChart = Chart.getChart(canvas);
-            if (existingChart) {
-                existingChart.destroy();
+                if (existingChart) {
+                    existingChart.destroy();
+                }
             }
-        }
         });
 
         // Destroy all charts in ChartManager
@@ -1691,17 +1485,17 @@ function initializeCharts(challenge) {
 // Chart Management
 const ChartManager = {
     charts: {},
-    
+
     createChart(canvasId, type, data, options) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) {
             console.error(`Canvas ${canvasId} not found`);
             return null;
         }
-        
+
         // Destroy existing chart if it exists
         this.destroyChart(canvasId);
-        
+
         // Create new chart
         this.charts[canvasId] = new Chart(canvas, {
             type,
@@ -1711,10 +1505,10 @@ const ChartManager = {
                 ...options
             }
         });
-        
+
         return this.charts[canvasId];
     },
-    
+
     updateChart(canvasId, newData, newOptions = {}) {
         const chart = this.charts[canvasId];
         if (!chart) {
@@ -1734,10 +1528,10 @@ const ChartManager = {
         chart.data.datasets.forEach((dataset, i) => {
             Object.assign(dataset, newData.datasets[i]);
         });
-        
+
         chart.update('none'); // Update without animation for better performance
     },
-    
+
     destroyChart(canvasId) {
         if (this.charts[canvasId]) {
             this.charts[canvasId].destroy();
@@ -1752,25 +1546,25 @@ const ChartManager = {
             }
         }
     },
-    
+
     destroyAllCharts() {
         Object.keys(this.charts).forEach(canvasId => {
             this.destroyChart(canvasId);
         });
     },
-    
+
     resizeCharts() {
         Object.values(this.charts).forEach(chart => {
             chart.resize();
         });
     },
-    
+
     cleanup() {
         Object.entries(this.charts).forEach(([id, chart]) => {
             // Remove event listeners
             chart.options.plugins.tooltip.callbacks = {};
             chart.options.onClick = null;
-            
+
             // Destroy chart
             chart.destroy();
             delete this.charts[id];
@@ -1780,48 +1574,6 @@ const ChartManager = {
 
 // Add resize handler
 window.addEventListener('resize', () => ChartManager.resizeCharts());
-
-function updateProgressBar(challenge) {
-    const progressBar = document.getElementById('exp-progress-bar');
-    const daysElapsedText = document.getElementById('exp-days-elapsed-text');
-    const daysRemainingText = document.getElementById('exp-days-remaining-text');
-    const completeText = document.getElementById('exp-complete-text');
-    const startDateText = document.getElementById('progress-start-date');
-    const endDateText = document.getElementById('progress-end-date');
-
-    if (!progressBar || !daysElapsedText || !daysRemainingText || !completeText || !startDateText || !endDateText) return;
-
-    const currentDays = challenge.simulation.timeline.currentRuntimeDays;
-    const totalDays = challenge.experiment.requiredRuntimeDays;
-    const progress = (currentDays / totalDays) * 100;
-
-    // Update progress bar width
-    progressBar.style.width = `${progress}%`;
-
-    // Update text displays
-    daysElapsedText.textContent = `${currentDays}d`;
-    daysRemainingText.textContent = `${totalDays - currentDays}d`;
-
-    // Show/hide complete text
-    if (currentDays >= totalDays) {
-        daysElapsedText.classList.add('hidden');
-        completeText.classList.remove('hidden');
-        completeText.textContent = `Experiment Complete (${totalDays} days)`;
-        daysRemainingText.textContent = '';
-    } else {
-        daysElapsedText.classList.remove('hidden');
-        completeText.classList.add('hidden');
-    }
-
-    // Update date range
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - currentDays);
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + (totalDays - currentDays));
-
-    startDateText.textContent = startDate.toLocaleDateString();
-    endDateText.textContent = endDate.toLocaleDateString();
-}
 
 class ChartDataManager {
     constructor() {
@@ -1931,7 +1683,7 @@ function enhanceChartAccessibility(chart) {
     const canvas = chart.canvas;
     canvas.setAttribute('role', 'img');
     canvas.setAttribute('aria-label', chart.options.plugins.title.text);
-    
+
     // Add keyboard navigation
     canvas.tabIndex = 0;
     canvas.addEventListener('keydown', handleChartKeyboardNavigation);

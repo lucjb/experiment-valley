@@ -9,16 +9,32 @@ const UIController = {
         trustDecision: null,
         implementDecision: null,
         followUpDecision: null,
-        challenge: null
+        challenge: null,
+        debugMode: true,  // Set debug mode to true by default
     },
 
     init() {
         // Initialize debug mode first
-        UIState.initializeDebugMode();
-        
+        this.initializeDebugMode();
+
         this.initializeEventListeners();
         this.initializeCheatSheet();
         this.initializeTabs();
+    },
+
+    initializeDebugMode() {
+        const debugCheckbox = document.getElementById('debug-mode');
+        if (debugCheckbox) {
+            // Set initial state
+            this.debugMode = debugCheckbox.checked;
+
+            // Add change event listener
+            debugCheckbox.addEventListener('change', (e) => {
+                this.debugMode = e.target.checked;
+                // Disable the checkbox after initial selection
+                debugCheckbox.disabled = true;
+            });
+        }
     },
 
     initializeEventListeners() {
@@ -41,12 +57,12 @@ const UIController = {
                     btn.style.transform = 'scale(1)';
                     btn.classList.remove('selected');
                 });
-                
+
                 // Add active state to clicked button
                 button.style.opacity = '1';
                 button.style.transform = 'scale(1.05)';
                 button.classList.add('selected');
-                
+
                 this.handleDecision(name, button.getAttribute('value'));
             });
 
@@ -142,10 +158,10 @@ const UIController = {
     startSession() {
         const tutorialSection = document.getElementById('tutorial-section');
         const challengeContainer = document.getElementById('challenge-container');
-        
+
         tutorialSection.classList.add('hidden');
         challengeContainer.classList.remove('hidden');
-        
+
         // Only load the challenge if it hasn't been loaded yet
         if (!window.currentExperiment) {
             this.loadChallenge();
@@ -161,26 +177,79 @@ const UIController = {
             // Generate a new challenge and store it globally
             window.currentExperiment = generateABTestChallenge();
             this.state.challenge = window.currentExperiment;
-            
+
             // Analyze the experiment and store it globally
             window.currentAnalysis = analyzeExperiment(window.currentExperiment);
-            
+
             // Update the UI with the new challenge
             this.updateExperimentDisplay();
             this.updateExecutionSection();
             this.updateMetricsTable();
+    
             this.updateProgress();
-            
+
             // Initialize visualizations
             initializeCharts(window.currentExperiment);
-            
+
             // Reset decisions
             this.resetDecisions();
-            
+            if (this.state.debugMode) {
+                this.addDebugAlerts();
+            }
             return true;
         } catch (error) {
             console.error('Error loading challenge:', error);
             return false;
+        }
+    },
+
+    addDebugAlerts() {
+        this.addBaseConversionRateMissmatchAlert();
+    },
+
+    addBaseConversionRateMissmatchAlert() {
+        const analysis = window.currentAnalysis;
+        const challenge = this.state.challenge;
+        const hasMismatch = analysis.analysis.hasBaseRateMismatch;
+        if (hasMismatch) {
+            const baseRateCell = document.getElementById('base-rate');
+
+            // Create base rate span
+            const baseRateSpan = document.createElement('span');
+            baseRateSpan.id = 'base-rate';
+            baseRateSpan.className = 'font-medium';
+            baseRateSpan.textContent = baseRateCell.textContent;
+            baseRateCell.textContent = '';
+            baseRateCell.appendChild(baseRateSpan);
+
+            // Create alert span
+            const alertSpan = document.createElement('span');
+            alertSpan.id = 'base-rate-alert';
+            alertSpan.className = 'ml-2 text-yellow-500 cursor-help tooltip-trigger';
+            alertSpan.textContent = '⚠️';
+
+            // Create tooltip content
+            
+            const { expected, actual, difference, pValue } = analysis.analysis.baseRate;
+            const tooltipContent = document.createElement('span');
+            tooltipContent.className = 'tooltip-content';
+            tooltipContent.innerHTML = `Design Base Rate: ${formatPercent(expected)}<br>Actual Base Rate: ${formatPercent(actual)}<br>Difference: ${formatPercent(difference)}<br>p-value: ${pValue.toFixed(4)}`;
+            alertSpan.appendChild(tooltipContent);
+
+            // Add mousemove event listener for tooltip positioning
+            alertSpan.addEventListener('mousemove', function (e) {
+                const tooltip = this.querySelector('.tooltip-content');
+                if (!tooltip) return;
+
+                // Get trigger position
+                const rect = this.getBoundingClientRect();
+
+                // Position tooltip above the trigger
+                tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
+                tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+            });
+
+            baseRateCell.appendChild(alertSpan);
         }
     },
 
@@ -295,6 +364,8 @@ const UIController = {
         // Update base metrics
         document.getElementById('base-visitors').textContent = challenge.simulation.actualVisitorsBase;
         document.getElementById('base-conversions').textContent = challenge.simulation.actualConversionsBase;
+        document.getElementById('base-rate').textContent = `${(challenge.simulation.actualBaseConversionRate * 100).toFixed(2)}%`;
+
 
         // Update variant metrics
         document.getElementById('variant-visitors').textContent = challenge.simulation.actualVisitorsVariant;
@@ -335,7 +406,7 @@ const UIController = {
 
     checkDecisions() {
         const submitButton = document.getElementById('submit-decision');
-        
+
         // Check if any button in each group is selected
         const trustSelected = Array.from(document.querySelectorAll('.decision-btn[name="trust"]')).some(btn => btn.classList.contains('selected'));
         const decisionSelected = Array.from(document.querySelectorAll('.decision-btn[name="decision"]')).some(btn => btn.classList.contains('selected'));
@@ -380,7 +451,7 @@ const UIController = {
 
         try {
             this.state.totalAttempts++;
-            
+
             // Use the global analysis
             const analysis = window.currentAnalysis;
 
@@ -398,24 +469,24 @@ const UIController = {
             // Check trustworthiness
             const userTrust = this.state.trustDecision; // true or false
             const analysisTrust = analysis.decision.trustworthy;
-            
+
             if (userTrust === analysisTrust) {
                 correctChoices++;
                 feedbackMessage += '<p>Trustworthiness: <span class="text-green-500">Correct ✓</span></p>';
             } else {
-                feedbackMessage += `<p>Trustworthiness: <span class="text-red-500">Incorrect ✗</span> (Should be: ${analysisTrust==='TRUSTWORTHY' ? 'Yes' : 'No'})</p>`;
+                feedbackMessage += `<p>Trustworthiness: <span class="text-red-500">Incorrect ✗</span> (Should be: ${analysisTrust === 'TRUSTWORTHY' ? 'Yes' : 'No'})</p>`;
             }
 
             // Check decision
             const userDecision = this.state.implementDecision; // Full string value
             const analysisDecision = analysis.decision.decision;
-            
+
             // Map the decision to a simpler format for display
             const displayDecision = analysisDecision === "KEEP_BASE" ? "Keep Base" :
-                                   analysisDecision === "KEEP_VARIANT" ? "Keep Variant" :
-                                   analysisDecision === "KEEP_RUNNING" ? "Keep Running" : 
-                                   analysisDecision;
-            
+                analysisDecision === "KEEP_VARIANT" ? "Keep Variant" :
+                    analysisDecision === "KEEP_RUNNING" ? "Keep Running" :
+                        analysisDecision;
+
             if (userDecision === analysisDecision) {
                 correctChoices++;
                 feedbackMessage += '<p>Decision: <span class="text-green-500">Correct ✓</span></p>';
@@ -426,15 +497,15 @@ const UIController = {
             // Check follow-up
             const userFollowUp = this.state.followUpDecision;
             const analysisFollowUp = analysis.decision.followUp || analysis.decision.follwUp; // Handle both spellings
-            
+
             // Map the follow-up to a simpler format for display
             const displayFollowUp = analysisFollowUp === "CELEBRATE" ? "Celebrate" :
-                                   analysisFollowUp === "ITERATE" ? "Iterate" :
-                                   analysisFollowUp === "VALIDATE" ? "Validate" :
-                                   analysisFollowUp === "RERUN" ? "Fix &Rerun" :
-                                   analysisFollowUp === "DO_NOTHING" ? "None" :
-                                   analysisFollowUp;
-            
+                analysisFollowUp === "ITERATE" ? "Iterate" :
+                    analysisFollowUp === "VALIDATE" ? "Validate" :
+                        analysisFollowUp === "RERUN" ? "Fix &Rerun" :
+                            analysisFollowUp === "DO_NOTHING" ? "None" :
+                                analysisFollowUp;
+
             if (userFollowUp === analysisFollowUp) {
                 correctChoices++;
                 feedbackMessage += '<p>Follow-up: <span class="text-green-500">Correct ✓</span></p>';
@@ -445,7 +516,7 @@ const UIController = {
             // Calculate score based on performance
             const isPerfect = (correctChoices === totalChoices);
             const isGood = (correctChoices >= 2);
-            
+
             if (isPerfect) {
                 this.state.score++;
                 this.state.streak++;
@@ -566,10 +637,7 @@ const UIController = {
 
 // Initialize UI Controller when DOM is loaded
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize debug mode
-        UIState.initializeDebugMode();
-
+    document.addEventListener('DOMContentLoaded', function () {
         UIController.init();
     });
 } else {
