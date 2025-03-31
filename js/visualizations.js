@@ -1,13 +1,3 @@
-function formatTimeLabel(period) {
-    const date = new Date(period);
-    return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
 // Modal Management
 const ModalManager = {
     modals: {
@@ -69,10 +59,7 @@ const ModalManager = {
 // Define the renderChart function before it's used
 function renderChart(challenge) {
     try {
-        validateChallenge(challenge);
         const timelineData = challenge.simulation.timeline;
-        validateTimelineData(timelineData);
-
         const timePoints = timelineData.timePoints;
         const totalDays = challenge.experiment.requiredRuntimeDays;
         const currentDays = challenge.simulation.timeline.currentRuntimeDays;
@@ -441,18 +428,6 @@ function renderChart(challenge) {
         console.error('Error rendering chart:', error);
         showChartError(error);
         return null;
-    }
-}
-
-function validateChallenge(challenge) {
-    if (!challenge?.simulation?.timeline) {
-        throw new Error('Invalid challenge data structure');
-    }
-}
-
-function validateTimelineData(timelineData) {
-    if (!timelineData || !timelineData.timePoints || !timelineData.timePoints.length) {
-        throw new Error('Invalid timeline data');
     }
 }
 
@@ -1351,7 +1326,7 @@ const ChartManager = {
             Object.assign(dataset, newData.datasets[i]);
         });
 
-        chart.update('none'); // Update without animation for better performance
+        chart.update('none'); // Update without animation for betternce
     },
 
     destroyChart(canvasId) {
@@ -1396,39 +1371,3 @@ const ChartManager = {
 
 // Add resize handler
 window.addEventListener('resize', () => ChartManager.resizeCharts());
-
-class ViewToggleManager {
-    constructor() {
-        this.currentView = 'visitors';
-        this.initializeViewToggles();
-    }
-
-    initializeViewToggles() {
-        const viewToggles = document.querySelectorAll('.view-toggle');
-        viewToggles.forEach(toggle => {
-            toggle.addEventListener('click', () => {
-                const view = toggle.getAttribute('data-view');
-                this.switchView(view);
-            });
-        });
-    }
-
-    switchView(view) {
-        this.currentView = view;
-        const viewToggles = document.querySelectorAll('.view-toggle');
-        viewToggles.forEach(toggle => {
-            toggle.classList.toggle('active', toggle.getAttribute('data-view') === view);
-        });
-        this.updateCharts();
-    }
-
-    updateCharts() {
-        if (this.currentView === 'visitors') {
-            visitorsChart.update();
-            differenceChart.update();
-        } else {
-            conversionChart.update();
-            differenceChart.update();
-        }
-    }
-}
