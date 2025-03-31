@@ -173,7 +173,9 @@ const UIController = {
     
             this.updateProgress();
 
-            // Initialize visualizations
+            window.updateConfidenceIntervals(window.currentExperiment);
+
+            // Initialize charts
             initializeCharts(window.currentExperiment);
 
             // Reset decisions

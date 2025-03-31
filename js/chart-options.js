@@ -35,6 +35,38 @@ const chartOptions = {
     }
 };
 
+// Common tooltip callbacks
+const commonTooltipCallbacks = {
+    title: function (context) {
+        if (context.length === 0) return '';
+        return context[0].label;
+    }
+};
+
+// Helper function for formatting percentages
+function formatPercent(value) {
+    const percentage = value * 100;
+    return percentage.toFixed(2) + '%';
+}
+
+// Helper function to calculate confidence level
+function calculateConfidenceLevel(alpha) {
+    return ((1 - alpha) * 100).toFixed(0);
+}
+
+// Helper function to get metrics from a timePoint
+function getMetrics(timePoint, type, isCumulative = false) {
+    if (!timePoint || !timePoint[type]) return null;
+    
+    const data = timePoint[type];
+    return {
+        rate: isCumulative ? data.cumulativeRate : data.rate,
+        ci: isCumulative ? data.cumulativeRateCI : data.rateCI,
+        visitors: isCumulative ? data.cumulativeVisitors : data.visitors,
+        conversions: isCumulative ? data.cumulativeConversions : data.conversions
+    };
+}
+
 // Conversion chart specific options
 const conversionChartOptions = {
     ...chartOptions,
@@ -43,45 +75,36 @@ const conversionChartOptions = {
         tooltip: {
             ...chartOptions.plugins.tooltip,
             callbacks: {
-                title: function (context) {
-                    if (context.length === 0) return '';
-                    return context[0].label;
-                },
+                ...commonTooltipCallbacks,
                 label: function (context) {
                     // Skip CI datasets
                     if (context.dataset.isCI) return null;
 
-                    const timePoint = window.completeTimeline[context.dataIndex];
+                    const timePoint = ChartManager.completeTimeline[context.dataIndex];
                     const isBase = context.dataset.label.toLowerCase().includes('base');
                     const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
-                    const data = isBase ? timePoint.base : timePoint.variant;
+                    const type = isBase ? 'base' : 'variant';
+                    
+                    const metrics = getMetrics(timePoint, type, isCumulative);
+                    if (!metrics) return null;
 
-                    if (!data) return null;
-
-                    // Get the appropriate metrics based on view type
-                    const rate = isCumulative ? data.cumulativeRate : data.rate;
-                    const ci = isCumulative ? data.cumulativeRateCI : data.rateCI;
-                    const visitors = isCumulative ? data.cumulativeVisitors : data.visitors;
-                    const conversions = isCumulative ? data.cumulativeConversions : data.conversions;
-                    const confidenceLevel = this.chart.data.confidenceLevel;
-
-                    // Format the tooltip lines
+                    const confidenceLevel = calculateConfidenceLevel(ChartManager.challenge.experiment.alpha);
                     const lines = [
                         `${isBase ? 'Base' : 'Test'} Metrics:`,
-                        `Rate: ${formatPercent(rate)}`
+                        `Rate: ${formatPercent(metrics.rate)}`
                     ];
 
                     // Only add CI if it exists and has valid values
-                    if (ci && ci[0] !== null && ci[1] !== null) {
-                        lines.push(`${confidenceLevel}% CI: [${formatPercent(ci[0])}, ${formatPercent(ci[1])}]`);
+                    if (metrics.ci && metrics.ci[0] !== null && metrics.ci[1] !== null) {
+                        lines.push(`${confidenceLevel}% CI: [${formatPercent(metrics.ci[0])}, ${formatPercent(metrics.ci[1])}]`);
                     }
 
                     // Only add visitors and conversions if they exist
-                    if (visitors !== null) {
-                        lines.push(`Visitors: ${visitors.toLocaleString()}`);
+                    if (metrics.visitors !== null) {
+                        lines.push(`Visitors: ${metrics.visitors.toLocaleString()}`);
                     }
-                    if (conversions !== null) {
-                        lines.push(`Conversions: ${conversions.toLocaleString()}`);
+                    if (metrics.conversions !== null) {
+                        lines.push(`Conversions: ${metrics.conversions.toLocaleString()}`);
                     }
 
                     return lines;
@@ -98,35 +121,21 @@ const visitorsChartOptions = {
         ...chartOptions.plugins,
         tooltip: {
             ...chartOptions.plugins.tooltip,
-            viewType: 'daily',
             callbacks: {
-                title: function (context) {
-                    if (context.length === 0) return '';
-                    return context[0].label;
-                },
+                ...commonTooltipCallbacks,
                 label: function (context) {
-                    const timePoint = window.completeTimeline[context.dataIndex];
-                    if (!timePoint) return null;
-
-                    const isCumulative = this.chart.options.plugins.tooltip.viewType === 'cumulative';
+                    const timePoint = ChartManager.completeTimeline[context.dataIndex];
                     const isBase = context.dataset.label.toLowerCase().includes('base');
-                    const data = isBase ? timePoint.base : timePoint.variant;
+                    const isCumulative = this.chart.data.viewType === 'cumulative';
+                    const type = isBase ? 'base' : 'variant';
+                    
+                    const metrics = getMetrics(timePoint, type, isCumulative);
+                    if (!metrics) return null;
 
-                    if (!data) return null;
-
-                    // Get the appropriate metrics based on view type
-                    const visitors = isCumulative ? data.cumulativeVisitors : data.visitors;
-
-                    // Format the tooltip lines
-                    const lines = [
-                        `${isBase ? 'Base' : 'Test'} Metrics:`
-                    ];
-
-                    // Only add visitors if they exist
-                    if (visitors !== null) {
-                        lines.push(`Visitors: ${visitors.toLocaleString()}`);
+                    const lines = [`${isBase ? 'Base' : 'Test'} Metrics:`];
+                    if (metrics.visitors !== null) {
+                        lines.push(`Visitors: ${metrics.visitors.toLocaleString()}`);
                     }
-
                     return lines;
                 }
             }
@@ -141,32 +150,18 @@ const differenceChartOptions = {
         ...chartOptions.plugins,
         tooltip: {
             ...chartOptions.plugins.tooltip,
-            viewType: 'daily',
-            diffType: 'difference',
             callbacks: {
-                title: function (context) {
-                    if (context.length === 0) return '';
-                    return context[0].label;
-                },
+                ...commonTooltipCallbacks,
                 label: function (context) {
-                    const timePoint = window.completeTimeline[context.dataIndex];
-                    if (!timePoint || !timePoint.base || !timePoint.variant) return null;
+                    const timePoint = ChartManager.completeTimeline[context.dataIndex];
+                    if (!timePoint) return null;
 
-                    const isCumulative = this.chart.options.plugins.tooltip.viewType === 'cumulative';
-                    const isUplift = this.chart.options.plugins.tooltip.diffType === 'uplift';
-                    const baseRate = isCumulative ? timePoint.base.cumulativeRate : timePoint.base.rate;
-                    const baseCI = isCumulative ? timePoint.base.cumulativeRateCI : timePoint.base.rateCI;
-                    const baseVisitors = isCumulative ? timePoint.base.cumulativeVisitors : timePoint.base.visitors;
-                    const variantRate = isCumulative ? timePoint.variant.cumulativeRate : timePoint.variant.rate;
-                    const variantCI = isCumulative ? timePoint.variant.cumulativeRateCI : timePoint.variant.rateCI;
-                    const variantVisitors = isCumulative ? timePoint.variant.cumulativeVisitors : timePoint.variant.visitors;
-
-                    // Check if any required data is missing
-                    if (baseRate === null || variantRate === null ||
-                        baseVisitors === null || variantVisitors === null ||
-                        !baseCI || !variantCI) {
-                        return null;
-                    }
+                    const isCumulative = this.chart.data.viewType === 'cumulative';
+                    const isUplift = this.chart.data.diffType === 'uplift';
+                    
+                    const baseMetrics = getMetrics(timePoint, 'base', isCumulative);
+                    const variantMetrics = getMetrics(timePoint, 'variant', isCumulative);
+                    if (!baseMetrics || !variantMetrics) return null;
 
                     if (context.datasetIndex === 0) {
                         const diffData = isUplift ? timePoint.uplift : timePoint.difference;
@@ -175,11 +170,11 @@ const differenceChartOptions = {
                         const diffCI = isCumulative ? diffData.cumulativeRateCI : diffData.rateCI;
                         const diffValue = isCumulative ? diffData.cumulativeRate : diffData.rate;
                         const diffLabel = isUplift ? 'Uplift' : 'Difference';
-                        const confidenceLevel = this.chart.data.confidenceLevel;
+                        const confidenceLevel = calculateConfidenceLevel(ChartManager.challenge.experiment.alpha);
 
                         const lines = [
-                            `Base: ${formatPercent(baseRate)} (${baseVisitors.toLocaleString()} visitors)`,
-                            `Variant: ${formatPercent(variantRate)} (${variantVisitors.toLocaleString()} visitors)`,
+                            `Base: ${formatPercent(baseMetrics.rate)} (${baseMetrics.visitors.toLocaleString()} visitors)`,
+                            `Variant: ${formatPercent(variantMetrics.rate)} (${variantMetrics.visitors.toLocaleString()} visitors)`,
                             `${diffLabel}: ${formatPercent(diffValue)}`
                         ];
 
@@ -196,12 +191,6 @@ const differenceChartOptions = {
         }
     }
 };
-
-// Helper function for formatting percentages
-function formatPercent(value) {
-    const percentage = value * 100;
-    return percentage.toFixed(2) + '%';
-}
 
 // Export only the chart-specific options
 window.conversionChartOptions = conversionChartOptions;
