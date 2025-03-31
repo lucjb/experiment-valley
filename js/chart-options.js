@@ -66,13 +66,25 @@ const conversionChartOptions = {
                     const confidenceLevel = this.chart.data.confidenceLevel;
 
                     // Format the tooltip lines
-                    return [
+                    const lines = [
                         `${isBase ? 'Base' : 'Test'} Metrics:`,
-                        `Rate: ${formatPercent(rate)}`,
-                        `${confidenceLevel}% CI: [${formatPercent(ci[0])}, ${formatPercent(ci[1])}]`,
-                        `Visitors: ${visitors.toLocaleString()}`,
-                        `Conversions: ${conversions.toLocaleString()}`
+                        `Rate: ${formatPercent(rate)}`
                     ];
+
+                    // Only add CI if it exists and has valid values
+                    if (ci && ci[0] !== null && ci[1] !== null) {
+                        lines.push(`${confidenceLevel}% CI: [${formatPercent(ci[0])}, ${formatPercent(ci[1])}]`);
+                    }
+
+                    // Only add visitors and conversions if they exist
+                    if (visitors !== null) {
+                        lines.push(`Visitors: ${visitors.toLocaleString()}`);
+                    }
+                    if (conversions !== null) {
+                        lines.push(`Conversions: ${conversions.toLocaleString()}`);
+                    }
+
+                    return lines;
                 }
             }
         }
@@ -106,10 +118,16 @@ const visitorsChartOptions = {
                     const visitors = isCumulative ? data.cumulativeVisitors : data.visitors;
 
                     // Format the tooltip lines
-                    return [
-                        `${isBase ? 'Base' : 'Test'} Metrics:`,
-                        `Visitors: ${visitors.toLocaleString()}`
+                    const lines = [
+                        `${isBase ? 'Base' : 'Test'} Metrics:`
                     ];
+
+                    // Only add visitors if they exist
+                    if (visitors !== null) {
+                        lines.push(`Visitors: ${visitors.toLocaleString()}`);
+                    }
+
+                    return lines;
                 }
             }
         }
@@ -152,17 +170,25 @@ const differenceChartOptions = {
 
                     if (context.datasetIndex === 0) {
                         const diffData = isUplift ? timePoint.uplift : timePoint.difference;
+                        if (!diffData) return null;
+
                         const diffCI = isCumulative ? diffData.cumulativeRateCI : diffData.rateCI;
                         const diffValue = isCumulative ? diffData.cumulativeRate : diffData.rate;
                         const diffLabel = isUplift ? 'Uplift' : 'Difference';
                         const confidenceLevel = this.chart.data.confidenceLevel;
 
-                        return [
+                        const lines = [
                             `Base: ${formatPercent(baseRate)} (${baseVisitors.toLocaleString()} visitors)`,
                             `Variant: ${formatPercent(variantRate)} (${variantVisitors.toLocaleString()} visitors)`,
-                            `${diffLabel}: ${formatPercent(diffValue)}`,
-                            `${confidenceLevel}% CI: [${formatPercent(diffCI[0])}, ${formatPercent(diffCI[1])}]`
+                            `${diffLabel}: ${formatPercent(diffValue)}`
                         ];
+
+                        // Only add CI if it exists and has valid values
+                        if (diffCI && diffCI[0] !== null && diffCI[1] !== null) {
+                            lines.push(`${confidenceLevel}% CI: [${formatPercent(diffCI[0])}, ${formatPercent(diffCI[1])}]`);
+                        }
+
+                        return lines;
                     }
                     return null;
                 }
