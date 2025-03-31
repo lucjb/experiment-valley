@@ -76,7 +76,6 @@ function renderChart(challenge) {
         const timePoints = timelineData.timePoints;
         const totalDays = challenge.experiment.requiredRuntimeDays;
         const currentDays = challenge.simulation.timeline.currentRuntimeDays;
-        const confidenceLevel = calculateConfidenceLevel(challenge.experiment.alpha);
 
         // Generate complete timeline including future empty periods
         window.completeTimeline = [...timePoints];
@@ -375,7 +374,8 @@ function renderChart(challenge) {
         // Initialize chart with daily view
         const chart = ChartManager.createChart('conversion-chart', 'line', {
             labels,
-            datasets: createDatasets('daily')
+            datasets: createDatasets('daily'),
+            confidenceLevel: calculateConfidenceLevel(challenge.experiment.alpha)
         }, {
             ...conversionChartOptions,
             plugins: {
@@ -458,11 +458,6 @@ function validateTimelineData(timelineData) {
 
 function calculateConfidenceLevel(alpha) {
     return ((1 - alpha) * 100).toFixed(0);
-}
-
-function formatPercent(value) {
-    const percentage = value * 100;
-    return percentage.toFixed(2) + '%';
 }
 
 function updateConfidenceIntervals(challenge) {
@@ -1191,7 +1186,8 @@ function renderDifferenceChart(challenge) {
         // Initialize chart with daily view and absolute difference
         const chart = ChartManager.createChart('difference-chart', 'line', {
             labels,
-            datasets: createDatasets('daily', 'difference')
+            datasets: createDatasets('daily', 'difference'),
+            confidenceLevel: calculateConfidenceLevel(challenge.experiment.alpha)
         }, {
             ...differenceChartOptions,
             scales: {

@@ -63,12 +63,13 @@ const conversionChartOptions = {
                     const ci = isCumulative ? data.cumulativeRateCI : data.rateCI;
                     const visitors = isCumulative ? data.cumulativeVisitors : data.visitors;
                     const conversions = isCumulative ? data.cumulativeConversions : data.conversions;
+                    const confidenceLevel = this.chart.data.confidenceLevel;
 
                     // Format the tooltip lines
                     return [
                         `${isBase ? 'Base' : 'Test'} Metrics:`,
                         `Rate: ${formatPercent(rate)}`,
-                        `CI: ${formatPercent(ci[0])} - ${formatPercent(ci[1])}`,
+                        `${confidenceLevel}% CI: [${formatPercent(ci[0])}, ${formatPercent(ci[1])}]`,
                         `Visitors: ${visitors.toLocaleString()}`,
                         `Conversions: ${conversions.toLocaleString()}`
                     ];
@@ -154,12 +155,13 @@ const differenceChartOptions = {
                         const diffCI = isCumulative ? diffData.cumulativeRateCI : diffData.rateCI;
                         const diffValue = isCumulative ? diffData.cumulativeRate : diffData.rate;
                         const diffLabel = isUplift ? 'Uplift' : 'Difference';
+                        const confidenceLevel = this.chart.data.confidenceLevel;
 
                         return [
                             `Base: ${formatPercent(baseRate)} (${baseVisitors.toLocaleString()} visitors)`,
                             `Variant: ${formatPercent(variantRate)} (${variantVisitors.toLocaleString()} visitors)`,
                             `${diffLabel}: ${formatPercent(diffValue)}`,
-                            `${this.chart.options.plugins.tooltip.confidenceLevel}% CI: [${formatPercent(diffCI[0])}, ${formatPercent(diffCI[1])}]`
+                            `${confidenceLevel}% CI: [${formatPercent(diffCI[0])}, ${formatPercent(diffCI[1])}]`
                         ];
                     }
                     return null;
@@ -175,8 +177,7 @@ function formatPercent(value) {
     return percentage.toFixed(2) + '%';
 }
 
-// Export the options
-window.chartOptions = chartOptions;
+// Export only the chart-specific options
 window.conversionChartOptions = conversionChartOptions;
 window.visitorsChartOptions = visitorsChartOptions;
 window.differenceChartOptions = differenceChartOptions; 
