@@ -1,4 +1,3 @@
-
 function formatTimeLabel(period) {
     const date = new Date(period);
     return date.toLocaleDateString('en-US', {
@@ -378,46 +377,12 @@ function renderChart(challenge) {
             labels,
             datasets: createDatasets('daily')
         }, {
+            ...conversionChartOptions,
             plugins: {
-                ...chartOptions.plugins,
+                ...conversionChartOptions.plugins,
                 title: {
                     display: true,
                     text: `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly Conversion Rates`
-                },
-                tooltip: {
-                    ...chartOptions.plugins.tooltip,
-                    callbacks: {
-                        title: function (context) {
-                            if (context.length === 0) return '';
-                            return context[0].label;
-                        },
-                        label: function (context) {
-                            // Skip CI datasets
-                            if (context.dataset.isCI) return null;
-
-                            const timePoint = completeTimeline[context.dataIndex];
-                            const isBase = context.dataset.label.toLowerCase().includes('base');
-                            const isCumulative = context.dataset.label.toLowerCase().includes('cumulative');
-                            const data = isBase ? timePoint.base : timePoint.variant;
-
-                            if (!data) return null;
-
-                            // Get the appropriate metrics based on view type
-                            const rate = isCumulative ? data.cumulativeRate : data.rate;
-                            const ci = isCumulative ? data.cumulativeRateCI : data.rateCI;
-                            const visitors = isCumulative ? data.cumulativeVisitors : data.visitors;
-                            const conversions = isCumulative ? data.cumulativeConversions : data.conversions;
-
-                            // Format the tooltip lines
-                            return [
-                                `${isBase ? 'Base' : 'Test'} Metrics:`,
-                                `Rate: ${formatPercent(rate)}`,
-                                `CI: ${formatPercent(ci[0])} - ${formatPercent(ci[1])}`,
-                                `Visitors: ${visitors.toLocaleString()}`,
-                                `Conversions: ${conversions.toLocaleString()}`
-                            ];
-                        }
-                    }
                 }
             },
             scales: {
@@ -446,7 +411,7 @@ function renderChart(challenge) {
                     datasets
                 }, {
                     plugins: {
-                        ...chartOptions.plugins,
+                        ...conversionChartOptions.plugins,
                         title: {
                             display: true,
                             text: viewType === 'daily' ?
@@ -498,10 +463,6 @@ function calculateConfidenceLevel(alpha) {
 function formatPercent(value) {
     const percentage = value * 100;
     return percentage.toFixed(2) + '%';
-}
-
-function formatDecimal(value) {
-    return value.toFixed(4);
 }
 
 function updateConfidenceIntervals(challenge) {
@@ -989,12 +950,7 @@ function renderVisitorsChart(challenge) {
             labels: labels,
             datasets: createDatasets('daily')
         }, {
-            ...chartOptions,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
+            ...visitorsChartOptions,
             scales: {
                 y: {
                     beginAtZero: true,
@@ -1018,12 +974,7 @@ function renderVisitorsChart(challenge) {
                     labels,
                     datasets
                 }, {
-                    ...chartOptions,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
+                    ...visitorsChartOptions,
                     scales: {
                         y: {
                             beginAtZero: true,
@@ -1242,65 +1193,7 @@ function renderDifferenceChart(challenge) {
             labels,
             datasets: createDatasets('daily', 'difference')
         }, {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            },
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                    viewType: 'daily',
-                    diffType: 'difference',
-                    confidenceLevel: confidenceLevel,
-                    callbacks: {
-                        title: function (context) {
-                            if (context.length === 0) return '';
-                            return context[0].label;
-                        },
-                        label: function (context) {
-                            const timePoint = completeTimeline[context.dataIndex];
-                            if (!timePoint || !timePoint.base || !timePoint.variant) return null;
-
-                            const isCumulative = this.chart.options.plugins.tooltip.viewType === 'cumulative';
-                            const isUplift = this.chart.options.plugins.tooltip.diffType === 'uplift';
-                            const baseRate = isCumulative ? timePoint.base.cumulativeRate : timePoint.base.rate;
-                            const baseCI = isCumulative ? timePoint.base.cumulativeRateCI : timePoint.base.rateCI;
-                            const baseVisitors = isCumulative ? timePoint.base.cumulativeVisitors : timePoint.base.visitors;
-                            const variantRate = isCumulative ? timePoint.variant.cumulativeRate : timePoint.variant.rate;
-                            const variantCI = isCumulative ? timePoint.variant.cumulativeRateCI : timePoint.variant.rateCI;
-                            const variantVisitors = isCumulative ? timePoint.variant.cumulativeVisitors : timePoint.variant.visitors;
-
-                            // Check if any required data is missing
-                            if (baseRate === null || variantRate === null ||
-                                baseVisitors === null || variantVisitors === null ||
-                                !baseCI || !variantCI) {
-                                return null;
-                            }
-
-                            if (context.datasetIndex === 0) {
-                                const diffData = isUplift ? timePoint.uplift : timePoint.difference;
-                                const diffCI = isCumulative ? diffData.cumulativeRateCI : diffData.rateCI;
-                                const diffValue = isCumulative ? diffData.cumulativeRate : diffData.rate;
-                                const diffLabel = isUplift ? 'Uplift' : 'Difference';
-
-                                return [
-                                    `Base: ${formatPercent(baseRate)} (${baseVisitors.toLocaleString()} visitors)`,
-                                    `Variant: ${formatPercent(variantRate)} (${variantVisitors.toLocaleString()} visitors)`,
-                                    `${diffLabel}: ${formatPercent(diffValue)}`,
-                                    `${this.chart.options.plugins.tooltip.confidenceLevel}% CI: [${formatPercent(diffCI[0])}, ${formatPercent(diffCI[1])}]`
-                                ];
-                            }
-                            return null;
-                        }
-                    }
-                }
-            },
+            ...differenceChartOptions,
             scales: {
                 y: {
                     beginAtZero: false,
@@ -1332,65 +1225,7 @@ function renderDifferenceChart(challenge) {
                 labels,
                 datasets
             }, {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        viewType: viewType,
-                        diffType: diffType,
-                        confidenceLevel: confidenceLevel,
-                        callbacks: {
-                            title: function (context) {
-                                if (context.length === 0) return '';
-                                return context[0].label;
-                            },
-                            label: function (context) {
-                                const timePoint = completeTimeline[context.dataIndex];
-                                if (!timePoint || !timePoint.base || !timePoint.variant) return null;
-
-                                const isCumulative = this.chart.options.plugins.tooltip.viewType === 'cumulative';
-                                const isUplift = this.chart.options.plugins.tooltip.diffType === 'uplift';
-                                const baseRate = isCumulative ? timePoint.base.cumulativeRate : timePoint.base.rate;
-                                const baseCI = isCumulative ? timePoint.base.cumulativeRateCI : timePoint.base.rateCI;
-                                const baseVisitors = isCumulative ? timePoint.base.cumulativeVisitors : timePoint.base.visitors;
-                                const variantRate = isCumulative ? timePoint.variant.cumulativeRate : timePoint.variant.rate;
-                                const variantCI = isCumulative ? timePoint.variant.cumulativeRateCI : timePoint.variant.rateCI;
-                                const variantVisitors = isCumulative ? timePoint.variant.cumulativeVisitors : timePoint.variant.visitors;
-
-                                // Check if any required data is missing
-                                if (baseRate === null || variantRate === null ||
-                                    baseVisitors === null || variantVisitors === null ||
-                                    !baseCI || !variantCI) {
-                                    return null;
-                                }
-
-                                if (context.datasetIndex === 0) {
-                                    const diffData = isUplift ? timePoint.uplift : timePoint.difference;
-                                    const diffCI = isCumulative ? diffData.cumulativeRateCI : diffData.rateCI;
-                                    const diffValue = isCumulative ? diffData.cumulativeRate : diffData.rate;
-                                    const diffLabel = isUplift ? 'Uplift' : 'Difference';
-
-                                    return [
-                                        `Base: ${formatPercent(baseRate)} (${baseVisitors.toLocaleString()} visitors)`,
-                                        `Variant: ${formatPercent(variantRate)} (${variantVisitors.toLocaleString()} visitors)`,
-                                        `${diffLabel}: ${formatPercent(diffValue)}`,
-                                        `${this.chart.options.plugins.tooltip.confidenceLevel}% CI: [${formatPercent(diffCI[0])}, ${formatPercent(diffCI[1])}]`
-                                    ];
-                                }
-                                return null;
-                            }
-                        }
-                    }
-                },
+                ...differenceChartOptions,
                 scales: {
                     y: {
                         beginAtZero: false,
@@ -1433,15 +1268,6 @@ function renderDifferenceChart(challenge) {
         return null;
     }
 }
-
-// Make sure charts resize properly
-window.addEventListener('resize', function () {
-    const conversionChart = Chart.getChart('conversion-chart');
-    if (conversionChart) conversionChart.resize();
-
-    const visitorsChart = Chart.getChart('visitors-chart');
-    if (visitorsChart) visitorsChart.resize();
-});
 
 function initializeCharts(challenge) {
     try {
@@ -1575,116 +1401,38 @@ const ChartManager = {
 // Add resize handler
 window.addEventListener('resize', () => ChartManager.resizeCharts());
 
-class ChartDataManager {
-    constructor() {
-        this.completeTimeline = [];
-        this.lastFullBusinessCycleIndex = -1;
-    }
-
-    initializeTimeline(timePoints, totalDays, currentDays, periodType) {
-        this.completeTimeline = [...timePoints];
-        if (currentDays < totalDays) {
-            this.appendFutureTimePoints(timePoints, totalDays, currentDays, periodType);
-        }
-    }
-
-    appendFutureTimePoints(timePoints, totalDays, currentDays, periodType) {
-        const lastPoint = timePoints[timePoints.length - 1];
-        const periodLength = this.getPeriodLength(periodType);
-        let nextDay = lastPoint.period.startDay + periodLength;
-
-        while (nextDay <= totalDays) {
-            this.completeTimeline.push(this.createEmptyTimePoint(nextDay, periodType));
-            nextDay += periodLength;
-        }
-    }
-}
-
-class ChartConfigFactory {
-    static getBaseConfig() {
-        return {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                zoom: {
-                    pan: { enabled: true, mode: 'x', modifierKey: 'ctrl' },
-                    zoom: {
-                        wheel: { enabled: true, modifierKey: 'ctrl' },
-                        pinch: { enabled: true },
-                        mode: 'x'
-                    }
-                }
-            }
-        };
-    }
-
-    static getTooltipConfig(timelineData) {
-        return {
-            enabled: true,
-            mode: 'index',
-            intersect: false,
-            // ... other tooltip configurations
-        };
-    }
-}
-
-class DatasetFactory {
-    static createConversionDataset(data, type, colors) {
-        return {
-            label: `${type} Rate`,
-            data: this.safeMapData(data, d => d[type.toLowerCase()].rate),
-            borderColor: colors.border,
-            backgroundColor: colors.background,
-            fill: false,
-            tension: 0.4,
-            spanGaps: true
-        };
-    }
-
-    static safeMapData(data, mapper) {
-        return data.map(d => {
-            try {
-                if (!d) return null;
-                const value = mapper(d);
-                return value !== null ? Number(value.toFixed(4)) : null;
-            } catch (e) {
-                console.warn('Error mapping data point:', e);
-                return null;
-            }
-        });
-    }
-}
-
 class ViewToggleManager {
-    constructor(toggleIds) {
-        this.toggles = new Map();
-        toggleIds.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                this.toggles.set(id, element);
-            }
+    constructor() {
+        this.currentView = 'visitors';
+        this.initializeViewToggles();
+    }
+
+    initializeViewToggles() {
+        const viewToggles = document.querySelectorAll('.view-toggle');
+        viewToggles.forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                const view = toggle.getAttribute('data-view');
+                this.switchView(view);
+            });
         });
     }
 
-    synchronizeViews(viewType) {
-        this.toggles.forEach(toggle => {
-            toggle.value = viewType;
+    switchView(view) {
+        this.currentView = view;
+        const viewToggles = document.querySelectorAll('.view-toggle');
+        viewToggles.forEach(toggle => {
+            toggle.classList.toggle('active', toggle.getAttribute('data-view') === view);
         });
+        this.updateCharts();
     }
 
-    addChangeListener(callback) {
-        this.toggles.forEach(toggle => {
-            toggle.addEventListener('change', callback);
-        });
+    updateCharts() {
+        if (this.currentView === 'visitors') {
+            visitorsChart.update();
+            differenceChart.update();
+        } else {
+            conversionChart.update();
+            differenceChart.update();
+        }
     }
-}
-
-function enhanceChartAccessibility(chart) {
-    const canvas = chart.canvas;
-    canvas.setAttribute('role', 'img');
-    canvas.setAttribute('aria-label', chart.options.plugins.title.text);
-
-    // Add keyboard navigation
-    canvas.tabIndex = 0;
-    canvas.addEventListener('keydown', handleChartKeyboardNavigation);
 }

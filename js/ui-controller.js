@@ -9,32 +9,17 @@ const UIController = {
         trustDecision: null,
         implementDecision: null,
         followUpDecision: null,
-        challenge: null,
-        debugMode: true,  // Set debug mode to true by default
+        challenge: null
     },
 
     init() {
-        // Initialize debug mode first
-        this.initializeDebugMode();
-
         this.initializeEventListeners();
         this.initializeCheatSheet();
         this.initializeTabs();
     },
 
-    initializeDebugMode() {
-        const debugCheckbox = document.getElementById('debug-mode');
-        if (debugCheckbox) {
-            // Set initial state
-            this.debugMode = debugCheckbox.checked;
-
-            // Add change event listener
-            debugCheckbox.addEventListener('change', (e) => {
-                this.debugMode = e.target.checked;
-                // Disable the checkbox after initial selection
-                debugCheckbox.disabled = true;
-            });
-        }
+    debugMode() {
+        return document.getElementById('debug-mode').checked;
     },
 
     initializeEventListeners() {
@@ -193,7 +178,7 @@ const UIController = {
 
             // Reset decisions
             this.resetDecisions();
-            if (this.state.debugMode) {
+            if (this.debugMode()) {
                 this.addDebugAlerts();
             }
             return true;
