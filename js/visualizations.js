@@ -8,8 +8,8 @@ const Colors = {
         future: 'rgb(128, 128, 128)',     // Gray for future data
         futureCI: 'rgba(128, 128, 128, 0.1)' // Semi-transparent gray for future CI
     },
-    // Test colors
-    test: {
+    // Variant colors
+    variant: {
         primary: 'rgb(59, 130, 246)',     // Blue
         secondary: 'rgb(19, 90, 206)',    // Dark blue
         ci: 'rgba(59, 130, 246, 0.1)',    // Light blue for CI
@@ -159,6 +159,7 @@ function renderChart(challenge, labels) {
 
         function updateOptions(viewType, datasets) {
             return {
+                ...conversionChartOptions,
                 plugins: {
                     ...conversionChartOptions.plugins,
                     title: {
@@ -184,11 +185,12 @@ function renderChart(challenge, labels) {
         }
 
         // Initialize chart with daily view
+        const datasets = createDatasets('daily');
         const chart = ChartManager.createChart('conversion-chart', 'line', {
             labels,
-            datasets: createDatasets('daily'),
+            datasets,
             viewType: 'daily'
-        }, updateOptions('daily', createDatasets('daily')));
+        }, updateOptions('daily', datasets));
 
         // Add view toggle functionality
         const viewToggle = document.getElementById('chart-view-toggle');
@@ -207,29 +209,27 @@ function renderChart(challenge, labels) {
     }
 }
 
+// Helper function to calculate y-axis range
 function calculateYAxisRange(datasets) {
-    try {
-        let allValues = [];
-        datasets.forEach(dataset => {
-            if (!dataset.label.includes('CI')) {
-                allValues = allValues.concat(dataset.data.filter(v => v !== null));
+    let min = Infinity;
+    let max = -Infinity;
+
+    // Calculate min and max from all datasets, including CI bounds
+    datasets.forEach(dataset => {
+        dataset.data.forEach(value => {
+            if (value !== null) {
+                min = Math.min(min, value);
+                max = Math.max(max, value);
             }
         });
+    });
 
-        if (allValues.length === 0) return { min: 0, max: 1 };
+    // Add padding to the range
+    const padding = (max - min) * 0.1;
+    min = Math.max(0, min - padding);
+    max = max + padding;
 
-        const maxValue = Math.max(...allValues);
-        const nonZeroValues = allValues.filter(v => v > 0);
-        const minValue = nonZeroValues.length > 0 ? Math.min(...nonZeroValues) : 0;
-
-        return {
-            min: Math.max(0, minValue - (minValue * 0.2)),
-            max: maxValue + (maxValue * 0.1)
-        };
-    } catch (error) {
-        console.error('Error calculating Y axis range:', error);
-        return { min: 0, max: 1 };
-    }
+    return { min, max };
 }
 
 function renderVisitorsChart(challenge, labels) {
@@ -434,8 +434,7 @@ const ChartManager = {
 
     // Helper function to create a base dataset
     createBaseDataset(type, dataKey, labelSuffix, isCumulative = false) {
-        const mappedType = type === 'variant' ? 'test' : type;
-        const colors = this.getColors(mappedType);
+        const colors =  Colors[type];
         const colorKey = isCumulative ? 'secondary' : 'primary';
         const timelineData = this.challenge.simulation.timeline;
 
@@ -449,7 +448,7 @@ const ChartManager = {
             data: this.completeTimeline.map(mapData),
             borderColor: colors[colorKey],
             backgroundColor: colors[colorKey],
-            ...this.createPointStyles(colors[colorKey], timelineData.lastFullBusinessCycleIndex, mappedType),
+            ...this.createPointStyles(colors[colorKey], timelineData.lastFullBusinessCycleIndex, type),
             ...(isCumulative ? { borderDash: [5, 5] } : {}),
             fill: false,
             tension: 0.4,
@@ -459,9 +458,23 @@ const ChartManager = {
 
     // Helper function to create dataset label
     createDatasetLabel(type, timePeriod, labelSuffix, isCumulative) {
-        const prefix = isCumulative ? 'Cumulative ' : '';
-        const variantName = type === 'base' ? 'Base' : 'Test';
-        return `${prefix}${variantName} ${timePeriod}ly ${labelSuffix}`;
+        const labelConfig = {
+            base: {
+                name: 'Base',
+                daily: `${timePeriod}ly`,
+                cumulative: 'Cumulative'
+            },
+            variant: {
+                name: 'Variant',
+                daily: `${timePeriod}ly`,
+                cumulative: 'Cumulative'
+            }
+        };
+
+        const config = labelConfig[type];
+        const viewType = isCumulative ? 'cumulative' : 'daily';
+        
+        return `${config[viewType]} ${config.name} ${labelSuffix}`;
     },
 
     // Helper function to create a rate dataset
@@ -478,7 +491,7 @@ const ChartManager = {
 
     // Helper function to create CI datasets
     createCIDatasets(type, isCumulative = false, isPercentage = false) {
-        const colors = this.getColors(type);
+        const colors = Colors[type];
         const dataKey = isCumulative ? 'cumulativeRateCI' : 'rateCI';
         const rateKey = isCumulative ? 'cumulativeRate' : 'rate';
         const labelPrefix = isCumulative ? 'Cumulative ' : '';
@@ -501,7 +514,7 @@ const ChartManager = {
             isCI: true
         };
 
-        return [
+        const datasets = [
             {
                 ...baseCIDataset,
                 label: `${labelPrefix}CI Upper`,
@@ -515,10 +528,12 @@ const ChartManager = {
                 fill: false
             }
         ];
+
+        return datasets;
     },
 
     // Helper function to create point styles
-    createPointStyles(color, lastFullBusinessCycleIndex, type = 'test') {
+    createPointStyles(color, lastFullBusinessCycleIndex, type = 'variant') {
         const futureColor = Colors[type].future;
         return {
             pointBackgroundColor: this.completeTimeline.map((_, i) => i > lastFullBusinessCycleIndex ? futureColor : color),
@@ -532,16 +547,25 @@ const ChartManager = {
 
     // Helper function to create timeline labels
     createTimelineLabels(timelineData, completeTimeline) {
+        const periodConfig = {
+            day: {
+                label: (startDay) => `Day ${startDay}`,
+                divisor: 1
+            },
+            week: {
+                label: (startDay) => `Week ${Math.ceil(startDay / 7)}`,
+                divisor: 7
+            },
+            month: {
+                label: (startDay) => `Month ${Math.ceil(startDay / 28)}`,
+                divisor: 28
+            }
+        };
+
         return completeTimeline.map((point, index) => {
             const { type, startDay } = point.period;
-            let label;
-            if (type === 'day') {
-                label = `Day ${startDay}`;
-            } else if (type === 'week') {
-                label = `Week ${Math.ceil(startDay / 7)}`;
-            } else {
-                label = `Month ${Math.ceil(startDay / 28)}`;
-            }
+            const config = periodConfig[type];
+            const label = config.label(startDay);
             return index === timelineData.lastFullBusinessCycleIndex ? `[${label}]` : label;
         });
     },
@@ -562,8 +586,8 @@ const ChartManager = {
                 period: { type, startDay },
                 base: this.createEmptyMetrics(),
                 variant: this.createEmptyMetrics(),
-                difference: this.createEmptyDifferenceMetrics(),
-                uplift: this.createEmptyDifferenceMetrics()
+                difference: this.createEmptyMetrics(),
+                uplift: this.createEmptyMetrics()
             });
 
             while (nextDay <= totalDays) {
@@ -588,15 +612,6 @@ const ChartManager = {
         };
     },
 
-    // Helper function to create empty difference metrics
-    createEmptyDifferenceMetrics() {
-        return {
-            rate: null,
-            rateCI: [null, null],
-            cumulativeRate: null,
-            cumulativeRateCI: [null, null]
-        };
-    },
 
     createChart(canvasId, type, data, options) {
         const canvas = document.getElementById(canvasId);
@@ -679,11 +694,6 @@ const ChartManager = {
         Object.values(this.charts).forEach(chart => {
             chart.resize();
         });
-    },
-
-    // Color management methods
-    getColors(type) {
-        return Colors[type === 'variant' ? 'test' : type];
     },
 };
 
