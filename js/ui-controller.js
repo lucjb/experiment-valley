@@ -192,11 +192,11 @@ const UIController = {
 
     addDebugAlerts() {
         this.addBaseConversionRateMissmatchAlert();
+        this.addSampleSizeWarning();
     },
 
     addBaseConversionRateMissmatchAlert() {
         const analysis = window.currentAnalysis;
-        const challenge = this.state.challenge;
         const hasMismatch = analysis.analysis.hasBaseRateMismatch;
         if (hasMismatch) {
             const baseRateCell = document.getElementById('base-rate');
@@ -238,6 +238,63 @@ const UIController = {
 
             baseRateCell.appendChild(alertSpan);
         }
+    },
+
+    addSampleSizeWarning() {
+        const analysis = window.currentAnalysis;
+        const { sampleSize } = analysis.analysis;
+        const { current, required } = analysis.analysis.runtime;
+        // Only show warning if experiment is complete and has insufficient sample size
+        const isComplete = current >= required;
+
+        if (isComplete) {
+            // Check base variant
+            if (sampleSize.actualBase < sampleSize.required) {
+                const baseVisitorsCell = document.getElementById('base-visitors');
+                this.addWarningToCell(baseVisitorsCell, `Insufficient sample size (${sampleSize.actualBase.toLocaleString()} < ${sampleSize.required.toLocaleString()})`);
+            }
+
+            // Check variant
+            if (sampleSize.actualVariant < sampleSize.required) {
+                const variantVisitorsCell = document.getElementById('variant-visitors');
+                this.addWarningToCell(variantVisitorsCell, `Insufficient sample size (${sampleSize.actualVariant.toLocaleString()} < ${sampleSize.required.toLocaleString()})`);
+            }
+        }
+    },
+
+    addWarningToCell(cell, message) {
+        // Create visitors span
+        const visitorsSpan = document.createElement('span');
+        visitorsSpan.className = 'font-medium';
+        visitorsSpan.textContent = cell.textContent;
+        cell.textContent = '';
+        cell.appendChild(visitorsSpan);
+
+        // Create alert span
+        const alertSpan = document.createElement('span');
+        alertSpan.className = 'ml-2 text-yellow-500 cursor-help tooltip-trigger';
+        alertSpan.textContent = '⚠️';
+
+        // Create tooltip content
+        const tooltipContent = document.createElement('span');
+        tooltipContent.className = 'tooltip-content';
+        tooltipContent.textContent = message;
+        alertSpan.appendChild(tooltipContent);
+
+        // Add mousemove event listener for tooltip positioning
+        alertSpan.addEventListener('mousemove', function (e) {
+            const tooltip = this.querySelector('.tooltip-content');
+            if (!tooltip) return;
+
+            // Get trigger position
+            const rect = this.getBoundingClientRect();
+
+            // Position tooltip above the trigger
+            tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
+            tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+        });
+
+        cell.appendChild(alertSpan);
     },
 
     updateExperimentDisplay() {
