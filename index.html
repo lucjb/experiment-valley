@@ -193,63 +193,89 @@
             transform: translate(-50%, -50%) scale(1);
             display: block;
         }
+        /* Blur effect styles */
+        .round-splash-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 50;
+            display: none;
+        }
+        .round-splash-overlay.active {
+            display: block;
+        }
+        .round-splash-overlay.active ~ * {
+            filter: blur(8px);
+            transition: filter 0.5s ease-in-out;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
     <div id="round-splash" class="round-splash"></div>
+    <div id="round-splash-overlay" class="round-splash-overlay"></div>
     <div class="max-w-6xl mx-auto p-2 md:p-4">
         <!-- Tutorial Section -->
-        <div id="tutorial-section" class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 md:p-8 mb-6">
-            <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-6 text-center">Welcome to A/B Testing Gym!</h2>
-
-            <div class="space-y-6 md:space-y-8 max-w-4xl mx-auto">
-                <div>
-                    <h3 class="text-lg md:text-xl font-semibold text-blue-600 mb-3">How to Play</h3>
-                    <ul class="list-disc pl-4 md:pl-6 space-y-2 text-gray-700 text-base md:text-lg">
-                        <li>You'll face 3 different experiments</li>
-                        <li>For each experiment, you'll need to make two decisions:
-                            <ul class="list-circle pl-4 md:pl-6 mt-2">
-                                <li>Is the experiment trustworthy?</li>
-                                <li>Should we implement the new variant?</li>
-                            </ul>
-                        </li>
-                        <li>Your score increases when you make correct implementation decisions</li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h3 class="text-lg md:text-xl font-semibold text-blue-600 mb-3">Debug Mode</h3>
-                    <div class="flex items-center space-x-2">
-                        <input type="checkbox" id="debug-mode" class="form-checkbox h-5 w-5 text-blue-600" checked>
-                        <label for="debug-mode" class="text-gray-700 text-base md:text-lg">
-                            Enable Debug Mode
-                            <span class="tooltip-trigger">
-                                ℹ
-                                <span class="tooltip-content">
-                                    When enabled, debug mode will highlight potential issues in the experiment data and analysis. This helps identify discrepancies between design parameters and actual results.
-                                    <a href="#" class="text-blue-500 hover:text-blue-700 mt-2 block">Learn more →</a>
-                                </span>
-                            </span>
-                        </label>
-                    </div>
-                </div>
-
-                <div>
-                    <h3 class="text-lg md:text-xl font-semibold text-blue-600 mb-3">What You'll See</h3>
-                    <ul class="list-disc pl-4 md:pl-6 space-y-2 text-gray-700 text-base md:text-lg">
-                        <li><span class="font-medium">Experiment Design:</span> Shows statistical parameters and sample size requirements</li>
-                        <li><span class="font-medium">Results Analysis:</span> Includes detailed metrics and interactive visualizations</li>
-                        <li><span class="font-medium">Confidence Intervals:</span> Visual representation of statistical uncertainty</li>
-                        <li><span class="font-medium">Conversion Charts:</span> Track how rates change over time</li>
-                    </ul>
-                </div>
-
-                <div class="text-center mt-8">
-                    <button id="start-btn" class="px-6 md:px-8 py-3 md:py-4 bg-blue-500 text-white text-lg md:text-xl font-bold rounded-lg shadow-lg hover:bg-blue-600 transform hover:scale-105 transition-all">
-                        Play
-                    </button>
-                </div>
+        <div id="tutorial-section" class="bg-gray-900 rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold mb-4 text-white">Level Up Your A/B Testing Game! 🎮</h2>
+            <p class="mb-4 text-gray-300">Ready to become an A/B testing expert? Each round presents you with 3 real-world experiments to evaluate. Make data-driven decisions and climb the ranks!</p>
+            
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold mb-2" style="color: #f97316;">How to Play:</h3>
+                <ol class="list-decimal list-inside space-y-2 text-gray-300">
+                    <li>For each experiment, you'll analyze detailed metrics and interactive charts</li>
+                    <li>Make three critical decisions for each experiment:
+                        <ul class="list-disc list-inside ml-4 mt-1">
+                            <li>Evaluate if the experiment is trustworthy (sample size, traffic split, etc.)</li>
+                            <li>Choose the best decision based on the data (Keep Base, Keep Variant, or Keep Running)</li>
+                            <li>Determine the next steps to maximize impact</li>
+                        </ul>
+                    </li>
+                    <li>Get instant feedback on your decisions and learn from each choice</li>
+                </ol>
             </div>
+
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold mb-2" style="color: #f97316;">Scoring System:</h3>
+                <ul class="list-disc list-inside space-y-2 text-gray-300">
+                    <li>Perfect round (all 3 decisions correct): +1 point 🏆</li>
+                    <li>Good round (2 decisions correct): +0.5 points 👍</li>
+                    <li>Poor round (1 or 0 decisions correct): 0 points 😢</li>
+                    <li>Your accuracy is calculated as: (Total Score / Total Attempts) × 100%</li>
+                    <li>Build your streak to unlock bonus points!</li>
+                </ul>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold mb-2" style="color: #f97316;">Rounds System:</h3>
+                <ul class="list-disc list-inside space-y-2 text-gray-300">
+                    <li>Each round consists of 3 unique experiments</li>
+                    <li>For each experiment, you make 3 decisions:
+                        <ul class="list-disc list-inside ml-4 mt-1">
+                            <li>Trustworthiness (Yes/No)</li>
+                            <li>Main decision (Keep Base/Variant/Running)</li>
+                            <li>Follow-up action</li>
+                        </ul>
+                    </li>
+                    <li>To advance to the next round, you need to get at least 2 experiments correct out of 3</li>
+                    <li>Fail to meet this requirement, and it's game over - but you can always start fresh!</li>
+                    <li>Track your progress with the round counter in the top-left corner</li>
+                </ul>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold mb-2" style="color: #f97316;">Pro Tips:</h3>
+                <ul class="list-disc list-inside space-y-2 text-gray-300">
+                    <li>Always check sample sizes and statistical significance before making decisions</li>
+                    <li>Look for patterns in the data - sometimes the trend is more important than the final numbers</li>
+                    <li>Consider both statistical and practical significance in your decisions</li>
+                    <li>Watch out for confounding factors that might affect your results</li>
+                    <li>Use the cheat sheet (ℹ️) for quick reference on experiment trustworthiness</li>
+                </ul>
+            </div>
+
+            <button id="start-btn" class="w-full bg-orange-500 text-white py-3 px-6 rounded-lg hover:bg-orange-600 transition-colors">
+                Start Playing! 🚀
+            </button>
         </div>
 
         <div id="challenge-container" class="hidden">
@@ -257,6 +283,10 @@
             <header class="flex flex-col bg-gray-900 rounded-lg shadow-lg p-3 md:p-4 mb-4">
                 <div class="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
                     <div class="flex flex-wrap gap-4 md:gap-8">
+                        <div>
+                            <span class="font-medium text-white">Round: </span>
+                            <span id="current-round" class="text-xl md:text-2xl font-bold score-value">1</span>
+                        </div>
                         <div>
                             <span class="font-medium text-white">Score: </span>
                             <span id="score" class="text-xl md:text-2xl font-bold score-value">0</span>

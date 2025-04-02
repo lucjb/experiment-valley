@@ -505,13 +505,6 @@ const UIController = {
             
             this.state.experimentsInCurrentRound++;
 
-            // Update button text based on whether this was the last experiment
-            if (isLastExperiment) {
-                document.getElementById('next-challenge-btn').textContent = 'Next Round!';
-            } else {
-                document.getElementById('next-challenge-btn').textContent = 'Next!';
-            }
-
             // Use the global analysis
             const analysis = window.currentAnalysis;
 
@@ -603,7 +596,7 @@ const UIController = {
                     document.getElementById('next-challenge-btn').textContent = 'Next Round!';
                 } else {
                     // End game
-                    this.showCompletionModal();
+                    document.getElementById('next-challenge-btn').textContent = 'Done';
                 }
             }
         } catch (error) {
@@ -627,6 +620,10 @@ const UIController = {
         document.getElementById('modal-accuracy').textContent = `${accuracy}%`;
     },
 
+    updateRoundDisplay() {
+        document.getElementById('current-round').textContent = this.state.currentRound;
+    },
+
     async handleNextChallenge() {
         const feedbackModal = document.getElementById('feedback-modal');
         feedbackModal.classList.add('fade-out');
@@ -642,6 +639,7 @@ const UIController = {
                 this.state.experimentsInCurrentRound = 0;
                 this.state.correctInCurrentRound = 0;
                 this.state.currentRound++; // Increment the round number
+                this.updateRoundDisplay(); // Update the round display
                 // Show round splash first
                 this.showRoundSplash();
                 // Wait for splash animation to complete before loading new challenge
@@ -663,12 +661,16 @@ const UIController = {
 
     showRoundSplash() {
         const splash = document.getElementById('round-splash');
-        if (!splash) {
+        const overlay = document.getElementById('round-splash-overlay');
+        if (!splash || !overlay) {
             return;
         }
         
         // Set the round text
         splash.textContent = `Round ${this.state.currentRound}`;
+        
+        // Show the overlay and blur effect
+        overlay.classList.add('active');
         
         // Show the splash
         splash.style.display = 'block';
@@ -682,13 +684,14 @@ const UIController = {
         splash.style.opacity = '1';
         splash.style.transform = 'translate(-50%, -50%) scale(1)';
         
-        // Hide the splash after animation completes
+        // Hide the splash and overlay after animation completes
         setTimeout(() => {
             splash.style.opacity = '0';
             splash.style.transform = 'translate(-50%, -50%) scale(0.5)';
             
             setTimeout(() => {
                 splash.style.display = 'none';
+                overlay.classList.remove('active');
             }, 500);
         }, 1500);
     },
@@ -696,7 +699,13 @@ const UIController = {
     showCompletionModal() {
         const experimentContainer = document.getElementById('challenge-container');
         const completionModal = document.getElementById('completion-modal');
+        const feedbackModal = document.getElementById('feedback-modal');
 
+        // Hide feedback modal first
+        feedbackModal.classList.add('hidden');
+        feedbackModal.classList.remove('fade-in');
+
+        // Then hide experiment container
         experimentContainer.classList.add('fade-out');
 
         setTimeout(() => {
@@ -714,9 +723,16 @@ const UIController = {
     startNewSession() {
         const completionModal = document.getElementById('completion-modal');
         const experimentContainer = document.getElementById('challenge-container');
+        const tutorialSection = document.getElementById('tutorial-section');
 
+        // Hide modals and experiment container
         completionModal.classList.add('hidden');
-        experimentContainer.classList.remove('hidden');
+        completionModal.classList.remove('fade-in');
+        experimentContainer.classList.add('hidden');
+        experimentContainer.classList.remove('fade-out');
+
+        // Show tutorial section
+        tutorialSection.classList.remove('hidden');
 
         // Reset state
         this.state.currentExperiment = 1;
@@ -731,6 +747,7 @@ const UIController = {
         this.updateScoreDisplay();
         this.updateStreakDisplay();
         this.updateAccuracyDisplay(0);
+        this.updateRoundDisplay(); // Update the round display
         document.getElementById('current-experiment').textContent = this.state.currentExperiment;
 
         // Reset button text
@@ -739,11 +756,12 @@ const UIController = {
             nextButton.textContent = 'Next!';
         }
 
-        // Show round splash for first round
-        this.showRoundSplash();
-        
-        // Start new challenge
-        this.loadChallenge();
+        // Reset progress bar
+        document.getElementById('progress-bar').style.width = '0%';
+
+        // Clear any existing experiment data
+        window.currentExperiment = null;
+        window.currentAnalysis = null;
     },
 
     shareOnTwitter() {
