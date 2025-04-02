@@ -46,8 +46,12 @@ const ModalManager = {
     show(modalId) {
         const modal = document.getElementById(modalId);
         if (modal) {
+            // First remove hidden class
             modal.classList.remove('hidden');
-            setTimeout(() => modal.classList.add('fade-in'), 10);
+            // Force a reflow to ensure the browser processes the removal of hidden
+            modal.offsetHeight;
+            // Then add fade-in class
+            modal.classList.add('fade-in');
         }
     },
 

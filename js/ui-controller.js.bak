@@ -26,6 +26,15 @@ const UIController = {
     },
 
     initializeEventListeners() {
+        // Test button for round splash
+        const testSplashBtn = document.getElementById('test-splash');
+        if (testSplashBtn) {
+            testSplashBtn.addEventListener('click', () => {
+                this.state.currentRound = parseInt(prompt('Enter round number:', this.state.currentRound));
+                this.showRoundSplash();
+            });
+        }
+
         // Start button
         const startBtn = document.getElementById('start-btn');
         if (startBtn) {
@@ -144,6 +153,11 @@ const UIController = {
     },
 
     startSession() {
+        console.log('startSession called');
+        console.log('Current state:', {
+            currentRound: this.state.currentRound,
+            experimentsInCurrentRound: this.state.experimentsInCurrentRound
+        });
         const tutorialSection = document.getElementById('tutorial-section');
         const challengeContainer = document.getElementById('challenge-container');
 
@@ -515,6 +529,12 @@ const UIController = {
             // Use the global analysis
             const analysis = window.currentAnalysis;
 
+            console.log('Analysis result:', analysis);
+            console.log('User decisions:', {
+                trust: this.state.trustDecision,
+                implement: this.state.implementDecision
+            });
+
             // Compare user's choices with analysis result
             let correctChoices = 0;
             const totalChoices = 3;
@@ -598,8 +618,9 @@ const UIController = {
             if (this.state.experimentsInCurrentRound === this.state.EXPERIMENTS_PER_SESSION) {
                 // Check if player got at least 2 experiments right
                 if (this.state.correctInCurrentRound >= 2) {
-                    // Do NOT increment the round number here - that happens in handleNextChallenge
-                    // Only reset experiment counters
+                    // Start new round
+                    this.state.experimentsInCurrentRound = 0;
+                    this.state.correctInCurrentRound = 0;
                     document.getElementById('next-challenge-btn').textContent = 'Next Round!';
                 } else {
                     // End game
@@ -628,6 +649,13 @@ const UIController = {
     },
 
     async handleNextChallenge() {
+        console.log('handleNextChallenge called');
+        console.log('Current state:', {
+            experimentsInCurrentRound: this.state.experimentsInCurrentRound,
+            EXPERIMENTS_PER_SESSION: this.state.EXPERIMENTS_PER_SESSION,
+            correctInCurrentRound: this.state.correctInCurrentRound,
+            currentRound: this.state.currentRound
+        });
         const feedbackModal = document.getElementById('feedback-modal');
         feedbackModal.classList.add('fade-out');
 
@@ -637,11 +665,14 @@ const UIController = {
 
         if (this.state.experimentsInCurrentRound === this.state.EXPERIMENTS_PER_SESSION) {
             if (this.state.correctInCurrentRound >= 2) {
+                console.log('Starting new round');
+                console.log('Current round before increment:', this.state.currentRound);
                 // Start new round
                 this.state.currentExperiment = 1; // Reset the experiment counter
                 this.state.experimentsInCurrentRound = 0;
                 this.state.correctInCurrentRound = 0;
                 this.state.currentRound++; // Increment the round number
+                console.log('Current round after increment:', this.state.currentRound);
                 // Show round splash first
                 this.showRoundSplash();
                 // Wait for splash animation to complete before loading new challenge
@@ -662,12 +693,14 @@ const UIController = {
     },
 
     showRoundSplash() {
+        console.log('showRoundSplash called');
         const splash = document.getElementById('round-splash');
+        console.log('Splash element:', splash);
         if (!splash) {
+            console.error('Round splash element not found!');
             return;
         }
-        
-        // Set the round text
+        console.log('Current round when showing splash:', this.state.currentRound);
         splash.textContent = `Round ${this.state.currentRound}`;
         
         // Show the splash
@@ -682,18 +715,23 @@ const UIController = {
         splash.style.opacity = '1';
         splash.style.transform = 'translate(-50%, -50%) scale(1)';
         
+        console.log('Splash is now visible');
+        
         // Hide the splash after animation completes
         setTimeout(() => {
+            console.log('Starting hide animation');
             splash.style.opacity = '0';
             splash.style.transform = 'translate(-50%, -50%) scale(0.5)';
             
             setTimeout(() => {
+                console.log('Hiding splash completely');
                 splash.style.display = 'none';
             }, 500);
         }, 1500);
     },
 
     showCompletionModal() {
+        console.log('Showing completion modal');
         const experimentContainer = document.getElementById('challenge-container');
         const completionModal = document.getElementById('completion-modal');
 
@@ -712,6 +750,11 @@ const UIController = {
     },
 
     startNewSession() {
+        console.log('Starting new session');
+        console.log('Current state before reset:', {
+            currentRound: this.state.currentRound,
+            experimentsInCurrentRound: this.state.experimentsInCurrentRound
+        });
         const completionModal = document.getElementById('completion-modal');
         const experimentContainer = document.getElementById('challenge-container');
 
@@ -727,6 +770,11 @@ const UIController = {
         this.state.experimentsInCurrentRound = 0;
         this.state.correctInCurrentRound = 0;
 
+        console.log('State after reset:', {
+            currentRound: this.state.currentRound,
+            experimentsInCurrentRound: this.state.experimentsInCurrentRound
+        });
+
         // Update displays
         this.updateScoreDisplay();
         this.updateStreakDisplay();
@@ -739,9 +787,6 @@ const UIController = {
             nextButton.textContent = 'Next!';
         }
 
-        // Show round splash for first round
-        this.showRoundSplash();
-        
         // Start new challenge
         this.loadChallenge();
     },
