@@ -80,6 +80,22 @@ const UIController = {
 
         // Start new session
         document.getElementById('start-new-session').addEventListener('click', () => this.startNewSession());
+
+        // Add keyboard event listeners
+        document.addEventListener('keydown', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        document.addEventListener('keyup', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        document.addEventListener('keypress', function(e) {
+            e.preventDefault();
+            return false;
+        });
     },
 
     initializeCheatSheet() {
