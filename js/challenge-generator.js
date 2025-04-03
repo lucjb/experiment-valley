@@ -506,11 +506,29 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
         timePeriod: period,
         periodsCount: numPeriods,
         totalDays: numDays,
-        lastFullBusinessCycleIndex: Math.floor((Math.floor(currentRuntimeDays / 7)*7)/daysPerPeriod) - 1
+        lastFullBusinessCycleIndex: Math.floor((Math.floor(currentRuntimeDays / 7) * 7) / daysPerPeriod) - 1
     };
 }
 
-function generateABTestChallenge() {
+function cleanWinner() {
+    return generateABTestChallenge(TIME_PROGRESS.FULL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.IMPROVEMENT, SAMPLE_RATIO_MISMATCH.NO);
+}
+function inconclusive() {
+    return generateABTestChallenge(TIME_PROGRESS.FULL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.NONE, SAMPLE_RATIO_MISMATCH.NO);
+}
+
+
+const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY" };
+const BASE_RATE_MISMATCH = { NO: 10000000, YES: 100 };
+const EFFECT_SIZE = { NONE: 0, IMPROVEMENT: 0.6, LARGE_IMPROVEMENT: 2, DEGRADATION: -0.6, LARGE_DEGRADATION: -2 };
+const SAMPLE_RATIO_MISMATCH = { NO: 0.5, LARGE: 0.3, SMALL: 0.51 };
+
+function generateABTestChallenge(
+    timeProgress = TIME_PROGRESS.FULL,
+    baseRateMismatch = BASE_RATE_MISMATCH.NO,
+    effectSize = EFFECT_SIZE.NONE,
+    sampleRatioMismatch = SAMPLE_RATIO_MISMATCH.NO) {
+
     // Predefined options for each parameter
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
     const BETA_OPTIONS = [0.2];
@@ -532,35 +550,38 @@ function generateABTestChallenge() {
     var varianceB = (BASE_CONVERSION_RATE + MRE) * (1 - (BASE_CONVERSION_RATE + MRE));
     var requiredSampleSizePerVariant = solveSampleSizeTTest(MRE, 1 - BETA, varianceA, varianceB, ALPHA);
     var requiredRuntimeDays = Math.ceil((requiredSampleSizePerVariant * 2) / VISITORS_PER_DAY);
-
     // Ensure runtime is at least 7 days full weeks
     requiredRuntimeDays = Math.max(7, requiredRuntimeDays);
-    requiredRuntimeDays = Math.floor(requiredRuntimeDays / 7) * 7;
+    requiredRuntimeDays = Math.ceil(requiredRuntimeDays / 7) * 7;
 
     var currentRuntimeDays = requiredRuntimeDays;
-    if (Math.random() < 0.5) {
-        currentRuntimeDays = Math.floor(requiredRuntimeDays * (Math.random()*0.4+0.5));
+    if (timeProgress === TIME_PROGRESS.PARTIAL) {
+        currentRuntimeDays = Math.floor(requiredRuntimeDays * (Math.random() * 0.4 + 0.5));
+    } else if (timeProgress === TIME_PROGRESS.EARLY) {
+        currentRuntimeDays = 5
     }
-    const actualBaseConversionRate = sampleBetaDistribution(
-        100000 * BASE_CONVERSION_RATE,
-        100000 * (1 - BASE_CONVERSION_RATE)
+
+    var actualBaseConversionRate = BASE_CONVERSION_RATE;
+    actualBaseConversionRate = sampleBetaDistribution(
+        baseRateMismatch * BASE_CONVERSION_RATE,
+        baseRateMismatch * (1 - BASE_CONVERSION_RATE)
     );
 
     // Calculate effect size as a relative change instead of absolute
-    const relativeEffectSize = sampleNormalDistribution(MRE / BASE_CONVERSION_RATE, MRE / (10 * BASE_CONVERSION_RATE));
+    const relativeEffectSize = effectSize * MRE / actualBaseConversionRate //sampleNormalDistribution(MRE / BASE_CONVERSION_RATE, MRE / (10 * BASE_CONVERSION_RATE));
 
     // Apply effect size as a relative change, ensuring we don't go below 20% of base rate
-    const variantConversionRate = actualBaseConversionRate * (1 + (Math.random() < 0.5 ? relativeEffectSize : -Math.min(0.8, Math.abs(relativeEffectSize))));
+    const variantConversionRate = actualBaseConversionRate * (1 + relativeEffectSize);
 
     // Ensure variant rate is never zero or too close to zero
     const minimumRate = actualBaseConversionRate * 0.2; // minimum 20% of base rate
     const adjustedVariantRate = Math.max(minimumRate, variantConversionRate);
 
     const actualVisitorsTotal = currentRuntimeDays * VISITORS_PER_DAY + sampleBinomial(VISITORS_PER_DAY, 0.8);
-    const actualVisitorsBase = sampleBinomial(actualVisitorsTotal, 0.5);
+    const actualVisitorsBase = sampleBinomial(actualVisitorsTotal, sampleRatioMismatch);
     const actualVisitorsVariant = actualVisitorsTotal - actualVisitorsBase;
 
-    const actualConversionsBase = sampleBinomial(actualVisitorsBase, actualBaseConversionRate);
+    const actualConversionsBase = Math.ceil(actualVisitorsBase * actualBaseConversionRate);
     const actualConversionsVariant = sampleBinomial(actualVisitorsVariant, adjustedVariantRate);
 
     const { pValue } = computeTTest(actualConversionsBase, actualVisitorsBase, actualConversionsVariant, actualVisitorsVariant);
@@ -651,16 +672,16 @@ function checkSampleRatioMismatch(baseVisitors, variantVisitors) {
     const totalVisitors = baseVisitors + variantVisitors;
     const expectedRatio = 0.5; // 50-50 split
     const actualRatio = baseVisitors / totalVisitors;
-    
+
     // Calculate chi-square statistic for statistical significance
     const expectedBase = totalVisitors * expectedRatio;
     const expectedVariant = totalVisitors * expectedRatio;
     const chiSquare = Math.pow(baseVisitors - expectedBase, 2) / expectedBase +
-                     Math.pow(variantVisitors - expectedVariant, 2) / expectedVariant;
-    
+        Math.pow(variantVisitors - expectedVariant, 2) / expectedVariant;
+
     // Calculate p-value using chi-square distribution
     const pValue = 1 - jStat.chisquare.cdf(chiSquare, 1);
-    
+
     return {
         actualRatio,
         chiSquare,
@@ -732,9 +753,9 @@ function analyzeExperiment(experiment) {
     const businessCycleComplete = currentRuntimeDays % businessCycleDays === 0;
     const fullWeek = currentRuntimeDays >= 7;
 
-    const mismatch = hasSampleRatioMismatch || 
-                     hasBaseRateMismatch || 
-                     hasTrafficMismatch;
+    const mismatch = hasSampleRatioMismatch ||
+        hasBaseRateMismatch ||
+        hasTrafficMismatch;
 
     if (mismatch) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
@@ -769,13 +790,13 @@ function analyzeExperiment(experiment) {
         analysisDone = true;
     } else {
         if (!analysisDone) {
-            decision = EXPERIMENT_DECISION.KEEP_VARIANT; 
+            decision = EXPERIMENT_DECISION.KEEP_VARIANT;
             followUp = EXPERIMENT_FOLLOW_UP.CELEBRATE;
         }
     }
 
     return {
-        decision:{
+        decision: {
             trustworthy: trustworthy,
             decision: decision,
             follwUp: followUp
