@@ -136,7 +136,85 @@ const visitorsChartOptions = {
                     if (metrics.visitors !== null) {
                         lines.push(`Visitors: ${metrics.visitors.toLocaleString()}`);
                     }
+
+                    // Add 50% target line to tooltip
+                    const periodType = timePoint.period.type;
+                    const multiplier = periodType === 'day' ? 1 : periodType === 'week' ? 7 : 28;
+                    const targetVisitors = this.chart.data.targetVisitors * multiplier;
+                    lines.push(`Expected: ${(targetVisitors / 2).toLocaleString()}`);
+
                     return lines;
+                }
+            }
+        },
+        annotation: {
+            annotations: {
+                halfVisitors: {
+                    type: 'line',
+                    yMin: function(context) {
+                        const timePoint = ChartManager.completeTimeline[0];
+                        if (!timePoint) return 0;
+                        
+                        const periodType = timePoint.period.type;
+                        const multiplier = periodType === 'day' ? 1 : periodType === 'week' ? 7 : 28;
+                        const isCumulative = context.chart.data.viewType === 'cumulative';
+                        
+                        if (isCumulative) {
+                            // For cumulative view, start at target/2
+                            const dailyTarget = context.chart.data.targetVisitors;
+                            return dailyTarget / 2;
+                        }
+                        return (context.chart.data.targetVisitors * multiplier) / 2;
+                    },
+                    yMax: function(context) {
+                        const timePoint = ChartManager.completeTimeline[0];
+                        if (!timePoint) return 0;
+                        
+                        const periodType = timePoint.period.type;
+                        const multiplier = periodType === 'day' ? 1 : periodType === 'week' ? 7 : 28;
+                        const isCumulative = context.chart.data.viewType === 'cumulative';
+                        
+                        if (isCumulative) {
+                            // For cumulative view, calculate total based on period type
+                            const dailyTarget = context.chart.data.targetVisitors;
+                            const currentIndex = context.chart.data.labels.length - 1;
+                            let totalDays = 0;
+                            
+                            // Sum up the days for each period up to current point
+                            for (let i = 0; i <= currentIndex; i++) {
+                                const point = ChartManager.completeTimeline[i];
+                                if (point) {
+                                    const pointMultiplier = point.period.type === 'day' ? 1 : 
+                                                          point.period.type === 'week' ? 7 : 28;
+                                    totalDays += pointMultiplier;
+                                }
+                            }
+                            return (dailyTarget * totalDays) / 2;
+                        }
+                        return (context.chart.data.targetVisitors * multiplier) / 2;
+                    },
+                    borderColor: '#f97316',
+                    borderWidth: 1,
+                    borderDash: [5, 5],
+                    label: {
+                        content: function(context) {
+                            const isCumulative = context.chart.data.viewType === 'cumulative';
+                            return isCumulative ? 'Expected Cumulative' : 'Expected Daily';
+                        },
+                        enabled: true,
+                        position: 'start',
+                        color: '#f97316'
+                    }
+                }
+            }
+        }
+    },
+    scales: {
+        y: {
+            beginAtZero: true,
+            ticks: {
+                callback: function (value) {
+                    return value.toLocaleString();
                 }
             }
         }

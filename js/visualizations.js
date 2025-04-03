@@ -104,7 +104,7 @@ const ModalManager = {
 function handleViewToggleChange(chartId, viewType, createDatasets, updateOptions) {
     const datasets = createDatasets(viewType);
     ChartManager.updateChart(chartId, {
-        labels: ChartManager.completeTimeline.map((_, i) => `Day ${i + 1}`),
+        labels: ChartManager.createTimelineLabels(ChartManager.challenge.simulation.timeline, ChartManager.completeTimeline),
         datasets,
         viewType
     }, updateOptions(viewType, datasets));
@@ -267,7 +267,8 @@ function renderVisitorsChart(challenge, labels) {
         const chart = ChartManager.createChart('visitors-chart', 'line', {
             labels,
             datasets: createDatasets('daily'),
-            viewType: 'daily'
+            viewType: 'daily',
+            targetVisitors: challenge.experiment.visitorsPerDay
         }, updateOptions());
 
         // Add view toggle functionality
