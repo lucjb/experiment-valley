@@ -66,6 +66,11 @@ const UIController = {
                     button.style.opacity = '0.7';
                 }
             });
+
+            // Add touch event listeners alongside click events
+            button.addEventListener('touchstart', () => {
+                this.handleDecision(button.getAttribute('name'), button.getAttribute('value'));
+            });
         });
 
         // Submit decision
