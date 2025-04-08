@@ -186,8 +186,32 @@ const UIController = {
                 throw new Error("generateABTestChallenge function is not defined");
             }
 
-            // Generate a new challenge and store it globally
-            window.currentExperiment = generateABTestChallenge();
+            // Define challenge sequence for each round
+            const challengeSequences = {
+                2: [inconclusive, winner, loser], // First round: inconclusive → winner → loser
+                1: [fastCompletion, fastCompletion, fastCompletion], // Second round: large winner → large loser → inconclusive
+                3: [partialWinner, largeWinner, partialLoser], // Second round: large winner → large loser → inconclusive
+                // Add more rounds here if needed
+            };
+
+            // Generate a new challenge based on round and experiment number
+            if (challengeSequences[this.state.currentRound]) {
+                // Use predefined sequence for this round
+                const sequence = challengeSequences[this.state.currentRound];
+                const experimentIndex = this.state.experimentsInCurrentRound;
+                
+                if (experimentIndex < sequence.length) {
+                    // Use the predefined challenge generator for this experiment
+                    window.currentExperiment = sequence[experimentIndex]();
+                } else {
+                    // Fall back to random challenge if we somehow exceed the sequence length
+                    window.currentExperiment = generateABTestChallenge();
+                }
+            } else {
+                // For rounds without a predefined sequence, use random challenges
+                window.currentExperiment = generateABTestChallenge();
+            }
+
             this.state.challenge = window.currentExperiment;
 
             // Analyze the experiment and store it globally

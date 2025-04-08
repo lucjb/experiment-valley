@@ -510,24 +510,47 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
     };
 }
 
-function cleanWinner() {
+function winner() {
     return generateABTestChallenge(TIME_PROGRESS.FULL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.IMPROVEMENT, SAMPLE_RATIO_MISMATCH.NO);
 }
+
 function inconclusive() {
     return generateABTestChallenge(TIME_PROGRESS.FULL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.NONE, SAMPLE_RATIO_MISMATCH.NO);
 }
 
+function loser() {
+    return generateABTestChallenge(TIME_PROGRESS.FULL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.DEGRADATION, SAMPLE_RATIO_MISMATCH.NO);
+}
 
-const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY" };
+function largeWinner() {
+    return generateABTestChallenge(TIME_PROGRESS.FULL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.LARGE_IMPROVEMENT, SAMPLE_RATIO_MISMATCH.NO);
+}
+
+function partialWinner() {
+    return generateABTestChallenge(TIME_PROGRESS.PARTIAL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.IMPROVEMENT, SAMPLE_RATIO_MISMATCH.NO);
+}
+
+function partialLoser() {
+    return generateABTestChallenge(TIME_PROGRESS.PARTIAL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.LARGE_DEGRADATION, SAMPLE_RATIO_MISMATCH.NO);
+}
+
+function fastCompletion() {
+    return generateABTestChallenge(TIME_PROGRESS.PARTIAL_WEEKS, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.IMPROVEMENT, SAMPLE_RATIO_MISMATCH.NO, SAMPLE_PROGRESS.FULL);
+}
+
+
+const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY", PARTIAL_WEEKS: "PARTIAL_WEEKS" };
+const SAMPLE_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", TIME: "TIME" };
 const BASE_RATE_MISMATCH = { NO: 10000000, YES: 100 };
-const EFFECT_SIZE = { NONE: 0, IMPROVEMENT: 0.6, LARGE_IMPROVEMENT: 2, DEGRADATION: -0.6, LARGE_DEGRADATION: -2 };
+const EFFECT_SIZE = { NONE: 0, IMPROVEMENT: 0.8, LARGE_IMPROVEMENT: 2, DEGRADATION: -0.8, LARGE_DEGRADATION: -2 };
 const SAMPLE_RATIO_MISMATCH = { NO: 0.5, LARGE: 0.3, SMALL: 0.51 };
 
 function generateABTestChallenge(
     timeProgress = TIME_PROGRESS.FULL,
     baseRateMismatch = BASE_RATE_MISMATCH.NO,
     effectSize = EFFECT_SIZE.NONE,
-    sampleRatioMismatch = SAMPLE_RATIO_MISMATCH.NO) {
+    sampleRatioMismatch = SAMPLE_RATIO_MISMATCH.NO,
+    sampleProgress = SAMPLE_PROGRESS.TIME) {
 
     // Predefined options for each parameter
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
@@ -558,7 +581,9 @@ function generateABTestChallenge(
     if (timeProgress === TIME_PROGRESS.PARTIAL) {
         currentRuntimeDays = Math.floor(requiredRuntimeDays * (Math.random() * 0.4 + 0.5));
     } else if (timeProgress === TIME_PROGRESS.EARLY) {
-        currentRuntimeDays = 5
+        currentRuntimeDays = 5;
+    } else if (timeProgress === TIME_PROGRESS.PARTIAL_WEEKS) {
+        currentRuntimeDays = requiredRuntimeDays-7;
     }
 
     var actualBaseConversionRate = BASE_CONVERSION_RATE;
@@ -577,7 +602,11 @@ function generateABTestChallenge(
     const minimumRate = actualBaseConversionRate * 0.2; // minimum 20% of base rate
     const adjustedVariantRate = Math.max(minimumRate, variantConversionRate);
 
-    const actualVisitorsTotal = currentRuntimeDays * VISITORS_PER_DAY + sampleBinomial(VISITORS_PER_DAY, 0.8);
+
+    var actualVisitorsTotal = currentRuntimeDays * VISITORS_PER_DAY + sampleBinomial(VISITORS_PER_DAY, 0.8);
+    if (sampleProgress === SAMPLE_PROGRESS.FULL && timeProgress === TIME_PROGRESS.PARTIAL_WEEKS) {
+        actualVisitorsTotal = Math.floor(requiredSampleSizePerVariant * 2.05);
+    }
     const actualVisitorsBase = sampleBinomial(actualVisitorsTotal, sampleRatioMismatch);
     const actualVisitorsVariant = actualVisitorsTotal - actualVisitorsBase;
 
