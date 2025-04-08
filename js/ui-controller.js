@@ -189,7 +189,7 @@ const UIController = {
             // Define challenge sequence for each round
             const challengeSequences = {
                 2: [inconclusive, winner, loser], // First round: inconclusive → winner → loser
-                1: [fastCompletion, fastCompletion, fastCompletion], // Second round: large winner → large loser → inconclusive
+                1: [slowCompletion, slowCompletion, slowCompletion], // Second round: large winner → large loser → inconclusive
                 3: [partialWinner, largeWinner, partialLoser], // Second round: large winner → large loser → inconclusive
                 // Add more rounds here if needed
             };
@@ -203,19 +203,28 @@ const UIController = {
                 if (experimentIndex < sequence.length) {
                     // Use the predefined challenge generator for this experiment
                     window.currentExperiment = sequence[experimentIndex]();
+                    console.log(`Round ${this.state.currentRound}, Experiment ${experimentIndex + 1}: Using ${sequence[experimentIndex].name} challenge generator`);
                 } else {
                     // Fall back to random challenge if we somehow exceed the sequence length
                     window.currentExperiment = generateABTestChallenge();
+                    console.log(`Round ${this.state.currentRound}, Experiment ${experimentIndex + 1}: Using random challenge generator (fallback)`);
                 }
             } else {
                 // For rounds without a predefined sequence, use random challenges
                 window.currentExperiment = generateABTestChallenge();
+                console.log(`Round ${this.state.currentRound}, Experiment ${this.state.experimentsInCurrentRound + 1}: Using random challenge generator`);
             }
 
             this.state.challenge = window.currentExperiment;
 
             // Analyze the experiment and store it globally
             window.currentAnalysis = analyzeExperiment(window.currentExperiment);
+            
+            // Log the analysis result
+            console.log('=== EXPERIMENT ANALYSIS ===');
+            console.log('Round:', this.state.currentRound);
+            console.log('Experiment:', this.state.experimentsInCurrentRound + 1);
+            console.log('Analysis:', window.currentAnalysis);
 
             // Update the UI with the new challenge
             this.updateExperimentDisplay();

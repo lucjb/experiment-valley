@@ -538,6 +538,9 @@ function fastCompletion() {
     return generateABTestChallenge(TIME_PROGRESS.PARTIAL_WEEKS, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.IMPROVEMENT, SAMPLE_RATIO_MISMATCH.NO, SAMPLE_PROGRESS.FULL);
 }
 
+function slowCompletion() {
+    return generateABTestChallenge(TIME_PROGRESS.FULL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.IMPROVEMENT, SAMPLE_RATIO_MISMATCH.NO, SAMPLE_PROGRESS.PARTIAL);
+}
 
 const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY", PARTIAL_WEEKS: "PARTIAL_WEEKS" };
 const SAMPLE_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", TIME: "TIME" };
@@ -583,7 +586,8 @@ function generateABTestChallenge(
     } else if (timeProgress === TIME_PROGRESS.EARLY) {
         currentRuntimeDays = 5;
     } else if (timeProgress === TIME_PROGRESS.PARTIAL_WEEKS) {
-        currentRuntimeDays = requiredRuntimeDays-7;
+        // Subtract the remainder of days to get full weeks, or subtract a full week if already divisible by 7
+        currentRuntimeDays = requiredRuntimeDays - (requiredRuntimeDays % 7 || 7);
     }
 
     var actualBaseConversionRate = BASE_CONVERSION_RATE;
@@ -606,6 +610,9 @@ function generateABTestChallenge(
     var actualVisitorsTotal = currentRuntimeDays * VISITORS_PER_DAY + sampleBinomial(VISITORS_PER_DAY, 0.8);
     if (sampleProgress === SAMPLE_PROGRESS.FULL && timeProgress === TIME_PROGRESS.PARTIAL_WEEKS) {
         actualVisitorsTotal = Math.floor(requiredSampleSizePerVariant * 2.05);
+    }
+    if (sampleProgress === SAMPLE_PROGRESS.PARTIAL && timeProgress === TIME_PROGRESS.FULL) {
+        actualVisitorsTotal = Math.floor(requiredSampleSizePerVariant * 1.95);
     }
     const actualVisitorsBase = sampleBinomial(actualVisitorsTotal, sampleRatioMismatch);
     const actualVisitorsVariant = actualVisitorsTotal - actualVisitorsBase;
@@ -776,7 +783,7 @@ function analyzeExperiment(experiment) {
 
     const actualDailyTraffic = (actualVisitorsBase + actualVisitorsVariant) / currentRuntimeDays;
     const trafficDifference = (actualDailyTraffic - visitorsPerDay) / visitorsPerDay;
-    const hasTrafficMismatch = trafficDifference < -0.05;
+    const hasTrafficMismatch = trafficDifference < -0.10;
     const lowSampleSize = actualVisitorsBase < requiredSampleSizePerVariant || actualVisitorsVariant < requiredSampleSizePerVariant;
 
     const businessCycleComplete = currentRuntimeDays % businessCycleDays === 0;
