@@ -188,16 +188,14 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                3: [inconclusive, winner, loser], // First round: inconclusive → winner → loser
-                2: [partialWinner, slowCompletion, fastCompletion], // Second round: partial winner → slow completion → fast completion
-                1: [partialWinner, partialWinner, partialWinner], // First round: inconclusive → winner → loser
-                // Add more rounds here if needed
+                1: [winner, loser, inconclusive],
+                2: [partialWinner, slowCompletion, fastCompletion]
             };
 
             // Define round captions
             const roundCaptions = {
-                1: "Warm Up", // First round caption
-                2: "Ready?", // Second round caption
+                1: "Warm Up!", // First round caption
+                2: "Easy", // Second round caption
                 // Add more round captions here as needed
             };
 
