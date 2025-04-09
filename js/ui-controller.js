@@ -188,10 +188,17 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                2: [inconclusive, winner, loser], // First round: inconclusive → winner → loser
-                1: [slowCompletion, slowCompletion, slowCompletion], // Second round: large winner → large loser → inconclusive
-                3: [partialWinner, largeWinner, partialLoser], // Second round: large winner → large loser → inconclusive
+                3: [inconclusive, winner, loser], // First round: inconclusive → winner → loser
+                2: [partialWinner, slowCompletion, fastCompletion], // Second round: partial winner → slow completion → fast completion
+                1: [partialWinner, partialWinner, partialWinner], // First round: inconclusive → winner → loser
                 // Add more rounds here if needed
+            };
+
+            // Define round captions
+            const roundCaptions = {
+                1: "Warm Up", // First round caption
+                2: "Ready?", // Second round caption
+                // Add more round captions here as needed
             };
 
             // Generate a new challenge based on round and experiment number
@@ -687,6 +694,13 @@ const UIController = {
         feedbackModal.classList.remove('fade-out');
 
         if (this.state.experimentsInCurrentRound === this.state.EXPERIMENTS_PER_SESSION) {
+            // Always advance progress bar to 100% at the end of a round
+            const progressBar = document.getElementById('progress-bar');
+            progressBar.style.width = '100%';
+            
+            // Wait a moment to show the full progress bar
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
             if (this.state.correctInCurrentRound >= 2) {
                 // Start new round
                 this.state.currentExperiment = 1; // Reset the experiment counter
@@ -701,7 +715,7 @@ const UIController = {
                 this.resetDecisions();
                 this.loadChallenge();
                 // Reset progress bar
-                document.getElementById('progress-bar').style.width = '0%';
+                progressBar.style.width = '0%';
                 document.getElementById('current-experiment').textContent = '1';
             } else {
                 // End game
@@ -720,8 +734,20 @@ const UIController = {
             return;
         }
         
-        // Set the round text
-        splash.textContent = `Round ${this.state.currentRound}`;
+        // Get the round caption if it exists
+        const roundCaptions = {
+            1: "Warm Up", // First round caption
+            2: "Ready?", // Second round caption
+            // Add more round captions here as needed
+        };
+        
+        const caption = roundCaptions[this.state.currentRound] || "";
+        
+        // Set the round text with caption - maintain original large font size and center the caption
+        splash.innerHTML = `<div style="text-align: center;">
+            <div style="font-size: 8rem; font-weight: bold;">Round ${this.state.currentRound}</div>
+            ${caption ? `<div style="font-size: 2rem; margin-top: 1rem;">${caption}</div>` : ''}
+        </div>`;
         
         // Show the overlay and blur effect
         overlay.classList.add('active');

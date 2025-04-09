@@ -539,6 +539,7 @@ const ChartManager = {
 
     // Helper function to create point styles
     createPointStyles(color, lastFullBusinessCycleIndex, type = 'variant') {
+        console.log('lastFullBusinessCycleIndex', lastFullBusinessCycleIndex);
         const futureColor = Colors[type].future;
         return {
             pointBackgroundColor: this.completeTimeline.map((_, i) => i > lastFullBusinessCycleIndex ? futureColor : color),

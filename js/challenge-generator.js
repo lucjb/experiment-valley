@@ -411,6 +411,14 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
     let cumulativeVariantVisitors = 0;
     let cumulativeVariantConversions = 0;
 
+
+    let lastFullWeekIndex = 0;
+    if (period === 'day') {
+        lastFullWeekIndex = currentRuntimeDays -  currentRuntimeDays % 7 - 1;
+    } else {
+        lastFullWeekIndex = currentRuntimeDays % 7 ? numPeriods - 2 : numPeriods - 1;
+    }
+
     return {
         timePoints: Array.from({ length: numPeriods }, (_, i) => {
             // Update cumulative counters
@@ -461,7 +469,7 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
                 cumulativeVariantVisitors,
                 alpha
             );
-
+            
             return {
                 period: {
                     type: period,
@@ -506,7 +514,7 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
         timePeriod: period,
         periodsCount: numPeriods,
         totalDays: numDays,
-        lastFullBusinessCycleIndex: Math.floor((Math.floor(currentRuntimeDays / 7) * 7) / daysPerPeriod) - 1
+        lastFullBusinessCycleIndex: lastFullWeekIndex
     };
 }
 
