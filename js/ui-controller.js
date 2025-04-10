@@ -189,8 +189,8 @@ const UIController = {
             // Define challenge sequence for each round
             const challengeSequences = {
                 3: [winner, loser, inconclusive],
-                2: [partialWinner, slowCompletion, fastCompletion],
-                1: [partialWinner, partialWinner, partialWinner]
+                1: [winner, slowCompletion, fastCompletion],
+                2: [partialWinner, partialWinner, partialWinner]
             };
 
             // Define round captions
@@ -438,6 +438,19 @@ const UIController = {
         remainingBar.style.width = `${Math.max(0, 100 - progressPercent)}%`;
         remainingBarInvisible.style.width = `${Math.max(0, 100 - progressPercent)}%`;
 
+        // Check if we have enough sample size and if elapsed days is a multiple of 7
+        const hasEnoughSampleSize = totalVisitors >= (2 * challenge.experiment.requiredSampleSizePerVariant);
+        const isFullWeek = daysElapsed % 7 === 0;
+        
+        // Set progress bar color based on conditions
+        if (hasEnoughSampleSize && isFullWeek) {
+            // Bright blue for complete weeks with enough sample size
+            progressBar.style.backgroundColor = '#3b82f6'; // Tailwind blue-500
+        } else {
+            // Gray for incomplete weeks or insufficient sample size
+            progressBar.style.backgroundColor = '#9ca3af'; // Tailwind gray-400
+        }
+        
         // Check if we have enough space for all information
         const checkSpaceAvailability = () => {
             // Get the progress bar container width
