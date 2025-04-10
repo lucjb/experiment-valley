@@ -188,8 +188,9 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [winner, loser, inconclusive],
-                2: [partialWinner, slowCompletion, fastCompletion]
+                3: [winner, loser, inconclusive],
+                2: [partialWinner, slowCompletion, fastCompletion],
+                1: [partialWinner, partialWinner, partialWinner]
             };
 
             // Define round captions
@@ -426,16 +427,90 @@ const UIController = {
         daysRemainingText.textContent = '';
         totalDaysText.textContent = '';
 
+        // Calculate visitor counts
+        const totalVisitors = challenge.simulation.actualVisitorsBase + challenge.simulation.actualVisitorsVariant;
+        const requiredVisitors = challenge.experiment.requiredSampleSizePerVariant * 2;
+        const remainingVisitors = Math.max(0, requiredVisitors - totalVisitors);
+
         // Update bar widths
         progressBar.style.width = `${Math.min(100, progressPercent)}%`;
         progressBarInvisible.style.width = `${Math.min(100, progressPercent)}%`;
         remainingBar.style.width = `${Math.max(0, 100 - progressPercent)}%`;
         remainingBarInvisible.style.width = `${Math.max(0, 100 - progressPercent)}%`;
 
-        // Calculate visitor counts
-        const totalVisitors = challenge.simulation.actualVisitorsBase + challenge.simulation.actualVisitorsVariant;
-        const requiredVisitors = challenge.experiment.requiredSampleSizePerVariant * 2;
-        const remainingVisitors = requiredVisitors - totalVisitors;
+        // Check if we have enough space for all information
+        const checkSpaceAvailability = () => {
+            // Get the progress bar container width
+            const progressBarContainer = progressBar.parentElement;
+            const containerWidth = progressBarContainer.offsetWidth;
+            
+            // Calculate the width of the progress bar
+            const progressBarWidth = (containerWidth * progressPercent) / 100;
+            
+            // Create temporary elements to measure actual text width
+            const tempVisitors = document.createElement('span');
+            tempVisitors.textContent = `${totalVisitors.toLocaleString()}v`;
+            tempVisitors.style.visibility = 'hidden';
+            tempVisitors.style.position = 'absolute';
+            tempVisitors.style.fontSize = window.getComputedStyle(visitorsText).fontSize;
+            tempVisitors.style.fontFamily = window.getComputedStyle(visitorsText).fontFamily;
+            document.body.appendChild(tempVisitors);
+            
+            const tempRemaining = document.createElement('span');
+            tempRemaining.textContent = `${remainingVisitors.toLocaleString()}v`;
+            tempRemaining.style.visibility = 'hidden';
+            tempRemaining.style.position = 'absolute';
+            tempRemaining.style.fontSize = window.getComputedStyle(remainingText).fontSize;
+            tempRemaining.style.fontFamily = window.getComputedStyle(remainingText).fontFamily;
+            document.body.appendChild(tempRemaining);
+            
+            const tempDays = document.createElement('span');
+            tempDays.textContent = `${daysRemaining}d`;
+            tempDays.style.visibility = 'hidden';
+            tempDays.style.position = 'absolute';
+            tempDays.style.fontSize = window.getComputedStyle(daysElapsedText).fontSize;
+            tempDays.style.fontFamily = window.getComputedStyle(daysElapsedText).fontFamily;
+            document.body.appendChild(tempDays);
+            
+            // Get actual widths
+            const visitorsTextWidth = tempVisitors.offsetWidth + 20; // Add padding
+            const remainingTextWidth = tempRemaining.offsetWidth + 20;
+            const daysTextWidth = tempDays.offsetWidth + 20;
+            
+            // Clean up temporary elements
+            document.body.removeChild(tempVisitors);
+            document.body.removeChild(tempRemaining);
+            document.body.removeChild(tempDays);
+            
+            // Check if we have enough space in the progress bar for visitors text
+            // Add 5% buffer to required space
+            const hasEnoughSpaceForVisitors = progressBarWidth > (visitorsTextWidth * 1.05);
+            
+            // Check if we have enough space in the remaining bar for remaining text
+            const remainingBarWidth = containerWidth - progressBarWidth;
+            const hasEnoughSpaceForRemaining = remainingBarWidth > (remainingTextWidth * 1.05);
+            
+            // Check if we have enough space for days information
+            // We need enough space for both remaining and total information
+            const hasEnoughSpaceForDays = remainingBarWidth > ((remainingTextWidth + daysTextWidth) * 1.05);
+            
+            // Log the values for debugging
+            console.log('Container width:', containerWidth);
+            console.log('Progress bar width:', progressBarWidth);
+            console.log('Remaining bar width:', remainingBarWidth);
+            console.log('Visitors text width:', visitorsTextWidth);
+            console.log('Remaining text width:', remainingTextWidth);
+            console.log('Days text width:', daysTextWidth);
+            console.log('Has enough space for visitors:', hasEnoughSpaceForVisitors);
+            console.log('Has enough space for remaining:', hasEnoughSpaceForRemaining);
+            console.log('Has enough space for days:', hasEnoughSpaceForDays);
+            
+            return {
+                hasEnoughSpaceForVisitors,
+                hasEnoughSpaceForRemaining,
+                hasEnoughSpaceForDays
+            };
+        };
 
         // Update text content
         if (isComplete) {
@@ -446,13 +521,38 @@ const UIController = {
             document.getElementById('progress-end-date').textContent = '';
         } else {
             document.getElementById('progress-start-date').textContent = dateFormatter.format(startDate);
+            
+            // Check space availability
+            const spaceAvailability = checkSpaceAvailability();
+            
+            // Always show current visitors and elapsed days
             document.getElementById('exp-visitors-text').textContent = `${totalVisitors.toLocaleString()}v`;
-            document.getElementById('exp-remaining-text').textContent = `${remainingVisitors.toLocaleString()}v`;
-            document.getElementById('exp-total-text').textContent = `${requiredVisitors.toLocaleString()}v`;
             document.getElementById('exp-days-elapsed-text').textContent = `${daysElapsed}d`;
-            document.getElementById('exp-days-remaining-text').textContent = `${daysRemaining}d`;
-            document.getElementById('exp-total-days-text').textContent = `${totalDays}d`;
+            
+            // Always show the end date
             document.getElementById('progress-end-date').textContent = dateFormatter.format(finishDate);
+            
+            // Show remaining information if we have enough space
+            if (spaceAvailability.hasEnoughSpaceForRemaining) {
+                document.getElementById('exp-remaining-text').textContent = `${remainingVisitors.toLocaleString()}v`;
+                document.getElementById('exp-days-remaining-text').textContent = `${daysRemaining}d`;
+                
+                // Show total information if we have enough space for both remaining and total
+                if (spaceAvailability.hasEnoughSpaceForDays) {
+                    document.getElementById('exp-total-text').textContent = `${requiredVisitors.toLocaleString()}v`;
+                    document.getElementById('exp-total-days-text').textContent = `${totalDays}d`;
+                } else {
+                    // Not enough space for total information
+                    document.getElementById('exp-total-text').textContent = '';
+                    document.getElementById('exp-total-days-text').textContent = '';
+                }
+            } else {
+                // Not enough space for remaining information
+                document.getElementById('exp-remaining-text').textContent = '';
+                document.getElementById('exp-days-remaining-text').textContent = '';
+                document.getElementById('exp-total-text').textContent = '';
+                document.getElementById('exp-total-days-text').textContent = '';
+            }
         }
     },
 
@@ -735,7 +835,7 @@ const UIController = {
         // Get the round caption if it exists
         const roundCaptions = {
             1: "Warm Up", // First round caption
-            2: "Ready?", // Second round caption
+            2: "Let's Begin!", // Second round caption
             // Add more round captions here as needed
         };
         

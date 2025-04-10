@@ -597,6 +597,8 @@ function generateABTestChallenge(
         // Subtract the remainder of days to get full weeks, or subtract a full week if already divisible by 7
         currentRuntimeDays = requiredRuntimeDays - (requiredRuntimeDays % 7 || 7);
     }
+    currentRuntimeDays = Math.floor(requiredRuntimeDays * (Math.random() * 0.1 + 0.9));
+
 
     var actualBaseConversionRate = BASE_CONVERSION_RATE;
     actualBaseConversionRate = sampleBetaDistribution(
