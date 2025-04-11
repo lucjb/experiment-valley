@@ -325,6 +325,40 @@ const UIController = {
                 const variantVisitorsCell = document.getElementById('variant-visitors');
                 this.addWarningToCell(variantVisitorsCell, `Insufficient sample size (${sampleSize.actualVariant.toLocaleString()} < ${sampleSize.required.toLocaleString()})`);
             }
+
+            // Add warning to execution bar if total sample size is insufficient
+            const totalVisitors = sampleSize.actualBase + sampleSize.actualVariant;
+            const requiredTotal = sampleSize.required * 2;
+            if (totalVisitors < requiredTotal) {
+                const warningIcon = document.createElement('span');
+                warningIcon.className = 'text-yellow-500 cursor-help tooltip-trigger';
+                warningIcon.textContent = '⚠️';
+                
+                // Create tooltip content
+                const tooltipContent = document.createElement('span');
+                tooltipContent.className = 'tooltip-content';
+                tooltipContent.textContent = `Runtime Complete but Insufficient sample size: ${totalVisitors.toLocaleString()} < ${requiredTotal.toLocaleString()}`;
+                warningIcon.appendChild(tooltipContent);
+                
+                // Add mousemove event listener for tooltip positioning
+                warningIcon.addEventListener('mousemove', function (e) {
+                    const tooltip = this.querySelector('.tooltip-content');
+                    if (!tooltip) return;
+                    
+                    // Get trigger position
+                    const rect = this.getBoundingClientRect();
+                    
+                    // Position tooltip above the trigger
+                    tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
+                    tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+                });
+                
+                // Add warning icon to the complete text
+                const completeTextElement = document.getElementById('exp-complete-text');
+                completeTextElement.textContent = '';
+                completeTextElement.appendChild(warningIcon);
+                completeTextElement.appendChild(document.createTextNode(' Complete | ' + current + 'd | ' + totalVisitors.toLocaleString() + 'v'));
+            }
         }
     },
 
@@ -381,6 +415,66 @@ const UIController = {
         document.getElementById('exp-required-days').textContent = `${challenge.experiment.requiredRuntimeDays} days`;
     },
 
+    checkSpaceAvailability(progressPercent, totalVisitors, remainingVisitors, daysRemaining) {
+        // Get the progress bar container width
+        const progressBarContainer = document.getElementById('exp-progress-bar').parentElement;
+        const containerWidth = progressBarContainer.offsetWidth;
+        
+        // Calculate the width of the progress bar
+        const progressBarWidth = (containerWidth * progressPercent) / 100;
+        const remainingBarWidth = containerWidth - progressBarWidth;
+        
+        // Create temporary elements to measure actual text width
+        const tempVisitors = document.createElement('span');
+        tempVisitors.textContent = `${totalVisitors.toLocaleString()}v`;
+        tempVisitors.style.visibility = 'hidden';
+        tempVisitors.style.position = 'absolute';
+        tempVisitors.style.fontSize = window.getComputedStyle(document.getElementById('exp-visitors-text')).fontSize;
+        tempVisitors.style.fontFamily = window.getComputedStyle(document.getElementById('exp-visitors-text')).fontFamily;
+        document.body.appendChild(tempVisitors);
+        
+        const tempRemaining = document.createElement('span');
+        tempRemaining.textContent = `${remainingVisitors.toLocaleString()}v`;
+        tempRemaining.style.visibility = 'hidden';
+        tempRemaining.style.position = 'absolute';
+        tempRemaining.style.fontSize = window.getComputedStyle(document.getElementById('exp-remaining-text')).fontSize;
+        tempRemaining.style.fontFamily = window.getComputedStyle(document.getElementById('exp-remaining-text')).fontFamily;
+        document.body.appendChild(tempRemaining);
+        
+        const tempDays = document.createElement('span');
+        tempDays.textContent = `${daysRemaining}d`;
+        tempDays.style.visibility = 'hidden';
+        tempDays.style.position = 'absolute';
+        tempDays.style.fontSize = window.getComputedStyle(document.getElementById('exp-days-remaining-text')).fontSize;
+        tempDays.style.fontFamily = window.getComputedStyle(document.getElementById('exp-days-remaining-text')).fontFamily;
+        document.body.appendChild(tempDays);
+        
+        // Get actual widths
+        const visitorsTextWidth = tempVisitors.offsetWidth + 20; // Add padding
+        const remainingTextWidth = tempRemaining.offsetWidth + 20;
+        const daysTextWidth = tempDays.offsetWidth + 20;
+        
+        // Clean up temporary elements
+        document.body.removeChild(tempVisitors);
+        document.body.removeChild(tempRemaining);
+        document.body.removeChild(tempDays);
+        
+        // Check if we have enough space in the progress bar for visitors text
+        const hasEnoughSpaceForVisitors = progressBarWidth > (visitorsTextWidth * 1.05);
+        
+        // Check if we have enough space in the remaining bar for remaining text
+        const hasEnoughSpaceForRemaining = remainingBarWidth > (remainingTextWidth * 1.05);
+        
+        // Check if we have enough space for days information
+        const hasEnoughSpaceForDays = remainingBarWidth > ((remainingTextWidth + daysTextWidth) * 1.05);
+        
+        return {
+            hasEnoughSpaceForVisitors,
+            hasEnoughSpaceForRemaining,
+            hasEnoughSpaceForDays
+        };
+    },
+
     updateExecutionSection() {
         const challenge = this.state.challenge;
         const currentDate = new Date();
@@ -426,6 +520,8 @@ const UIController = {
         daysElapsedText.textContent = '';
         daysRemainingText.textContent = '';
         totalDaysText.textContent = '';
+        progressStartDate.textContent = '';
+        progressEndDate.textContent = '';
 
         // Calculate visitor counts
         const totalVisitors = challenge.simulation.actualVisitorsBase + challenge.simulation.actualVisitorsVariant;
@@ -450,121 +546,42 @@ const UIController = {
             // Gray for incomplete weeks or insufficient sample size
             progressBar.style.backgroundColor = '#9ca3af'; // Tailwind gray-400
         }
-        
-        // Check if we have enough space for all information
-        const checkSpaceAvailability = () => {
-            // Get the progress bar container width
-            const progressBarContainer = progressBar.parentElement;
-            const containerWidth = progressBarContainer.offsetWidth;
-            
-            // Calculate the width of the progress bar
-            const progressBarWidth = (containerWidth * progressPercent) / 100;
-            
-            // Create temporary elements to measure actual text width
-            const tempVisitors = document.createElement('span');
-            tempVisitors.textContent = `${totalVisitors.toLocaleString()}v`;
-            tempVisitors.style.visibility = 'hidden';
-            tempVisitors.style.position = 'absolute';
-            tempVisitors.style.fontSize = window.getComputedStyle(visitorsText).fontSize;
-            tempVisitors.style.fontFamily = window.getComputedStyle(visitorsText).fontFamily;
-            document.body.appendChild(tempVisitors);
-            
-            const tempRemaining = document.createElement('span');
-            tempRemaining.textContent = `${remainingVisitors.toLocaleString()}v`;
-            tempRemaining.style.visibility = 'hidden';
-            tempRemaining.style.position = 'absolute';
-            tempRemaining.style.fontSize = window.getComputedStyle(remainingText).fontSize;
-            tempRemaining.style.fontFamily = window.getComputedStyle(remainingText).fontFamily;
-            document.body.appendChild(tempRemaining);
-            
-            const tempDays = document.createElement('span');
-            tempDays.textContent = `${daysRemaining}d`;
-            tempDays.style.visibility = 'hidden';
-            tempDays.style.position = 'absolute';
-            tempDays.style.fontSize = window.getComputedStyle(daysElapsedText).fontSize;
-            tempDays.style.fontFamily = window.getComputedStyle(daysElapsedText).fontFamily;
-            document.body.appendChild(tempDays);
-            
-            // Get actual widths
-            const visitorsTextWidth = tempVisitors.offsetWidth + 20; // Add padding
-            const remainingTextWidth = tempRemaining.offsetWidth + 20;
-            const daysTextWidth = tempDays.offsetWidth + 20;
-            
-            // Clean up temporary elements
-            document.body.removeChild(tempVisitors);
-            document.body.removeChild(tempRemaining);
-            document.body.removeChild(tempDays);
-            
-            // Check if we have enough space in the progress bar for visitors text
-            // Add 5% buffer to required space
-            const hasEnoughSpaceForVisitors = progressBarWidth > (visitorsTextWidth * 1.05);
-            
-            // Check if we have enough space in the remaining bar for remaining text
-            const remainingBarWidth = containerWidth - progressBarWidth;
-            const hasEnoughSpaceForRemaining = remainingBarWidth > (remainingTextWidth * 1.05);
-            
-            // Check if we have enough space for days information
-            // We need enough space for both remaining and total information
-            const hasEnoughSpaceForDays = remainingBarWidth > ((remainingTextWidth + daysTextWidth) * 1.05);
-            
-            // Log the values for debugging
-            console.log('Container width:', containerWidth);
-            console.log('Progress bar width:', progressBarWidth);
-            console.log('Remaining bar width:', remainingBarWidth);
-            console.log('Visitors text width:', visitorsTextWidth);
-            console.log('Remaining text width:', remainingTextWidth);
-            console.log('Days text width:', daysTextWidth);
-            console.log('Has enough space for visitors:', hasEnoughSpaceForVisitors);
-            console.log('Has enough space for remaining:', hasEnoughSpaceForRemaining);
-            console.log('Has enough space for days:', hasEnoughSpaceForDays);
-            
-            return {
-                hasEnoughSpaceForVisitors,
-                hasEnoughSpaceForRemaining,
-                hasEnoughSpaceForDays
-            };
-        };
 
         // Update text content
         if (isComplete) {
-            document.getElementById('exp-complete-text').classList.remove('hidden');
-            document.getElementById('exp-complete-text').textContent = `Complete | ${totalDays}d | ${totalVisitors.toLocaleString()}v`;
-            document.getElementById('progress-start-date').textContent = dateFormatter.format(startDate);
-            document.getElementById('exp-visitors-text').textContent = dateFormatter.format(finishDate);
-            document.getElementById('progress-end-date').textContent = '';
+            completeText.classList.remove('hidden');
+            completeText.textContent = `Complete | ${totalDays}d | ${totalVisitors.toLocaleString()}v`;
+            progressStartDate.textContent = dateFormatter.format(startDate);
+            visitorsText.textContent = dateFormatter.format(finishDate);
+            progressEndDate.textContent = ''; // End date is not shown in complete state
         } else {
-            document.getElementById('progress-start-date').textContent = dateFormatter.format(startDate);
-            
-            // Check space availability
-            const spaceAvailability = checkSpaceAvailability();
+            // Always show dates
+            progressStartDate.textContent = dateFormatter.format(startDate);
+            progressEndDate.textContent = dateFormatter.format(finishDate);
             
             // Always show current visitors and elapsed days
-            document.getElementById('exp-visitors-text').textContent = `${totalVisitors.toLocaleString()}v`;
-            document.getElementById('exp-days-elapsed-text').textContent = `${daysElapsed}d`;
+            visitorsText.textContent = `${totalVisitors.toLocaleString()}v`;
+            daysElapsedText.textContent = `${daysElapsed}d`;
             
-            // Always show the end date
-            document.getElementById('progress-end-date').textContent = dateFormatter.format(finishDate);
+            // Always show remaining information
+            remainingText.textContent = `${remainingVisitors.toLocaleString()}v`;
+            daysRemainingText.textContent = `${daysRemaining}d`;
             
-            // Show remaining information if we have enough space
-            if (spaceAvailability.hasEnoughSpaceForRemaining) {
-                document.getElementById('exp-remaining-text').textContent = `${remainingVisitors.toLocaleString()}v`;
-                document.getElementById('exp-days-remaining-text').textContent = `${daysRemaining}d`;
-                
-                // Show total information if we have enough space for both remaining and total
-                if (spaceAvailability.hasEnoughSpaceForDays) {
-                    document.getElementById('exp-total-text').textContent = `${requiredVisitors.toLocaleString()}v`;
-                    document.getElementById('exp-total-days-text').textContent = `${totalDays}d`;
-                } else {
-                    // Not enough space for total information
-                    document.getElementById('exp-total-text').textContent = '';
-                    document.getElementById('exp-total-days-text').textContent = '';
-                }
-            } else {
-                // Not enough space for remaining information
-                document.getElementById('exp-remaining-text').textContent = '';
-                document.getElementById('exp-days-remaining-text').textContent = '';
-                document.getElementById('exp-total-text').textContent = '';
-                document.getElementById('exp-total-days-text').textContent = '';
+            // Always show total information
+            totalText.textContent = `${requiredVisitors.toLocaleString()}v`;
+            totalDaysText.textContent = `${totalDays}d`;
+            
+            // Check space availability and adjust visibility if needed
+            const spaceAvailability = this.checkSpaceAvailability(progressPercent, totalVisitors, remainingVisitors, daysRemaining);
+            
+            if (!spaceAvailability.hasEnoughSpaceForRemaining) {
+                remainingText.textContent = '';
+                daysRemainingText.textContent = '';
+            }
+            
+            if (!spaceAvailability.hasEnoughSpaceForDays) {
+                totalText.textContent = '';
+                totalDaysText.textContent = '';
             }
         }
     },
