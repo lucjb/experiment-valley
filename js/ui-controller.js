@@ -411,6 +411,7 @@ const UIController = {
         document.getElementById('exp-min-effect').textContent = `${(challenge.experiment.minimumRelevantEffect * 100).toFixed(2)}%`;
         document.getElementById('exp-visitors').textContent = challenge.experiment.visitorsPerDay.toLocaleString();
         document.getElementById('exp-required-sample').textContent = challenge.experiment.requiredSampleSizePerVariant.toLocaleString();
+        document.getElementById('exp-total-required-sample').textContent = (challenge.experiment.requiredSampleSizePerVariant * 2).toLocaleString();
         document.getElementById('exp-cycle-days').textContent = challenge.experiment.businessCycleDays === 1 ? '1 day' : '1 week';
         document.getElementById('exp-required-days').textContent = `${challenge.experiment.requiredRuntimeDays} days`;
     },

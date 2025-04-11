@@ -414,7 +414,7 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
 
     let lastFullWeekIndex = 0;
     if (period === 'day') {
-        lastFullWeekIndex = currentRuntimeDays -  currentRuntimeDays % 7 - 1;
+        lastFullWeekIndex = currentRuntimeDays - currentRuntimeDays % 7 - 1;
     } else {
         lastFullWeekIndex = currentRuntimeDays % 7 ? numPeriods - 2 : numPeriods - 1;
     }
@@ -469,7 +469,7 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
                 cumulativeVariantVisitors,
                 alpha
             );
-            
+
             return {
                 period: {
                     type: period,
@@ -569,7 +569,7 @@ function generateABTestChallenge(
     const BASE_CONVERSION_RATE_OPTIONS = [0.0127, 0.0523, 0.0814, 0.102, 0.146];
     const MRE_OPTIONS = [0.005, 0.01, 0.02];
     const VISITORS_PER_DAY_OPTIONS = [150, 1200];
-    const BUSINESS_CYCLE_DAYS_OPTIONS = [1, 7];
+    const BUSINESS_CYCLE_DAYS_OPTIONS = [7];
 
     // Randomly select one option from each array
     const ALPHA = ALPHA_OPTIONS[Math.floor(Math.random() * ALPHA_OPTIONS.length)];
@@ -597,7 +597,7 @@ function generateABTestChallenge(
         // Subtract the remainder of days to get full weeks, or subtract a full week if already divisible by 7
         currentRuntimeDays = requiredRuntimeDays - (requiredRuntimeDays % 7 || 7);
     }
-
+    //currentRuntimeDays = Math.floor(requiredRuntimeDays * (Math.random() * 0.1 + 0.9));
 
     var actualBaseConversionRate = BASE_CONVERSION_RATE;
     actualBaseConversionRate = sampleBetaDistribution(
@@ -776,7 +776,7 @@ function analyzeExperiment(experiment) {
     } = experiment;
 
     let analysisDone = false;
-    let trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
+    let trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
     let decision = EXPERIMENT_DECISION.KEEP_RUNNING;
     let followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
 
@@ -795,8 +795,11 @@ function analyzeExperiment(experiment) {
     const hasTrafficMismatch = false;
     const lowSampleSize = actualVisitorsBase < requiredSampleSizePerVariant || actualVisitorsVariant < requiredSampleSizePerVariant;
 
-    const businessCycleComplete = currentRuntimeDays % 7 === 0;
     const fullWeek = currentRuntimeDays >= 7;
+    const finished = requiredRuntimeDays === currentRuntimeDays;
+    const significant = pValue < alpha;
+    const isEffectPositive = actualConversionsBase < actualConversionsVariant;
+
 
     const mismatch = hasSampleRatioMismatch ||
         hasBaseRateMismatch ||
@@ -806,38 +809,22 @@ function analyzeExperiment(experiment) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
         decision = EXPERIMENT_DECISION.KEEP_BASE;
         followUp = EXPERIMENT_FOLLOW_UP.RERUN;
-        analysisDone = true;
-    } else if (lowSampleSize) {
+    } else if (!finished && (lowSampleSize || !fullWeek)) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
         decision = EXPERIMENT_DECISION.KEEP_RUNNING;
-        analysisDone = true;
-    } else if (!businessCycleComplete || !fullWeek) {
+        followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
+    } else if (finished && (lowSampleSize || !fullWeek)) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
         decision = EXPERIMENT_DECISION.KEEP_RUNNING;
-        analysisDone = true;
+        followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
+    } else if (!significant || !isEffectPositive) {
+        trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
+        decision = EXPERIMENT_DECISION.KEEP_BASE;
+        followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
     } else {
         trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
-    }
-
-    // trustworthy, complete, and enough sample size, compute the decision and follow up
-    const isSignificant = pValue < alpha;
-    if (!analysisDone && !isSignificant) {
-        decision = EXPERIMENT_DECISION.KEEP_BASE;
-        followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
-        analysisDone = true;
-    }
-
-    // trustworthy, complete, and significant, check if the effect is positive
-    const isEffectPositive = actualConversionsBase < actualConversionsVariant;
-    if (!analysisDone && !isEffectPositive) {
-        decision = EXPERIMENT_DECISION.KEEP_BASE;
-        followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
-        analysisDone = true;
-    } else {
-        if (!analysisDone) {
-            decision = EXPERIMENT_DECISION.KEEP_VARIANT;
-            followUp = EXPERIMENT_FOLLOW_UP.CELEBRATE;
-        }
+        decision = EXPERIMENT_DECISION.KEEP_VARIANT;
+        followUp = EXPERIMENT_FOLLOW_UP.CELEBRATE;
     }
 
     return {
@@ -851,7 +838,6 @@ function analyzeExperiment(experiment) {
             hasBaseRateMismatch: hasBaseRateMismatch,
             hasTrafficMismatch: hasTrafficMismatch,
             hasInsufficientSampleSize: lowSampleSize,
-            hasIncompleteBusinessCycle: !businessCycleComplete,
             ratioMismatch: {
                 pValue: ratioPValue
             },
