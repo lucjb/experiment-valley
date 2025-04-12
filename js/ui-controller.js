@@ -12,7 +12,8 @@ const UIController = {
         challenge: null,
         currentRound: 1,
         experimentsInCurrentRound: 0,
-        correctInCurrentRound: 0
+        correctInCurrentRound: 0,
+        hasSubmitted: false
     },
 
     init() {
@@ -75,8 +76,10 @@ const UIController = {
 
         // Submit decision
         document.getElementById('submit-decision').addEventListener('click', () => {
-            this.state.currentExperiment++;
-            this.updateProgress();
+            if (!this.state.hasSubmitted) {
+                this.state.currentExperiment++;
+                this.updateProgress();
+            }
             this.evaluateDecision();
         });
 
@@ -100,6 +103,53 @@ const UIController = {
         document.addEventListener('keypress', function(e) {
             e.preventDefault();
             return false;
+        });
+
+        // Initialize cheat sheet
+        this.initializeCheatSheet();
+
+        // Initialize feedback modal
+        const feedbackModal = document.getElementById('feedback-modal');
+        const closeFeedback = document.getElementById('close-feedback');
+        const nextChallengeBtn = document.getElementById('next-challenge-btn');
+
+        // Close feedback modal
+        closeFeedback.addEventListener('click', () => {
+            ModalManager.hide('feedback-modal');
+            // Disable all decision buttons
+            document.querySelectorAll('.decision-btn').forEach(button => {
+                button.disabled = true;
+                button.style.opacity = '0.5';
+                button.style.cursor = 'not-allowed';
+            });
+            // Change submit button text to "Show Feedback"
+            const submitButton = document.getElementById('submit-decision');
+            submitButton.textContent = 'Show Feedback';
+            submitButton.disabled = false;
+            submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+        });
+
+        // Handle next challenge
+        nextChallengeBtn.addEventListener('click', () => {
+            this.handleNextChallenge();
+        });
+
+        // Close feedback when clicking outside
+        feedbackModal.addEventListener('click', (e) => {
+            if (e.target === feedbackModal) {
+                ModalManager.hide('feedback-modal');
+                // Disable all decision buttons
+                document.querySelectorAll('.decision-btn').forEach(button => {
+                    button.disabled = true;
+                    button.style.opacity = '0.5';
+                    button.style.cursor = 'not-allowed';
+                });
+                // Change submit button text to "Show Feedback"
+                const submitButton = document.getElementById('submit-decision');
+                submitButton.textContent = 'Show Feedback';
+                submitButton.disabled = false;
+                submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
         });
     },
 
@@ -669,17 +719,21 @@ const UIController = {
             button.style.opacity = '0.7';
             button.style.transform = 'scale(1)';
             button.classList.remove('selected');
+            button.disabled = false; // Enable the buttons
+            button.style.cursor = 'pointer'; // Reset cursor
         });
 
         // Reset state
         this.state.trustDecision = null;
         this.state.implementDecision = null;
         this.state.followUpDecision = null;
+        this.state.hasSubmitted = false;
 
         // Reset submit button
         const submitButton = document.getElementById('submit-decision');
         submitButton.disabled = true;
         submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+        submitButton.textContent = 'Submit Decision';
     },
 
     async evaluateDecision() {
@@ -688,6 +742,15 @@ const UIController = {
         }
 
         try {
+            // If this is a subsequent click, just show the feedback dialog
+            if (this.state.hasSubmitted) {
+                ModalManager.show('feedback-modal');
+                return;
+            }
+
+            // Mark that we've submitted
+            this.state.hasSubmitted = true;
+
             this.state.totalAttempts++;
             
             // Check if this is the last experiment of the round BEFORE incrementing
@@ -789,6 +852,14 @@ const UIController = {
                     document.getElementById('next-challenge-btn').textContent = 'Done';
                 }
             }
+
+            // Disable all decision buttons after submission
+            document.querySelectorAll('.decision-btn').forEach(button => {
+                button.disabled = true;
+                button.style.opacity = '0.5';
+                button.style.cursor = 'not-allowed';
+            });
+
         } catch (error) {
             console.error('Error evaluating decision:', error);
             ModalManager.showFeedback(false, 'Error evaluating decision. Please try again.');
@@ -816,11 +887,9 @@ const UIController = {
 
     async handleNextChallenge() {
         const feedbackModal = document.getElementById('feedback-modal');
-        feedbackModal.classList.add('fade-out');
-
-        await new Promise(resolve => setTimeout(resolve, 500));
-        feedbackModal.classList.add('hidden');
-        feedbackModal.classList.remove('fade-out');
+        const nextChallengeBtn = document.getElementById('next-challenge-btn');
+        
+        ModalManager.hide('feedback-modal');
 
         if (this.state.experimentsInCurrentRound === this.state.EXPERIMENTS_PER_SESSION) {
             // Always advance progress bar to 100% at the end of a round
