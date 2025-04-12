@@ -189,7 +189,7 @@ const UIController = {
             // Define challenge sequence for each round
             const challengeSequences = {
                 3: [winner, loser, inconclusive],
-                1: [winner, slowCompletion, fastCompletion],
+                1: [fastCompletionWithPartialWeek, winner, slowCompletion, fastCompletion],
                 2: [partialWinner, partialWinner, partialWinner]
             };
 

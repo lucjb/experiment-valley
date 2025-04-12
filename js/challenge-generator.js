@@ -550,6 +550,10 @@ function slowCompletion() {
     return generateABTestChallenge(TIME_PROGRESS.FULL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.IMPROVEMENT, SAMPLE_RATIO_MISMATCH.NO, SAMPLE_PROGRESS.PARTIAL);
 }
 
+function fastCompletionWithPartialWeek() {
+    return generateABTestChallenge(TIME_PROGRESS.PARTIAL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.IMPROVEMENT, SAMPLE_RATIO_MISMATCH.NO, SAMPLE_PROGRESS.FULL);
+}
+
 const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY", PARTIAL_WEEKS: "PARTIAL_WEEKS" };
 const SAMPLE_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", TIME: "TIME" };
 const BASE_RATE_MISMATCH = { NO: 10000000, YES: 100 };
@@ -591,6 +595,9 @@ function generateABTestChallenge(
     var currentRuntimeDays = requiredRuntimeDays;
     if (timeProgress === TIME_PROGRESS.PARTIAL) {
         currentRuntimeDays = Math.floor(requiredRuntimeDays * (Math.random() * 0.4 + 0.5));
+        if (sampleProgress === SAMPLE_PROGRESS.FULL) {
+            currentRuntimeDays = requiredRuntimeDays - 2;
+        }
     } else if (timeProgress === TIME_PROGRESS.EARLY) {
         currentRuntimeDays = 5;
     } else if (timeProgress === TIME_PROGRESS.PARTIAL_WEEKS) {
@@ -617,7 +624,7 @@ function generateABTestChallenge(
 
 
     var actualVisitorsTotal = currentRuntimeDays * VISITORS_PER_DAY + sampleBinomial(VISITORS_PER_DAY, 0.1);
-    if (sampleProgress === SAMPLE_PROGRESS.FULL && timeProgress === TIME_PROGRESS.PARTIAL_WEEKS) {
+    if (sampleProgress === SAMPLE_PROGRESS.FULL && (timeProgress === TIME_PROGRESS.PARTIAL_WEEKS || timeProgress === TIME_PROGRESS.PARTIAL)) {
         actualVisitorsTotal = Math.floor(requiredSampleSizePerVariant * 2.05);
     }
     if (sampleProgress === SAMPLE_PROGRESS.PARTIAL && timeProgress === TIME_PROGRESS.FULL) {
@@ -795,7 +802,7 @@ function analyzeExperiment(experiment) {
     const hasTrafficMismatch = false;
     const lowSampleSize = actualVisitorsBase < requiredSampleSizePerVariant || actualVisitorsVariant < requiredSampleSizePerVariant;
 
-    const fullWeek = currentRuntimeDays >= 7;
+    const fullWeek = currentRuntimeDays >= 7 && currentRuntimeDays % 7 === 0;
     const finished = requiredRuntimeDays === currentRuntimeDays;
     const significant = pValue < alpha;
     const isEffectPositive = actualConversionsBase < actualConversionsVariant;
@@ -855,12 +862,14 @@ function analyzeExperiment(experiment) {
             sampleSize: {
                 required: requiredSampleSizePerVariant,
                 actualBase: actualVisitorsBase,
-                actualVariant: actualVisitorsVariant
+                actualVariant: actualVisitorsVariant,
+                lowSampleSize: lowSampleSize
             },
             runtime: {
                 current: currentRuntimeDays,
                 required: requiredRuntimeDays,
-                businessCycleDays
+                fullWeek: fullWeek,
+                finished: finished
             }
         }
     };
