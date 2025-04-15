@@ -1,0 +1,812 @@
+// UI Controller
+const UIController = {
+    state: {
+        score: 0,
+        streak: 0,
+        totalAttempts: 0,
+        currentExperiment: 1,
+        EXPERIMENTS_PER_SESSION: 3,
+        trustDecision: null,
+        implementDecision: null,
+        followUpDecision: null,
+        challenge: null,
+        currentRound: 1,
+        experimentsInCurrentRound: 0,
+        correctInCurrentRound: 0
+    },
+
+    init() {
+        this.initializeEventListeners();
+        this.initializeCheatSheet();
+        this.initializeTabs();
+    },
+
+    debugMode() {
+        return document.getElementById('debug-mode').checked;
+    },
+
+    initializeEventListeners() {
+        // Test button for round splash
+        const testSplashBtn = document.getElementById('test-splash');
+        if (testSplashBtn) {
+            testSplashBtn.addEventListener('click', () => {
+                this.state.currentRound = parseInt(prompt('Enter round number:', this.state.currentRound));
+                this.showRoundSplash();
+            });
+        }
+
+        // Start button
+        const startBtn = document.getElementById('start-btn');
+        if (startBtn) {
+            startBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.startSession();
+            });
+        }
+
+        // Decision buttons
+        document.querySelectorAll('.decision-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active state from all buttons in the same group
+                const name = button.getAttribute('name');
+                document.querySelectorAll(`.decision-btn[name="${name}"]`).forEach(btn => {
+                    btn.style.opacity = '0.7';
+                    btn.style.transform = 'scale(1)';
+                    btn.classList.remove('selected');
+                });
+
+                // Add active state to clicked button
+                button.style.opacity = '1';
+                button.style.transform = 'scale(1.05)';
+                button.classList.add('selected');
+
+                this.handleDecision(name, button.getAttribute('value'));
+            });
+
+            // Add hover effects
+            button.addEventListener('mouseenter', () => {
+                if (!button.classList.contains('selected')) {
+                    button.style.opacity = '1';
+                }
+            });
+
+            button.addEventListener('mouseleave', () => {
+                if (!button.classList.contains('selected')) {
+                    button.style.opacity = '0.7';
+                }
+            });
+        });
+
+        // Submit decision
+        document.getElementById('submit-decision').addEventListener('click', () => {
+            this.state.currentExperiment++;
+            this.updateProgress();
+            this.evaluateDecision();
+        });
+
+        // Next challenge
+        document.getElementById('next-challenge-btn').addEventListener('click', () => this.handleNextChallenge());
+
+        // Start new session
+        document.getElementById('start-new-session').addEventListener('click', () => this.startNewSession());
+    },
+
+    initializeCheatSheet() {
+        const cheatSheetBtn = document.getElementById('cheat-sheet-btn');
+        const cheatSheetModal = document.getElementById('cheat-sheet-modal');
+        const closeCheatSheet = document.getElementById('close-cheat-sheet');
+
+        cheatSheetBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            ModalManager.show('cheat-sheet-modal');
+        });
+
+        closeCheatSheet.addEventListener('click', () => {
+            ModalManager.hide('cheat-sheet-modal');
+        });
+
+        cheatSheetModal.addEventListener('click', (e) => {
+            if (e.target === cheatSheetModal) {
+                ModalManager.hide('cheat-sheet-modal');
+            }
+        });
+    },
+
+    initializeTabs() {
+        // Hide all tab content except metrics tab
+        document.querySelectorAll('.tab-content').forEach(content => {
+            if (content.id !== 'metrics-tab') {
+                content.classList.add('hidden');
+            }
+        });
+
+        // Set up click handlers
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                this.switchTab(button.getAttribute('data-tab'));
+            });
+        });
+    },
+
+    switchTab(tabName) {
+        // Remove active state from all tabs
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('border-blue-500', 'text-blue-600');
+            btn.classList.add('text-gray-500');
+        });
+
+        // Add active state to clicked tab
+        const activeTab = document.querySelector(`[data-tab="${tabName}"]`);
+        activeTab.classList.add('border-blue-500', 'text-blue-600');
+        activeTab.classList.remove('text-gray-500');
+
+        // Hide all tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+
+        // Show selected tab content
+        const selectedTab = document.getElementById(`${tabName}-tab`);
+        if (selectedTab) {
+            selectedTab.classList.remove('hidden');
+        }
+    },
+
+    startSession() {
+        console.log('startSession called');
+        console.log('Current state:', {
+            currentRound: this.state.currentRound,
+            experimentsInCurrentRound: this.state.experimentsInCurrentRound
+        });
+        const tutorialSection = document.getElementById('tutorial-section');
+        const challengeContainer = document.getElementById('challenge-container');
+
+        tutorialSection.classList.add('hidden');
+        challengeContainer.classList.remove('hidden');
+
+        // Show round splash for the first round
+        this.showRoundSplash();
+
+        // Only load the challenge if it hasn't been loaded yet
+        if (!window.currentExperiment) {
+            this.loadChallenge();
+        }
+    },
+
+    async loadChallenge() {
+        try {
+            if (typeof generateABTestChallenge !== 'function') {
+                throw new Error("generateABTestChallenge function is not defined");
+            }
+
+            // Generate a new challenge and store it globally
+            window.currentExperiment = generateABTestChallenge();
+            this.state.challenge = window.currentExperiment;
+
+            // Analyze the experiment and store it globally
+            window.currentAnalysis = analyzeExperiment(window.currentExperiment);
+
+            // Update the UI with the new challenge
+            this.updateExperimentDisplay();
+            this.updateExecutionSection();
+            this.updateMetricsTable();
+    
+            this.updateProgress();
+
+            window.updateConfidenceIntervals(window.currentExperiment);
+
+            // Initialize charts
+            initializeCharts(window.currentExperiment);
+
+            // Reset decisions
+            this.resetDecisions();
+            if (this.debugMode()) {
+                this.addDebugAlerts();
+            }
+            return true;
+        } catch (error) {
+            console.error('Error loading challenge:', error);
+            return false;
+        }
+    },
+
+    addDebugAlerts() {
+        this.addBaseConversionRateMissmatchAlert();
+        this.addSampleSizeWarning();
+    },
+
+    addBaseConversionRateMissmatchAlert() {
+        const analysis = window.currentAnalysis;
+        const hasMismatch = analysis.analysis.hasBaseRateMismatch;
+        if (hasMismatch) {
+            const baseRateCell = document.getElementById('base-rate');
+
+            // Create base rate span
+            const baseRateSpan = document.createElement('span');
+            baseRateSpan.id = 'base-rate';
+            baseRateSpan.className = 'font-medium';
+            baseRateSpan.textContent = baseRateCell.textContent;
+            baseRateCell.textContent = '';
+            baseRateCell.appendChild(baseRateSpan);
+
+            // Create alert span
+            const alertSpan = document.createElement('span');
+            alertSpan.id = 'base-rate-alert';
+            alertSpan.className = 'ml-2 text-yellow-500 cursor-help tooltip-trigger';
+            alertSpan.textContent = '⚠️';
+
+            // Create tooltip content
+            
+            const { expected, actual, difference, pValue } = analysis.analysis.baseRate;
+            const tooltipContent = document.createElement('span');
+            tooltipContent.className = 'tooltip-content';
+            tooltipContent.innerHTML = `Design Base Rate: ${formatPercent(expected)}<br>Actual Base Rate: ${formatPercent(actual)}<br>Difference: ${formatPercent(difference)}<br>p-value: ${pValue.toFixed(4)}`;
+            alertSpan.appendChild(tooltipContent);
+
+            // Add mousemove event listener for tooltip positioning
+            alertSpan.addEventListener('mousemove', function (e) {
+                const tooltip = this.querySelector('.tooltip-content');
+                if (!tooltip) return;
+
+                // Get trigger position
+                const rect = this.getBoundingClientRect();
+
+                // Position tooltip above the trigger
+                tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
+                tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+            });
+
+            baseRateCell.appendChild(alertSpan);
+        }
+    },
+
+    addSampleSizeWarning() {
+        const analysis = window.currentAnalysis;
+        const { sampleSize } = analysis.analysis;
+        const { current, required } = analysis.analysis.runtime;
+        // Only show warning if experiment is complete and has insufficient sample size
+        const isComplete = current >= required;
+
+        if (isComplete) {
+            // Check base variant
+            if (sampleSize.actualBase < sampleSize.required) {
+                const baseVisitorsCell = document.getElementById('base-visitors');
+                this.addWarningToCell(baseVisitorsCell, `Insufficient sample size (${sampleSize.actualBase.toLocaleString()} < ${sampleSize.required.toLocaleString()})`);
+            }
+
+            // Check variant
+            if (sampleSize.actualVariant < sampleSize.required) {
+                const variantVisitorsCell = document.getElementById('variant-visitors');
+                this.addWarningToCell(variantVisitorsCell, `Insufficient sample size (${sampleSize.actualVariant.toLocaleString()} < ${sampleSize.required.toLocaleString()})`);
+            }
+        }
+    },
+
+    addWarningToCell(cell, message) {
+        // Create visitors span
+        const visitorsSpan = document.createElement('span');
+        visitorsSpan.className = 'font-medium';
+        visitorsSpan.textContent = cell.textContent;
+        cell.textContent = '';
+        cell.appendChild(visitorsSpan);
+
+        // Create alert span
+        const alertSpan = document.createElement('span');
+        alertSpan.className = 'ml-2 text-yellow-500 cursor-help tooltip-trigger';
+        alertSpan.textContent = '⚠️';
+
+        // Create tooltip content
+        const tooltipContent = document.createElement('span');
+        tooltipContent.className = 'tooltip-content';
+        tooltipContent.textContent = message;
+        alertSpan.appendChild(tooltipContent);
+
+        // Add mousemove event listener for tooltip positioning
+        alertSpan.addEventListener('mousemove', function (e) {
+            const tooltip = this.querySelector('.tooltip-content');
+            if (!tooltip) return;
+
+            // Get trigger position
+            const rect = this.getBoundingClientRect();
+
+            // Position tooltip above the trigger
+            tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
+            tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+        });
+
+        cell.appendChild(alertSpan);
+    },
+
+    updateExperimentDisplay() {
+        const challenge = this.state.challenge;
+        const formatPercentage = (value) => {
+            const percentage = value * 100;
+            return Number.isInteger(percentage) ? `${percentage}%` : `${percentage.toFixed(1)}%`;
+        };
+
+        // Update experiment parameters
+        document.getElementById('exp-alpha').textContent = formatPercentage(challenge.experiment.alpha);
+        document.getElementById('exp-beta').textContent = formatPercentage(1 - challenge.experiment.beta);
+        document.getElementById('exp-base-rate').textContent = `${(challenge.experiment.baseConversionRate * 100).toFixed(2)}%`;
+        document.getElementById('exp-min-effect').textContent = `${(challenge.experiment.minimumRelevantEffect * 100).toFixed(2)}%`;
+        document.getElementById('exp-visitors').textContent = challenge.experiment.visitorsPerDay.toLocaleString();
+        document.getElementById('exp-required-sample').textContent = challenge.experiment.requiredSampleSizePerVariant.toLocaleString();
+        document.getElementById('exp-cycle-days').textContent = challenge.experiment.businessCycleDays === 1 ? '1 day' : '1 week';
+        document.getElementById('exp-required-days').textContent = `${challenge.experiment.requiredRuntimeDays} days`;
+    },
+
+    updateExecutionSection() {
+        const challenge = this.state.challenge;
+        const currentDate = new Date();
+        const daysElapsed = challenge.simulation.timeline.currentRuntimeDays;
+        const totalDays = challenge.experiment.requiredRuntimeDays;
+        const daysRemaining = totalDays - daysElapsed;
+        const isComplete = daysElapsed >= totalDays;
+
+        // Calculate dates
+        const startDate = new Date(currentDate);
+        startDate.setDate(startDate.getDate() - daysElapsed);
+
+        const finishDate = new Date(currentDate);
+        finishDate.setDate(finishDate.getDate() + daysRemaining);
+
+        // Format dates
+        const dateFormatter = new Intl.DateTimeFormat('en-US', {
+            month: 'short',
+            day: 'numeric'
+        });
+
+        // Update progress bar and annotations
+        const progressPercent = Math.round((daysElapsed / totalDays) * 100);
+        const progressBar = document.getElementById('exp-progress-bar');
+        const progressBarInvisible = document.getElementById('exp-progress-bar-invisible');
+        const remainingBar = document.getElementById('exp-remaining-bar');
+        const remainingBarInvisible = document.getElementById('exp-remaining-bar-invisible');
+        const visitorsText = document.getElementById('exp-visitors-text');
+        const remainingText = document.getElementById('exp-remaining-text');
+        const totalText = document.getElementById('exp-total-text');
+        const completeText = document.getElementById('exp-complete-text');
+        const progressStartDate = document.getElementById('progress-start-date');
+        const progressEndDate = document.getElementById('progress-end-date');
+        const daysElapsedText = document.getElementById('exp-days-elapsed-text');
+        const daysRemainingText = document.getElementById('exp-days-remaining-text');
+        const totalDaysText = document.getElementById('exp-total-days-text');
+
+        // Reset all text content first
+        visitorsText.textContent = '';
+        remainingText.textContent = '';
+        totalText.textContent = '';
+        completeText.textContent = '';
+        daysElapsedText.textContent = '';
+        daysRemainingText.textContent = '';
+        totalDaysText.textContent = '';
+
+        // Update bar widths
+        progressBar.style.width = `${Math.min(100, progressPercent)}%`;
+        progressBarInvisible.style.width = `${Math.min(100, progressPercent)}%`;
+        remainingBar.style.width = `${Math.max(0, 100 - progressPercent)}%`;
+        remainingBarInvisible.style.width = `${Math.max(0, 100 - progressPercent)}%`;
+
+        // Calculate visitor counts
+        const totalVisitors = challenge.simulation.actualVisitorsBase + challenge.simulation.actualVisitorsVariant;
+        const requiredVisitors = challenge.experiment.requiredSampleSizePerVariant * 2;
+        const remainingVisitors = requiredVisitors - totalVisitors;
+
+        // Update text content
+        if (isComplete) {
+            document.getElementById('exp-complete-text').classList.remove('hidden');
+            document.getElementById('exp-complete-text').textContent = `Complete | ${totalDays}d | ${totalVisitors.toLocaleString()}v`;
+            document.getElementById('progress-start-date').textContent = dateFormatter.format(startDate);
+            document.getElementById('exp-visitors-text').textContent = dateFormatter.format(finishDate);
+            document.getElementById('progress-end-date').textContent = '';
+        } else {
+            document.getElementById('progress-start-date').textContent = dateFormatter.format(startDate);
+            document.getElementById('exp-visitors-text').textContent = `${totalVisitors.toLocaleString()}v`;
+            document.getElementById('exp-remaining-text').textContent = `${remainingVisitors.toLocaleString()}v`;
+            document.getElementById('exp-total-text').textContent = `${requiredVisitors.toLocaleString()}v`;
+            document.getElementById('exp-days-elapsed-text').textContent = `${daysElapsed}d`;
+            document.getElementById('exp-days-remaining-text').textContent = `${daysRemaining}d`;
+            document.getElementById('exp-total-days-text').textContent = `${totalDays}d`;
+            document.getElementById('progress-end-date').textContent = dateFormatter.format(finishDate);
+        }
+    },
+
+    updateMetricsTable() {
+        const challenge = this.state.challenge;
+        const formatDelta = (value, isPercentage = false) => {
+            const sign = value > 0 ? '+' : '';
+            return isPercentage ?
+                `${sign}${(value * 100).toFixed(2)}%` :
+                `${sign}${value}`;
+        };
+
+        const formatUplift = (value) => {
+            const sign = value > 0 ? '+' : '';
+            return `${sign}${(value * 100).toFixed(2)}%`;
+        };
+
+        // Update base metrics
+        document.getElementById('base-visitors').textContent = challenge.simulation.actualVisitorsBase;
+        document.getElementById('base-conversions').textContent = challenge.simulation.actualConversionsBase;
+        document.getElementById('base-rate').textContent = `${(challenge.simulation.actualBaseConversionRate * 100).toFixed(2)}%`;
+
+
+        // Update variant metrics
+        document.getElementById('variant-visitors').textContent = challenge.simulation.actualVisitorsVariant;
+        document.getElementById('variant-conversions').textContent = challenge.simulation.actualConversionsVariant;
+        document.getElementById('variant-rate').textContent = `${(challenge.simulation.variantConversionRate * 100).toFixed(2)}%`;
+
+        // Update delta metrics
+        document.getElementById('delta-visitors').textContent = formatDelta(challenge.simulation.actualVisitorsVariant - challenge.simulation.actualVisitorsBase);
+        document.getElementById('delta-conversions').textContent = formatDelta(challenge.simulation.actualConversionsVariant - challenge.simulation.actualConversionsBase);
+        document.getElementById('delta-rate').textContent = formatDelta(challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate, true);
+
+        // Update uplift metrics
+        document.getElementById('visitor-uplift').textContent = formatUplift(challenge.simulation.visitorUplift);
+        document.getElementById('conversion-uplift').textContent = formatUplift(challenge.simulation.conversionUplift);
+        document.getElementById('uplift-value').textContent = formatUplift(challenge.simulation.uplift);
+    },
+
+    updateProgress() {
+        const progressBar = document.getElementById('progress-bar');
+        const progressPercent = (this.state.experimentsInCurrentRound / this.state.EXPERIMENTS_PER_SESSION) * 100;
+        progressBar.style.width = `${progressPercent}%`;
+        document.getElementById('current-experiment').textContent = this.state.experimentsInCurrentRound + 1;
+    },
+
+    handleDecision(decisionType, value) {
+        if (decisionType === 'trust') {
+            this.state.trustDecision = value;
+        } else if (decisionType === 'decision') {
+            this.state.implementDecision = value;
+        } else if (decisionType === 'follow_up') {
+            this.state.followUpDecision = value;
+        }
+
+        this.checkDecisions();
+    },
+
+    checkDecisions() {
+        const submitButton = document.getElementById('submit-decision');
+
+        // Check if any button in each group is selected
+        const trustSelected = Array.from(document.querySelectorAll('.decision-btn[name="trust"]')).some(btn => btn.classList.contains('selected'));
+        const decisionSelected = Array.from(document.querySelectorAll('.decision-btn[name="decision"]')).some(btn => btn.classList.contains('selected'));
+        const followUpSelected = Array.from(document.querySelectorAll('.decision-btn[name="follow_up"]')).some(btn => btn.classList.contains('selected'));
+
+        console.log('Trust selected:', trustSelected);
+        console.log('Decision selected:', decisionSelected);
+        console.log('Follow up selected:', followUpSelected);
+
+        if (trustSelected && decisionSelected && followUpSelected) {
+            submitButton.disabled = false;
+            submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            submitButton.disabled = true;
+            submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    },
+
+    resetDecisions() {
+        // Reset all decision buttons
+        document.querySelectorAll('.decision-btn').forEach(button => {
+            button.style.opacity = '0.7';
+            button.style.transform = 'scale(1)';
+            button.classList.remove('selected');
+        });
+
+        // Reset state
+        this.state.trustDecision = null;
+        this.state.implementDecision = null;
+        this.state.followUpDecision = null;
+
+        // Reset submit button
+        const submitButton = document.getElementById('submit-decision');
+        submitButton.disabled = true;
+        submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+    },
+
+    async evaluateDecision() {
+        if (!this.state.trustDecision || !this.state.implementDecision) {
+            return;
+        }
+
+        try {
+            this.state.totalAttempts++;
+            
+            // Check if this is the last experiment of the round BEFORE incrementing
+            const isLastExperiment = this.state.experimentsInCurrentRound === this.state.EXPERIMENTS_PER_SESSION - 1;
+            
+            this.state.experimentsInCurrentRound++;
+
+            // Update button text based on whether this was the last experiment
+            if (isLastExperiment) {
+                document.getElementById('next-challenge-btn').textContent = 'Next Round!';
+            } else {
+                document.getElementById('next-challenge-btn').textContent = 'Next!';
+            }
+
+            // Use the global analysis
+            const analysis = window.currentAnalysis;
+
+            console.log('Analysis result:', analysis);
+            console.log('User decisions:', {
+                trust: this.state.trustDecision,
+                implement: this.state.implementDecision
+            });
+
+            // Compare user's choices with analysis result
+            let correctChoices = 0;
+            const totalChoices = 3;
+            let feedbackMessage = '';
+
+            // Check trustworthiness
+            const userTrust = this.state.trustDecision; // true or false
+            const analysisTrust = analysis.decision.trustworthy;
+
+            if (userTrust === analysisTrust) {
+                correctChoices++;
+                feedbackMessage += '<p>Trustworthiness: <span class="text-green-500">Correct ✓</span></p>';
+            } else {
+                feedbackMessage += `<p>Trustworthiness: <span class="text-red-500">Incorrect ✗</span> (Should be: ${analysisTrust === 'TRUSTWORTHY' ? 'Yes' : 'No'})</p>`;
+            }
+
+            // Check decision
+            const userDecision = this.state.implementDecision; // Full string value
+            const analysisDecision = analysis.decision.decision;
+
+            // Map the decision to a simpler format for display
+            const displayDecision = analysisDecision === "KEEP_BASE" ? "Keep Base" :
+                analysisDecision === "KEEP_VARIANT" ? "Keep Variant" :
+                    analysisDecision === "KEEP_RUNNING" ? "Keep Running" :
+                        analysisDecision;
+
+            if (userDecision === analysisDecision) {
+                correctChoices++;
+                feedbackMessage += '<p>Decision: <span class="text-green-500">Correct ✓</span></p>';
+            } else {
+                feedbackMessage += `<p>Decision: <span class="text-red-500">Incorrect ✗</span> (Should be: ${displayDecision})</p>`;
+            }
+
+            // Check follow-up
+            const userFollowUp = this.state.followUpDecision;
+            const analysisFollowUp = analysis.decision.followUp || analysis.decision.follwUp; // Handle both spellings
+
+            // Map the follow-up to a simpler format for display
+            const displayFollowUp = analysisFollowUp === "CELEBRATE" ? "Celebrate" :
+                analysisFollowUp === "ITERATE" ? "Iterate" :
+                    analysisFollowUp === "VALIDATE" ? "Validate" :
+                        analysisFollowUp === "RERUN" ? "Fix &Rerun" :
+                            analysisFollowUp === "DO_NOTHING" ? "None" :
+                                analysisFollowUp;
+
+            if (userFollowUp === analysisFollowUp) {
+                correctChoices++;
+                feedbackMessage += '<p>Follow-up: <span class="text-green-500">Correct ✓</span></p>';
+            } else {
+                feedbackMessage += `<p>Follow-up: <span class="text-red-500">Incorrect ✗</span> (Should be: ${displayFollowUp})</p>`;
+            }
+
+            // Calculate score based on performance
+            const isPerfect = (correctChoices === totalChoices);
+            const isGood = (correctChoices >= 2);
+
+            if (isPerfect) {
+                this.state.score++;
+                this.state.streak++;
+                this.state.correctInCurrentRound++;
+                feedbackMessage += `<p class="mt-4 text-lg font-semibold">Round ${this.state.currentRound} Progress: ${this.state.correctInCurrentRound}/${this.state.experimentsInCurrentRound} correct</p>`;
+                ModalManager.showFeedback(true, `<p class="text-xl font-semibold mb-4">Perfect! All decisions were correct.</p>${feedbackMessage}`);
+            } else if (isGood) {
+                this.state.score += 0.5; // Half point for getting most right
+                this.state.streak++;
+                this.state.correctInCurrentRound++;
+                feedbackMessage += `<p class="mt-4 text-lg font-semibold">Round ${this.state.currentRound} Progress: ${this.state.correctInCurrentRound}/${this.state.experimentsInCurrentRound} correct</p>`;
+                ModalManager.showFeedback(true, `<p class="text-xl font-semibold mb-4">Good job! You got ${correctChoices}/${totalChoices} decisions correct.</p>${feedbackMessage}`);
+            } else {
+                this.state.streak = 0;
+                feedbackMessage += `<p class="mt-4 text-lg font-semibold">Round ${this.state.currentRound} Progress: ${this.state.correctInCurrentRound}/${this.state.experimentsInCurrentRound} correct</p>`;
+                ModalManager.showFeedback(false, `<p class="text-xl font-semibold mb-4">You got ${correctChoices}/${totalChoices} decisions correct.</p>${feedbackMessage}`);
+            }
+
+            const accuracy = Math.round((this.state.score / this.state.totalAttempts) * 100);
+            this.updateScoreDisplay();
+            this.updateStreakDisplay();
+            this.updateAccuracyDisplay(accuracy);
+
+            // Check if this was the last experiment in the current round
+            if (this.state.experimentsInCurrentRound === this.state.EXPERIMENTS_PER_SESSION) {
+                // Check if player got at least 2 experiments right
+                if (this.state.correctInCurrentRound >= 2) {
+                    // Start new round
+                    this.state.experimentsInCurrentRound = 0;
+                    this.state.correctInCurrentRound = 0;
+                    document.getElementById('next-challenge-btn').textContent = 'Next Round!';
+                } else {
+                    // End game
+                    this.showCompletionModal();
+                }
+            }
+        } catch (error) {
+            console.error('Error evaluating decision:', error);
+            ModalManager.showFeedback(false, 'Error evaluating decision. Please try again.');
+        }
+    },
+
+    updateScoreDisplay() {
+        document.getElementById('score').textContent = this.state.score;
+        document.getElementById('modal-score').textContent = this.state.score;
+    },
+
+    updateStreakDisplay() {
+        document.getElementById('streak').textContent = this.state.streak;
+        document.getElementById('modal-streak').textContent = this.state.streak;
+    },
+
+    updateAccuracyDisplay(accuracy) {
+        document.getElementById('accuracy').textContent = `${accuracy}%`;
+        document.getElementById('modal-accuracy').textContent = `${accuracy}%`;
+    },
+
+    async handleNextChallenge() {
+        console.log('handleNextChallenge called');
+        console.log('Current state:', {
+            experimentsInCurrentRound: this.state.experimentsInCurrentRound,
+            EXPERIMENTS_PER_SESSION: this.state.EXPERIMENTS_PER_SESSION,
+            correctInCurrentRound: this.state.correctInCurrentRound,
+            currentRound: this.state.currentRound
+        });
+        const feedbackModal = document.getElementById('feedback-modal');
+        feedbackModal.classList.add('fade-out');
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+        feedbackModal.classList.add('hidden');
+        feedbackModal.classList.remove('fade-out');
+
+        if (this.state.experimentsInCurrentRound === this.state.EXPERIMENTS_PER_SESSION) {
+            if (this.state.correctInCurrentRound >= 2) {
+                console.log('Starting new round');
+                console.log('Current round before increment:', this.state.currentRound);
+                // Start new round
+                this.state.currentExperiment = 1; // Reset the experiment counter
+                this.state.experimentsInCurrentRound = 0;
+                this.state.correctInCurrentRound = 0;
+                this.state.currentRound++; // Increment the round number
+                console.log('Current round after increment:', this.state.currentRound);
+                // Show round splash first
+                this.showRoundSplash();
+                // Wait for splash animation to complete before loading new challenge
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                this.resetDecisions();
+                this.loadChallenge();
+                // Reset progress bar
+                document.getElementById('progress-bar').style.width = '0%';
+                document.getElementById('current-experiment').textContent = '1';
+            } else {
+                // End game
+                this.showCompletionModal();
+            }
+        } else {
+            this.resetDecisions();
+            this.loadChallenge();
+        }
+    },
+
+    showRoundSplash() {
+        console.log('showRoundSplash called');
+        const splash = document.getElementById('round-splash');
+        console.log('Splash element:', splash);
+        if (!splash) {
+            console.error('Round splash element not found!');
+            return;
+        }
+        console.log('Current round when showing splash:', this.state.currentRound);
+        splash.textContent = `Round ${this.state.currentRound}`;
+        
+        // Show the splash
+        splash.style.display = 'block';
+        splash.style.opacity = '0';
+        splash.style.transform = 'translate(-50%, -50%) scale(0.5)';
+        
+        // Force reflow
+        void splash.offsetWidth;
+        
+        // Start animation
+        splash.style.opacity = '1';
+        splash.style.transform = 'translate(-50%, -50%) scale(1)';
+        
+        console.log('Splash is now visible');
+        
+        // Hide the splash after animation completes
+        setTimeout(() => {
+            console.log('Starting hide animation');
+            splash.style.opacity = '0';
+            splash.style.transform = 'translate(-50%, -50%) scale(0.5)';
+            
+            setTimeout(() => {
+                console.log('Hiding splash completely');
+                splash.style.display = 'none';
+            }, 500);
+        }, 1500);
+    },
+
+    showCompletionModal() {
+        console.log('Showing completion modal');
+        const experimentContainer = document.getElementById('challenge-container');
+        const completionModal = document.getElementById('completion-modal');
+
+        experimentContainer.classList.add('fade-out');
+
+        setTimeout(() => {
+            document.getElementById('final-score').textContent = this.state.score;
+            document.getElementById('final-accuracy').textContent = `${Math.round((this.state.score / this.state.totalAttempts) * 100)}%`;
+            document.getElementById('final-round').textContent = this.state.currentRound;
+
+            completionModal.classList.remove('hidden');
+            setTimeout(() => {
+                completionModal.classList.add('fade-in');
+            }, 10);
+        }, 500);
+    },
+
+    startNewSession() {
+        console.log('Starting new session');
+        console.log('Current state before reset:', {
+            currentRound: this.state.currentRound,
+            experimentsInCurrentRound: this.state.experimentsInCurrentRound
+        });
+        const completionModal = document.getElementById('completion-modal');
+        const experimentContainer = document.getElementById('challenge-container');
+
+        completionModal.classList.add('hidden');
+        experimentContainer.classList.remove('hidden');
+
+        // Reset state
+        this.state.currentExperiment = 1;
+        this.state.score = 0;
+        this.state.streak = 0;
+        this.state.totalAttempts = 0;
+        this.state.currentRound = 1; // Reset round number for new session
+        this.state.experimentsInCurrentRound = 0;
+        this.state.correctInCurrentRound = 0;
+
+        console.log('State after reset:', {
+            currentRound: this.state.currentRound,
+            experimentsInCurrentRound: this.state.experimentsInCurrentRound
+        });
+
+        // Update displays
+        this.updateScoreDisplay();
+        this.updateStreakDisplay();
+        this.updateAccuracyDisplay(0);
+        document.getElementById('current-experiment').textContent = this.state.currentExperiment;
+
+        // Reset button text
+        const nextButton = document.getElementById('next-challenge-btn');
+        if (nextButton) {
+            nextButton.textContent = 'Next!';
+        }
+
+        // Start new challenge
+        this.loadChallenge();
+    },
+
+    shareOnTwitter() {
+        const text = `I just completed the A/B Testing Gym challenge with a score of ${this.state.score} and ${Math.round((this.state.score / this.state.totalAttempts) * 100)}% accuracy! Try it yourself!`;
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`);
+    },
+
+    shareOnLinkedIn() {
+        const text = `I just completed the A/B Testing Gym challenge with a score of ${this.state.score} and ${Math.round((this.state.score / this.state.totalAttempts) * 100)}% accuracy! Try it yourself!`;
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(text)}`);
+    }
+};
+
+// Initialize UI Controller when DOM is loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+        UIController.init();
+    });
+} else {
+    UIController.init();
+} 

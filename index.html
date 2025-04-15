@@ -1,260 +1,871 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Interactive A/B Testing educational platform. Practice statistical analysis and decision making with simulated experiments.">
-    <title>A/B Testing Gym - Learn Statistical Analysis</title>
+    <meta name="description"
+        content="Interactive A/B Testing educational platform. Practice statistical analysis and decision making with simulated experiments.">
+    <title>A/B Testing Gym</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
 
     <!-- CDN Resources -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jstat/1.9.4/jstat.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Application Scripts -->
     <script src="js/challenge-generator.js"></script>
+    <script src="js/chart-options.js"></script>
+    <script src="js/confidence-intervals.js"></script>
     <script src="js/visualizations.js"></script>
+    <script src="js/ui-controller.js"></script>
 </head>
-<body class="bg-gray-50 text-gray-900">
-    <div class="max-w-6xl mx-auto p-4 md:p-8">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-blue-600 mb-3">A/B Testing Gym</h1>
-            <p class="text-lg text-gray-700">Master statistical analysis through hands-on practice</p>
-        </header>
 
-        <!-- Progress Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h3 class="font-semibold">Level</h3>
-                <p id="current-level" class="text-2xl text-blue-600">1</p>
+<body class="bg-gray-100">
+    <div id="round-splash" class="round-splash"></div>
+    <div id="round-splash-overlay" class="round-splash-overlay"></div>
+    <div class="max-w-6xl mx-auto p-2 md:p-4">
+        <!-- Tutorial Section -->
+        <div id="tutorial-section" class="bg-gray-900 rounded-lg shadow-lg p-6">
+            <h2 class="text-4xl font-bold mb-4 text-white">A/B Testing Gym: Exercise Your Decision Power! </h2>
+            <p class="mb-4 text-gray-300 font-bold">Ready to become an A/B testing expert? </p>
+            <p class="mb-4 text-gray-300"> The A/B Testing Gym is a fun and engaging way to learn and practice
+                decision-making skills with realistic experiments.</p>
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold mb-2" style="color: #f97316;">How to Play</h3>
+                <p class="mb-4 text-gray-300">Analyze experiments, make decisions, score and learn!<br />
+                <ol class="list-decimal list-inside space-y-2 text-gray-300">
+                    <li>You will be challenged to analyze hypothetical experiments and make three critical decisions:
+                        <ul class="list-disc list-inside ml-4 mt-1">
+                            <li><b>Evaluate</b> if the experiment is trustworthy</li>
+                            <li><b>Choose</b> the best decision based on the results</li>
+                            <li><b>Determine</b> the next steps to maximize impact</li>
+                        </ul>
+                    </li>
+                    <li>Each experiment is based on a real-world scenario and is designed to test your decision-making
+                        skills. What you will see:
+                        <ul class="list-disc list-inside ml-4 mt-1">
+                            <li><b>Experiment Design</b>: Details about the experiment design, such as alpha, beta,
+                                sample size, etc.</li>
+                            <li><b>Experiment Progress</b>: How much data has been collected and how much is left to
+                                collect</li>
+                            <li><b>Experiment Results</b>: Full results of the experiment including metrics, daliy
+                                charts and statistical analyses</li>
+                        </ul>
+                    </li>
+                    <li>Get instant feedback on your decisions and learn from each choice</li>
+                    <li>You'll face all sorts of traps! Can you spot them and adjust your decisions?</li>
+                </ol>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h3 class="font-semibold">Score</h3>
-                <p id="score" class="text-2xl text-green-600">0</p>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h3 class="font-semibold">Streak</h3>
-                <p id="streak" class="text-2xl text-orange-600">0</p>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h3 class="font-semibold">Accuracy</h3>
-                <p id="accuracy" class="text-2xl text-purple-600">0%</p>
-            </div>
-        </div>
 
-        <div class="flex justify-center mb-6">
-            <button id="start-btn" class="px-6 py-3 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition">
-                Start Challenge
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold mb-2" style="color: #f97316;">Scoring</h3>
+                <ul class="list-disc list-inside space-y-2 text-gray-300">
+                    <li><b>Perfect</b> (all 3 decisions correct): +1 point 🏆</li>
+                    <li><b>Good</b> (2 decisions correct): +0.5 points 👍</li>
+                    <li><b>Poor</b> (1 or 0 decisions correct): 0 points 😢</li>
+                </ul>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold mb-2" style="color: #f97316;">Rounds</h3>
+                <ul class="list-disc list-inside space-y-2 text-gray-300">
+                    <li>Each round consists of 3 unique experiments</li>
+                    <li>To advance to the next round, you need to score in at least 2 experiments</li>
+                    <li>Score 0 in 2 experiments and it's game over - but you can always start fresh!</li>
+                </ul>
+            </div>
+
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="debug-mode" class="form-checkbox h-4 w-4 text-orange-500" checked>
+                    <label for="debug-mode" class="text-sm text-gray-300">
+                        Debug Mode
+                        <span class="tooltip-trigger">
+                            ℹ️
+                            <span class="tooltip-content">
+                                When enabled, debug mode will highlight potential issues in the experiment data and
+                                analysis. This helps identify discrepancies between design parameters and actual
+                                results.
+                            </span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <button id="start-btn" class="px-6 py-2 text-white text-sm rounded shadow transition hover:opacity-90"
+                style="background-color: #f97316" onmouseover="this.style.backgroundColor='#ea580c'"
+                onmouseout="this.style.backgroundColor='#f97316'">
+                Start Playing! 🚀
             </button>
         </div>
 
         <div id="challenge-container" class="hidden">
+            <!-- Score and Progress Header -->
+            <header class="flex flex-col bg-gray-900 rounded-lg shadow-lg p-3 md:p-4 mb-4">
+                <div class="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
+                    <div class="flex flex-wrap gap-4 md:gap-8">
+                        <div>
+                            <span class="font-medium text-white">Round: </span>
+                            <span id="current-round" class="text-xl md:text-2xl font-bold score-value">1</span>
+                        </div>
+                        <div>
+                            <span class="font-medium text-white">Score: </span>
+                            <span id="score" class="text-xl md:text-2xl font-bold score-value">0</span>
+                        </div>
+                        <div>
+                            <span class="font-medium text-white">Streak: </span>
+                            <span id="streak" class="text-xl md:text-2xl font-bold score-value">0</span>
+                        </div>
+                        <div>
+                            <span class="font-medium text-white">Accuracy: </span>
+                            <span id="accuracy" class="text-xl md:text-2xl font-bold score-value">0%</span>
+                        </div>
+                    </div>
+                    <div class="text-sm font-medium text-white">Experiment <span id="current-experiment"
+                            class="score-value text-lg">1</span>/3</div>
+                </div>
+                <div class="w-full bg-gray-800 rounded-full h-3 mt-3">
+                    <div id="progress-bar" class="h-3 rounded-full transition-all duration-500"
+                        style="background-color: rgb(249, 115, 22); width: 0%"></div>
+                </div>
+            </header>
+
+            <!-- Decision Making Section -->
+            <div class="bg-gray-900 rounded-lg shadow-lg p-3 md:p-4 mb-4">
+                <h2 class="text-xl md:text-2xl font-semibold text-white mb-3">Decision Making
+                    <a href="#" id="cheat-sheet-btn" class="text-gray-400 hover:text-gray-300 transition-colors">ℹ</a>
+                </h2>
+                <!-- Trustworthiness Section -->
+                <div class="mb-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-medium text-white">
+                                <span class="tooltip-trigger">
+                                    Is this Experiment Trustworthy?
+                                    <span class="tooltip-content">
+                                        Evaluate if the experiment was conducted properly. Consider:
+                                        <ul class="list-disc pl-4 mt-2">
+                                            <li>Sample size requirements</li>
+                                            <li>Traffic split between variants</li>
+                                            <li>Business cycle completion</li>
+                                            <li>Statistical validity</li>
+                                        </ul>
+                                        <a href="#" id="cheat-sheet-btn"
+                                            class="text-blue-500 hover:text-blue-700 mt-2 block">View detailed checklist
+                                            →</a>
+                                    </span>
+                                </span>
+                            </span>
+                        </div>
+                        <div class="flex space-x-1">
+                            <button type="button" name="trust" value="TRUSTWORTHY"
+                                class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200"
+                                style="background-color: #f97316; opacity: 0.7;">
+                                Yes
+                            </button>
+                            <button type="button" name="trust" value="UNTRUSTWORTHY"
+                                class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200"
+                                style="background-color: #f97316; opacity: 0.7;">
+                                No
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Decision Section -->
+                <div class="mb-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-medium text-white">
+                                <span class="tooltip-trigger">
+                                    What is your Decision?
+                                    <span class="tooltip-content">
+                                        Based on the experiment results, choose whether to:
+                                        <ul class="list-disc pl-4 mt-2">
+                                            <li><strong>Keep Base:</strong> Stick with the original version</li>
+                                            <li><strong>Keep Variant:</strong> Implement the new version</li>
+                                            <li><strong>Keep Running:</strong> Continue the experiment to gather more
+                                                data</li>
+                                        </ul>
+                                        Consider statistical significance, business impact, and confidence intervals
+                                        when making your decision.
+                                    </span>
+                                </span>
+                            </span>
+                        </div>
+                        <div class="flex space-x-1">
+                            <button type="button" name="decision" value="KEEP_BASE"
+                                class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200"
+                                style="background-color: #f97316; opacity: 0.7;">
+                                Keep Base
+                            </button>
+                            <button type="button" name="decision" value="KEEP_VARIANT"
+                                class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200"
+                                style="background-color: #f97316; opacity: 0.7;">
+                                Keep Variant
+                            </button>
+                            <button type="button" name="decision" value="KEEP_RUNNING"
+                                class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200"
+                                style="background-color: #f97316; opacity: 0.7;">
+                                Keep Running
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Follow Up Section -->
+                <div class="mb-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-medium text-white">
+                                <span class="tooltip-trigger">
+                                    What's your Follow Up?
+                                    <span class="tooltip-content">
+                                        Choose the next steps based on your decision:
+                                        <ul class="list-disc pl-4 mt-2">
+                                            <li><strong>Celebrate:</strong> Successfully implemented a winning variant
+                                            </li>
+                                            <li><strong>Iterate:</strong> Make improvements to the winning variant</li>
+                                            <li><strong>Validate:</strong> Run additional tests to confirm results</li>
+                                            <li><strong>Fix & Rerun:</strong> Address issues and restart the experiment
+                                            </li>
+                                            <li><strong>None:</strong> No immediate action needed</li>
+                                        </ul>
+                                        Consider business impact and resource allocation when choosing follow-up
+                                        actions.
+                                    </span>
+                                </span>
+                            </span>
+                        </div>
+                        <div class="flex flex-wrap gap-1">
+                            <button type="button" name="follow_up" value="CELEBRATE"
+                                class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200"
+                                style="background-color: #f97316; opacity: 0.7;">
+                                Celebrate
+                            </button>
+                            <button type="button" name="follow_up" value="ITERATE"
+                                class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200"
+                                style="background-color: #f97316; opacity: 0.7;">
+                                Iterate
+                            </button>
+                            <button type="button" name="follow_up" value="VALIDATE"
+                                class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200"
+                                style="background-color: #f97316; opacity: 0.7;">
+                                Validate
+                            </button>
+                            <button type="button" name="follow_up" value="RERUN"
+                                class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200"
+                                style="background-color: #f97316; opacity: 0.7;">
+                                Fix & Rerun
+                            </button>
+                            <button type="button" name="follow_up" value="DO_NOTHING"
+                                class="decision-btn px-3 py-1.5 text-sm rounded-md text-white transition-all duration-200"
+                                style="background-color: #f97316; opacity: 0.7;">
+                                None
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex justify-end">
+                    <button id="submit-decision" disabled
+                        class="px-6 py-2 text-white text-sm rounded shadow transition opacity-50 cursor-not-allowed hover:opacity-90"
+                        style="background-color: #f97316" onmouseover="this.style.backgroundColor='#ea580c'"
+                        onmouseout="this.style.backgroundColor='#f97316'">
+                        Submit Decision
+                    </button>
+                </div>
+            </div>
+
+            <!-- Execution Section -->
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 md:p-4 mb-4">
+                <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Execution</h2>
+                <div>
+                    <div class="mt-2">
+                        <!-- Execution Bar Container -->
+                        <div class="flex items-center space-x-2">
+                            <!-- Bars Container -->
+                            <div class="flex-1">
+                                <!-- Visible Bars -->
+                                <div class="w-full bg-gray-200 rounded-full h-6 md:h-8 relative">
+                                    <!-- Progress Bar -->
+                                    <div id="exp-progress-bar"
+                                        class="bg-blue-600 h-full rounded-full transition-all duration-500 flex items-center justify-between"
+                                        style="width: 0%">
+                                        <span id="progress-start-date"
+                                            class="text-xs text-white font-medium ml-3"></span>
+                                        <span id="exp-visitors-text" class="text-xs text-white font-medium mr-3"></span>
+                                        <!-- Complete Text -->
+                                        <span id="exp-complete-text"
+                                            class="hidden absolute inset-0 flex items-center justify-center text-xs text-white font-medium">Experiment
+                                            Complete</span>
+                                    </div>
+                                    <!-- Remaining Bar -->
+                                    <div id="exp-remaining-bar"
+                                        class="absolute top-0 right-0 h-full rounded-full transition-all duration-500 flex items-center justify-between bg-gray-200"
+                                        style="width: 100%">
+                                        <span id="exp-remaining-text"
+                                            class="text-xs text-gray-600 font-medium ml-3"></span>
+                                        <span id="exp-total-text" class="text-xs text-gray-600 font-medium mr-3"></span>
+                                    </div>
+
+                                </div>
+                                <!-- Invisible Bar for Text Positioning -->
+                                <div class="w-full h-6 md:h-8 relative">
+                                    <!-- Invisible Progress Bar -->
+                                    <div id="exp-progress-bar-invisible"
+                                        class="h-full rounded-l-full transition-all duration-500 flex items-center justify-end"
+                                        style="width: 0%">
+                                        <span id="exp-days-elapsed-text"
+                                            class="text-xs text-gray-500 font-medium mr-3"></span>
+                                    </div>
+                                    <!-- Invisible Remaining Bar -->
+                                    <div id="exp-remaining-bar-invisible"
+                                        class="absolute top-0 right-0 h-full rounded-r-full transition-all duration-500 flex items-center justify-between"
+                                        style="width: 100%">
+                                        <span id="exp-days-remaining-text"
+                                            class="text-xs text-gray-500 font-medium ml-3"></span>
+                                        <span id="exp-total-days-text"
+                                            class="text-xs text-gray-500 font-medium mr-3"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- End Date Container -->
+                            <div class="flex flex-col space-y-0">
+                                <div class="h-6 md:h-8 flex items-center">
+                                    <span id="progress-end-date" class="text-xs text-gray-500 font-medium"></span>
+                                </div>
+                                <div class="h-6 md:h-8"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
             <!-- Experiment Design Section -->
-            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-6 mb-6">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Experiment Design</h2>
-                <div id="experiment-card" class="grid grid-cols-1 gap-2"></div>
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 md:p-4 mb-4">
+                <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Experiment Design</h2>
+                <div id="experiment-card" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="border rounded p-3">
+                        <h3 class="font-semibold mb-2 text-base md:text-lg">Statistical Parameters</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-sm md:text-base">
+                            <div>
+                                <span class="font-medium">
+                                    <span class="tooltip-trigger">
+                                        Significance Level
+                                        <span class="tooltip-content">
+                                            The probability threshold (α) used to determine if a result is statistically
+                                            significant. A lower value (e.g., 0.05) means we require stronger evidence
+                                            to reject the null hypothesis.
+                                            <a href="https://en.wikipedia.org/wiki/Statistical_significance"
+                                                target="_blank" class="text-blue-500 hover:text-blue-700">Learn more
+                                                →</a>
+                                        </span>
+                                    </span>:
+                                </span>
+                                <span id="exp-alpha"></span>
+                            </div>
+                            <div>
+                                <span class="font-medium">
+                                    <span class="tooltip-trigger">
+                                        Power
+                                        <span class="tooltip-content">
+                                            The probability (1-β) of correctly detecting a true effect when it exists. A
+                                            higher power (e.g., 0.80) means we're more likely to detect meaningful
+                                            differences between variants.
+                                            <a href="https://en.wikipedia.org/wiki/Power_(statistics)" target="_blank"
+                                                class="text-blue-500 hover:text-blue-700">Learn more →</a>
+                                        </span>
+                                    </span>:
+                                </span>
+                                <span id="exp-beta"></span>
+                            </div>
+                            <div><span class="font-medium">Experiment Type:</span> <span>2-sided Test</span></div>
+                            <div><span class="font-medium">Null Hypothesis:</span> <span>No difference</span></div>
+                        </div>
+                    </div>
+                    <div class="border rounded p-3">
+                        <h3 class="font-semibold mb-2 text-base md:text-lg">Sample Size Parameters</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-sm md:text-base">
+                            <div><span class="font-medium">Base Conversion Rate:</span> <span id="exp-base-rate"></span>
+                            </div>
+                            <div><span class="font-medium">Daily Visitors:</span> <span id="exp-visitors"></span></div>
+                            <div><span class="font-medium">Minimum Relevant Effect (absolute):</span> <span
+                                    id="exp-min-effect"></span></div>
+                            <div><span class="font-medium">Required Visitors:</span> <span
+                                    id="exp-required-sample"></span> per variant, <span
+                                    id="exp-total-required-sample"></span> total</div>
+                            <div><span class="font-medium">Business Cycle:</span> <span id="exp-cycle-days"></span>
+                            </div>
+                            <div><span class="font-medium">Estimated Runtime:</span> <span
+                                    id="exp-required-days"></span></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Results Analysis Section -->
-            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-6 mb-6">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Results Analysis</h2>
-                <div id="result-card" class="grid grid-cols-1 gap-2 mb-4"></div>
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 md:p-4 mb-4">
+                <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Results Analysis</h2>
 
-                <!-- Statistical Analysis Section -->
-                <div class="mt-6">
-                    <h3 class="text-xl font-semibold mb-4">Statistical Analysis</h3>
-
-                    <!-- P-value and Difference display -->
-                    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-                        <div class="mb-4">
-                            <p class="text-lg mb-2">P-value:</p>
-                            <p id="p-value-display" class="text-2xl font-bold"></p>
-                        </div>
-                        <div>
-                            <p class="text-lg mb-2">Difference in Conversion Rate:</p>
-                            <p id="difference-display" class="text-2xl font-bold text-purple-600"></p>
-                            <p class="text-sm text-gray-600">95% CI: <span id="difference-ci"></span></p>
-                        </div>
-                    </div>
-
-                    <!-- Confidence Intervals -->
-                    <div class="space-y-8">
-                        <!-- Base Variant CI -->
-                        <div class="relative mt-8">
-                            <p class="font-semibold mb-2">Base Variant Conversion Rate (95% CI)</p>
-                            <div id="base-ci" class="h-12 bg-gray-100 rounded-lg relative overflow-visible mb-8">
-                                <div class="absolute h-full bg-blue-200 rounded-lg"></div>
-                                <div class="absolute w-1 h-full bg-blue-600 rounded-sm"></div>
-                                <span id="base-ci-low" class="absolute text-sm font-medium transform -translate-x-1/2 text-blue-600 top-14"></span>
-                                <span id="base-ci-point" class="absolute text-sm font-medium transform -translate-x-1/2 text-blue-600 top-14"></span>
-                                <span id="base-ci-high" class="absolute text-sm font-medium transform -translate-x-1/2 text-blue-600 top-14"></span>
-                            </div>
-                        </div>
-
-                        <!-- Test Variant CI -->
-                        <div class="relative mt-8">
-                            <p class="font-semibold mb-2">Test Variant Conversion Rate (95% CI)</p>
-                            <div id="variant-ci" class="h-12 bg-gray-100 rounded-lg relative overflow-visible mb-8">
-                                <div class="absolute h-full bg-green-200 rounded-lg"></div>
-                                <div class="absolute w-1 h-full bg-green-600 rounded-sm"></div>
-                                <span id="variant-ci-low" class="absolute text-sm font-medium transform -translate-x-1/2 text-green-600 top-14"></span>
-                                <span id="variant-ci-point" class="absolute text-sm font-medium transform -translate-x-1/2 text-green-600 top-14"></span>
-                                <span id="variant-ci-high" class="absolute text-sm font-medium transform -translate-x-1/2 text-green-600 top-14"></span>
-                            </div>
-                        </div>
-
-                        <!-- Difference CI -->
-                        <div class="relative mt-8">
-                            <p class="font-semibold mb-2">Difference in Conversion Rates (95% CI)</p>
-                            <div id="diff-ci" class="h-12 bg-gray-100 rounded-lg relative overflow-visible">
-                                <div class="absolute h-full bg-purple-200 rounded-lg"></div>
-                                <div class="absolute w-1 h-full bg-purple-600 rounded-sm"></div>
-                                <span id="diff-ci-low" class="absolute text-sm font-medium transform -translate-x-1/2 text-purple-600 top-14"></span>
-                                <span id="diff-ci-point" class="absolute text-sm font-medium transform -translate-x-1/2 text-purple-600 top-14"></span>
-                                <span id="diff-ci-high" class="absolute text-sm font-medium transform -translate-x-1/2 text-purple-600 top-14"></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Daily Conversion Rates Chart -->
-                    <div class="mt-8">
-                        <h3 class="text-xl font-semibold mb-3">Daily Conversion Rates</h3>
-                        <canvas id="conversion-chart"></canvas>
-                    </div>
-                </div>
-                <!-- Make Your Decision Section -->
-                <div class="text-center mt-8">
-                    <h2 class="text-xl font-semibold mb-4">Make Your Decision</h2>
-                    <p class="text-gray-700 mb-4">Based on these results, should we implement Variant B?</p>
-                    <div class="flex justify-center space-x-4">
-                        <button id="decision-yes" class="px-6 py-3 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition">
-                            Yes, Implement
+                <!-- Tab Navigation -->
+                <div class="tab-navigation">
+                    <nav>
+                        <button class="tab-button active" data-tab="metrics">
+                            Metrics Table
                         </button>
-                        <button id="decision-no" class="px-6 py-3 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition">
-                            No, Keep Original
+                        <button class="tab-button" data-tab="conversion">
+                            Conversion Rate
                         </button>
-                    </div>
+                        <button class="tab-button" data-tab="visitors">
+                            Visitors
+                        </button>
+                        <button class="tab-button" data-tab="difference">
+                            Comparison
+                        </button>
+                    </nav>
                 </div>
 
-                <div id="feedback" class="hidden mt-6 p-4 rounded-lg"></div>
+                <!-- Tab Content -->
+                <div id="metrics-tab" class="tab-content">
+                    <div class="overflow-x-auto mt-4">
+                        <table class="w-full border-collapse border metrics-table">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="border px-2 py-2 text-left whitespace-nowrap">Variant</th>
+                                    <th class="border px-2 py-2 text-right whitespace-nowrap">Visitors</th>
+                                    <th class="border px-2 py-2 text-right whitespace-nowrap">Conversions</th>
+                                    <th class="border px-2 py-2 text-right whitespace-nowrap">Rate</th>
+                                    <th class="border px-2 py-2 text-left w-full" id="ci-header"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="border px-2 py-1 font-semibold whitespace-nowrap">Base</td>
+                                    <td class="border px-2 py-1 text-right whitespace-nowrap" id="base-visitors"></td>
+                                    <td class="border px-2 py-1 text-right whitespace-nowrap" id="base-conversions">
+                                    </td>
+                                    <td class="border px-2 py-1 text-right whitespace-nowrap" id="base-rate"></td>
+                                    <td class="border px-2 py-1">
+                                        <div id="base-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
+                                            <div class="absolute h-full bg-blue-200 rounded-md"></div>
+                                            <div class="absolute w-0.5 h-full bg-blue-600 rounded-sm"></div>
+                                            <span id="base-ci-low"
+                                                class="absolute text-xs font-medium transform -translate-x-1/2 text-blue-900 top-1/2 -translate-y-1/2 drop-shadow-sm"></span>
+                                            <span id="base-ci-high"
+                                                class="absolute text-xs font-medium transform -translate-x-1/2 text-blue-900 top-1/2 -translate-y-1/2 drop-shadow-sm"></span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="border px-2 py-1 font-semibold whitespace-nowrap">Variant</td>
+                                    <td class="border px-2 py-1 text-right whitespace-nowrap" id="variant-visitors">
+                                    </td>
+                                    <td class="border px-2 py-1 text-right whitespace-nowrap" id="variant-conversions">
+                                    </td>
+                                    <td class="border px-2 py-1 text-right whitespace-nowrap" id="variant-rate"></td>
+                                    <td class="border px-2 py-1">
+                                        <div id="variant-ci"
+                                            class="h-5 bg-gray-100 rounded-md relative overflow-visible">
+                                            <div class="absolute h-full bg-purple-200 rounded-md"></div>
+                                            <div class="absolute w-0.5 h-full bg-purple-600 rounded-sm"></div>
+                                            <span id="variant-ci-low"
+                                                class="absolute text-xs font-medium transform -translate-x-1/2 text-purple-900 top-1/2 -translate-y-1/2 drop-shadow-sm"></span>
+                                            <span id="variant-ci-high"
+                                                class="absolute text-xs font-medium transform -translate-x-1/2 text-purple-900 top-1/2 -translate-y-1/2 drop-shadow-sm"></span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="border px-2 py-1 font-semibold whitespace-nowrap">Delta</td>
+                                    <td class="border px-2 py-1 text-right whitespace-nowrap" id="delta-visitors"></td>
+                                    <td class="border px-2 py-1 text-right whitespace-nowrap" id="delta-conversions">
+                                    </td>
+                                    <td class="border px-2 py-1 text-right whitespace-nowrap" id="delta-rate"></td>
+                                    <td class="border px-2 py-1">
+                                        <div id="diff-ci" class="h-5 bg-gray-100 rounded-md relative overflow-visible">
+                                            <div id="diff-ci-bar" class="absolute h-full rounded-md"></div>
+                                            <div id="diff-ci-marker" class="absolute w-0.5 h-full rounded-sm"></div>
+                                            <span id="diff-ci-low" class="absolute text-xs font-medium"></span>
+                                            <span id="diff-ci-high" class="absolute text-xs font-medium"></span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="border px-2 py-1 font-semibold whitespace-nowrap">Uplift</td>
+                                    <td class="border px-2 py-1 text-right whitespace-nowrap" id="visitor-uplift"></td>
+                                    <td class="border px-2 py-1 text-right whitespace-nowrap" id="conversion-uplift">
+                                    </td>
+                                    <td class="border px-2 py-1 text-right whitespace-nowrap" id="uplift-value"></td>
+                                    <td class="border px-2 py-1">
+                                        <div id="uplift-ci"
+                                            class="h-5 bg-gray-100 rounded-md relative overflow-visible">
+                                            <div id="uplift-ci-bar" class="absolute h-full rounded-md"></div>
+                                            <div id="uplift-ci-marker" class="absolute w-0.5 h-full rounded-sm"></div>
+                                            <span id="uplift-ci-low" class="absolute text-xs font-medium"></span>
+                                            <span id="uplift-ci-high" class="absolute text-xs font-medium"></span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                <div class="flex justify-center mt-6">
-                    <button id="next-btn" class="hidden px-6 py-3 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition">
-                        Next Challenge
+                    <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-lg font-medium">
+                                <span class="tooltip-trigger">
+                                    p-value
+                                    <span class="tooltip-content">
+                                        The probability of observing the observed difference (or a more extreme one) if
+                                        there is no real difference between variants. A p-value below the significance
+                                        level (α) suggests the difference is statistically significant.
+                                        <a href="https://en.wikipedia.org/wiki/P-value" target="_blank"
+                                            class="text-blue-500 hover:text-blue-700">Learn more →</a>
+                                    </span>
+                                </span>:
+                            </span>
+                            <span id="p-value-display" class="text-2xl font-bold"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="conversion-tab" class="tab-content hidden">
+                    <div class="mt-4">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
+                            <div class="flex items-center space-x-2 mb-2 md:mb-0">
+                                <label class="text-sm text-gray-600">View:</label>
+                                <select id="chart-view-toggle"
+                                    class="form-select text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                    <option value="daily">Daily View</option>
+                                    <option value="cumulative">Cumulative View</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="chart-loading" class="hidden">
+                            <div class="animate-pulse space-y-4">
+                                <div class="h-48 bg-gray-200 rounded"></div>
+                                <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="conversion-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="visitors-tab" class="tab-content hidden">
+                    <div class="mt-4">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
+                            <div class="flex items-center space-x-2 mb-2 md:mb-0">
+                                <label class="text-sm text-gray-600">View:</label>
+                                <select id="visitors-view-toggle"
+                                    class="form-select text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                    <option value="daily">Daily View</option>
+                                    <option value="cumulative">Cumulative View</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="chart-container h-64 md:h-96">
+                            <canvas id="visitors-chart" style="width: 100%; height: 100%;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="difference-tab" class="tab-content hidden">
+                    <div class="flex flex-col space-y-4">
+                        <div class="flex justify-between items-center">
+                            <div class="flex space-x-4">
+                                <select id="difference-view-toggle" class="px-3 py-1 border rounded-md text-sm">
+                                    <option value="daily">Daily View</option>
+                                    <option value="cumulative">Cumulative View</option>
+                                </select>
+                                <select id="difference-type-toggle" class="px-3 py-1 border rounded-md text-sm">
+                                    <option value="difference">Absolute Difference</option>
+                                    <option value="uplift">Relative Difference (Uplift)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="chart-container h-64 md:h-96">
+                            <canvas id="difference-chart" style="width: 100%; height: 100%;"></canvas>
+                            <div id="difference-chart-loading"
+                                class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 hidden">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="feedback" class="hidden mt-6 p-4 rounded-lg"></div>
+        </div>
+
+        <!-- Feedback Modal -->
+        <div id="feedback-modal"
+            class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-32 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="absolute top-2 right-2">
+                    <button id="close-feedback" class="text-gray-400 hover:text-gray-500 p-2">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
                     </button>
+                </div>
+                <div class="mt-3 text-center">
+                    <div id="feedback-icon"
+                        class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                        <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4" id="feedback-title">Correct!</h3>
+                    <div class="mt-2 px-7 py-3">
+                        <p class="text-sm text-gray-500" id="feedback-message"></p>
+                        <div class="mt-3">
+                            <p class="font-semibold">Current Score: <span id="modal-score" class="text-blue-600"></span>
+                            </p>
+                            <p class="font-semibold">Streak: <span id="modal-streak" class="text-orange-600"></span></p>
+                            <p class="font-semibold">Accuracy: <span id="modal-accuracy" class="text-purple-600"></span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="items-center px-4 py-3">
+                        <button id="next-challenge-btn"
+                            class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition">
+                            Next!
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- Completion Modal -->
+        <div id="completion-modal"
+            class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-32 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3 text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                        <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Session Complete!</h3>
+                    <div class="mt-2 px-7 py-3">
+                        <p class="text-sm text-gray-500">Game Over! You've completed round <span id="final-round"
+                                class="font-semibold">1</span>.</p>
+                        <div class="mt-4">
+                            <p class="font-semibold">Final Score: <span id="final-score" class="text-blue-600"></span>
+                            </p>
+                            <p class="font-semibold">Accuracy: <span id="final-accuracy" class="text-purple-600"></span>
+                            </p>
+                        </div>
+                        <div class="mt-4">
+                            <p class="text-sm font-medium text-gray-700 mb-2">Share your achievement:</p>
+                            <div class="flex justify-center space-x-4">
+                                <button onclick="UIController.shareOnTwitter()"
+                                    class="bg-blue-400 text-white px-4 py-2 rounded hover:bg-blue-500">
+                                    Twitter
+                                </button>
+                                <button onclick="UIController.shareOnLinkedIn()"
+                                    class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800">
+                                    LinkedIn
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="items-center px-4 py-3">
+                        <button id="start-new-session"
+                            class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition">
+                            Start New Session
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cheat Sheet Modal -->
+        <div id="cheat-sheet-modal"
+            class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-32 mx-auto p-4 border w-full max-w-md md:w-auto shadow-lg rounded-md bg-white m-4">
+                <div class="mt-2">
+                    <div class="flex justify-between items-center border-b pb-3">
+                        <h3 class="text-base md:text-lg font-medium text-gray-900">Experiment Trustworthiness
+                            Cheat-sheet</h3>
+                        <button id="close-cheat-sheet" class="text-gray-400 hover:text-gray-500 p-2">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="mt-4">
+                        <div class="space-y-3">
+                            <!-- Sample Ratio Mismatch Section -->
+                            <div class="border rounded-lg hover:bg-gray-50">
+                                <button class="w-full text-left flex items-start p-3 md:p-4"
+                                    onclick="toggleContent(this)">
+                                    <svg class="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <div class="flex-grow">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-medium text-gray-900 text-sm md:text-base">Sample Ratio
+                                                Mismatch</span>
+                                            <svg class="toggle-arrow h-5 w-5 ml-2 transform transition-transform duration-200"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-xs md:text-sm text-gray-500 mt-1">Check traffic split</p>
+                                        <div class="toggle-content hidden mt-2 bg-gray-100 rounded p-2">
+                                            <ul class="list-disc pl-4 text-xs md:text-sm text-gray-600">
+                                                <li>Compare visitor counts</li>
+                                                <li>Look for approximate 50-50 split</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+
+                            <!-- Traffic Patterns Section -->
+                            <div class="border rounded-lg hover:bg-gray-50">
+                                <button class="w-full text-left flex items-start p-3 md:p-4"
+                                    onclick="toggleContent(this)">
+                                    <svg class="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <div class="flex-grow">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-medium text-gray-900 text-sm md:text-base">Traffic
+                                                Patterns</span>
+                                            <svg class="toggle-arrow h-5 w-5 ml-2 transform transition-transform duration-200"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-xs md:text-sm text-gray-500 mt-1">Compare with design</p>
+                                        <div class="toggle-content hidden mt-2 bg-gray-100 rounded p-2">
+                                            <ul class="list-disc pl-4 text-xs md:text-sm text-gray-600">
+                                                <li>Daily Traffic</li>
+                                                <li>Base Conversion Rate</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+
+                            <!-- Sample Size Section -->
+                            <div class="border rounded-lg hover:bg-gray-50">
+                                <button class="w-full text-left flex items-start p-3 md:p-4"
+                                    onclick="toggleContent(this)">
+                                    <svg class="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <div class="flex-grow">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-medium text-gray-900 text-sm md:text-base">Sample
+                                                Size</span>
+                                            <svg class="toggle-arrow h-5 w-5 ml-2 transform transition-transform duration-200"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-xs md:text-sm text-gray-500 mt-1">Check required sample size</p>
+                                        <div class="toggle-content hidden mt-2 bg-gray-100 rounded p-2">
+                                            <ul class="list-disc pl-4 text-xs md:text-sm text-gray-600">
+                                                <li>Meet minimum visitors per variant</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+
+                            <!-- Business Cycles Section -->
+                            <div class="border rounded-lg hover:bg-gray-50">
+                                <button class="w-full text-left flex items-start p-3 md:p-4"
+                                    onclick="toggleContent(this)">
+                                    <svg class="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <div class="flex-grow">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-medium text-gray-900 text-sm md:text-base">Business
+                                                Cycles</span>
+                                            <svg class="toggle-arrow h-5 w-5 ml-2 transform transition-transform duration-200"
+                                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M19 9l-7 7-7-7"></path>
+                                            </svg>
+                                        </div>
+                                        <p class="text-xs md:text-sm text-gray-500 mt-1">Check cycle completion</p>
+                                        <div class="toggle-content hidden mt-2 bg-gray-100 rounded p-2">
+                                            <ul class="list-disc pl-4 text-xs md:text-sm text-gray-600">
+                                                <li>At least 7 days</li>
+                                                <li>Full business cycles</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        let score = 0;
-        let streak = 0;
-        let totalAttempts = 0;
-        let challenge = null;
+        function toggleContent(button) {
+            const content = button.querySelector('.toggle-content');
+            const arrow = button.querySelector('.toggle-arrow');
 
-        document.getElementById('start-btn').addEventListener('click', function(event) {
-            event.preventDefault();
-            document.getElementById('challenge-container').classList.remove('hidden');
-            document.getElementById('start-btn').classList.add('hidden');
-            loadChallenge();
-        });
-
-        document.getElementById('decision-yes').addEventListener('click', function() {
-            evaluateDecision(true);
-        });
-
-        document.getElementById('decision-no').addEventListener('click', function() {
-            evaluateDecision(false);
-        });
-
-        document.getElementById('next-btn').addEventListener('click', function() {
-            loadChallenge();
-            document.getElementById('feedback').classList.add('hidden');
-            document.getElementById('next-btn').classList.add('hidden');
-        });
-
-        function evaluateDecision(userChoice) {
-            if (!challenge) {
-                console.error("No challenge loaded");
-                alert("No challenge available. Try reloading.");
-                return;
+            if (content && arrow) {
+                content.classList.toggle('hidden');
+                arrow.style.transform = content.classList.contains('hidden') ? '' : 'rotate(180deg)';
             }
-
-            totalAttempts++;
-            const correctDecision = challenge.simulation.variantConversionRate > challenge.simulation.actualBaseConversionRate;
-            if (userChoice === correctDecision) {
-                score++;
-                streak++;
-                document.getElementById('score').textContent = score;
-                document.getElementById('streak').textContent = streak;
-                document.getElementById('feedback').textContent = "✅ Correct! Your score has increased.";
-                document.getElementById('feedback').className = "mt-6 p-4 rounded-lg bg-green-100 text-green-800";
-            } else {
-                streak = 0;
-                document.getElementById('streak').textContent = streak;
-                document.getElementById('feedback').textContent = "❌ Incorrect. Review the results carefully.";
-                document.getElementById('feedback').className = "mt-6 p-4 rounded-lg bg-red-100 text-red-800";
-            }
-            document.getElementById('accuracy').textContent = `${Math.round((score / totalAttempts) * 100)}%`;
-            document.getElementById('feedback').classList.remove('hidden');
-            document.getElementById('next-btn').classList.remove('hidden');
         }
 
-        function loadChallenge() {
-            if (typeof generateABTestChallenge !== 'function') {
-                console.error("Challenge generator not found");
-                alert("Error: Challenge generator not found");
-                return;
-            }
+        document.addEventListener('DOMContentLoaded', function () {
+            const tooltipTriggers = document.querySelectorAll('.tooltip-trigger');
 
-            challenge = generateABTestChallenge();
+            tooltipTriggers.forEach(trigger => {
+                trigger.addEventListener('mousemove', function (e) {
+                    const tooltip = this.querySelector('.tooltip-content');
+                    if (!tooltip) return;
 
-            // Update experiment card
-            document.getElementById('experiment-card').innerHTML = `
-                <div class="grid grid-cols-1 gap-2">
-                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Alpha:</span> ${challenge.experiment.alpha}</div>
-                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Beta:</span> ${challenge.experiment.beta}</div>
-                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Base Conversion Rate:</span> ${(challenge.experiment.baseConversionRate * 100).toFixed(2)}%</div>
-                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Minimum Relevant Effect:</span> ${(challenge.experiment.minimumRelevantEffect * 100).toFixed(2)}%</div>
-                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Visitors per Day:</span> ${challenge.experiment.visitorsPerDay}</div>
-                    <div class="border px-4 py-2 rounded"><span class="font-semibold">Business Cycle Days:</span> ${challenge.experiment.businessCycleDays}</div>
-                </div>
-            `;
+                    // Get trigger position
+                    const rect = this.getBoundingClientRect();
 
-            // Update result card
-            document.getElementById('result-card').innerHTML = `
-                <div class="grid grid-cols-3 border rounded">
-                    <div class="px-4 py-2 bg-gray-100 font-semibold">Metric</div>
-                    <div class="px-4 py-2 bg-gray-100 font-semibold">Base</div>
-                    <div class="px-4 py-2 bg-gray-100 font-semibold">Variant</div>
-                </div>
-                <div class="grid grid-cols-3 border rounded">
-                    <div class="px-4 py-2">Conversion Rate</div>
-                    <div class="px-4 py-2">${(challenge.simulation.actualBaseConversionRate * 100).toFixed(2)}%</div>
-                    <div class="px-4 py-2">${(challenge.simulation.variantConversionRate * 100).toFixed(2)}%</div>
-                </div>
-                <div class="grid grid-cols-3 border rounded">
-                    <div class="px-4 py-2">95% CI</div>
-                    <div class="px-4 py-2">[${(challenge.simulation.confidenceIntervalBase[0] * 100).toFixed(2)}% to ${(challenge.simulation.confidenceIntervalBase[1] * 100).toFixed(2)}%]</div>
-                    <div class="px-4 py-2">[${(challenge.simulation.confidenceIntervalVariant[0] * 100).toFixed(2)}% to ${(challenge.simulation.confidenceIntervalVariant[1] * 100).toFixed(2)}%]</div>
-                </div>
-                <div class="grid grid-cols-3 border rounded">
-                    <div class="px-4 py-2">Total Visitors</div>
-                    <div class="px-4 py-2">${challenge.simulation.actualVisitorsBase}</div>
-                    <div class="px-4 py-2">${challenge.simulation.actualVisitorsVariant}</div>
-                </div>
-                <div class="grid grid-cols-3 border rounded">
-                    <div class="px-4 py-2">Total Conversions</div>
-                    <div class="px-4 py-2">${challenge.simulation.actualConversionsBase}</div>
-                    <div class="px-4 py-2">${challenge.simulation.actualConversionsVariant}</div>
-                </div>
-            `;
-
-            initializeCharts(challenge);
-        }
+                    // Position tooltip above the trigger
+                    tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
+                    tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+                });
+            });
+        });
     </script>
 </body>
+
 </html>
