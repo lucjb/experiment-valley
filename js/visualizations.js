@@ -58,11 +58,8 @@ const ModalManager = {
     hide(modalId) {
         const modal = document.getElementById(modalId);
         if (modal) {
-            modal.classList.add('fade-out');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                modal.classList.remove('fade-out');
-            }, 500);
+            modal.classList.add('hidden');
+            modal.classList.remove('fade-out', 'fade-in');
         }
     },
 
@@ -116,7 +113,7 @@ function handleDifferenceChartUpdate(viewType, diffType, createDatasets) {
     const yAxisTitle = diffType === 'uplift' ? 'Uplift (%)' : 'Rate Difference (%)';
 
     ChartManager.updateChart('difference-chart', {
-        labels: ChartManager.completeTimeline.map((_, i) => `Day ${i + 1}`),
+        labels: ChartManager.createTimelineLabels(ChartManager.challenge.simulation.timeline, ChartManager.completeTimeline),
         datasets,
         viewType,
         diffType
@@ -238,6 +235,8 @@ function calculateYAxisRange(datasets) {
 
 function renderVisitorsChart(challenge, labels) {
     try {
+        const timelineData = challenge.simulation.timeline;
+
         // Create datasets based on view type
         function createDatasets(viewType) {
             const isCumulative = (viewType === 'cumulative');
@@ -274,6 +273,7 @@ function renderVisitorsChart(challenge, labels) {
         // Add view toggle functionality
         const viewToggle = document.getElementById('visitors-view-toggle');
         if (viewToggle) {
+            viewToggle.options[0].text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
             viewToggle.addEventListener('change', function (e) {
                 handleViewToggleChange('visitors-chart', e.target.value, createDatasets, updateOptions);
             });
@@ -358,6 +358,7 @@ function renderDifferenceChart(challenge, labels) {
         const diffTypeToggle = document.getElementById('difference-type-toggle');
 
         if (viewToggle) {
+            viewToggle.options[0].text = `${timelineData.timePeriod.charAt(0).toUpperCase() + timelineData.timePeriod.slice(1)}ly View`;
             viewToggle.addEventListener('change', function (e) {
                 const viewType = e.target.value;
                 const diffType = diffTypeToggle ? diffTypeToggle.value : 'difference';
@@ -466,12 +467,12 @@ const ChartManager = {
         const labelConfig = {
             base: {
                 name: 'Base',
-                daily: `${timePeriod}ly`,
+                daily: `${timePeriod.charAt(0).toUpperCase() + timePeriod.slice(1)}ly`,
                 cumulative: 'Cumulative'
             },
             variant: {
                 name: 'Variant',
-                daily: `${timePeriod}ly`,
+                daily: `${timePeriod.charAt(0).toUpperCase() + timePeriod.slice(1)}ly`,
                 cumulative: 'Cumulative'
             }
         };

@@ -7,6 +7,8 @@
     <meta name="description"
         content="Interactive A/B Testing educational platform. Practice statistical analysis and decision making with simulated experiments.">
     <title>A/B Testing Gym</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
 
     <!-- CDN Resources -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
@@ -22,252 +24,6 @@
     <script src="js/confidence-intervals.js"></script>
     <script src="js/visualizations.js"></script>
     <script src="js/ui-controller.js"></script>
-
-    <style>
-        .glow-orange {
-            text-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
-        }
-
-        .glow-orange {
-            text-shadow: 0 0 10px rgba(249, 115, 22, 0.7),
-                0 0 20px rgba(249, 115, 22, 0.3);
-        }
-
-        .score-value {
-            color: #f97316;
-            /* Tailwind orange-500 */
-        }
-
-        .fade-out {
-            animation: fadeOut 0.5s ease-out;
-        }
-
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-
-        @keyframes fadeOut {
-            from {
-                opacity: 1;
-            }
-
-            to {
-                opacity: 0;
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .decision-btn {
-            background-color: rgb(249, 115, 22);
-        }
-
-        .decision-btn.selected {
-            background-color: rgb(249, 115, 22);
-            opacity: 1 !important;
-            transform: scale(1.05);
-        }
-
-        .decision-btn:hover {
-            transform: scale(1.05);
-        }
-
-        .decision-btn:active {
-            transform: scale(0.95);
-        }
-
-        .chart-container {
-            position: relative;
-            height: 400px;
-            width: 100%;
-        }
-
-        .loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid rgb(249, 115, 22);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Tooltip styles */
-        .tooltip-trigger {
-            position: relative;
-            display: inline-block;
-            cursor: help;
-        }
-
-        .tooltip-content {
-            visibility: hidden;
-            position: fixed;
-            background-color: #1f2937;
-            color: white;
-            text-align: left;
-            padding: 12px 16px;
-            border-radius: 6px;
-            z-index: 9999;
-            width: 300px;
-            max-width: 90vw;
-            white-space: normal;
-            line-height: 1.4;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
-            pointer-events: auto;
-        }
-
-        .tooltip-trigger:hover .tooltip-content,
-        .tooltip-content:hover {
-            visibility: visible;
-            opacity: 1;
-            transition-delay: 0.1s;
-        }
-
-        .tooltip-trigger:not(:hover) .tooltip-content {
-            transition-delay: 0.5s;
-        }
-
-        .tooltip-content::before {
-            content: '';
-            position: absolute;
-            top: -6px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-width: 6px;
-            border-style: solid;
-            border-color: transparent transparent #1f2937 transparent;
-        }
-
-        .tooltip-content a {
-            color: #60a5fa;
-            text-decoration: underline;
-            display: inline-block;
-            margin-top: 8px;
-        }
-
-        .tooltip-content a:hover {
-            color: #93c5fd;
-        }
-
-        /* Progress bar text visibility */
-        #exp-progress-bar {
-            z-index: 2;
-        }
-
-        #exp-progress-bar+div {
-            z-index: 1;
-        }
-
-        #exp-progress-bar+div span {
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        #exp-progress-bar+div span:not(:empty) {
-            opacity: 1;
-        }
-
-        /* Mobile-specific styles */
-        @media (max-width: 640px) {
-            .decision-button {
-                width: 100%;
-                margin-bottom: 0.5rem;
-            }
-
-            .metrics-table {
-                font-size: 0.875rem;
-            }
-
-            .metrics-table th,
-            .metrics-table td {
-                padding: 0.5rem 0.25rem;
-            }
-
-            .chart-container {
-                height: 200px;
-            }
-        }
-
-        .round-splash {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.5);
-            font-size: 8rem;
-            font-weight: bold;
-            color: #f97316;
-            text-shadow: 0 0 20px rgba(249, 115, 22, 0.5);
-            opacity: 0;
-            pointer-events: none;
-            z-index: 9999;
-            transition: all 0.5s ease-in-out;
-            display: none;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 4rem;
-            border-radius: 1rem;
-            border: 4px solid #f97316;
-        }
-
-        .round-splash.show {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-            display: block;
-        }
-
-        /* Blur effect styles */
-        .round-splash-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.3);
-            z-index: 50;
-            display: none;
-        }
-
-        .round-splash-overlay.active {
-            display: block;
-        }
-
-        .round-splash-overlay.active~* {
-            filter: blur(8px);
-            transition: filter 0.5s ease-in-out;
-        }
-    </style>
 </head>
 
 <body class="bg-gray-100">
@@ -277,11 +33,12 @@
         <!-- Tutorial Section -->
         <div id="tutorial-section" class="bg-gray-900 rounded-lg shadow-lg p-6">
             <h2 class="text-4xl font-bold mb-4 text-white">A/B Testing Gym: Exercise Your Decision Power! </h2>
-            <p class="mb-4 text-gray-300 font-bold">Ready to become an A/B testing expert? </p> 
-            <p class="mb-4 text-gray-300"> The A/B Testing Gym is a fun and engaging way to learn and practice decision-making skills with realistic experiments.</p>
+            <p class="mb-4 text-gray-300 font-bold">Ready to become an A/B testing expert? </p>
+            <p class="mb-4 text-gray-300"> The A/B Testing Gym is a fun and engaging way to learn and practice
+                decision-making skills with realistic experiments.</p>
             <div class="mb-6">
                 <h3 class="text-xl font-semibold mb-2" style="color: #f97316;">How to Play</h3>
-                <p class="mb-4 text-gray-300">Analyze experiments, make decisions, score and learn!<br/>
+                <p class="mb-4 text-gray-300">Analyze experiments, make decisions, score and learn!<br />
                 <ol class="list-decimal list-inside space-y-2 text-gray-300">
                     <li>You will be challenged to analyze hypothetical experiments and make three critical decisions:
                         <ul class="list-disc list-inside ml-4 mt-1">
@@ -290,11 +47,15 @@
                             <li><b>Determine</b> the next steps to maximize impact</li>
                         </ul>
                     </li>
-                    <li>Each experiment is based on a real-world scenario and is designed to test your decision-making skills. What you will see:
+                    <li>Each experiment is based on a real-world scenario and is designed to test your decision-making
+                        skills. What you will see:
                         <ul class="list-disc list-inside ml-4 mt-1">
-                            <li><b>Experiment Design</b>: Details about the experiment design, such as alpha, beta, sample size, etc.</li>
-                            <li><b>Experiment Progress</b>: How much data has been collected and how much is left to collect</li>
-                            <li><b>Experiment Results</b>: Full results of the experiment including metrics, daliy charts and statistical analyses</li>
+                            <li><b>Experiment Design</b>: Details about the experiment design, such as alpha, beta,
+                                sample size, etc.</li>
+                            <li><b>Experiment Progress</b>: How much data has been collected and how much is left to
+                                collect</li>
+                            <li><b>Experiment Results</b>: Full results of the experiment including metrics, daliy
+                                charts and statistical analyses</li>
                         </ul>
                     </li>
                     <li>Get instant feedback on your decisions and learn from each choice</li>
@@ -337,7 +98,9 @@
                 </div>
             </div>
 
-            <button id="start-btn" class="px-6 py-2 text-white text-sm rounded shadow transition hover:opacity-90" style="background-color: #f97316" onmouseover="this.style.backgroundColor='#ea580c'" onmouseout="this.style.backgroundColor='#f97316'">
+            <button id="start-btn" class="px-6 py-2 text-white text-sm rounded shadow transition hover:opacity-90"
+                style="background-color: #f97316" onmouseover="this.style.backgroundColor='#ea580c'"
+                onmouseout="this.style.backgroundColor='#f97316'">
                 Start Playing! 🚀
             </button>
         </div>
@@ -539,6 +302,10 @@
                                         <span id="progress-start-date"
                                             class="text-xs text-white font-medium ml-3"></span>
                                         <span id="exp-visitors-text" class="text-xs text-white font-medium mr-3"></span>
+                                        <!-- Complete Text -->
+                                        <span id="exp-complete-text"
+                                            class="hidden absolute inset-0 flex items-center justify-center text-xs text-white font-medium">Experiment
+                                            Complete</span>
                                     </div>
                                     <!-- Remaining Bar -->
                                     <div id="exp-remaining-bar"
@@ -548,10 +315,7 @@
                                             class="text-xs text-gray-600 font-medium ml-3"></span>
                                         <span id="exp-total-text" class="text-xs text-gray-600 font-medium mr-3"></span>
                                     </div>
-                                    <!-- Complete Text -->
-                                    <span id="exp-complete-text"
-                                        class="hidden absolute inset-0 flex items-center justify-center text-xs text-white font-medium">Experiment
-                                        Complete</span>
+
                                 </div>
                                 <!-- Invisible Bar for Text Positioning -->
                                 <div class="w-full h-6 md:h-8 relative">
@@ -654,26 +418,18 @@
                 <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Results Analysis</h2>
 
                 <!-- Tab Navigation -->
-                <div class="border-b border-gray-200 overflow-x-auto">
-                    <nav class="flex -mb-px min-w-max">
-                        <button
-                            class="tab-button px-4 py-2 font-medium text-sm leading-5 rounded-t-lg border-b-2 border-blue-500 text-blue-600 bg-white focus:outline-none whitespace-nowrap"
-                            data-tab="metrics">
+                <div class="tab-navigation">
+                    <nav>
+                        <button class="tab-button active" data-tab="metrics">
                             Metrics Table
                         </button>
-                        <button
-                            class="tab-button px-4 py-2 font-medium text-sm leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none ml-4 whitespace-nowrap"
-                            data-tab="conversion">
+                        <button class="tab-button" data-tab="conversion">
                             Conversion Rate
                         </button>
-                        <button
-                            class="tab-button px-4 py-2 font-medium text-sm leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none ml-4 whitespace-nowrap"
-                            data-tab="visitors">
+                        <button class="tab-button" data-tab="visitors">
                             Visitors
                         </button>
-                        <button
-                            class="tab-button px-4 py-2 font-medium text-sm leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none ml-4 whitespace-nowrap"
-                            data-tab="difference">
+                        <button class="tab-button" data-tab="difference">
                             Comparison
                         </button>
                     </nav>
@@ -851,12 +607,6 @@
             </div>
 
             <div id="feedback" class="hidden mt-6 p-4 rounded-lg"></div>
-            <div class="flex justify-center mt-6">
-                <button id="next-btn"
-                    class="hidden px-6 py-3 bg-blue-500 text-white font-bold rounded-lg shadow hover:bg-blue-600 transition">
-                    Next!
-                </button>
-            </div>
         </div>
 
         <!-- Feedback Modal -->
@@ -866,7 +616,8 @@
                 <div class="absolute top-2 right-2">
                     <button id="close-feedback" class="text-gray-400 hover:text-gray-500 p-2">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>

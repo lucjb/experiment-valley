@@ -76,10 +76,6 @@ const UIController = {
 
         // Submit decision
         document.getElementById('submit-decision').addEventListener('click', () => {
-            if (!this.state.hasSubmitted) {
-                this.state.currentExperiment++;
-                this.updateProgress();
-            }
             this.evaluateDecision();
         });
 
@@ -88,22 +84,6 @@ const UIController = {
 
         // Start new session
         document.getElementById('start-new-session').addEventListener('click', () => this.startNewSession());
-
-        // Add keyboard event listeners
-        document.addEventListener('keydown', function(e) {
-            e.preventDefault();
-            return false;
-        });
-
-        document.addEventListener('keyup', function(e) {
-            e.preventDefault();
-            return false;
-        });
-
-        document.addEventListener('keypress', function(e) {
-            e.preventDefault();
-            return false;
-        });
 
         // Initialize cheat sheet
         this.initializeCheatSheet();
@@ -116,39 +96,42 @@ const UIController = {
         // Close feedback modal
         closeFeedback.addEventListener('click', () => {
             ModalManager.hide('feedback-modal');
-            // Disable all decision buttons
-            document.querySelectorAll('.decision-btn').forEach(button => {
+            // Batch DOM operations
+            const submitButton = document.getElementById('submit-decision');
+            const decisionButtons = document.querySelectorAll('.decision-btn');
+
+            // Update submit button
+            submitButton.textContent = 'Show Feedback';
+            submitButton.disabled = false;
+            submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            // Update decision buttons in a single operation
+            decisionButtons.forEach(button => {
                 button.disabled = true;
                 button.style.opacity = '0.5';
                 button.style.cursor = 'not-allowed';
             });
-            // Change submit button text to "Show Feedback"
-            const submitButton = document.getElementById('submit-decision');
-            submitButton.textContent = 'Show Feedback';
-            submitButton.disabled = false;
-            submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
-        });
-
-        // Handle next challenge
-        nextChallengeBtn.addEventListener('click', () => {
-            this.handleNextChallenge();
         });
 
         // Close feedback when clicking outside
         feedbackModal.addEventListener('click', (e) => {
             if (e.target === feedbackModal) {
                 ModalManager.hide('feedback-modal');
-                // Disable all decision buttons
-                document.querySelectorAll('.decision-btn').forEach(button => {
+                // Batch DOM operations
+                const submitButton = document.getElementById('submit-decision');
+                const decisionButtons = document.querySelectorAll('.decision-btn');
+
+                // Update submit button
+                submitButton.textContent = 'Show Feedback';
+                submitButton.disabled = false;
+                submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+
+                // Update decision buttons in a single operation
+                decisionButtons.forEach(button => {
                     button.disabled = true;
                     button.style.opacity = '0.5';
                     button.style.cursor = 'not-allowed';
                 });
-                // Change submit button text to "Show Feedback"
-                const submitButton = document.getElementById('submit-decision');
-                submitButton.textContent = 'Show Feedback';
-                submitButton.disabled = false;
-                submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         });
     },
@@ -255,7 +238,7 @@ const UIController = {
                 // Use predefined sequence for this round
                 const sequence = challengeSequences[this.state.currentRound];
                 const experimentIndex = this.state.experimentsInCurrentRound;
-                
+
                 if (experimentIndex < sequence.length) {
                     // Use the predefined challenge generator for this experiment
                     window.currentExperiment = sequence[experimentIndex]();
@@ -275,7 +258,7 @@ const UIController = {
 
             // Analyze the experiment and store it globally
             window.currentAnalysis = analyzeExperiment(window.currentExperiment);
-            
+
             // Log the analysis result
             console.log('=== EXPERIMENT ANALYSIS ===');
             console.log('Round:', this.state.currentRound);
@@ -286,7 +269,7 @@ const UIController = {
             this.updateExperimentDisplay();
             this.updateExecutionSection();
             this.updateMetricsTable();
-    
+
             this.updateProgress();
 
             window.updateConfidenceIntervals(window.currentExperiment);
@@ -332,7 +315,7 @@ const UIController = {
             alertSpan.textContent = '⚠️';
 
             // Create tooltip content
-            
+
             const { expected, actual, difference, pValue } = analysis.analysis.baseRate;
             const tooltipContent = document.createElement('span');
             tooltipContent.className = 'tooltip-content';
@@ -383,26 +366,26 @@ const UIController = {
                 const warningIcon = document.createElement('span');
                 warningIcon.className = 'text-yellow-500 cursor-help tooltip-trigger';
                 warningIcon.textContent = '⚠️';
-                
+
                 // Create tooltip content
                 const tooltipContent = document.createElement('span');
                 tooltipContent.className = 'tooltip-content';
                 tooltipContent.textContent = `Runtime Complete but Insufficient sample size: ${totalVisitors.toLocaleString()} < ${requiredTotal.toLocaleString()}`;
                 warningIcon.appendChild(tooltipContent);
-                
+
                 // Add mousemove event listener for tooltip positioning
                 warningIcon.addEventListener('mousemove', function (e) {
                     const tooltip = this.querySelector('.tooltip-content');
                     if (!tooltip) return;
-                    
+
                     // Get trigger position
                     const rect = this.getBoundingClientRect();
-                    
+
                     // Position tooltip above the trigger
                     tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
                     tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
                 });
-                
+
                 // Add warning icon to the complete text
                 const completeTextElement = document.getElementById('exp-complete-text');
                 completeTextElement.textContent = '';
@@ -470,11 +453,11 @@ const UIController = {
         // Get the progress bar container width
         const progressBarContainer = document.getElementById('exp-progress-bar').parentElement;
         const containerWidth = progressBarContainer.offsetWidth;
-        
+
         // Calculate the width of the progress bar
         const progressBarWidth = (containerWidth * progressPercent) / 100;
         const remainingBarWidth = containerWidth - progressBarWidth;
-        
+
         // Create temporary elements to measure actual text width
         const tempVisitors = document.createElement('span');
         tempVisitors.textContent = `${totalVisitors.toLocaleString()}v`;
@@ -483,7 +466,7 @@ const UIController = {
         tempVisitors.style.fontSize = window.getComputedStyle(document.getElementById('exp-visitors-text')).fontSize;
         tempVisitors.style.fontFamily = window.getComputedStyle(document.getElementById('exp-visitors-text')).fontFamily;
         document.body.appendChild(tempVisitors);
-        
+
         const tempRemaining = document.createElement('span');
         tempRemaining.textContent = `${remainingVisitors.toLocaleString()}v`;
         tempRemaining.style.visibility = 'hidden';
@@ -491,7 +474,7 @@ const UIController = {
         tempRemaining.style.fontSize = window.getComputedStyle(document.getElementById('exp-remaining-text')).fontSize;
         tempRemaining.style.fontFamily = window.getComputedStyle(document.getElementById('exp-remaining-text')).fontFamily;
         document.body.appendChild(tempRemaining);
-        
+
         const tempDays = document.createElement('span');
         tempDays.textContent = `${daysRemaining}d`;
         tempDays.style.visibility = 'hidden';
@@ -499,26 +482,26 @@ const UIController = {
         tempDays.style.fontSize = window.getComputedStyle(document.getElementById('exp-days-remaining-text')).fontSize;
         tempDays.style.fontFamily = window.getComputedStyle(document.getElementById('exp-days-remaining-text')).fontFamily;
         document.body.appendChild(tempDays);
-        
+
         // Get actual widths
         const visitorsTextWidth = tempVisitors.offsetWidth + 20; // Add padding
         const remainingTextWidth = tempRemaining.offsetWidth + 20;
         const daysTextWidth = tempDays.offsetWidth + 20;
-        
+
         // Clean up temporary elements
         document.body.removeChild(tempVisitors);
         document.body.removeChild(tempRemaining);
         document.body.removeChild(tempDays);
-        
+
         // Check if we have enough space in the progress bar for visitors text
         const hasEnoughSpaceForVisitors = progressBarWidth > (visitorsTextWidth * 1.05);
-        
+
         // Check if we have enough space in the remaining bar for remaining text
         const hasEnoughSpaceForRemaining = remainingBarWidth > (remainingTextWidth * 1.05);
-        
+
         // Check if we have enough space for days information
         const hasEnoughSpaceForDays = remainingBarWidth > ((remainingTextWidth + daysTextWidth) * 1.05);
-        
+
         return {
             hasEnoughSpaceForVisitors,
             hasEnoughSpaceForRemaining,
@@ -588,7 +571,7 @@ const UIController = {
         // Check if we have enough sample size and if elapsed days is a multiple of 7
         const hasEnoughSampleSize = totalVisitors >= (2 * challenge.experiment.requiredSampleSizePerVariant);
         const isFullWeek = daysElapsed % 7 === 0;
-        
+
         // Set progress bar color based on conditions
         if (hasEnoughSampleSize && isFullWeek) {
             // Bright blue for complete weeks with enough sample size
@@ -609,31 +592,96 @@ const UIController = {
             // Always show dates
             progressStartDate.textContent = dateFormatter.format(startDate);
             progressEndDate.textContent = dateFormatter.format(finishDate);
-            
+
             // Always show current visitors and elapsed days
             visitorsText.textContent = `${totalVisitors.toLocaleString()}v`;
             daysElapsedText.textContent = `${daysElapsed}d`;
-            
+
             // Always show remaining information
             remainingText.textContent = `${remainingVisitors.toLocaleString()}v`;
             daysRemainingText.textContent = `${daysRemaining}d`;
-            
+
             // Always show total information
             totalText.textContent = `${requiredVisitors.toLocaleString()}v`;
             totalDaysText.textContent = `${totalDays}d`;
-            
+
             // Check space availability and adjust visibility if needed
             const spaceAvailability = this.checkSpaceAvailability(progressPercent, totalVisitors, remainingVisitors, daysRemaining);
-            
+
             if (!spaceAvailability.hasEnoughSpaceForRemaining) {
                 remainingText.textContent = '';
                 daysRemainingText.textContent = '';
             }
-            
+
             if (!spaceAvailability.hasEnoughSpaceForDays) {
                 totalText.textContent = '';
                 totalDaysText.textContent = '';
             }
+        }
+
+        // Always reset tooltip state first
+        progressBar.classList.remove('tooltip-trigger');
+        const existingTooltip = progressBar.querySelector('.tooltip-content');
+        if (existingTooltip) {
+            existingTooltip.remove();
+        }
+        progressBar.removeEventListener('mousemove', progressBar.mousemoveHandler);
+
+        // Define tooltip scenarios
+        const tooltipScenarios = [
+            {
+                condition: () => hasEnoughSampleSize && daysElapsed < totalDays && daysElapsed % 7 !== 0,
+                message: 'Not Ready: Full Sample size has been reached but the last week is incomplete.'
+            },
+            {
+                condition: () => hasEnoughSampleSize && daysElapsed >= totalDays && daysElapsed % 7 === 0,
+                message: 'Ready: Full sample size has been reached at full weeks.'
+            },
+            {
+                condition: () => !hasEnoughSampleSize && daysElapsed < totalDays,
+                message: 'Not Ready: Not enough sample size.'
+            }
+        ];
+
+        // Check if any scenario matches
+        const matchingScenario = tooltipScenarios.find(scenario => scenario.condition());
+
+        // Handle tooltip
+        if (matchingScenario) {
+            // Add tooltip trigger class
+            progressBar.classList.add('tooltip-trigger');
+
+            // Create tooltip content
+            const tooltipContent = document.createElement('span');
+            tooltipContent.className = 'tooltip-content';
+            tooltipContent.style.position = 'absolute';
+            tooltipContent.style.zIndex = '1000';
+            tooltipContent.style.backgroundColor = 'black';
+            tooltipContent.style.color = 'white';
+            tooltipContent.style.padding = '8px';
+            tooltipContent.style.borderRadius = '4px';
+            tooltipContent.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            tooltipContent.textContent = matchingScenario.message;
+            
+            // Add tooltip to the progress bar
+            progressBar.appendChild(tooltipContent);
+
+            // Add mousemove event listener for tooltip positioning
+            const mousemoveHandler = function(e) {
+                const tooltip = this.querySelector('.tooltip-content');
+                if (!tooltip) return;
+
+                // Get trigger position
+                const rect = this.getBoundingClientRect();
+                
+                // Position tooltip above the trigger
+                tooltip.style.left = (e.clientX - rect.left) + 'px';
+                tooltip.style.top = (e.clientY - rect.top - tooltip.offsetHeight - 10) + 'px';
+            };
+
+            // Add new listener and store reference
+            progressBar.addEventListener('mousemove', mousemoveHandler);
+            progressBar.mousemoveHandler = mousemoveHandler;
         }
     },
 
@@ -752,10 +800,10 @@ const UIController = {
             this.state.hasSubmitted = true;
 
             this.state.totalAttempts++;
-            
+
             // Check if this is the last experiment of the round BEFORE incrementing
             const isLastExperiment = this.state.experimentsInCurrentRound === this.state.EXPERIMENTS_PER_SESSION - 1;
-            
+
             this.state.experimentsInCurrentRound++;
 
             // Use the global analysis
@@ -888,17 +936,17 @@ const UIController = {
     async handleNextChallenge() {
         const feedbackModal = document.getElementById('feedback-modal');
         const nextChallengeBtn = document.getElementById('next-challenge-btn');
-        
+
         ModalManager.hide('feedback-modal');
 
         if (this.state.experimentsInCurrentRound === this.state.EXPERIMENTS_PER_SESSION) {
             // Always advance progress bar to 100% at the end of a round
             const progressBar = document.getElementById('progress-bar');
             progressBar.style.width = '100%';
-            
+
             // Wait a moment to show the full progress bar
             await new Promise(resolve => setTimeout(resolve, 500));
-            
+
             if (this.state.correctInCurrentRound >= 2) {
                 // Start new round
                 this.state.currentExperiment = 1; // Reset the experiment counter
@@ -931,42 +979,42 @@ const UIController = {
         if (!splash || !overlay) {
             return;
         }
-        
+
         // Get the round caption if it exists
         const roundCaptions = {
             1: "Warm Up", // First round caption
             2: "Let's Begin!", // Second round caption
             // Add more round captions here as needed
         };
-        
+
         const caption = roundCaptions[this.state.currentRound] || "";
-        
+
         // Set the round text with caption - maintain original large font size and center the caption
         splash.innerHTML = `<div style="text-align: center;">
             <div style="font-size: 8rem; font-weight: bold;">Round ${this.state.currentRound}</div>
             ${caption ? `<div style="font-size: 2rem; margin-top: 1rem;">${caption}</div>` : ''}
         </div>`;
-        
+
         // Show the overlay and blur effect
         overlay.classList.add('active');
-        
+
         // Show the splash
         splash.style.display = 'block';
         splash.style.opacity = '0';
         splash.style.transform = 'translate(-50%, -50%) scale(0.5)';
-        
+
         // Force reflow
         void splash.offsetWidth;
-        
+
         // Start animation
         splash.style.opacity = '1';
         splash.style.transform = 'translate(-50%, -50%) scale(1)';
-        
+
         // Hide the splash and overlay after animation completes
         setTimeout(() => {
             splash.style.opacity = '0';
             splash.style.transform = 'translate(-50%, -50%) scale(0.5)';
-            
+
             setTimeout(() => {
                 splash.style.display = 'none';
                 overlay.classList.remove('active');
