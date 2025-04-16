@@ -448,7 +448,12 @@ const UIController = {
             {
                 condition: () => !hasEnoughSampleSize && daysElapsed < totalDays,
                 message: 'Not Ready: Not enough sample size.'
+            },
+            {
+                condition: () => hasEnoughSampleSize && daysElapsed < totalDays && daysElapsed % 7 === 0,
+                message: 'Ready: Full sample size has been reached at full weeks.'
             }
+
         ];
 
         // Check if any scenario matches

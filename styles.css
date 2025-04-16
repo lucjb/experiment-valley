@@ -30,7 +30,24 @@ button:disabled {
 }
 
 .decision-btn {
-    background-color: rgb(249, 115, 22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 6rem;
+    height: 2.5rem;
+    background-color: #4a5568;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    text-align: center;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.2;
 }
 
 .decision-btn.selected {
@@ -45,6 +62,11 @@ button:disabled {
 
 .decision-btn:active {
     transform: scale(0.95);
+}
+
+.decision-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Chart styles */
@@ -412,4 +434,97 @@ select:focus {
 
 .tab-button:not(:first-child) {
     margin-left: 1rem;
+}
+
+/* Decision Container Styles */
+.decision-container {
+    display: flex;
+    width: 100%;
+    padding: 1rem;
+    align-items: flex-start;
+    --section-gap: 1rem; /* M */
+    --button-gap: 0.25rem; /* m */
+    gap: var(--section-gap);
+}
+
+.decision-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.decision-section.trustworthy {
+    width: calc(20% - var(--section-gap));
+    min-width: 0;
+}
+
+.decision-section.decision {
+    width: calc(30% - var(--section-gap));
+    min-width: 0;
+}
+
+.decision-section.follow-up {
+    width: calc(50% - var(--section-gap));
+    min-width: 0;
+}
+
+.decision-btn-group {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    gap: var(--button-gap);
+}
+
+/* Decision Button Styles */
+.decision-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: calc((100% - var(--button-gap)) / 2);
+    height: 2.5rem;
+    background-color: rgb(249, 115, 22);
+    transition: all 0.2s ease-in-out;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+    padding: 0.25rem 0.25rem;
+    text-align: center;
+    word-break: break-word;
+    font-size: 0.875rem;
+    color: white;
+    border-radius: 0.375rem;
+    opacity: 0.7;
+}
+
+.decision-section.decision .decision-btn {
+    min-width: 4rem;
+    max-width: 4.5rem;
+}
+
+.decision-section.follow-up .decision-btn {
+    width: calc((100% - 4 * var(--button-gap)) / 5);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .decision-container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .decision-section {
+        width: 100%;
+    }
+    
+    .decision-btn-group {
+        flex-wrap: wrap;
+    }
+    
+    .decision-btn {
+        width: calc(50% - var(--button-gap));
+    }
 } 

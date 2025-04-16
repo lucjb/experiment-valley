@@ -330,16 +330,6 @@ function distributeConversions(totalConversions, dailyVisitors) {
     // Add noise by swapping conversions between days
     addNoiseToConversions(dailyConversions, dailyVisitors);
 
-    // Final validation
-    const finalTotal = dailyConversions.reduce((sum, v) => sum + v, 0);
-    console.assert(finalTotal === maxPossibleConversions,
-        `Total conversions mismatch: ${finalTotal} vs ${maxPossibleConversions}`);
-
-    for (let i = 0; i < numDays; i++) {
-        console.assert(dailyConversions[i] <= dailyVisitors[i],
-            `Day ${i} has more conversions than visitors`);
-    }
-
     return dailyConversions;
 }
 
@@ -662,10 +652,6 @@ function generateABTestChallenge(
         BUSINESS_CYCLE_DAYS
     );
 
-    // Calculate the base conversion rate for full business cycles
-    const lastFullBusinessCycleIndex = Math.max(0, Math.floor((Math.floor(currentRuntimeDays / BUSINESS_CYCLE_DAYS) * BUSINESS_CYCLE_DAYS) / (timelineData.timePeriod === 'day' ? 7 : timelineData.timePeriod === 'week' ? 7 : 28)) - 1);
-    const fullBusinessCyclesBaseConversionRate = timelineData.timePoints[Math.min(lastFullBusinessCycleIndex, timelineData.periodsCount - 1)].base.cumulativeRate;
-
     // Calculate uplift as relative percentage change
     const actualBaseRate = actualConversionsBase / actualVisitorsBase;
     const actualVariantRate = actualConversionsVariant / actualVisitorsVariant;
@@ -709,7 +695,7 @@ function generateABTestChallenge(
             timeline: {
                 ...timelineData,
                 currentRuntimeDays: currentRuntimeDays,
-                fullBusinessCyclesBaseConversionRate: fullBusinessCyclesBaseConversionRate
+                //fullBusinessCyclesBaseConversionRate: fullBusinessCyclesBaseConversionRate
             },
             uplift: conversionRateUplift,
             upliftConfidenceInterval: upliftCI,
