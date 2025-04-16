@@ -222,7 +222,7 @@ const UIController = {
             // Define challenge sequence for each round
             const challengeSequences = {
                 3: [winner, loser, inconclusive],
-                1: [fastCompletionWithPartialWeek, winner, slowCompletion, fastCompletion],
+                1: [winner, slowCompletion, fastCompletion],
                 2: [partialWinner, partialWinner, partialWinner]
             };
 
@@ -289,6 +289,42 @@ const UIController = {
         }
     },
 
+    // Helper function to create a warning icon with tooltip
+    createWarningIcon(message) {
+        const warningIcon = document.createElement('span');
+        warningIcon.className = 'text-yellow-500 cursor-help tooltip-trigger';
+        warningIcon.textContent = '⚠️';
+
+        const tooltipContent = document.createElement('span');
+        tooltipContent.className = 'tooltip-content';
+        tooltipContent.innerHTML = message.replace(/\n/g, '<br>');
+        warningIcon.appendChild(tooltipContent);
+
+        // Add tooltip positioning
+        warningIcon.addEventListener('mousemove', (e) => {
+            const tooltip = warningIcon.querySelector('.tooltip-content');
+            if (!tooltip) return;
+
+            const rect = warningIcon.getBoundingClientRect();
+            tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
+            tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+        });
+
+        return warningIcon;
+    },
+
+    // Helper function to add warning to a cell
+    addWarningToCell(cell, message) {
+        const visitorsSpan = document.createElement('span');
+        visitorsSpan.className = 'font-medium';
+        visitorsSpan.textContent = cell.textContent;
+        cell.textContent = '';
+        cell.appendChild(visitorsSpan);
+
+        const warningIcon = this.createWarningIcon(message);
+        cell.appendChild(warningIcon);
+    },
+
     addDebugAlerts() {
         this.addBaseConversionRateMissmatchAlert();
         this.addSampleSizeWarning();
@@ -296,138 +332,46 @@ const UIController = {
 
     addBaseConversionRateMissmatchAlert() {
         const analysis = window.currentAnalysis;
-        const hasMismatch = analysis.analysis.hasBaseRateMismatch;
-        if (hasMismatch) {
-            const baseRateCell = document.getElementById('base-rate');
+        if (!analysis.analysis.hasBaseRateMismatch) return;
 
-            // Create base rate span
-            const baseRateSpan = document.createElement('span');
-            baseRateSpan.id = 'base-rate';
-            baseRateSpan.className = 'font-medium';
-            baseRateSpan.textContent = baseRateCell.textContent;
-            baseRateCell.textContent = '';
-            baseRateCell.appendChild(baseRateSpan);
-
-            // Create alert span
-            const alertSpan = document.createElement('span');
-            alertSpan.id = 'base-rate-alert';
-            alertSpan.className = 'ml-2 text-yellow-500 cursor-help tooltip-trigger';
-            alertSpan.textContent = '⚠️';
-
-            // Create tooltip content
-
-            const { expected, actual, difference, pValue } = analysis.analysis.baseRate;
-            const tooltipContent = document.createElement('span');
-            tooltipContent.className = 'tooltip-content';
-            tooltipContent.innerHTML = `Design Base Rate: ${formatPercent(expected)}<br>Actual Base Rate: ${formatPercent(actual)}<br>Difference: ${formatPercent(difference)}<br>p-value: ${pValue.toFixed(4)}`;
-            alertSpan.appendChild(tooltipContent);
-
-            // Add mousemove event listener for tooltip positioning
-            alertSpan.addEventListener('mousemove', function (e) {
-                const tooltip = this.querySelector('.tooltip-content');
-                if (!tooltip) return;
-
-                // Get trigger position
-                const rect = this.getBoundingClientRect();
-
-                // Position tooltip above the trigger
-                tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
-                tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
-            });
-
-            baseRateCell.appendChild(alertSpan);
-        }
+        const baseRateCell = document.getElementById('base-rate');
+        const { expected, actual, difference, pValue } = analysis.analysis.baseRate;
+        
+        const message = `Design Base Rate: ${formatPercent(expected)}\nActual Base Rate: ${formatPercent(actual)}\nDifference: ${formatPercent(difference)}\np-value: ${pValue.toFixed(4)}`;
+        this.addWarningToCell(baseRateCell, message);
     },
 
     addSampleSizeWarning() {
         const analysis = window.currentAnalysis;
         const { sampleSize } = analysis.analysis;
         const { current, required } = analysis.analysis.runtime;
-        // Only show warning if experiment is complete and has insufficient sample size
-        const isComplete = current >= required;
+        
+        if (current < required) return;
 
-        if (isComplete) {
-            // Check base variant
-            if (sampleSize.actualBase < sampleSize.required) {
-                const baseVisitorsCell = document.getElementById('base-visitors');
-                this.addWarningToCell(baseVisitorsCell, `Insufficient sample size (${sampleSize.actualBase.toLocaleString()} < ${sampleSize.required.toLocaleString()})`);
-            }
-
-            // Check variant
-            if (sampleSize.actualVariant < sampleSize.required) {
-                const variantVisitorsCell = document.getElementById('variant-visitors');
-                this.addWarningToCell(variantVisitorsCell, `Insufficient sample size (${sampleSize.actualVariant.toLocaleString()} < ${sampleSize.required.toLocaleString()})`);
-            }
-
-            // Add warning to execution bar if total sample size is insufficient
-            const totalVisitors = sampleSize.actualBase + sampleSize.actualVariant;
-            const requiredTotal = sampleSize.required * 2;
-            if (totalVisitors < requiredTotal) {
-                const warningIcon = document.createElement('span');
-                warningIcon.className = 'text-yellow-500 cursor-help tooltip-trigger';
-                warningIcon.textContent = '⚠️';
-
-                // Create tooltip content
-                const tooltipContent = document.createElement('span');
-                tooltipContent.className = 'tooltip-content';
-                tooltipContent.textContent = `Runtime Complete but Insufficient sample size: ${totalVisitors.toLocaleString()} < ${requiredTotal.toLocaleString()}`;
-                warningIcon.appendChild(tooltipContent);
-
-                // Add mousemove event listener for tooltip positioning
-                warningIcon.addEventListener('mousemove', function (e) {
-                    const tooltip = this.querySelector('.tooltip-content');
-                    if (!tooltip) return;
-
-                    // Get trigger position
-                    const rect = this.getBoundingClientRect();
-
-                    // Position tooltip above the trigger
-                    tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
-                    tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
-                });
-
-                // Add warning icon to the complete text
-                const completeTextElement = document.getElementById('exp-complete-text');
-                completeTextElement.textContent = '';
-                completeTextElement.appendChild(warningIcon);
-                completeTextElement.appendChild(document.createTextNode(' Complete | ' + current + 'd | ' + totalVisitors.toLocaleString() + 'v'));
-            }
+        // Check base variant
+        if (sampleSize.actualBase < sampleSize.required) {
+            const message = `Insufficient sample size (${sampleSize.actualBase.toLocaleString()} < ${sampleSize.required.toLocaleString()})`;
+            this.addWarningToCell(document.getElementById('base-visitors'), message);
         }
-    },
 
-    addWarningToCell(cell, message) {
-        // Create visitors span
-        const visitorsSpan = document.createElement('span');
-        visitorsSpan.className = 'font-medium';
-        visitorsSpan.textContent = cell.textContent;
-        cell.textContent = '';
-        cell.appendChild(visitorsSpan);
+        // Check variant
+        if (sampleSize.actualVariant < sampleSize.required) {
+            const message = `Insufficient sample size (${sampleSize.actualVariant.toLocaleString()} < ${sampleSize.required.toLocaleString()})`;
+            this.addWarningToCell(document.getElementById('variant-visitors'), message);
+        }
 
-        // Create alert span
-        const alertSpan = document.createElement('span');
-        alertSpan.className = 'ml-2 text-yellow-500 cursor-help tooltip-trigger';
-        alertSpan.textContent = '⚠️';
-
-        // Create tooltip content
-        const tooltipContent = document.createElement('span');
-        tooltipContent.className = 'tooltip-content';
-        tooltipContent.textContent = message;
-        alertSpan.appendChild(tooltipContent);
-
-        // Add mousemove event listener for tooltip positioning
-        alertSpan.addEventListener('mousemove', function (e) {
-            const tooltip = this.querySelector('.tooltip-content');
-            if (!tooltip) return;
-
-            // Get trigger position
-            const rect = this.getBoundingClientRect();
-
-            // Position tooltip above the trigger
-            tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
-            tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
-        });
-
-        cell.appendChild(alertSpan);
+        // Check total sample size
+        const totalVisitors = sampleSize.actualBase + sampleSize.actualVariant;
+        const requiredTotal = sampleSize.required * 2;
+        
+        if (totalVisitors < requiredTotal) {
+            const completeTextElement = document.getElementById('exp-complete-text');
+            const message = `Runtime Complete but Insufficient sample size: ${totalVisitors.toLocaleString()} < ${requiredTotal.toLocaleString()}`;
+            
+            completeTextElement.textContent = '';
+            completeTextElement.appendChild(this.createWarningIcon(message));
+            completeTextElement.appendChild(document.createTextNode(` Complete | ${current}d | ${totalVisitors.toLocaleString()}v`));
+        }
     },
 
     updateExperimentDisplay() {
@@ -449,64 +393,104 @@ const UIController = {
         document.getElementById('exp-required-days').textContent = `${challenge.experiment.requiredRuntimeDays} days`;
     },
 
-    checkSpaceAvailability(progressPercent, totalVisitors, remainingVisitors, daysRemaining) {
-        // Get the progress bar container width
+    // Helper function to measure text width
+    measureTextWidth(text, referenceElement) {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        const style = window.getComputedStyle(referenceElement);
+        context.font = `${style.fontSize} ${style.fontFamily}`;
+        return context.measureText(text).width + 20; // Add padding
+    },
+
+    checkProgressBarSpace(progressPercent, totalVisitors, remainingVisitors, daysRemaining) {
         const progressBarContainer = document.getElementById('exp-progress-bar').parentElement;
         const containerWidth = progressBarContainer.offsetWidth;
-
-        // Calculate the width of the progress bar
         const progressBarWidth = (containerWidth * progressPercent) / 100;
         const remainingBarWidth = containerWidth - progressBarWidth;
 
-        // Create temporary elements to measure actual text width
-        const tempVisitors = document.createElement('span');
-        tempVisitors.textContent = `${totalVisitors.toLocaleString()}v`;
-        tempVisitors.style.visibility = 'hidden';
-        tempVisitors.style.position = 'absolute';
-        tempVisitors.style.fontSize = window.getComputedStyle(document.getElementById('exp-visitors-text')).fontSize;
-        tempVisitors.style.fontFamily = window.getComputedStyle(document.getElementById('exp-visitors-text')).fontFamily;
-        document.body.appendChild(tempVisitors);
+        // Measure text widths once
+        const visitorsText = `${totalVisitors.toLocaleString()}v`;
+        const remainingText = `${remainingVisitors.toLocaleString()}v`;
+        const daysText = `${daysRemaining}d`;
 
-        const tempRemaining = document.createElement('span');
-        tempRemaining.textContent = `${remainingVisitors.toLocaleString()}v`;
-        tempRemaining.style.visibility = 'hidden';
-        tempRemaining.style.position = 'absolute';
-        tempRemaining.style.fontSize = window.getComputedStyle(document.getElementById('exp-remaining-text')).fontSize;
-        tempRemaining.style.fontFamily = window.getComputedStyle(document.getElementById('exp-remaining-text')).fontFamily;
-        document.body.appendChild(tempRemaining);
+        const visitorsTextWidth = this.measureTextWidth(visitorsText, document.getElementById('exp-visitors-text'));
+        const remainingTextWidth = this.measureTextWidth(remainingText, document.getElementById('exp-remaining-text'));
+        const daysTextWidth = this.measureTextWidth(daysText, document.getElementById('exp-days-remaining-text'));
 
-        const tempDays = document.createElement('span');
-        tempDays.textContent = `${daysRemaining}d`;
-        tempDays.style.visibility = 'hidden';
-        tempDays.style.position = 'absolute';
-        tempDays.style.fontSize = window.getComputedStyle(document.getElementById('exp-days-remaining-text')).fontSize;
-        tempDays.style.fontFamily = window.getComputedStyle(document.getElementById('exp-days-remaining-text')).fontFamily;
-        document.body.appendChild(tempDays);
-
-        // Get actual widths
-        const visitorsTextWidth = tempVisitors.offsetWidth + 20; // Add padding
-        const remainingTextWidth = tempRemaining.offsetWidth + 20;
-        const daysTextWidth = tempDays.offsetWidth + 20;
-
-        // Clean up temporary elements
-        document.body.removeChild(tempVisitors);
-        document.body.removeChild(tempRemaining);
-        document.body.removeChild(tempDays);
-
-        // Check if we have enough space in the progress bar for visitors text
-        const hasEnoughSpaceForVisitors = progressBarWidth > (visitorsTextWidth * 1.05);
-
-        // Check if we have enough space in the remaining bar for remaining text
-        const hasEnoughSpaceForRemaining = remainingBarWidth > (remainingTextWidth * 1.05);
-
-        // Check if we have enough space for days information
-        const hasEnoughSpaceForDays = remainingBarWidth > ((remainingTextWidth + daysTextWidth) * 1.05);
-
+        // Check space availability with 5% buffer
+        const SPACE_BUFFER = 1.05;
         return {
-            hasEnoughSpaceForVisitors,
-            hasEnoughSpaceForRemaining,
-            hasEnoughSpaceForDays
+            hasEnoughSpaceForVisitors: progressBarWidth > (visitorsTextWidth * SPACE_BUFFER),
+            hasEnoughSpaceForRemaining: remainingBarWidth > (remainingTextWidth * SPACE_BUFFER),
+            hasEnoughSpaceForDays: remainingBarWidth > ((remainingTextWidth + daysTextWidth) * SPACE_BUFFER)
         };
+    },
+
+    addExecutionBarTooltip(progressBar, hasEnoughSampleSize, daysElapsed, totalDays) {
+        // Always reset tooltip state first
+        progressBar.classList.remove('tooltip-trigger');
+        const existingTooltip = progressBar.querySelector('.tooltip-content');
+        if (existingTooltip) {
+            existingTooltip.remove();
+        }
+        progressBar.removeEventListener('mousemove', progressBar.mousemoveHandler);
+
+        // Define tooltip scenarios
+        const tooltipScenarios = [
+            {
+                condition: () => hasEnoughSampleSize && daysElapsed < totalDays && daysElapsed % 7 !== 0,
+                message: 'Not Ready: Full Sample size has been reached but the last week is incomplete.'
+            },
+            {
+                condition: () => hasEnoughSampleSize && daysElapsed >= totalDays && daysElapsed % 7 === 0,
+                message: 'Ready: Full sample size has been reached at full weeks.'
+            },
+            {
+                condition: () => !hasEnoughSampleSize && daysElapsed < totalDays,
+                message: 'Not Ready: Not enough sample size.'
+            }
+        ];
+
+        // Check if any scenario matches
+        const matchingScenario = tooltipScenarios.find(scenario => scenario.condition());
+
+        // Handle tooltip
+        if (matchingScenario) {
+            // Add tooltip trigger class
+            progressBar.classList.add('tooltip-trigger');
+
+            // Create tooltip content
+            const tooltipContent = document.createElement('span');
+            tooltipContent.className = 'tooltip-content';
+            tooltipContent.style.position = 'absolute';
+            tooltipContent.style.zIndex = '1000';
+            tooltipContent.style.backgroundColor = 'black';
+            tooltipContent.style.color = 'white';
+            tooltipContent.style.padding = '8px';
+            tooltipContent.style.borderRadius = '4px';
+            tooltipContent.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+            tooltipContent.textContent = matchingScenario.message;
+            
+            // Add tooltip to the progress bar
+            progressBar.appendChild(tooltipContent);
+
+            // Add mousemove event listener for tooltip positioning
+            const mousemoveHandler = function(e) {
+                const tooltip = this.querySelector('.tooltip-content');
+                if (!tooltip) return;
+
+                // Get trigger position
+                const rect = this.getBoundingClientRect();
+                
+                // Position tooltip above the trigger
+                tooltip.style.left = (e.clientX - rect.left) + 'px';
+                tooltip.style.top = (e.clientY - rect.top - tooltip.offsetHeight - 10) + 'px';
+            };
+
+            // Add new listener and store reference
+            progressBar.addEventListener('mousemove', mousemoveHandler);
+            progressBar.mousemoveHandler = mousemoveHandler;
+        }
     },
 
     updateExecutionSection() {
@@ -606,7 +590,7 @@ const UIController = {
             totalDaysText.textContent = `${totalDays}d`;
 
             // Check space availability and adjust visibility if needed
-            const spaceAvailability = this.checkSpaceAvailability(progressPercent, totalVisitors, remainingVisitors, daysRemaining);
+            const spaceAvailability = this.checkProgressBarSpace(progressPercent, totalVisitors, remainingVisitors, daysRemaining);
 
             if (!spaceAvailability.hasEnoughSpaceForRemaining) {
                 remainingText.textContent = '';
@@ -619,70 +603,8 @@ const UIController = {
             }
         }
 
-        // Always reset tooltip state first
-        progressBar.classList.remove('tooltip-trigger');
-        const existingTooltip = progressBar.querySelector('.tooltip-content');
-        if (existingTooltip) {
-            existingTooltip.remove();
-        }
-        progressBar.removeEventListener('mousemove', progressBar.mousemoveHandler);
-
-        // Define tooltip scenarios
-        const tooltipScenarios = [
-            {
-                condition: () => hasEnoughSampleSize && daysElapsed < totalDays && daysElapsed % 7 !== 0,
-                message: 'Not Ready: Full Sample size has been reached but the last week is incomplete.'
-            },
-            {
-                condition: () => hasEnoughSampleSize && daysElapsed >= totalDays && daysElapsed % 7 === 0,
-                message: 'Ready: Full sample size has been reached at full weeks.'
-            },
-            {
-                condition: () => !hasEnoughSampleSize && daysElapsed < totalDays,
-                message: 'Not Ready: Not enough sample size.'
-            }
-        ];
-
-        // Check if any scenario matches
-        const matchingScenario = tooltipScenarios.find(scenario => scenario.condition());
-
-        // Handle tooltip
-        if (matchingScenario) {
-            // Add tooltip trigger class
-            progressBar.classList.add('tooltip-trigger');
-
-            // Create tooltip content
-            const tooltipContent = document.createElement('span');
-            tooltipContent.className = 'tooltip-content';
-            tooltipContent.style.position = 'absolute';
-            tooltipContent.style.zIndex = '1000';
-            tooltipContent.style.backgroundColor = 'black';
-            tooltipContent.style.color = 'white';
-            tooltipContent.style.padding = '8px';
-            tooltipContent.style.borderRadius = '4px';
-            tooltipContent.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-            tooltipContent.textContent = matchingScenario.message;
-            
-            // Add tooltip to the progress bar
-            progressBar.appendChild(tooltipContent);
-
-            // Add mousemove event listener for tooltip positioning
-            const mousemoveHandler = function(e) {
-                const tooltip = this.querySelector('.tooltip-content');
-                if (!tooltip) return;
-
-                // Get trigger position
-                const rect = this.getBoundingClientRect();
-                
-                // Position tooltip above the trigger
-                tooltip.style.left = (e.clientX - rect.left) + 'px';
-                tooltip.style.top = (e.clientY - rect.top - tooltip.offsetHeight - 10) + 'px';
-            };
-
-            // Add new listener and store reference
-            progressBar.addEventListener('mousemove', mousemoveHandler);
-            progressBar.mousemoveHandler = mousemoveHandler;
-        }
+        // Add tooltip to progress bar
+        this.addExecutionBarTooltip(progressBar, hasEnoughSampleSize, daysElapsed, totalDays);
     },
 
     updateMetricsTable() {
