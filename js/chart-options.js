@@ -137,27 +137,11 @@ const visitorsChartOptions = {
                         lines.push(`Visitors: ${metrics.visitors.toLocaleString()}`);
                     }
 
-                    // Add expected visitors line to tooltip
+                    // Add 50% target line to tooltip
                     const periodType = timePoint.period.type;
                     const multiplier = periodType === 'day' ? 1 : periodType === 'week' ? 7 : 28;
                     const targetVisitors = this.chart.data.targetVisitors * multiplier;
-                    
-                    if (isCumulative) {
-                        // For cumulative view, calculate total expected visitors up to this point
-                        let totalExpectedDays = 0;
-                        for (let i = 0; i <= context.dataIndex; i++) {
-                            const point = ChartManager.completeTimeline[i];
-                            if (point) {
-                                const pointMultiplier = point.period.type === 'day' ? 1 : 
-                                                      point.period.type === 'week' ? 7 : 28;
-                                totalExpectedDays += pointMultiplier;
-                            }
-                        }
-                        const expectedVisitors = (this.chart.data.targetVisitors * totalExpectedDays) / 2;
-                        lines.push(`Expected Cumulative: ${expectedVisitors.toLocaleString()}`);
-                    } else {
-                        lines.push(`Expected: ${(targetVisitors / 2).toLocaleString()}`);
-                    }
+                    lines.push(`Expected: ${(targetVisitors / 2).toLocaleString()}`);
 
                     return lines;
                 }

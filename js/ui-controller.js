@@ -237,9 +237,9 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [winner, loser, inconclusive],
-                2: [partialWinner, partialLoser, fastCompletion],
-                3: [slowCompletion, fastCompletionWithPartialWeek, inconclusive],
+                1: [winner().withBaseRateMismatch(), loser(), inconclusive()],
+                2: [partialWinner(), partialLoser(), fastCompletion()],
+                3: [slowCompletion(), fastCompletionWithPartialWeek(), inconclusive().withBaseRateMismatch()],
             };
 
             // Define round captions
@@ -250,6 +250,7 @@ const UIController = {
             };
 
             // Generate a new challenge based on round and experiment number
+            let challengeDesign;
             if (challengeSequences[this.state.currentRound]) {
                 // Use predefined sequence for this round
                 const sequence = challengeSequences[this.state.currentRound];
@@ -257,19 +258,21 @@ const UIController = {
 
                 if (experimentIndex < sequence.length) {
                     // Use the predefined challenge generator for this experiment
-                    window.currentExperiment = sequence[experimentIndex]();
+                    challengeDesign = sequence[experimentIndex];
                     console.log(`Round ${this.state.currentRound}, Experiment ${experimentIndex + 1}: Using ${sequence[experimentIndex].name} challenge generator`);
                 } else {
                     // Fall back to random challenge if we somehow exceed the sequence length
-                    window.currentExperiment = generateABTestChallenge();
+                    challengeDesign = new ChallengeDesign();
                     console.log(`Round ${this.state.currentRound}, Experiment ${experimentIndex + 1}: Using random challenge generator (fallback)`);
                 }
             } else {
                 // For rounds without a predefined sequence, use random challenges
-                window.currentExperiment = generateABTestChallenge();
+                challengeDesign = new ChallengeDesign();
                 console.log(`Round ${this.state.currentRound}, Experiment ${this.state.experimentsInCurrentRound + 1}: Using random challenge generator`);
             }
 
+            // Generate the challenge from the design
+            window.currentExperiment = challengeDesign.generate();
             this.state.challenge = window.currentExperiment;
 
             // Analyze the experiment and store it globally

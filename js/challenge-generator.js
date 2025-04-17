@@ -508,41 +508,128 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
     };
 }
 
+class ChallengeDesign {
+    constructor({
+        timeProgress = TIME_PROGRESS.FULL,
+        baseRateMismatch = BASE_RATE_MISMATCH.NO,
+        effectSize = EFFECT_SIZE.NONE,
+        sampleRatioMismatch = SAMPLE_RATIO_MISMATCH.NO,
+        sampleProgress = SAMPLE_PROGRESS.TIME
+    } = {}) {
+        this.timeProgress = timeProgress;
+        this.baseRateMismatch = baseRateMismatch;
+        this.effectSize = effectSize;
+        this.sampleRatioMismatch = sampleRatioMismatch;
+        this.sampleProgress = sampleProgress;
+    }
+
+    generate() {
+        return generateABTestChallenge(
+            this.timeProgress,
+            this.baseRateMismatch,
+            this.effectSize,
+            this.sampleRatioMismatch,
+            this.sampleProgress
+        );
+    }
+
+    withBaseRateMismatch() {
+        this.baseRateMismatch = BASE_RATE_MISMATCH.YES;
+        return this;
+    }
+
+}
+
 function winner() {
-    return generateABTestChallenge(TIME_PROGRESS.FULL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.IMPROVEMENT, SAMPLE_RATIO_MISMATCH.NO, SAMPLE_PROGRESS.TIME);
+    return new ChallengeDesign({
+        timeProgress: TIME_PROGRESS.FULL,
+        baseRateMismatch: BASE_RATE_MISMATCH.NO,
+        effectSize: EFFECT_SIZE.IMPROVEMENT,
+        sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
+        sampleProgress: SAMPLE_PROGRESS.TIME
+    });
 }
 
 function inconclusive() {
-    return generateABTestChallenge(TIME_PROGRESS.FULL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.NONE, SAMPLE_RATIO_MISMATCH.NO, SAMPLE_PROGRESS.TIME);
+    return new ChallengeDesign({
+        timeProgress: TIME_PROGRESS.FULL,
+        baseRateMismatch: BASE_RATE_MISMATCH.NO,
+        effectSize: EFFECT_SIZE.NONE,
+        sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
+        sampleProgress: SAMPLE_PROGRESS.TIME
+    });
 }
 
 function loser() {
-    return generateABTestChallenge(TIME_PROGRESS.FULL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.DEGRADATION, SAMPLE_RATIO_MISMATCH.NO, SAMPLE_PROGRESS.TIME);
+    return new ChallengeDesign({
+        timeProgress: TIME_PROGRESS.FULL,
+        baseRateMismatch: BASE_RATE_MISMATCH.NO,
+        effectSize: EFFECT_SIZE.DEGRADATION,
+        sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
+        sampleProgress: SAMPLE_PROGRESS.TIME
+    });
 }
 
 function largeWinner() {
-    return generateABTestChallenge(TIME_PROGRESS.FULL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.LARGE_IMPROVEMENT, SAMPLE_RATIO_MISMATCH.NO, SAMPLE_PROGRESS.TIME);
+    return new ChallengeDesign({
+        timeProgress: TIME_PROGRESS.FULL,
+        baseRateMismatch: BASE_RATE_MISMATCH.NO,
+        effectSize: EFFECT_SIZE.LARGE_IMPROVEMENT,
+        sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
+        sampleProgress: SAMPLE_PROGRESS.TIME
+    });
 }
 
 function partialWinner() {
-    return generateABTestChallenge(TIME_PROGRESS.PARTIAL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.IMPROVEMENT, SAMPLE_RATIO_MISMATCH.NO, SAMPLE_PROGRESS.TIME);
+    return new ChallengeDesign({
+        timeProgress: TIME_PROGRESS.PARTIAL,
+        baseRateMismatch: BASE_RATE_MISMATCH.NO,
+        effectSize: EFFECT_SIZE.IMPROVEMENT,
+        sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
+        sampleProgress: SAMPLE_PROGRESS.TIME
+    });
 }
 
 function partialLoser() {
-    return generateABTestChallenge(TIME_PROGRESS.PARTIAL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.LARGE_DEGRADATION, SAMPLE_RATIO_MISMATCH.NO, SAMPLE_PROGRESS.TIME);
+    return new ChallengeDesign({
+        timeProgress: TIME_PROGRESS.PARTIAL,
+        baseRateMismatch: BASE_RATE_MISMATCH.NO,
+        effectSize: EFFECT_SIZE.LARGE_DEGRADATION,
+        sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
+        sampleProgress: SAMPLE_PROGRESS.TIME
+    });
 }
 
 function fastCompletion() {
-    return generateABTestChallenge(TIME_PROGRESS.PARTIAL_WEEKS, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.IMPROVEMENT, SAMPLE_RATIO_MISMATCH.NO, SAMPLE_PROGRESS.FULL);
+    return new ChallengeDesign({
+        timeProgress: TIME_PROGRESS.PARTIAL_WEEKS,
+        baseRateMismatch: BASE_RATE_MISMATCH.NO,
+        effectSize: EFFECT_SIZE.IMPROVEMENT,
+        sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
+        sampleProgress: SAMPLE_PROGRESS.FULL
+    });
 }
 
 function slowCompletion() {
-    return generateABTestChallenge(TIME_PROGRESS.FULL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.IMPROVEMENT, SAMPLE_RATIO_MISMATCH.NO, SAMPLE_PROGRESS.PARTIAL);
+    return new ChallengeDesign({
+        timeProgress: TIME_PROGRESS.FULL,
+        baseRateMismatch: BASE_RATE_MISMATCH.NO,
+        effectSize: EFFECT_SIZE.IMPROVEMENT,
+        sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
+        sampleProgress: SAMPLE_PROGRESS.PARTIAL
+    });
 }
 
 function fastCompletionWithPartialWeek() {
-    return generateABTestChallenge(TIME_PROGRESS.PARTIAL, BASE_RATE_MISMATCH.NO, EFFECT_SIZE.IMPROVEMENT, SAMPLE_RATIO_MISMATCH.NO, SAMPLE_PROGRESS.FULL);
+    return new ChallengeDesign({
+        timeProgress: TIME_PROGRESS.PARTIAL,
+        baseRateMismatch: BASE_RATE_MISMATCH.NO,
+        effectSize: EFFECT_SIZE.IMPROVEMENT,
+        sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
+        sampleProgress: SAMPLE_PROGRESS.FULL
+    });
 }
+
 
 const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY", PARTIAL_WEEKS: "PARTIAL_WEEKS" };
 const SAMPLE_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", TIME: "TIME" };
