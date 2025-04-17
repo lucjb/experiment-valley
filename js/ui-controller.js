@@ -165,12 +165,24 @@ const UIController = {
             }
         });
 
-        // Set up click handlers
+        // Set up click handlers and initial state
         document.querySelectorAll('.tab-button').forEach(button => {
+            // Remove active class from all buttons
+            button.classList.remove('active', 'border-blue-500', 'text-blue-600');
+            button.classList.add('text-gray-500');
+            
+            // Add click handler
             button.addEventListener('click', () => {
                 this.switchTab(button.getAttribute('data-tab'));
             });
         });
+
+        // Set initial active state for metrics tab
+        const metricsTab = document.querySelector('[data-tab="metrics"]');
+        if (metricsTab) {
+            metricsTab.classList.add('border-blue-500', 'text-blue-600');
+            metricsTab.classList.remove('text-gray-500');
+        }
     },
 
     switchTab(tabName) {
