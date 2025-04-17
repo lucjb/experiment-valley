@@ -460,7 +460,7 @@ select:focus {
 }
 
 .decision-section.decision {
-    width: calc(30% - var(--section-gap));
+    width: calc(35% - var(--section-gap));
     min-width: 0;
 }
 
@@ -491,7 +491,7 @@ select:focus {
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1.2;
-    padding: 0.25rem 0.25rem;
+    padding: 0.25rem 0.5rem;
     text-align: center;
     word-break: break-word;
     font-size: 0.875rem;
@@ -501,12 +501,13 @@ select:focus {
 }
 
 .decision-section.decision .decision-btn {
-    min-width: 4rem;
-    max-width: 4.5rem;
+    min-width: 5rem;
+    max-width: 6rem;
 }
 
 .decision-section.follow-up .decision-btn {
     width: calc((100% - 4 * var(--button-gap)) / 5);
+    min-width: 4rem;
 }
 
 /* Responsive adjustments */
