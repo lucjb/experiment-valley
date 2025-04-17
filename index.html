@@ -138,10 +138,11 @@
 
             <!-- Decision Making Section -->
             <div class="bg-gray-900 rounded-lg shadow-lg p-3 md:p-4 mb-4">
+                <!--
                 <h2 class="text-xl md:text-2xl font-semibold text-white mb-3">Decision Making
                     <a href="#" id="cheat-sheet-btn" class="text-gray-400 hover:text-gray-300 transition-colors">ℹ</a>
                 </h2>
-                
+                -->
                 <!-- Decision Grid -->
                 <div class="decision-container">
                     <!-- Trustworthy Section -->
@@ -252,10 +253,10 @@
                             <!-- Bars Container -->
                             <div class="flex-1">
                                 <!-- Visible Bars -->
-                                <div class="w-full bg-gray-200 rounded-full h-6 md:h-8 relative">
+                                <div class="w-full bg-gray-200 rounded-full h-6 md:h-8 relative overflow-visible">
                                     <!-- Progress Bar -->
                                     <div id="exp-progress-bar"
-                                        class="bg-blue-600 h-full rounded-full transition-all duration-500 flex items-center justify-between"
+                                        class="bg-blue-600 h-full rounded-l-full transition-all duration-500 flex items-center justify-between"
                                         style="width: 0%">
                                         <span id="progress-start-date"
                                             class="text-xs text-white font-medium ml-3"></span>
@@ -267,13 +268,12 @@
                                     </div>
                                     <!-- Remaining Bar -->
                                     <div id="exp-remaining-bar"
-                                        class="absolute top-0 right-0 h-full rounded-full transition-all duration-500 flex items-center justify-between bg-gray-200"
+                                        class="absolute top-0 right-0 h-full rounded-r-full transition-all duration-500 flex items-center justify-between bg-gray-200"
                                         style="width: 100%">
                                         <span id="exp-remaining-text"
                                             class="text-xs text-gray-600 font-medium ml-3"></span>
                                         <span id="exp-total-text" class="text-xs text-gray-600 font-medium mr-3"></span>
                                     </div>
-
                                 </div>
                                 <!-- Invisible Bar for Text Positioning -->
                                 <div class="w-full h-6 md:h-8 relative">

@@ -591,10 +591,13 @@ function generateABTestChallenge(
     } else if (timeProgress === TIME_PROGRESS.EARLY) {
         currentRuntimeDays = 5;
     } else if (timeProgress === TIME_PROGRESS.PARTIAL_WEEKS) {
-        // Subtract the remainder of days to get full weeks, or subtract a full week if already divisible by 7
-        currentRuntimeDays = requiredRuntimeDays - (requiredRuntimeDays % 7 || 7);
+        if (requiredRuntimeDays > 7) {
+            currentRuntimeDays = requiredRuntimeDays - (requiredRuntimeDays % 7 || 7);
+        } else {
+            currentRuntimeDays = requiredRuntimeDays;
+        }
     }
-    //currentRuntimeDays = Math.floor(requiredRuntimeDays * (Math.random() * 0.1 + 0.9));
+    // currentRuntimeDays = Math.floor(requiredRuntimeDays * (Math.random() * 0.1 + 0.9));
 
     var actualBaseConversionRate = BASE_CONVERSION_RATE;
     actualBaseConversionRate = sampleBetaDistribution(

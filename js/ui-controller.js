@@ -18,7 +18,7 @@ const UIController = {
 
     init() {
         this.initializeEventListeners();
-        this.initializeCheatSheet();
+        //this.initializeCheatSheet();
         this.initializeTabs();
     },
 
@@ -86,7 +86,7 @@ const UIController = {
         document.getElementById('start-new-session').addEventListener('click', () => this.startNewSession());
 
         // Initialize cheat sheet
-        this.initializeCheatSheet();
+        //this.initializeCheatSheet();
 
         // Initialize feedback modal
         const feedbackModal = document.getElementById('feedback-modal');
@@ -162,6 +162,8 @@ const UIController = {
         document.querySelectorAll('.tab-content').forEach(content => {
             if (content.id !== 'metrics-tab') {
                 content.classList.add('hidden');
+            } else {
+                content.classList.remove('hidden');
             }
         });
 
@@ -194,8 +196,10 @@ const UIController = {
 
         // Add active state to clicked tab
         const activeTab = document.querySelector(`[data-tab="${tabName}"]`);
-        activeTab.classList.add('border-blue-500', 'text-blue-600');
-        activeTab.classList.remove('text-gray-500');
+        if (activeTab) {
+            activeTab.classList.add('border-blue-500', 'text-blue-600');
+            activeTab.classList.remove('text-gray-500');
+        }
 
         // Hide all tab content
         document.querySelectorAll('.tab-content').forEach(content => {
@@ -234,7 +238,7 @@ const UIController = {
             // Define challenge sequence for each round
             const challengeSequences = {
                 3: [winner, loser, inconclusive],
-                1: [winner, slowCompletion, fastCompletion],
+                1: [fastCompletion, fastCompletion, fastCompletion],
                 2: [partialWinner, partialWinner, partialWinner]
             };
 
@@ -569,6 +573,19 @@ const UIController = {
         remainingBar.style.width = `${Math.max(0, 100 - progressPercent)}%`;
         remainingBarInvisible.style.width = `${Math.max(0, 100 - progressPercent)}%`;
 
+        // Update progress bar classes based on completion state
+        if (isComplete) {
+            progressBar.classList.remove('rounded-l-full');
+            progressBar.classList.add('rounded-full');
+            remainingBar.classList.remove('rounded-r-full');
+            remainingBar.classList.add('hidden');
+        } else {
+            progressBar.classList.remove('rounded-full');
+            progressBar.classList.add('rounded-l-full');
+            remainingBar.classList.remove('hidden');
+            remainingBar.classList.add('rounded-r-full');
+        }
+
         // Check if we have enough sample size and if elapsed days is a multiple of 7
         const hasEnoughSampleSize = totalVisitors >= (2 * challenge.experiment.requiredSampleSizePerVariant);
         const isFullWeek = daysElapsed % 7 === 0;
@@ -585,7 +602,7 @@ const UIController = {
         // Update text content
         if (isComplete) {
             completeText.classList.remove('hidden');
-            completeText.textContent = `Complete | ${totalDays}d | ${totalVisitors.toLocaleString()}v`;
+            completeText.textContent = `Complete | ${totalDays}d | ${totalVisitors}v`;
             progressStartDate.textContent = dateFormatter.format(startDate);
             visitorsText.textContent = dateFormatter.format(finishDate);
             progressEndDate.textContent = ''; // End date is not shown in complete state
@@ -595,15 +612,15 @@ const UIController = {
             progressEndDate.textContent = dateFormatter.format(finishDate);
 
             // Always show current visitors and elapsed days
-            visitorsText.textContent = `${totalVisitors.toLocaleString()}v`;
+            visitorsText.textContent = `${totalVisitors}v`;
             daysElapsedText.textContent = `${daysElapsed}d`;
 
             // Always show remaining information
-            remainingText.textContent = `${remainingVisitors.toLocaleString()}v`;
+            remainingText.textContent = `${remainingVisitors}v`;
             daysRemainingText.textContent = `${daysRemaining}d`;
 
             // Always show total information
-            totalText.textContent = `${requiredVisitors.toLocaleString()}v`;
+            totalText.textContent = `${requiredVisitors}v`;
             totalDaysText.textContent = `${totalDays}d`;
 
             // Check space availability and adjust visibility if needed

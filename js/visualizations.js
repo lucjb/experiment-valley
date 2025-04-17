@@ -579,6 +579,7 @@ const ChartManager = {
 
     // Helper function to generate complete timeline
     generateCompleteTimeline(timelineData, totalDays) {
+        console.log('timelineData', timelineData);
         const timePoints = timelineData.timePoints;
         const completeTimeline = [...timePoints];
         const currentDays = timelineData.currentRuntimeDays;
