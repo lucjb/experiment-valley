@@ -235,11 +235,18 @@ const UIController = {
                 throw new Error("generateABTestChallenge function is not defined");
             }
 
+            // Clean up warning emoji from conversion rates tab header
+            const conversionTab = document.querySelector('[data-tab="conversion"]');
+            if (conversionTab) {
+                conversionTab.textContent = 'Conversion Rate';
+            }
+
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [winner().withSampleRatioMismatch().withBaseRateMismatch(), loser(), inconclusive().withBaseRateMismatch()],
-                2: [partialWinner(), partialLoser(), fastCompletion()],
-                3: [slowCompletion(), fastCompletionWithPartialWeek(), inconclusive()],
+                1: [winner(), loser(), inconclusive().withBaseRateMismatch()],
+                2: [partialWinner().withSampleRatioMismatch(), partialLoser(), fastWinner()],
+                3: [slowCompletion(), fastWinnerWithPartialWeek(), inconclusive().withVisitorsLoss()],
+                4: [winner().withSampleRatioMismatch(), slowCompletion().withBaseRateMismatch(), inconclusive()],
             };
 
             // Define round captions
@@ -436,6 +443,14 @@ const UIController = {
         document.getElementById('exp-total-required-sample').textContent = (challenge.experiment.requiredSampleSizePerVariant * 2).toLocaleString();
         document.getElementById('exp-cycle-days').textContent = challenge.experiment.businessCycleDays === 1 ? '1 day' : '1 week';
         document.getElementById('exp-required-days').textContent = `${challenge.experiment.requiredRuntimeDays} days`;
+
+        // Update conversion rates tab header if there's data loss
+        if (this.debugMode() && window.currentAnalysis?.analysis?.hasDataLoss) {
+            const conversionTab = document.querySelector('[data-tab="conversion"]');
+            if (conversionTab) {
+                conversionTab.textContent = 'Conversion Rate ⚠️';
+            }
+        }
     },
 
     // Helper function to measure text width

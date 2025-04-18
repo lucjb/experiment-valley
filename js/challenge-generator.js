@@ -370,7 +370,30 @@ function computeDifferenceConfidenceInterval(baseRate, variantRate, baseVisitors
     ];
 }
 
-function generateTimelineData(baseVisitors, variantVisitors, baseConversions, variantConversions, numDays, alpha, currentRuntimeDays, businessCycleDays) {
+function addDataLoss(visitors, conversions) {
+    const lossDay = Math.floor(Math.random() * visitors.length);
+    const lostVisitors = visitors[lossDay];
+    const lostConversions = conversions[lossDay];
+
+    const remainingDays = visitors.length - 1;
+    const visitorsPerDay = Math.floor(lostVisitors / remainingDays);
+    const conversionsPerDay = Math.floor(lostConversions / remainingDays);
+    const visitorsRemainder = lostVisitors % remainingDays;
+    const conversionsRemainder = lostConversions % remainingDays;
+
+    return {
+        visitors: visitors.map((value, index) => {
+            if (index === lossDay) return 0;
+            return value + visitorsPerDay + (visitorsRemainder > 0 ? 1 : 0);
+        }),
+        conversions: conversions.map((value, index) => {
+            if (index === lossDay) return 0;
+            return value + conversionsPerDay + (conversionsRemainder > 0 ? 1 : 0);
+        })
+    };
+}
+
+function generateTimelineData(baseVisitors, variantVisitors, baseConversions, variantConversions, numDays, alpha, currentRuntimeDays, businessCycleDays, dataLoss) {
     // Determine appropriate time period
     const { period, numPeriods } = determineTimePeriod(numDays);
     const daysPerPeriod = period === 'day' ? 1 : period === 'week' ? 7 : 28;
@@ -392,8 +415,14 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
     }
 
     // Distribute conversions
-    const baseConversionsPerPeriod = distributeConversions(baseConversions, baseVisitorsPerPeriod);
-    const variantConversionsPerPeriod = distributeConversions(variantConversions, variantVisitorsPerPeriod);
+    var baseConversionsPerPeriod = distributeConversions(baseConversions, baseVisitorsPerPeriod);
+    var variantConversionsPerPeriod = distributeConversions(variantConversions, variantVisitorsPerPeriod);
+
+    if (dataLoss) {
+        const { visitors: newVisitors, conversions: newConversions } = addDataLoss(variantVisitorsPerPeriod, variantConversionsPerPeriod);
+        variantVisitorsPerPeriod = newVisitors;
+        variantConversionsPerPeriod = newConversions;
+    }
 
     // Calculate cumulative metrics
     let cumulativeBaseVisitors = 0;
@@ -514,13 +543,15 @@ class ChallengeDesign {
         baseRateMismatch = BASE_RATE_MISMATCH.NO,
         effectSize = EFFECT_SIZE.NONE,
         sampleRatioMismatch = SAMPLE_RATIO_MISMATCH.NO,
-        sampleProgress = SAMPLE_PROGRESS.TIME
+        sampleProgress = SAMPLE_PROGRESS.TIME,
+        visitorsLoss = VISITORS_LOSS.NO
     } = {}) {
         this.timeProgress = timeProgress;
         this.baseRateMismatch = baseRateMismatch;
         this.effectSize = effectSize;
         this.sampleRatioMismatch = sampleRatioMismatch;
         this.sampleProgress = sampleProgress;
+        this.visitorsLoss = visitorsLoss;
     }
 
     generate() {
@@ -529,7 +560,8 @@ class ChallengeDesign {
             this.baseRateMismatch,
             this.effectSize,
             this.sampleRatioMismatch,
-            this.sampleProgress
+            this.sampleProgress,
+            this.visitorsLoss
         );
     }
 
@@ -542,6 +574,12 @@ class ChallengeDesign {
         this.sampleRatioMismatch = SAMPLE_RATIO_MISMATCH.SMALL;
         return this;
     }
+
+    withVisitorsLoss() {
+        this.visitorsLoss = VISITORS_LOSS.YES;
+        return this;
+    }
+
 
 }
 
@@ -605,7 +643,7 @@ function partialLoser() {
     });
 }
 
-function fastCompletion() {
+function fastWinner() {
     return new ChallengeDesign({
         timeProgress: TIME_PROGRESS.PARTIAL_WEEKS,
         baseRateMismatch: BASE_RATE_MISMATCH.NO,
@@ -625,7 +663,7 @@ function slowCompletion() {
     });
 }
 
-function fastCompletionWithPartialWeek() {
+function fastWinnerWithPartialWeek() {
     return new ChallengeDesign({
         timeProgress: TIME_PROGRESS.PARTIAL,
         baseRateMismatch: BASE_RATE_MISMATCH.NO,
@@ -641,13 +679,15 @@ const SAMPLE_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", TIME: "TIME" };
 const BASE_RATE_MISMATCH = { NO: 10000000, YES: 100 };
 const EFFECT_SIZE = { NONE: 0, IMPROVEMENT: 0.8, LARGE_IMPROVEMENT: 2, DEGRADATION: -0.8, LARGE_DEGRADATION: -2 };
 const SAMPLE_RATIO_MISMATCH = { NO: 0.5, LARGE: 0.4, SMALL: 0.48 };
+const VISITORS_LOSS = { NO: false, YES: true };
 
 function generateABTestChallenge(
     timeProgress = TIME_PROGRESS.FULL,
     baseRateMismatch = BASE_RATE_MISMATCH.NO,
     effectSize = EFFECT_SIZE.NONE,
     sampleRatioMismatch = SAMPLE_RATIO_MISMATCH.NO,
-    sampleProgress = SAMPLE_PROGRESS.TIME) {
+    sampleProgress = SAMPLE_PROGRESS.TIME,
+    visitorsLoss = VISITORS_LOSS.NO) {
 
     // Predefined options for each parameter
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
@@ -716,10 +756,10 @@ function generateABTestChallenge(
         actualVisitorsTotal = Math.floor(requiredSampleSizePerVariant * 1.95);
     }
 
-    actualVisitorsTotal = Math.ceil(actualVisitorsTotal / (2*sampleRatioMismatch));
+    actualVisitorsTotal = Math.ceil(actualVisitorsTotal / (2 * sampleRatioMismatch));
 
-    const actualVisitorsBase = sampleBinomial(actualVisitorsTotal, sampleRatioMismatch);
-    const actualVisitorsVariant = actualVisitorsTotal - actualVisitorsBase;
+    var actualVisitorsBase = sampleBinomial(actualVisitorsTotal, sampleRatioMismatch);
+    var actualVisitorsVariant = actualVisitorsTotal - actualVisitorsBase;
 
     const actualConversionsBase = Math.ceil(actualVisitorsBase * actualBaseConversionRate);
     const actualConversionsVariant = sampleBinomial(actualVisitorsVariant, adjustedVariantRate);
@@ -738,6 +778,8 @@ function generateABTestChallenge(
         ALPHA
     );
 
+    const dataLoss = true;
+
     // Generate timeline data
     const timelineData = generateTimelineData(
         actualVisitorsBase,
@@ -747,7 +789,8 @@ function generateABTestChallenge(
         currentRuntimeDays,
         ALPHA,
         currentRuntimeDays,
-        BUSINESS_CYCLE_DAYS
+        BUSINESS_CYCLE_DAYS,
+        visitorsLoss
     );
 
     // Calculate uplift as relative percentage change
@@ -854,7 +897,7 @@ function analyzeExperiment(experiment) {
             actualConversionsVariant,
             pValue,
             confidenceIntervalDifference,
-            timeline: { currentRuntimeDays }
+            timeline: { currentRuntimeDays, timePoints }
         },
         experiment: {
             alpha,
@@ -886,15 +929,21 @@ function analyzeExperiment(experiment) {
     const hasTrafficMismatch = false;
     const lowSampleSize = actualVisitorsBase < requiredSampleSizePerVariant || actualVisitorsVariant < requiredSampleSizePerVariant;
 
+    // Check for data loss (periods with zero visitors)
+    const dataLossIndex = timePoints.findIndex(point =>
+        point.base.visitors === 0 || point.variant.visitors === 0
+    );
+    const hasDataLoss = dataLossIndex !== -1;
+
     const fullWeek = currentRuntimeDays >= 7 && currentRuntimeDays % 7 === 0;
     const finished = requiredRuntimeDays === currentRuntimeDays;
     const significant = pValue < alpha;
     const isEffectPositive = actualConversionsBase < actualConversionsVariant;
 
-
     const mismatch = hasSampleRatioMismatch ||
         hasBaseRateMismatch ||
-        hasTrafficMismatch;
+        hasTrafficMismatch ||
+        hasDataLoss;
 
     if (mismatch) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
@@ -929,6 +978,8 @@ function analyzeExperiment(experiment) {
             hasBaseRateMismatch: hasBaseRateMismatch,
             hasTrafficMismatch: hasTrafficMismatch,
             hasInsufficientSampleSize: lowSampleSize,
+            hasDataLoss: hasDataLoss,
+            dataLossIndex: dataLossIndex,
             ratioMismatch: {
                 pValue: ratioPValue
             },

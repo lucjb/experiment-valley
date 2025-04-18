@@ -572,8 +572,19 @@ const ChartManager = {
         return completeTimeline.map((point, index) => {
             const { type, startDay } = point.period;
             const config = periodConfig[type];
-            const label = config.label(startDay);
-            return index === timelineData.lastFullBusinessCycleIndex ? `[${label}]` : label;
+            let label = config.label(startDay);
+            
+            // Add brackets for last full period
+            if (index === timelineData.lastFullBusinessCycleIndex) {
+                label = `[${label}]`;
+            }
+            
+            // Add warning for data loss in debug mode
+            if (UIController.debugMode() && window.currentAnalysis?.analysis?.dataLossIndex === index) {
+                label = `${label} ⚠️`;
+            }
+            
+            return label;
         });
     },
 
@@ -627,11 +638,32 @@ const ChartManager = {
         // Destroy existing chart if it exists
         this.destroyChart(canvasId);
 
+        // Add data loss message to tooltip if in debug mode and there's data loss
+        const tooltipCallbacks = {
+            ...options.plugins?.tooltip?.callbacks,
+            afterBody: (tooltipItems) => {
+                const index = tooltipItems[0]?.dataIndex;
+                if (UIController.debugMode() && window.currentAnalysis?.analysis?.dataLossIndex === index) {
+                    return ['\n⚠️ Data Loss Detected'];
+                }
+                return [];
+            }
+        };
+
         // Create new chart with merged options
         this.charts[canvasId] = new Chart(canvas, {
             type,
             data,
-            options: this.mergeChartOptions(options, data.viewType)
+            options: this.mergeChartOptions({
+                ...options,
+                plugins: {
+                    ...options.plugins,
+                    tooltip: {
+                        ...options.plugins?.tooltip,
+                        callbacks: tooltipCallbacks
+                    }
+                }
+            }, data.viewType)
         });
 
         return this.charts[canvasId];
