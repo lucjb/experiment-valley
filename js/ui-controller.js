@@ -237,17 +237,25 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [winner().withBaseRateMismatch(), loser(), inconclusive()],
+                1: [winner().withSampleRatioMismatch().withBaseRateMismatch(), loser(), inconclusive().withBaseRateMismatch()],
                 2: [partialWinner(), partialLoser(), fastCompletion()],
-                3: [slowCompletion(), fastCompletionWithPartialWeek(), inconclusive().withBaseRateMismatch()],
+                3: [slowCompletion(), fastCompletionWithPartialWeek(), inconclusive()],
             };
 
             // Define round captions
             const roundCaptions = {
                 1: "Warm Up!", // First round caption
-                2: "Easy", // Second round caption
+                2: "Let's Begin!", // Second round caption
                 // Add more round captions here as needed
             };
+
+            const caption = roundCaptions[this.state.currentRound] || "";
+
+            // Reset visitors header
+            const visitorsHeader = document.querySelector('.metrics-table th:nth-child(2)');
+            if (visitorsHeader) {
+                visitorsHeader.textContent = 'Visitors';
+            }
 
             // Generate a new challenge based on round and experiment number
             let challengeDesign;
@@ -347,6 +355,7 @@ const UIController = {
     addDebugAlerts() {
         this.addBaseConversionRateMissmatchAlert();
         this.addSampleSizeWarning();
+        this.addSampleRatioMismatchAlert();
     },
 
     addBaseConversionRateMissmatchAlert() {
@@ -391,6 +400,23 @@ const UIController = {
             completeTextElement.appendChild(this.createWarningIcon(message));
             completeTextElement.appendChild(document.createTextNode(` Complete | ${current}d | ${totalVisitors.toLocaleString()}v`));
         }
+    },
+
+    addSampleRatioMismatchAlert() {
+        if (!this.debugMode()) return;
+
+        const analysis = window.currentAnalysis;
+        if (!analysis || !analysis.analysis.hasSignificantRatioMismatch) return;
+
+        const visitorsHeader = document.querySelector('.metrics-table th:nth-child(2)');
+        if (!visitorsHeader) return;
+
+        const { ratioMismatch } = analysis.analysis;
+        const message = `Sample Ratio Mismatch detected (p-value: ${ratioMismatch.pValue.toExponential(2)})`;
+        
+        visitorsHeader.textContent = '';
+        visitorsHeader.appendChild(document.createTextNode('Visitors'));
+        visitorsHeader.appendChild(this.createWarningIcon(message));
     },
 
     updateExperimentDisplay() {

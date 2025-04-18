@@ -315,6 +315,20 @@ button:disabled {
     text-align: left;
     background-color: #f9fafb;
     font-weight: 600;
+    position: relative;
+}
+
+.metrics-table th .warning-icon {
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+.metrics-table th .tooltip-content {
+    width: 300px;
+    max-width: 90vw;
+    white-space: normal;
+    line-height: 1.4;
+    text-align: left;
 }
 
 .metrics-table td {

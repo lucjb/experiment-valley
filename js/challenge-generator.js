@@ -538,6 +538,11 @@ class ChallengeDesign {
         return this;
     }
 
+    withSampleRatioMismatch() {
+        this.sampleRatioMismatch = SAMPLE_RATIO_MISMATCH.SMALL;
+        return this;
+    }
+
 }
 
 function winner() {
@@ -635,7 +640,7 @@ const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY", PARTIA
 const SAMPLE_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", TIME: "TIME" };
 const BASE_RATE_MISMATCH = { NO: 10000000, YES: 100 };
 const EFFECT_SIZE = { NONE: 0, IMPROVEMENT: 0.8, LARGE_IMPROVEMENT: 2, DEGRADATION: -0.8, LARGE_DEGRADATION: -2 };
-const SAMPLE_RATIO_MISMATCH = { NO: 0.5, LARGE: 0.3, SMALL: 0.51 };
+const SAMPLE_RATIO_MISMATCH = { NO: 0.5, LARGE: 0.4, SMALL: 0.48 };
 
 function generateABTestChallenge(
     timeProgress = TIME_PROGRESS.FULL,
@@ -710,6 +715,9 @@ function generateABTestChallenge(
     if (sampleProgress === SAMPLE_PROGRESS.PARTIAL && timeProgress === TIME_PROGRESS.FULL) {
         actualVisitorsTotal = Math.floor(requiredSampleSizePerVariant * 1.95);
     }
+
+    actualVisitorsTotal = Math.ceil(actualVisitorsTotal / (2*sampleRatioMismatch));
+
     const actualVisitorsBase = sampleBinomial(actualVisitorsTotal, sampleRatioMismatch);
     const actualVisitorsVariant = actualVisitorsTotal - actualVisitorsBase;
 
@@ -871,7 +879,7 @@ function analyzeExperiment(experiment) {
     const zScore = Math.abs(actualBaseRate - baseConversionRate) / standardError;
     // Two-tailed p-value computation using normal distribution
     const baseRateTestpValue = 2 * (1 - jStat.normal.cdf(zScore, 0, 1));
-    const hasBaseRateMismatch = baseRateTestpValue < 0.5;
+    const hasBaseRateMismatch = baseRateTestpValue < 0.0001;
 
     const actualDailyTraffic = (actualVisitorsBase + actualVisitorsVariant) / currentRuntimeDays;
     const trafficDifference = (actualDailyTraffic - visitorsPerDay) / visitorsPerDay;
