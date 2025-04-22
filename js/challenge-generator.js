@@ -678,7 +678,7 @@ const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY", PARTIA
 const SAMPLE_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", TIME: "TIME" };
 const BASE_RATE_MISMATCH = { NO: 10000000, YES: 100 };
 const EFFECT_SIZE = { NONE: 0, IMPROVEMENT: 0.8, LARGE_IMPROVEMENT: 2, DEGRADATION: -0.8, LARGE_DEGRADATION: -2 };
-const SAMPLE_RATIO_MISMATCH = { NO: 0.5, LARGE: 0.4, SMALL: 0.48 };
+const SAMPLE_RATIO_MISMATCH = { NO: 0.5, LARGE: 0.4, SMALL: 0.47 };
 const VISITORS_LOSS = { NO: false, YES: true };
 
 function generateABTestChallenge(
@@ -836,7 +836,6 @@ function generateABTestChallenge(
             timeline: {
                 ...timelineData,
                 currentRuntimeDays: currentRuntimeDays,
-                //fullBusinessCyclesBaseConversionRate: fullBusinessCyclesBaseConversionRate
             },
             uplift: conversionRateUplift,
             upliftConfidenceInterval: upliftCI,

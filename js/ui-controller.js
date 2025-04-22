@@ -243,10 +243,12 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [winner(), loser(), inconclusive().withBaseRateMismatch()],
-                2: [partialWinner().withSampleRatioMismatch(), partialLoser(), fastWinner()],
-                3: [slowCompletion(), fastWinnerWithPartialWeek(), inconclusive().withVisitorsLoss()],
-                4: [winner().withSampleRatioMismatch(), slowCompletion().withBaseRateMismatch(), inconclusive()],
+                1: [winner(), inconclusive(), partialWinner()],
+                2: [partialLoser().withBaseRateMismatch(), inconclusive().withVisitorsLoss(), partialWinner().withSampleRatioMismatch()],
+                3: [slowCompletion(), fastWinner(), fastWinnerWithPartialWeek()],
+                4: [slowCompletion().withBaseRateMismatch(), fastWinnerWithPartialWeek().withVisitorsLoss(), loser()],
+                5: [partialWinner(), partialLoser(), inconclusive()]
+  
             };
 
             // Define round captions
@@ -266,24 +268,20 @@ const UIController = {
 
             // Generate a new challenge based on round and experiment number
             let challengeDesign;
-            if (challengeSequences[this.state.currentRound]) {
-                // Use predefined sequence for this round
-                const sequence = challengeSequences[this.state.currentRound];
-                const experimentIndex = this.state.experimentsInCurrentRound;
+            const sequence = challengeSequences[this.state.currentRound];
+            const experimentIndex = this.state.experimentsInCurrentRound;
 
-                if (experimentIndex < sequence.length) {
-                    // Use the predefined challenge generator for this experiment
-                    challengeDesign = sequence[experimentIndex];
-                    console.log(`Round ${this.state.currentRound}, Experiment ${experimentIndex + 1}: Using ${sequence[experimentIndex].name} challenge generator`);
-                } else {
-                    // Fall back to random challenge if we somehow exceed the sequence length
-                    challengeDesign = new ChallengeDesign();
-                    console.log(`Round ${this.state.currentRound}, Experiment ${experimentIndex + 1}: Using random challenge generator (fallback)`);
-                }
+            if (sequence && experimentIndex < sequence.length) {
+                // Use the predefined challenge generator for this experiment
+                challengeDesign = sequence[experimentIndex];
             } else {
-                // For rounds without a predefined sequence, use random challenges
-                challengeDesign = new ChallengeDesign();
-                console.log(`Round ${this.state.currentRound}, Experiment ${this.state.experimentsInCurrentRound + 1}: Using random challenge generator`);
+                // After predefined sequences or for rounds without a sequence, randomly sample from all scenarios
+                const allScenarios = Object.values(challengeSequences).flat();
+                challengeDesign = allScenarios[Math.floor(Math.random() * allScenarios.length)];
+            }
+
+            if (this.state.currentRound === 1) {
+                challengeDesign = partialWinner().withSampleRatioMismatch();
             }
 
             // Generate the challenge from the design
