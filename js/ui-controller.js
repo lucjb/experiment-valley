@@ -281,7 +281,7 @@ const UIController = {
             }
 
             if (this.state.currentRound === 1) {
-                challengeDesign = partialWinner().withSampleRatioMismatch();
+                challengeDesign = inconclusive();
             }
 
             // Generate the challenge from the design
@@ -416,8 +416,7 @@ const UIController = {
         const visitorsHeader = document.querySelector('.metrics-table th:nth-child(2)');
         if (!visitorsHeader) return;
 
-        const { ratioMismatch } = analysis.analysis;
-        const message = `Sample Ratio Mismatch detected (p-value: ${ratioMismatch.pValue.toExponential(2)})`;
+        const message = `Sample Ratio Mismatch detected (p-value<0.0001)`;
         
         visitorsHeader.textContent = '';
         visitorsHeader.appendChild(document.createTextNode('Visitors'));
@@ -439,7 +438,6 @@ const UIController = {
         document.getElementById('exp-visitors').textContent = challenge.experiment.visitorsPerDay.toLocaleString();
         document.getElementById('exp-required-sample').textContent = challenge.experiment.requiredSampleSizePerVariant.toLocaleString();
         document.getElementById('exp-total-required-sample').textContent = (challenge.experiment.requiredSampleSizePerVariant * 2).toLocaleString();
-        document.getElementById('exp-cycle-days').textContent = challenge.experiment.businessCycleDays === 1 ? '1 day' : '1 week';
         document.getElementById('exp-required-days').textContent = `${challenge.experiment.requiredRuntimeDays} days`;
 
         // Update conversion rates tab header if there's data loss

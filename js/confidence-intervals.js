@@ -215,19 +215,7 @@ function updateConfidenceIntervals(challenge) {
             diffCIMarker.style.left = `${meanPercent}%`;
         }
 
-        if (lowLabel) {
-            lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
-            lowLabel.textContent = formatPercent(lowDiff);
-            lowLabel.style.left = `${lowPercent}%`;
-        }
-
-        if (highLabel) {
-            highLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
-            highLabel.textContent = formatPercent(highDiff);
-            highLabel.style.left = `${highPercent}%`;
-        }
-
-        // Update zero line
+        // Update zero line and label first
         const zeroLine = diffContainer.querySelector('.zero-line') || document.createElement('div');
         zeroLine.className = 'zero-line absolute h-full w-px bg-gray-400';
         zeroLine.style.left = `${zeroPercent}%`;
@@ -235,13 +223,49 @@ function updateConfidenceIntervals(challenge) {
             diffContainer.appendChild(zeroLine);
         }
 
-        // Update zero label
         const zeroLabel = diffContainer.querySelector('.zero-label') || document.createElement('span');
         zeroLabel.className = 'zero-label absolute text-xs font-medium transform -translate-x-1/2 text-gray-400 top-1/2 -translate-y-1/2';
         zeroLabel.style.left = `${zeroPercent}%`;
         zeroLabel.textContent = '0%';
         if (!diffContainer.querySelector('.zero-label')) {
             diffContainer.appendChild(zeroLabel);
+        }
+
+        // Update labels after zero line is in place
+        if (lowLabel) {
+            lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
+            lowLabel.textContent = formatPercent(lowDiff);
+            
+            // Position low label
+            if (Math.abs(lowPercent - zeroPercent) < 5) { // 5% threshold for overlap
+                if (lowDiff > 0) {
+                    // If positive and close to zero, push it into the bar
+                    lowLabel.style.left = `${lowPercent + 3}%`; // Push 3% into the bar
+                } else {
+                    // If negative and close to zero, push it out of the bar
+                    lowLabel.style.left = `${lowPercent - 3}%`; // Push 3% out of the bar
+                }
+            } else {
+                lowLabel.style.left = `${lowPercent}%`;
+            }
+        }
+
+        if (highLabel) {
+            highLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
+            highLabel.textContent = formatPercent(highDiff);
+            
+            // Position high label
+            if (Math.abs(highPercent - zeroPercent) < 5) { // 5% threshold for overlap
+                if (highDiff > 0) {
+                    // If positive and close to zero, push it out of the bar
+                    highLabel.style.left = `${highPercent + 3}%`; // Push 3% out of the bar
+                } else {
+                    // If negative and close to zero, push it into the bar
+                    highLabel.style.left = `${highPercent - 3}%`; // Push 3% into the bar
+                }
+            } else {
+                highLabel.style.left = `${highPercent}%`;
+            }
         }
     }
 
@@ -289,19 +313,7 @@ function updateConfidenceIntervals(challenge) {
             upliftMarker.style.left = `${toViewPercent(upliftValue)}%`;
         }
 
-        if (lowLabel) {
-            lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
-            lowLabel.textContent = formatPercent(lowUplift);
-            lowLabel.style.left = `${toViewPercent(lowUplift)}%`;
-        }
-
-        if (highLabel) {
-            highLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
-            highLabel.textContent = formatPercent(highUplift);
-            highLabel.style.left = `${toViewPercent(highUplift)}%`;
-        }
-
-        // Add zero line
+        // Add zero line and label first
         const zeroLine = container.querySelector('.zero-line') || document.createElement('div');
         zeroLine.className = 'absolute h-full w-px bg-gray-400';
         zeroLine.style.left = `${toViewPercent(0)}%`;
@@ -309,13 +321,49 @@ function updateConfidenceIntervals(challenge) {
             container.appendChild(zeroLine);
         }
 
-        // Add zero label
         const zeroLabel = container.querySelector('.zero-label') || document.createElement('span');
         zeroLabel.className = 'zero-label absolute text-xs font-medium transform -translate-x-1/2 text-gray-400 top-1/2 -translate-y-1/2';
         zeroLabel.style.left = `${toViewPercent(0)}%`;
         zeroLabel.textContent = '0%';
         if (!container.querySelector('.zero-label')) {
             container.appendChild(zeroLabel);
+        }
+
+        // Update labels after zero line is in place
+        if (lowLabel) {
+            lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
+            lowLabel.textContent = formatPercent(lowUplift);
+            
+            // Position low label
+            if (Math.abs(toViewPercent(lowUplift) - toViewPercent(0)) < 5) { // 5% threshold for overlap
+                if (lowUplift > 0) {
+                    // If positive and close to zero, push it into the bar
+                    lowLabel.style.left = `${toViewPercent(lowUplift) + 3}%`; // Push 3% into the bar
+                } else {
+                    // If negative and close to zero, push it out of the bar
+                    lowLabel.style.left = `${toViewPercent(lowUplift) - 3}%`; // Push 3% out of the bar
+                }
+            } else {
+                lowLabel.style.left = `${toViewPercent(lowUplift)}%`;
+            }
+        }
+
+        if (highLabel) {
+            highLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
+            highLabel.textContent = formatPercent(highUplift);
+            
+            // Position high label
+            if (Math.abs(toViewPercent(highUplift) - toViewPercent(0)) < 5) { // 5% threshold for overlap
+                if (highUplift > 0) {
+                    // If positive and close to zero, push it out of the bar
+                    highLabel.style.left = `${toViewPercent(highUplift) + 3}%`; // Push 3% out of the bar
+                } else {
+                    // If negative and close to zero, push it into the bar
+                    highLabel.style.left = `${toViewPercent(highUplift) - 3}%`; // Push 3% into the bar
+                }
+            } else {
+                highLabel.style.left = `${toViewPercent(highUplift)}%`;
+            }
         }
     }
 }
