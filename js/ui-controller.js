@@ -13,7 +13,10 @@ const UIController = {
         currentRound: 1,
         experimentsInCurrentRound: 0,
         correctInCurrentRound: 0,
-        hasSubmitted: false
+        hasSubmitted: false,
+        impact: 0,
+        userCumulativeEffect: 0,
+        naiveCumulativeEffect: 0
     },
 
     init() {
@@ -280,9 +283,10 @@ const UIController = {
                 challengeDesign = allScenarios[Math.floor(Math.random() * allScenarios.length)];
             }
 
-            if (this.state.currentRound === 1) {
-                challengeDesign = inconclusive();
+            if (true || this.state.currentRound === 1) {
+                //challengeDesign = partialLoser();
             }
+            //challengeDesign = partialLoser();
 
             // Generate the challenge from the design
             window.currentExperiment = challengeDesign.generate();
@@ -804,6 +808,72 @@ const UIController = {
 
             // Use the global analysis
             const analysis = window.currentAnalysis;
+            const experiment = window.currentExperiment;
+
+            // Calculate impact
+            const actualBaseRate = experiment.simulation.actualBaseConversionRate;
+            const actualVariantRate = experiment.simulation.variantConversionRate;
+            const actualEffect = experiment.simulation.actualEffectSize;
+            
+            // Calculate user's impact for this challenge
+            let userImpact = 0;
+            let userChoice = "None";
+            if (this.state.implementDecision === "KEEP_VARIANT") {
+                userImpact = actualEffect;
+                userChoice = "Variant";
+            } else if (this.state.implementDecision === "KEEP_BASE") {
+                userChoice = "Base";
+            } else if (this.state.implementDecision === "KEEP_RUNNING") {
+                userChoice = "Keep Running";
+            }
+
+            // Calculate naive decision maker's impact for this challenge
+            let naiveImpact = 0;
+            let naiveChoice = "None";
+            
+            // Get the cumulative difference after 14 days from the timeline
+            const timeline = experiment.simulation.timeline;
+            const daysElapsed = timeline.currentRuntimeDays;
+            
+            // Find the time point that includes day 14
+            const day14Point = timeline.timePoints.find(point => 
+                point.period.startDay <= 14 && point.period.endDay >= 14
+            );
+            const cumulativeDiff = day14Point ? day14Point.difference.cumulativeRate : 0;
+            
+            console.log('Day 14 Point:', day14Point);
+            console.log('Cumulative Difference on Day 14:', cumulativeDiff);
+            
+            if (daysElapsed >= 14) {
+                // After 14 days, make decision based on cumulative difference on day 14
+                if (cumulativeDiff > 0) {
+                    naiveImpact = actualEffect;
+                    naiveChoice = "Variant";
+                } else if (cumulativeDiff < 0) {
+                    naiveChoice = "Base";
+                } else {
+                    naiveChoice = "Keep Running";
+                }
+            } else {
+                // Before 14 days, keep running
+                naiveChoice = "Keep Running";
+            }
+
+            // Update cumulative effects
+            this.state.userCumulativeEffect += userImpact;
+            this.state.naiveCumulativeEffect += naiveImpact;
+
+            // Update impact score as the difference between cumulative effects
+            this.state.impact = this.state.userCumulativeEffect - this.state.naiveCumulativeEffect;
+
+            // Update impact displays
+            this.updateImpactDisplay();
+            document.getElementById('modal-user-choice').textContent = userChoice;
+            document.getElementById('modal-user-impact').textContent = formatPercent(userImpact);
+            document.getElementById('modal-naive-choice').textContent = naiveChoice;
+            document.getElementById('modal-naive-impact').textContent = formatPercent(naiveImpact);
+            document.getElementById('modal-actual-effect').textContent = formatPercent(actualEffect);
+            document.getElementById('modal-cumulative-impact').textContent = formatPercent(this.state.impact);
 
             // Compare user's choices with analysis result
             let correctChoices = 0;
@@ -1034,6 +1104,7 @@ const UIController = {
             document.getElementById('final-score').textContent = this.state.score;
             document.getElementById('final-accuracy').textContent = `${Math.round((this.state.score / this.state.totalAttempts) * 100)}%`;
             document.getElementById('final-round').textContent = this.state.currentRound;
+            document.getElementById('final-impact').textContent = this.state.impact.toLocaleString();
 
             completionModal.classList.remove('hidden');
             setTimeout(() => {
@@ -1064,12 +1135,16 @@ const UIController = {
         this.state.currentRound = 1; // Reset round number for new session
         this.state.experimentsInCurrentRound = 0;
         this.state.correctInCurrentRound = 0;
+        this.state.impact = 0;
+        this.state.userCumulativeEffect = 0;
+        this.state.naiveCumulativeEffect = 0;
 
         // Update displays
         this.updateScoreDisplay();
         this.updateStreakDisplay();
         this.updateAccuracyDisplay(0);
         this.updateRoundDisplay(); // Update the round display
+        this.updateImpactDisplay(); // Update impact display
         document.getElementById('current-experiment').textContent = this.state.currentExperiment;
 
         // Reset button text
@@ -1094,6 +1169,17 @@ const UIController = {
     shareOnLinkedIn() {
         const text = `I just completed the A/B Testing Gym challenge with a score of ${this.state.score} and ${Math.round((this.state.score / this.state.totalAttempts) * 100)}% accuracy! Try it yourself!`;
         window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(text)}`);
+    },
+
+    updateImpactDisplay() {
+        const headerImpact = document.getElementById('impact');
+        const modalImpact = document.getElementById('modal-impact');
+        if (headerImpact) {
+            headerImpact.textContent = formatPercent(this.state.impact);
+        }
+        if (modalImpact) {
+            modalImpact.textContent = formatPercent(this.state.impact);
+        }
     }
 };
 

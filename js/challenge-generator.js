@@ -334,7 +334,7 @@ function distributeConversions(totalConversions, dailyVisitors) {
 }
 
 function determineTimePeriod(numDays) {
-    if (numDays <= 28) {
+    if (numDays <= 56) {
         return { period: 'day', numPeriods: numDays };
     } else if (numDays <= 196) { // 28 weeks
         return { period: 'week', numPeriods: Math.ceil(numDays / 7) };
@@ -587,7 +587,7 @@ function winner() {
     return new ChallengeDesign({
         timeProgress: TIME_PROGRESS.FULL,
         baseRateMismatch: BASE_RATE_MISMATCH.NO,
-        effectSize: EFFECT_SIZE.IMPROVEMENT,
+        effectSize: EFFECT_SIZE.SMALL_IMPROVEMENT,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.TIME
     });
@@ -607,7 +607,7 @@ function loser() {
     return new ChallengeDesign({
         timeProgress: TIME_PROGRESS.FULL,
         baseRateMismatch: BASE_RATE_MISMATCH.NO,
-        effectSize: EFFECT_SIZE.DEGRADATION,
+        effectSize: EFFECT_SIZE.SMALL_DEGRADATION,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.TIME
     });
@@ -627,7 +627,7 @@ function partialWinner() {
     return new ChallengeDesign({
         timeProgress: TIME_PROGRESS.PARTIAL,
         baseRateMismatch: BASE_RATE_MISMATCH.NO,
-        effectSize: EFFECT_SIZE.IMPROVEMENT,
+        effectSize: EFFECT_SIZE.SMALL_IMPROVEMENT,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.TIME
     });
@@ -637,7 +637,7 @@ function partialLoser() {
     return new ChallengeDesign({
         timeProgress: TIME_PROGRESS.PARTIAL,
         baseRateMismatch: BASE_RATE_MISMATCH.NO,
-        effectSize: EFFECT_SIZE.LARGE_DEGRADATION,
+        effectSize: EFFECT_SIZE.SMALL_DEGRADATION,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.TIME
     });
@@ -647,7 +647,7 @@ function fastWinner() {
     return new ChallengeDesign({
         timeProgress: TIME_PROGRESS.PARTIAL_WEEKS,
         baseRateMismatch: BASE_RATE_MISMATCH.NO,
-        effectSize: EFFECT_SIZE.IMPROVEMENT,
+        effectSize: EFFECT_SIZE.SMALL_IMPROVEMENT,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.FULL
     });
@@ -657,7 +657,7 @@ function slowCompletion() {
     return new ChallengeDesign({
         timeProgress: TIME_PROGRESS.FULL,
         baseRateMismatch: BASE_RATE_MISMATCH.NO,
-        effectSize: EFFECT_SIZE.IMPROVEMENT,
+        effectSize: EFFECT_SIZE.SMALL_IMPROVEMENT,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.PARTIAL
     });
@@ -667,7 +667,7 @@ function fastWinnerWithPartialWeek() {
     return new ChallengeDesign({
         timeProgress: TIME_PROGRESS.PARTIAL,
         baseRateMismatch: BASE_RATE_MISMATCH.NO,
-        effectSize: EFFECT_SIZE.IMPROVEMENT,
+        effectSize: EFFECT_SIZE.SMALL_IMPROVEMENT,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.FULL
     });
@@ -677,7 +677,7 @@ function fastWinnerWithPartialWeek() {
 const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY", PARTIAL_WEEKS: "PARTIAL_WEEKS" };
 const SAMPLE_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", TIME: "TIME" };
 const BASE_RATE_MISMATCH = { NO: 10000000, YES: 100 };
-const EFFECT_SIZE = { NONE: 0, IMPROVEMENT: 0.8, LARGE_IMPROVEMENT: 2, DEGRADATION: -0.8, LARGE_DEGRADATION: -2 };
+const EFFECT_SIZE = { NONE: 0, SMALL_IMPROVEMENT: 0.05, IMPROVEMENT: 0.8, LARGE_IMPROVEMENT: 2, DEGRADATION: -0.8, SMALL_DEGRADATION: -0.05, LARGE_DEGRADATION: -2 };
 const SAMPLE_RATIO_MISMATCH = { NO: 0.5, LARGE: 0.4, SMALL: 0.47 };
 const VISITORS_LOSS = { NO: false, YES: true };
 
@@ -692,17 +692,17 @@ function generateABTestChallenge(
     // Predefined options for each parameter
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
     const BETA_OPTIONS = [0.2];
-    const BASE_CONVERSION_RATE_OPTIONS = [0.0127, 0.0523, 0.0814, 0.102, 0.146];
-    const MRE_OPTIONS = [0.005, 0.01, 0.02];
-    const VISITORS_PER_DAY_OPTIONS = [150, 1200];
+    const SAMPLE_SIZE_INPUT_OPTIONS = [[0.0841, 14650, 0.002], [0.0531, 1350, 0.01], [0.0127, 12300, 0.001]]
     const BUSINESS_CYCLE_DAYS_OPTIONS = [7];
 
     // Randomly select one option from each array
     const ALPHA = ALPHA_OPTIONS[Math.floor(Math.random() * ALPHA_OPTIONS.length)];
     const BETA = BETA_OPTIONS[Math.floor(Math.random() * BETA_OPTIONS.length)];
-    const BASE_CONVERSION_RATE = BASE_CONVERSION_RATE_OPTIONS[Math.floor(Math.random() * BASE_CONVERSION_RATE_OPTIONS.length)];
-    const MRE = MRE_OPTIONS[Math.floor(Math.random() * MRE_OPTIONS.length)];
-    const VISITORS_PER_DAY = VISITORS_PER_DAY_OPTIONS[Math.floor(Math.random() * VISITORS_PER_DAY_OPTIONS.length)];
+    
+    const SAMPLE_SIZE_INPUT = SAMPLE_SIZE_INPUT_OPTIONS[Math.floor(Math.random() * SAMPLE_SIZE_INPUT_OPTIONS.length)];
+    const BASE_CONVERSION_RATE = SAMPLE_SIZE_INPUT[0];
+    const VISITORS_PER_DAY = SAMPLE_SIZE_INPUT[1];
+    const MRE = SAMPLE_SIZE_INPUT[2];
     const BUSINESS_CYCLE_DAYS = BUSINESS_CYCLE_DAYS_OPTIONS[Math.floor(Math.random() * BUSINESS_CYCLE_DAYS_OPTIONS.length)];
 
     // Calculate required sample size
@@ -738,54 +738,48 @@ function generateABTestChallenge(
     );
 
     // Calculate effect size as a relative change instead of absolute
-    const relativeEffectSize = effectSize * MRE / actualBaseConversionRate //sampleNormalDistribution(MRE / BASE_CONVERSION_RATE, MRE / (10 * BASE_CONVERSION_RATE));
+    const actualRelativeEffectSize = effectSize * MRE / actualBaseConversionRate //sampleNormalDistribution(MRE / BASE_CONVERSION_RATE, MRE / (10 * BASE_CONVERSION_RATE));
 
     // Apply effect size as a relative change, ensuring we don't go below 20% of base rate
-    const variantConversionRate = actualBaseConversionRate * (1 + relativeEffectSize);
-
-    // Ensure variant rate is never zero or too close to zero
-    const minimumRate = actualBaseConversionRate * 0.2; // minimum 20% of base rate
-    const adjustedVariantRate = Math.max(minimumRate, variantConversionRate);
+    const actualVariantConversionRate = actualBaseConversionRate * (1 + actualRelativeEffectSize);
 
 
-    var actualVisitorsTotal = currentRuntimeDays * VISITORS_PER_DAY + sampleBinomial(VISITORS_PER_DAY, 0.1);
+    var observedVisitorsTotal = currentRuntimeDays * VISITORS_PER_DAY + sampleBinomial(VISITORS_PER_DAY, 0.1);
     if (sampleProgress === SAMPLE_PROGRESS.FULL && (timeProgress === TIME_PROGRESS.PARTIAL_WEEKS || timeProgress === TIME_PROGRESS.PARTIAL)) {
-        actualVisitorsTotal = Math.floor(requiredSampleSizePerVariant * 2.05);
+        observedVisitorsTotal = Math.floor(requiredSampleSizePerVariant * 2.05);
     }
     if (sampleProgress === SAMPLE_PROGRESS.PARTIAL && timeProgress === TIME_PROGRESS.FULL) {
-        actualVisitorsTotal = Math.floor(requiredSampleSizePerVariant * 1.95);
+        observedVisitorsTotal = Math.floor(requiredSampleSizePerVariant * 1.95);
     }
 
-    actualVisitorsTotal = Math.ceil(actualVisitorsTotal / (2 * sampleRatioMismatch));
+    observedVisitorsTotal = Math.ceil(observedVisitorsTotal / (2 * sampleRatioMismatch));
 
-    var actualVisitorsBase = sampleBinomial(actualVisitorsTotal, sampleRatioMismatch);
-    var actualVisitorsVariant = actualVisitorsTotal - actualVisitorsBase;
+    var observedVisitorsBase = sampleBinomial(observedVisitorsTotal, sampleRatioMismatch);
+    var observedVisitorsVariant = observedVisitorsTotal - observedVisitorsBase;
 
-    const actualConversionsBase = Math.ceil(actualVisitorsBase * actualBaseConversionRate);
-    const actualConversionsVariant = sampleBinomial(actualVisitorsVariant, adjustedVariantRate);
+    const observedConversionsBase = Math.ceil(observedVisitorsBase * actualBaseConversionRate);
+    const observedConversionsVariant = sampleBinomial(observedVisitorsVariant, actualVariantConversionRate);
 
-    const { pValue } = computeTTest(actualConversionsBase, actualVisitorsBase, actualConversionsVariant, actualVisitorsVariant);
+    const { pValue } = computeTTest(observedConversionsBase, observedVisitorsBase, observedConversionsVariant, observedVisitorsVariant);
 
-    const ciBase = computeConfidenceInterval(actualConversionsBase / actualVisitorsBase, actualVisitorsBase, ALPHA);
-    const ciVariant = computeConfidenceInterval(actualConversionsVariant / actualVisitorsVariant, actualVisitorsVariant, ALPHA);
+    const ciBase = computeConfidenceInterval(observedConversionsBase / observedVisitorsBase, observedVisitorsBase, ALPHA);
+    const ciVariant = computeConfidenceInterval(observedConversionsVariant / observedVisitorsVariant, observedVisitorsVariant, ALPHA);
 
     // Calculate difference CI using the computeDifferenceConfidenceInterval function
     const ciDifference = computeDifferenceConfidenceInterval(
-        actualConversionsBase / actualVisitorsBase,
-        actualConversionsVariant / actualVisitorsVariant,
-        actualVisitorsBase,
-        actualVisitorsVariant,
+        observedConversionsBase / observedVisitorsBase,
+        observedConversionsVariant / observedVisitorsVariant,
+        observedVisitorsBase,
+        observedVisitorsVariant,
         ALPHA
     );
 
-    const dataLoss = true;
-
     // Generate timeline data
     const timelineData = generateTimelineData(
-        actualVisitorsBase,
-        actualVisitorsVariant,
-        actualConversionsBase,
-        actualConversionsVariant,
+        observedVisitorsBase,
+        observedVisitorsVariant,
+        observedConversionsBase,
+        observedConversionsVariant,
         currentRuntimeDays,
         ALPHA,
         currentRuntimeDays,
@@ -794,22 +788,23 @@ function generateABTestChallenge(
     );
 
     // Calculate uplift as relative percentage change
-    const actualBaseRate = actualConversionsBase / actualVisitorsBase;
-    const actualVariantRate = actualConversionsVariant / actualVisitorsVariant;
-    const conversionRateUplift = (actualVariantRate / actualBaseRate) - 1;
+    const observedBaseRate = observedConversionsBase / observedVisitorsBase;
+    const observedVariantRate = observedConversionsVariant / observedVisitorsVariant;
+    const observedConversionRateUplift = (observedVariantRate / observedBaseRate) - 1;
 
     // Calculate visitor and conversion uplifts
-    const visitorUplift = (actualVisitorsVariant / actualVisitorsBase) - 1;
-    const conversionUplift = (actualConversionsVariant / actualConversionsBase) - 1;
+    const visitorUplift = (observedVisitorsVariant / observedVisitorsBase) - 1;
+    const conversionUplift = (observedConversionsVariant / observedConversionsBase) - 1;
 
     const upliftCI = computeUpliftConfidenceInterval(
-        actualBaseRate,
-        actualVariantRate,
-        actualVisitorsBase,
-        actualVisitorsVariant,
+        observedBaseRate,
+        observedVariantRate,
+        observedVisitorsBase,
+        observedVisitorsVariant,
         ALPHA
     );
 
+    console.log(actualBaseConversionRate, actualVariantConversionRate,  actualVariantConversionRate - actualBaseConversionRate);
     return {
         experiment: {
             alpha: ALPHA,
@@ -822,13 +817,13 @@ function generateABTestChallenge(
             requiredRuntimeDays: requiredRuntimeDays
         },
         simulation: {
-            actualBaseConversionRate: actualBaseRate,
-            actualEffectSize: relativeEffectSize,
-            variantConversionRate: actualVariantRate,
-            actualVisitorsBase: actualVisitorsBase,
-            actualVisitorsVariant: actualVisitorsVariant,
-            actualConversionsBase: actualConversionsBase,
-            actualConversionsVariant: actualConversionsVariant,
+            actualBaseConversionRate: observedBaseRate,
+            actualEffectSize: actualVariantConversionRate - actualBaseConversionRate,
+            variantConversionRate: observedVariantRate,
+            actualVisitorsBase: observedVisitorsBase,
+            actualVisitorsVariant: observedVisitorsVariant,
+            actualConversionsBase: observedConversionsBase,
+            actualConversionsVariant: observedConversionsVariant,
             pValue: pValue,
             confidenceIntervalBase: ciBase,
             confidenceIntervalVariant: ciVariant,
@@ -837,7 +832,7 @@ function generateABTestChallenge(
                 ...timelineData,
                 currentRuntimeDays: currentRuntimeDays,
             },
-            uplift: conversionRateUplift,
+            uplift: observedConversionRateUplift,
             upliftConfidenceInterval: upliftCI,
             visitorUplift: visitorUplift,
             conversionUplift: conversionUplift

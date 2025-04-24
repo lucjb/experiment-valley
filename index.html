@@ -126,6 +126,10 @@
                             <span class="font-medium text-white">Accuracy: </span>
                             <span id="accuracy" class="text-xl md:text-2xl font-bold score-value">0%</span>
                         </div>
+                        <div>
+                            <span class="font-medium text-white">Impact: </span>
+                            <span id="impact" class="text-xl md:text-2xl font-bold score-value">0</span>
+                        </div>
                     </div>
                     <div class="text-sm font-medium text-white">Experiment <span id="current-experiment"
                             class="score-value text-lg">1</span>/3</div>
@@ -589,11 +593,20 @@
                     <div class="mt-2 px-7 py-3">
                         <p class="text-sm text-gray-500" id="feedback-message"></p>
                         <div class="mt-3">
-                            <p class="font-semibold">Current Score: <span id="modal-score" class="text-blue-600"></span>
-                            </p>
+                            <p class="font-semibold">Current Score: <span id="modal-score" class="text-blue-600"></span></p>
                             <p class="font-semibold">Streak: <span id="modal-streak" class="text-orange-600"></span></p>
-                            <p class="font-semibold">Accuracy: <span id="modal-accuracy" class="text-purple-600"></span>
-                            </p>
+                            <p class="font-semibold">Accuracy: <span id="modal-accuracy" class="text-purple-600"></span></p>
+                            <div class="mt-2 border-t pt-2">
+                                <p class="font-semibold text-sm text-gray-700">Impact Details:</p>
+                                <div class="pl-4 space-y-1">
+                                    <p class="text-sm">Your Choice: <span id="modal-user-choice" class="text-green-600"></span></p>
+                                    <p class="text-sm">Your Impact: <span id="modal-user-impact" class="text-green-600"></span></p>
+                                    <p class="text-sm">Naive Choice: <span id="modal-naive-choice" class="text-red-600"></span></p>
+                                    <p class="text-sm">Naive Impact: <span id="modal-naive-impact" class="text-red-600"></span></p>
+                                    <p class="text-sm">Actual Effect Size: <span id="modal-actual-effect" class="text-blue-600"></span></p>
+                                    <p class="text-sm">Cumulative Impact: <span id="modal-cumulative-impact" class="text-blue-600"></span></p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="items-center px-4 py-3">
@@ -618,35 +631,34 @@
                         </svg>
                     </div>
                     <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Session Complete!</h3>
-                    <div class="mt-2 px-7 py-3">
-                        <p class="text-sm text-gray-500">Game Over! You've completed round <span id="final-round"
-                                class="font-semibold">1</span>.</p>
-                        <div class="mt-4">
-                            <p class="font-semibold">Final Score: <span id="final-score" class="text-blue-600"></span>
-                            </p>
-                            <p class="font-semibold">Accuracy: <span id="final-accuracy" class="text-purple-600"></span>
-                            </p>
-                        </div>
-                        <div class="mt-4">
-                            <p class="text-sm font-medium text-gray-700 mb-2">Share your achievement:</p>
-                            <div class="flex justify-center space-x-4">
-                                <button onclick="UIController.shareOnTwitter()"
-                                    class="bg-blue-400 text-white px-4 py-2 rounded hover:bg-blue-500">
-                                    Twitter
-                                </button>
-                                <button onclick="UIController.shareOnLinkedIn()"
-                                    class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800">
-                                    LinkedIn
-                                </button>
-                            </div>
+                    <div class="text-center mb-6">
+                        <h2 class="text-2xl font-bold mb-4">Game Complete!</h2>
+                        <div class="space-y-2">
+                            <p>Final Score: <span id="final-score" class="font-bold">0</span></p>
+                            <p>Accuracy: <span id="final-accuracy" class="font-bold">0%</span></p>
+                            <p>Impact: <span id="final-impact" class="font-bold">0</span></p>
+                            <p>Round Reached: <span id="final-round" class="font-bold">1</span></p>
                         </div>
                     </div>
-                    <div class="items-center px-4 py-3">
-                        <button id="start-new-session"
-                            class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition">
-                            Start New Session
-                        </button>
+                    <div class="mt-4">
+                        <p class="text-sm font-medium text-gray-700 mb-2">Share your achievement:</p>
+                        <div class="flex justify-center space-x-4">
+                            <button onclick="UIController.shareOnTwitter()"
+                                class="bg-blue-400 text-white px-4 py-2 rounded hover:bg-blue-500">
+                                Twitter
+                            </button>
+                            <button onclick="UIController.shareOnLinkedIn()"
+                                class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800">
+                                LinkedIn
+                            </button>
+                        </div>
                     </div>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="start-new-session"
+                        class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition">
+                        Start New Session
+                    </button>
                 </div>
             </div>
         </div>
