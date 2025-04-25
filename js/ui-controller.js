@@ -286,7 +286,7 @@ const UIController = {
             if (true || this.state.currentRound === 1) {
                 //challengeDesign = partialLoser();
             }
-            //challengeDesign = partialLoser();
+            challengeDesign = winner();
 
             // Generate the challenge from the design
             window.currentExperiment = challengeDesign.generate();
