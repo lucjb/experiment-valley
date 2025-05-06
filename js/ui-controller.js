@@ -246,7 +246,7 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [winner(), inconclusive(), partialWinner()],
+                1: [winner(), inconclusive(), partialLoser()],
                 2: [partialLoser().withBaseRateMismatch(), inconclusive().withVisitorsLoss(), partialWinner().withSampleRatioMismatch()],
                 3: [slowCompletion(), fastWinner(), fastWinnerWithPartialWeek()],
                 4: [slowCompletion().withBaseRateMismatch(), fastWinnerWithPartialWeek().withVisitorsLoss(), loser()],
@@ -286,7 +286,7 @@ const UIController = {
             if (true || this.state.currentRound === 1) {
                 //challengeDesign = partialLoser();
             }
-            challengeDesign = winner();
+            //challengeDesign = winner();
 
             // Generate the challenge from the design
             window.currentExperiment = challengeDesign.generate();
