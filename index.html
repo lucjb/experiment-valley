@@ -23,6 +23,7 @@
     <script src="js/chart-options.js"></script>
     <script src="js/confidence-intervals.js"></script>
     <script src="js/visualizations.js"></script>
+    <script src="js/virtual-competitors.js"></script>
     <script src="js/ui-controller.js"></script>
 </head>
 
@@ -54,8 +55,7 @@
                                 sample size, etc.</li>
                             <li><b>Experiment Progress</b>: How much data has been collected and how much is left to
                                 collect</li>
-                            <li><b>Experiment Results</b>: Full results of the experiment including metrics, daliy
-                                charts and statistical analyses</li>
+                            <li><b>Experiment Results</b>: Full results of the experiment including metrics, daily charts and statistical analyses</li>
                         </ul>
                     </li>
                     <li>Get instant feedback on your decisions and learn from each choice</li>
@@ -98,11 +98,37 @@
                 </div>
             </div>
 
-            <button id="start-btn" class="px-6 py-2 text-white text-sm rounded shadow transition hover:opacity-90"
-                style="background-color: #f97316" onmouseover="this.style.backgroundColor='#ea580c'"
-                onmouseout="this.style.backgroundColor='#f97316'">
-                Start Playing! 🚀
-            </button>
+            <!-- Competitor Selection -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold mb-4 text-white">Choose Your Opponent</h2>
+                <p class="text-gray-300 mb-4">While you earn points for making correct decisions, the real measure of success is your impact on conversion rates. Compare your performance against different decision-making approaches to see how your choices stack up in real-world scenarios:</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="competitor-card p-4 rounded-lg cursor-pointer transition-colors text-white" style="background-color: #f97316;" data-competitor="HiPPO">
+                        <h3 class="font-bold text-lg mb-2">HiPPO</h3>
+                        <p class="text-white opacity-90">Makes decisions based on personal opinion, ignoring statistical significance and data quality</p>
+                    </div>
+                    <div class="competitor-card p-4 rounded-lg cursor-pointer transition-colors text-white" style="background-color: #f97316;" data-competitor="Random">
+                        <h3 class="font-bold text-lg mb-2">Random</h3>
+                        <p class="text-white opacity-90">Makes decisions randomly, without analyzing the data</p>
+                    </div>
+                    <div class="competitor-card p-4 rounded-lg cursor-pointer transition-colors text-white" style="background-color: #f97316;" data-competitor="Naive">
+                        <h3 class="font-bold text-lg mb-2">Naive</h3>
+                        <p class="text-white opacity-90">Chooses the variant with the highest conversion rate at day 14, ignoring confidence intervals and p-values</p>
+                    </div>
+                    <div class="competitor-card p-4 rounded-lg cursor-pointer transition-colors text-white" style="background-color: #f97316;" data-competitor="Peek-a-boo">
+                        <h3 class="font-bold text-lg mb-2">Peek-a-boo</h3>
+                        <p class="text-white opacity-90">Peek-a-boo! Still not significant… maybe tomorrow!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button id="start-btn"
+                    class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled>
+                    Start Session
+                </button>
+            </div>
         </div>
 
         <div id="challenge-container" class="hidden">
@@ -119,16 +145,16 @@
                             <span id="score" class="text-xl md:text-2xl font-bold score-value">0</span>
                         </div>
                         <div>
-                            <span class="font-medium text-white">Streak: </span>
-                            <span id="streak" class="text-xl md:text-2xl font-bold score-value">0</span>
-                        </div>
-                        <div>
                             <span class="font-medium text-white">Accuracy: </span>
                             <span id="accuracy" class="text-xl md:text-2xl font-bold score-value">0%</span>
                         </div>
                         <div>
-                            <span class="font-medium text-white">Impact: </span>
-                            <span id="impact" class="text-xl md:text-2xl font-bold score-value">0</span>
+                            <span class="font-medium text-white">User Impact: </span>
+                            <span id="user-impact" class="text-xl md:text-2xl font-bold score-value text-green-500">0 cpd</span>
+                        </div>
+                        <div>
+                            <span class="font-medium text-white"><span id="competitor-name">Opponent</span> Impact: </span>
+                            <span id="opponent-impact" class="text-xl md:text-2xl font-bold score-value text-red-500">0 cpd</span>
                         </div>
                     </div>
                     <div class="text-sm font-medium text-white">Experiment <span id="current-experiment"
@@ -594,17 +620,17 @@
                         <p class="text-sm text-gray-500" id="feedback-message"></p>
                         <div class="mt-3">
                             <p class="font-semibold">Current Score: <span id="modal-score" class="text-blue-600"></span></p>
-                            <p class="font-semibold">Streak: <span id="modal-streak" class="text-orange-600"></span></p>
                             <p class="font-semibold">Accuracy: <span id="modal-accuracy" class="text-purple-600"></span></p>
                             <div class="mt-2 border-t pt-2">
                                 <p class="font-semibold text-sm text-gray-700">Impact Details:</p>
                                 <div class="pl-4 space-y-1">
                                     <p class="text-sm">Your Choice: <span id="modal-user-choice" class="text-green-600"></span></p>
                                     <p class="text-sm">Your Impact: <span id="modal-user-impact" class="text-green-600"></span></p>
-                                    <p class="text-sm">Naive Choice: <span id="modal-naive-choice" class="text-red-600"></span></p>
-                                    <p class="text-sm">Naive Impact: <span id="modal-naive-impact" class="text-red-600"></span></p>
+                                    <p class="text-sm"><span id="modal-competitor-name">Competitor</span> Choice: <span id="modal-competitor-choice" class="text-red-600"></span></p>
+                                    <p class="text-sm"><span id="modal-competitor-name">Competitor</span> Impact: <span id="modal-competitor-impact" class="text-red-600"></span></p>
                                     <p class="text-sm">Actual Effect Size: <span id="modal-actual-effect" class="text-blue-600"></span></p>
-                                    <p class="text-sm">Cumulative Impact: <span id="modal-cumulative-impact" class="text-blue-600"></span></p>
+                                    <p class="text-sm">Your Total Impact: <span id="modal-user-total-impact" class="text-green-600"></span></p>
+                                    <p class="text-sm"><span id="modal-competitor-name">Competitor</span> Total Impact: <span id="modal-competitor-total-impact" class="text-red-600"></span></p>
                                 </div>
                             </div>
                         </div>
@@ -636,7 +662,8 @@
                         <div class="space-y-2">
                             <p>Final Score: <span id="final-score" class="font-bold">0</span></p>
                             <p>Accuracy: <span id="final-accuracy" class="font-bold">0%</span></p>
-                            <p>Impact: <span id="final-impact" class="font-bold">0</span></p>
+                            <p>Your Total Impact: <span id="final-user-impact" class="font-bold text-green-600">0 cpd</span></p>
+                            <p><span id="final-competitor-name">Opponent</span> Total Impact: <span id="final-opponent-impact" class="font-bold text-red-600">0 cpd</span></p>
                             <p>Round Reached: <span id="final-round" class="font-bold">1</span></p>
                         </div>
                     </div>

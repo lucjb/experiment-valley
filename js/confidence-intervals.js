@@ -115,7 +115,7 @@ function updateConfidenceIntervals(challenge) {
     }
 
     // Calculate the difference in conversion rate
-    const diffValue = challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate;
+    const diffValue = challenge.simulation.variantConversionRate - challenge.simulation.baseConversionRate;
 
     // Display difference in conversion rate
     const differenceDisplay = document.getElementById('difference-display');
@@ -127,7 +127,7 @@ function updateConfidenceIntervals(challenge) {
     const conversionValues = [
         ...challenge.simulation.confidenceIntervalBase,
         ...challenge.simulation.confidenceIntervalVariant,
-        challenge.simulation.actualBaseConversionRate,
+        challenge.simulation.baseConversionRate,
         challenge.simulation.variantConversionRate
     ];
 
@@ -157,7 +157,7 @@ function updateConfidenceIntervals(challenge) {
         'base-ci',
         challenge.simulation.confidenceIntervalBase[0],
         challenge.simulation.confidenceIntervalBase[1],
-        challenge.simulation.actualBaseConversionRate,
+        challenge.simulation.baseConversionRate,
         CIColorMappings.base,
         true,
         conversionViewMin,

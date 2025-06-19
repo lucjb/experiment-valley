@@ -2,7 +2,6 @@
 const UIController = {
     state: {
         score: 0,
-        streak: 0,
         totalAttempts: 0,
         currentExperiment: 1,
         EXPERIMENTS_PER_SESSION: 3,
@@ -16,7 +15,9 @@ const UIController = {
         hasSubmitted: false,
         impact: 0,
         userCumulativeEffect: 0,
-        naiveCumulativeEffect: 0
+        competitorCumulativeEffect: 0,
+        currentCompetitor: null,
+        selectedCompetitor: null
     },
 
     init() {
@@ -30,12 +31,49 @@ const UIController = {
     },
 
     initializeEventListeners() {
+        // Competitor selection
+        document.querySelectorAll('.competitor-card').forEach(card => {
+            card.addEventListener('click', () => {
+                // Remove selected state from all cards
+                document.querySelectorAll('.competitor-card').forEach(c => {
+                    c.style.opacity = '0.7';
+                    c.style.transform = 'scale(1)';
+                });
+                
+                // Add selected state to clicked card
+                card.style.opacity = '1';
+                card.style.transform = 'scale(1.05)';
+                
+                // Enable start button
+                const startBtn = document.getElementById('start-btn');
+                startBtn.disabled = false;
+                
+                // Store selected competitor
+                this.state.selectedCompetitor = card.getAttribute('data-competitor');
+            });
+
+            // Add hover effects
+            card.addEventListener('mouseenter', () => {
+                if (card.style.opacity !== '1') {
+                    card.style.opacity = '0.9';
+                }
+            });
+
+            card.addEventListener('mouseleave', () => {
+                if (card.style.opacity !== '1') {
+                    card.style.opacity = '0.7';
+                }
+            });
+        });
+
         // Start button
         const startBtn = document.getElementById('start-btn');
         if (startBtn) {
             startBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                this.startSession();
+                if (this.state.selectedCompetitor) {
+                    this.startSession();
+                }
             });
         }
 
@@ -218,18 +256,23 @@ const UIController = {
 
     startSession() {
         const tutorialSection = document.getElementById('tutorial-section');
-        const challengeContainer = document.getElementById('challenge-container');
+        const experimentContainer = document.getElementById('challenge-container');
 
+        // Hide tutorial section
         tutorialSection.classList.add('hidden');
-        challengeContainer.classList.remove('hidden');
 
-        // Show round splash for the first round
-        this.showRoundSplash();
+        // Show experiment container
+        experimentContainer.classList.remove('hidden');
+        experimentContainer.classList.add('fade-in');
 
-        // Only load the challenge if it hasn't been loaded yet
-        if (!window.currentExperiment) {
-            this.loadChallenge();
-        }
+        // Set the selected competitor for the entire session
+        this.state.currentCompetitor = VirtualCompetitors[this.state.selectedCompetitor];
+        
+        // Update competitor name in UI
+        this.updateCompetitorName();
+
+        // Load the first challenge
+        this.loadChallenge();
     },
 
     async loadChallenge() {
@@ -247,11 +290,10 @@ const UIController = {
             // Define challenge sequence for each round
             const challengeSequences = {
                 1: [winner(), inconclusive(), partialLoser()],
-                2: [partialLoser().withBaseRateMismatch(), inconclusive().withVisitorsLoss(), partialWinner().withSampleRatioMismatch()],
-                3: [slowCompletion(), fastWinner(), fastWinnerWithPartialWeek()],
-                4: [slowCompletion().withBaseRateMismatch(), fastWinnerWithPartialWeek().withVisitorsLoss(), loser()],
+                2: [partialLoser().withBaseRateMismatch(), partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch()],
+                3: [slowCompletion(), fastWinner(), fastLoserWithPartialWeek()],
+                4: [slowCompletion().withBaseRateMismatch(), fastLoserWithPartialWeek().withVisitorsLoss(), loser()],
                 5: [partialWinner(), partialLoser(), inconclusive()]
-  
             };
 
             // Define round captions
@@ -282,11 +324,6 @@ const UIController = {
                 const allScenarios = Object.values(challengeSequences).flat();
                 challengeDesign = allScenarios[Math.floor(Math.random() * allScenarios.length)];
             }
-
-            if (true || this.state.currentRound === 1) {
-                //challengeDesign = partialLoser();
-            }
-            //challengeDesign = winner();
 
             // Generate the challenge from the design
             window.currentExperiment = challengeDesign.generate();
@@ -702,7 +739,7 @@ const UIController = {
         // Update base metrics
         document.getElementById('base-visitors').textContent = challenge.simulation.actualVisitorsBase;
         document.getElementById('base-conversions').textContent = challenge.simulation.actualConversionsBase;
-        document.getElementById('base-rate').textContent = `${(challenge.simulation.actualBaseConversionRate * 100).toFixed(2)}%`;
+        document.getElementById('base-rate').textContent = `${(challenge.simulation.baseConversionRate * 100).toFixed(2)}%`;
 
 
         // Update variant metrics
@@ -713,7 +750,7 @@ const UIController = {
         // Update delta metrics
         document.getElementById('delta-visitors').textContent = formatDelta(challenge.simulation.actualVisitorsVariant - challenge.simulation.actualVisitorsBase);
         document.getElementById('delta-conversions').textContent = formatDelta(challenge.simulation.actualConversionsVariant - challenge.simulation.actualConversionsBase);
-        document.getElementById('delta-rate').textContent = formatDelta(challenge.simulation.variantConversionRate - challenge.simulation.actualBaseConversionRate, true);
+        document.getElementById('delta-rate').textContent = formatDelta(challenge.simulation.variantConversionRate - challenge.simulation.baseConversionRate, true);
 
         // Update uplift metrics
         document.getElementById('visitor-uplift').textContent = formatUplift(challenge.simulation.visitorUplift);
@@ -811,15 +848,19 @@ const UIController = {
             const experiment = window.currentExperiment;
 
             // Calculate impact
-            const actualBaseRate = experiment.simulation.actualBaseConversionRate;
-            const actualVariantRate = experiment.simulation.variantConversionRate;
             const actualEffect = experiment.simulation.actualEffectSize;
-            
+            const expectedDailyVisitors = experiment.experiment.visitorsPerDay;
+
+            // Calculate impact in terms of conversions per day
+            const calculateConversionImpact = (effectSize) => {
+                return Math.round(effectSize * expectedDailyVisitors);
+            };
+
             // Calculate user's impact for this challenge
             let userImpact = 0;
             let userChoice = "None";
             if (this.state.implementDecision === "KEEP_VARIANT") {
-                userImpact = actualEffect;
+                userImpact = calculateConversionImpact(actualEffect);
                 userChoice = "Variant";
             } else if (this.state.implementDecision === "KEEP_BASE") {
                 userChoice = "Base";
@@ -827,53 +868,45 @@ const UIController = {
                 userChoice = "Keep Running";
             }
 
-            // Calculate naive decision maker's impact for this challenge
-            let naiveImpact = 0;
-            let naiveChoice = "None";
+            // Get competitor's decision and calculate their impact
+            const competitorDecision = this.state.currentCompetitor.makeDecision(experiment);
+            let competitorImpact = 0;
+            let competitorChoice = "None";
             
-            // Get the cumulative difference after 14 days from the timeline
-            const timeline = experiment.simulation.timeline;
-            const daysElapsed = timeline.currentRuntimeDays;
-            
-            // Find the time point that includes day 14
-            const day14Point = timeline.timePoints.find(point => 
-                point.period.startDay <= 14 && point.period.endDay >= 14
-            );
-            const cumulativeDiff = day14Point ? day14Point.difference.cumulativeRate : 0;
-            
-            console.log('Day 14 Point:', day14Point);
-            console.log('Cumulative Difference on Day 14:', cumulativeDiff);
-            
-            if (daysElapsed >= 14) {
-                // After 14 days, make decision based on cumulative difference on day 14
-                if (cumulativeDiff > 0) {
-                    naiveImpact = actualEffect;
-                    naiveChoice = "Variant";
-                } else if (cumulativeDiff < 0) {
-                    naiveChoice = "Base";
-                } else {
-                    naiveChoice = "Keep Running";
-                }
-            } else {
-                // Before 14 days, keep running
-                naiveChoice = "Keep Running";
+            if (competitorDecision.decision === "KEEP_VARIANT") {
+                competitorImpact = calculateConversionImpact(actualEffect);
+                competitorChoice = "Variant";
+            } else if (competitorDecision.decision === "KEEP_BASE") {
+                competitorChoice = "Base";
+            } else if (competitorDecision.decision === "KEEP_RUNNING") {
+                competitorChoice = "Keep Running";
             }
 
             // Update cumulative effects
             this.state.userCumulativeEffect += userImpact;
-            this.state.naiveCumulativeEffect += naiveImpact;
-
-            // Update impact score as the difference between cumulative effects
-            this.state.impact = this.state.userCumulativeEffect - this.state.naiveCumulativeEffect;
+            this.state.competitorCumulativeEffect += competitorImpact;
 
             // Update impact displays
             this.updateImpactDisplay();
-            document.getElementById('modal-user-choice').textContent = userChoice;
-            document.getElementById('modal-user-impact').textContent = formatPercent(userImpact);
-            document.getElementById('modal-naive-choice').textContent = naiveChoice;
-            document.getElementById('modal-naive-impact').textContent = formatPercent(naiveImpact);
-            document.getElementById('modal-actual-effect').textContent = formatPercent(actualEffect);
-            document.getElementById('modal-cumulative-impact').textContent = formatPercent(this.state.impact);
+            
+            // Update modal displays
+            const modalElements = {
+                'modal-user-choice': userChoice,
+                'modal-user-impact': `${userImpact} cpd`,
+                'modal-competitor-choice': competitorChoice,
+                'modal-competitor-impact': `${competitorImpact} cpd`,
+                'modal-actual-effect': `${calculateConversionImpact(actualEffect)} cpd`,
+                'modal-user-total-impact': `${this.state.userCumulativeEffect} cpd`,
+                'modal-competitor-total-impact': `${this.state.competitorCumulativeEffect} cpd`
+            };
+
+            // Safely update modal elements
+            Object.entries(modalElements).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = value;
+                }
+            });
 
             // Compare user's choices with analysis result
             let correctChoices = 0;
@@ -881,25 +914,22 @@ const UIController = {
             let feedbackMessage = '';
 
             // Check trustworthiness
-            const userTrust = this.state.trustDecision; // true or false
-            const analysisTrust = analysis.decision.trustworthy;
+            const userTrust = this.state.trustDecision === "TRUSTWORTHY";
+            const analysisTrust = analysis.decision.trustworthy === "TRUSTWORTHY";
+            const displayTrust = analysisTrust ? "Trustworthy" : "Untrustworthy";
 
             if (userTrust === analysisTrust) {
                 correctChoices++;
                 feedbackMessage += '<p>Trustworthiness: <span class="text-green-500">Correct ✓</span></p>';
             } else {
-                feedbackMessage += `<p>Trustworthiness: <span class="text-red-500">Incorrect ✗</span> (Should be: ${analysisTrust === 'TRUSTWORTHY' ? 'Yes' : 'No'})</p>`;
+                feedbackMessage += `<p>Trustworthiness: <span class="text-red-500">Incorrect ✗</span> (Should be: ${displayTrust})</p>`;
             }
 
             // Check decision
-            const userDecision = this.state.implementDecision; // Full string value
+            const userDecision = this.state.implementDecision;
             const analysisDecision = analysis.decision.decision;
-
-            // Map the decision to a simpler format for display
-            const displayDecision = analysisDecision === "KEEP_BASE" ? "Keep Base" :
-                analysisDecision === "KEEP_VARIANT" ? "Keep Variant" :
-                    analysisDecision === "KEEP_RUNNING" ? "Keep Running" :
-                        analysisDecision;
+            const displayDecision = analysisDecision === "KEEP_VARIANT" ? "Keep Variant" :
+                                  analysisDecision === "KEEP_BASE" ? "Keep Base" : "Keep Running";
 
             if (userDecision === analysisDecision) {
                 correctChoices++;
@@ -910,15 +940,11 @@ const UIController = {
 
             // Check follow-up
             const userFollowUp = this.state.followUpDecision;
-            const analysisFollowUp = analysis.decision.followUp || analysis.decision.follwUp; // Handle both spellings
-
-            // Map the follow-up to a simpler format for display
+            const analysisFollowUp = analysis.decision.followUp;
             const displayFollowUp = analysisFollowUp === "CELEBRATE" ? "Celebrate" :
-                analysisFollowUp === "ITERATE" ? "Iterate" :
-                    analysisFollowUp === "VALIDATE" ? "Validate" :
-                        analysisFollowUp === "RERUN" ? "Fix &Rerun" :
-                            analysisFollowUp === "DO_NOTHING" ? "None" :
-                                analysisFollowUp;
+                                  analysisFollowUp === "ITERATE" ? "Iterate" :
+                                  analysisFollowUp === "VALIDATE" ? "Validate" :
+                                  analysisFollowUp === "RERUN" ? "Fix & Rerun" : "None";
 
             if (userFollowUp === analysisFollowUp) {
                 correctChoices++;
@@ -927,42 +953,39 @@ const UIController = {
                 feedbackMessage += `<p>Follow-up: <span class="text-red-500">Incorrect ✗</span> (Should be: ${displayFollowUp})</p>`;
             }
 
+            // Add competitor information to feedback
+            feedbackMessage += `<p class="mt-4">Competing against: <strong>${this.state.currentCompetitor.name}</strong></p>`;
+            feedbackMessage += `<p>${this.state.currentCompetitor.description}</p>`;
+
             // Calculate score based on performance
             const isPerfect = (correctChoices === totalChoices);
             const isGood = (correctChoices >= 2);
 
             if (isPerfect) {
                 this.state.score++;
-                this.state.streak++;
                 this.state.correctInCurrentRound++;
                 feedbackMessage += `<p class="mt-4 text-lg font-semibold">Round ${this.state.currentRound} Progress: ${this.state.correctInCurrentRound}/${this.state.experimentsInCurrentRound} correct</p>`;
                 ModalManager.showFeedback(true, `<p class="text-xl font-semibold mb-4">Perfect! All decisions were correct.</p>${feedbackMessage}`);
             } else if (isGood) {
-                this.state.score += 0.5; // Half point for getting most right
-                this.state.streak++;
+                this.state.score += 0.5;
                 this.state.correctInCurrentRound++;
                 feedbackMessage += `<p class="mt-4 text-lg font-semibold">Round ${this.state.currentRound} Progress: ${this.state.correctInCurrentRound}/${this.state.experimentsInCurrentRound} correct</p>`;
                 ModalManager.showFeedback(true, `<p class="text-xl font-semibold mb-4">Good job! You got ${correctChoices}/${totalChoices} decisions correct.</p>${feedbackMessage}`);
             } else {
-                this.state.streak = 0;
                 feedbackMessage += `<p class="mt-4 text-lg font-semibold">Round ${this.state.currentRound} Progress: ${this.state.correctInCurrentRound}/${this.state.experimentsInCurrentRound} correct</p>`;
                 ModalManager.showFeedback(false, `<p class="text-xl font-semibold mb-4">You got ${correctChoices}/${totalChoices} decisions correct.</p>${feedbackMessage}`);
             }
 
             const accuracy = Math.round((this.state.score / this.state.totalAttempts) * 100);
             this.updateScoreDisplay();
-            this.updateStreakDisplay();
             this.updateAccuracyDisplay(accuracy);
 
             // Check if this was the last experiment in the current round
             if (this.state.experimentsInCurrentRound === this.state.EXPERIMENTS_PER_SESSION) {
                 // Check if player got at least 2 experiments right
                 if (this.state.correctInCurrentRound >= 2) {
-                    // Do NOT increment the round number here - that happens in handleNextChallenge
-                    // Only reset experiment counters
                     document.getElementById('next-challenge-btn').textContent = 'Next Round!';
                 } else {
-                    // End game
                     document.getElementById('next-challenge-btn').textContent = 'Done';
                 }
             }
@@ -983,11 +1006,6 @@ const UIController = {
     updateScoreDisplay() {
         document.getElementById('score').textContent = this.state.score;
         document.getElementById('modal-score').textContent = this.state.score;
-    },
-
-    updateStreakDisplay() {
-        document.getElementById('streak').textContent = this.state.streak;
-        document.getElementById('modal-streak').textContent = this.state.streak;
     },
 
     updateAccuracyDisplay(accuracy) {
@@ -1103,8 +1121,9 @@ const UIController = {
         setTimeout(() => {
             document.getElementById('final-score').textContent = this.state.score;
             document.getElementById('final-accuracy').textContent = `${Math.round((this.state.score / this.state.totalAttempts) * 100)}%`;
+            document.getElementById('final-user-impact').textContent = `${this.state.userCumulativeEffect} cpd`;
+            document.getElementById('final-opponent-impact').textContent = `${this.state.competitorCumulativeEffect} cpd`;
             document.getElementById('final-round').textContent = this.state.currentRound;
-            document.getElementById('final-impact').textContent = this.state.impact.toLocaleString();
 
             completionModal.classList.remove('hidden');
             setTimeout(() => {
@@ -1130,18 +1149,18 @@ const UIController = {
         // Reset state
         this.state.currentExperiment = 1;
         this.state.score = 0;
-        this.state.streak = 0;
         this.state.totalAttempts = 0;
         this.state.currentRound = 1; // Reset round number for new session
         this.state.experimentsInCurrentRound = 0;
         this.state.correctInCurrentRound = 0;
         this.state.impact = 0;
         this.state.userCumulativeEffect = 0;
-        this.state.naiveCumulativeEffect = 0;
+        this.state.competitorCumulativeEffect = 0;
+        this.state.currentCompetitor = null;
+        this.state.selectedCompetitor = null;
 
         // Update displays
         this.updateScoreDisplay();
-        this.updateStreakDisplay();
         this.updateAccuracyDisplay(0);
         this.updateRoundDisplay(); // Update the round display
         this.updateImpactDisplay(); // Update impact display
@@ -1172,14 +1191,19 @@ const UIController = {
     },
 
     updateImpactDisplay() {
-        const headerImpact = document.getElementById('impact');
-        const modalImpact = document.getElementById('modal-impact');
-        if (headerImpact) {
-            headerImpact.textContent = formatPercent(this.state.impact);
-        }
-        if (modalImpact) {
-            modalImpact.textContent = formatPercent(this.state.impact);
-        }
+        document.getElementById('user-impact').textContent = `${this.state.userCumulativeEffect} cpd`;
+        document.getElementById('opponent-impact').textContent = `${this.state.competitorCumulativeEffect} cpd`;
+    },
+
+    formatPercent(value) {
+        return `${(value * 100).toFixed(1)}%`;
+    },
+
+    updateCompetitorName() {
+        const competitorName = this.state.currentCompetitor.name;
+        document.getElementById('competitor-name').textContent = competitorName;
+        document.getElementById('modal-competitor-name').textContent = competitorName;
+        document.getElementById('final-competitor-name').textContent = competitorName;
     }
 };
 
