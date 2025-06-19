@@ -67,26 +67,29 @@ const ModalManager = {
         const modal = document.getElementById(this.modals.feedback);
         if (!modal) return;
 
-        const icon = document.getElementById('feedback-icon');
         const title = document.getElementById('feedback-title');
-        const colors = correct ? {
-            icon: 'bg-green-100',
-            iconColor: 'text-green-600',
-            title: 'text-green-900',
-            text: 'Correct!'
-        } : {
-            icon: 'bg-red-100',
-            iconColor: 'text-red-600',
-            title: 'text-red-900',
-            text: 'Incorrect'
-        };
-
-        icon.className = `mx-auto flex items-center justify-center h-12 w-12 rounded-full ${colors.icon}`;
-        icon.innerHTML = `<svg class="h-6 w-6 ${colors.iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${correct ? 'M5 13l4 4L19 7' : 'M6 18L18 6M6 6l12 12'}"></path></svg>`;
-        title.textContent = colors.text;
-        title.className = `text-lg leading-6 font-medium ${colors.title} mt-4`;
+        
+        // Only set the title if it hasn't been set already (preserve custom titles)
+        if (!title.textContent || title.textContent === 'Correct!' || title.textContent === 'Incorrect') {
+            const colors = correct ? {
+                title: 'text-green-900',
+                text: 'Correct!'
+            } : {
+                title: 'text-red-900',
+                text: 'Incorrect'
+            };
+            
+            title.textContent = colors.text;
+            title.className = `text-lg leading-6 font-medium ${colors.title} mt-4`;
+        }
 
         document.getElementById('feedback-message').innerHTML = message;
+        
+        // Update competitor name in the modal
+        if (typeof UIController !== 'undefined' && UIController.updateCompetitorName) {
+            UIController.updateCompetitorName();
+        }
+        
         this.show(this.modals.feedback);
     },
 

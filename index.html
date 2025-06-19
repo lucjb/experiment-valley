@@ -137,23 +137,23 @@
                 <div class="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
                     <div class="flex flex-wrap gap-4 md:gap-8">
                         <div>
-                            <span class="font-medium text-white">Round: </span>
+                            <span class="font-medium text-white"><span class="tooltip-trigger">Round<span class="tooltip-content">The current round number. Each round consists of 3 experiments.</span></span>: </span>
                             <span id="current-round" class="text-xl md:text-2xl font-bold score-value">1</span>
                         </div>
                         <div>
-                            <span class="font-medium text-white">Score: </span>
+                            <span class="font-medium text-white"><span class="tooltip-trigger">Score<span class="tooltip-content">Your total score based on correct decisions. Perfect decisions = +1 point, Good decisions = +0.5 points.</span></span>: </span>
                             <span id="score" class="text-xl md:text-2xl font-bold score-value">0</span>
                         </div>
                         <div>
-                            <span class="font-medium text-white">Accuracy: </span>
+                            <span class="font-medium text-white"><span class="tooltip-trigger">Accuracy<span class="tooltip-content">The percentage of correct decisions you've made across all experiments.</span></span>: </span>
                             <span id="accuracy" class="text-xl md:text-2xl font-bold score-value">0%</span>
                         </div>
                         <div>
-                            <span class="font-medium text-white">User Impact: </span>
+                            <span class="font-medium text-white">Your <span class="tooltip-trigger">Impact<span class="tooltip-content">The incremental number of conversions per day as a result of your decisions</span></span>: </span>
                             <span id="user-impact" class="text-xl md:text-2xl font-bold score-value text-green-500">0 cpd</span>
                         </div>
                         <div>
-                            <span class="font-medium text-white"><span id="competitor-name">Opponent</span> Impact: </span>
+                            <span class="font-medium text-white"><span id="competitor-name">Opponent</span> <span class="tooltip-trigger">Impact<span class="tooltip-content">The incremental number of conversions per day as a result of your decisions</span></span>: </span>
                             <span id="opponent-impact" class="text-xl md:text-2xl font-bold score-value text-red-500">0 cpd</span>
                         </div>
                     </div>
@@ -204,7 +204,7 @@
                     <div class="decision-section decision">
                         <div class="text-center mb-2">
                             <span class="font-medium text-white tooltip-trigger">
-                                What's your Decision?
+                                DECISIONS
                                 <span class="tooltip-content">
                                     Based on the experiment results, choose whether to:
                                     <ul class="list-disc pl-4 mt-2">
@@ -597,50 +597,125 @@
 
         <!-- Feedback Modal -->
         <div id="feedback-modal"
-            class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div class="relative top-32 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                <div class="absolute top-2 right-2">
-                    <button id="close-feedback" class="text-gray-400 hover:text-gray-500 p-2">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                </div>
-                <div class="mt-3 text-center">
-                    <div id="feedback-icon"
-                        class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                        <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
-                            </path>
-                        </svg>
+            class="hidden fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+            <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <h3 class="text-lg font-semibold text-white" id="feedback-title">Score Card</h3>
+                        </div>
+                        <button id="close-feedback" class="text-white hover:text-gray-200 transition-colors p-1">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
                     </div>
-                    <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4" id="feedback-title">Correct!</h3>
-                    <div class="mt-2 px-7 py-3">
-                        <p class="text-sm text-gray-500" id="feedback-message"></p>
-                        <div class="mt-3">
-                            <p class="font-semibold">Current Score: <span id="modal-score" class="text-blue-600"></span></p>
-                            <p class="font-semibold">Accuracy: <span id="modal-accuracy" class="text-purple-600"></span></p>
-                            <div class="mt-2 border-t pt-2">
-                                <p class="font-semibold text-sm text-gray-700">Impact Details:</p>
-                                <div class="pl-4 space-y-1">
-                                    <p class="text-sm">Your Choice: <span id="modal-user-choice" class="text-green-600"></span></p>
-                                    <p class="text-sm">Your Impact: <span id="modal-user-impact" class="text-green-600"></span></p>
-                                    <p class="text-sm"><span id="modal-competitor-name">Competitor</span> Choice: <span id="modal-competitor-choice" class="text-red-600"></span></p>
-                                    <p class="text-sm"><span id="modal-competitor-name">Competitor</span> Impact: <span id="modal-competitor-impact" class="text-red-600"></span></p>
-                                    <p class="text-sm">Actual Effect Size: <span id="modal-actual-effect" class="text-blue-600"></span></p>
-                                    <p class="text-sm">Your Total Impact: <span id="modal-user-total-impact" class="text-green-600"></span></p>
-                                    <p class="text-sm"><span id="modal-competitor-name">Competitor</span> Total Impact: <span id="modal-competitor-total-impact" class="text-red-600"></span></p>
+                </div>
+
+                <!-- Content -->
+                <div class="px-6 py-4">
+                    <!-- Current Experiment Score Card -->
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-3 mb-4">
+                        <h3 class="text-lg font-bold text-blue-900 mb-3 text-center" id="score-card-title">Round 1, Experiment 1</h3>
+                        
+                        <!-- Decision Analysis -->
+                        <div class="bg-white rounded-lg p-2 mb-3 border border-blue-100">
+                            <h4 class="font-semibold text-blue-800 text-sm uppercase tracking-wide mb-2 flex items-center">
+                                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                </svg>
+                                DECISIONS
+                            </h4>
+                            <div class="space-y-2">
+                                <p class="text-gray-700 leading-relaxed text-sm" id="feedback-message"></p>
+                                <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-2 mt-2" id="score-display">
+                                    <p class="text-xs text-gray-600 leading-tight text-center">
+                                        <span class="font-medium">Score:</span> 
+                                        <span class="text-green-700 font-semibold">Perfect! All 3 decisions right: </span>
+                                        <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-green-500 rounded-full shadow-sm">+1</span>
+                                        <span class="text-green-700 font-semibold"> point!</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Impact Analysis -->
+                        <div class="bg-white rounded-lg p-3 border border-blue-100">
+                            <h4 class="font-semibold text-blue-800 text-sm uppercase tracking-wide mb-2 flex items-center">
+                                <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
+                                IMPACT
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-2">
+                                    <p class="text-gray-700" id="modal-best-variant">
+                                        Variant is best with a true effect of <span class="font-semibold text-blue-600" id="modal-actual-effect">13 cpd</span>.
+                                    </p>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm border-collapse">
+                                        <thead>
+                                            <tr class="bg-gray-50">
+                                                <th class="text-left py-1 px-2 font-medium text-gray-700 whitespace-nowrap"></th>
+                                                <th class="text-left py-1 px-2 font-medium text-gray-700 whitespace-nowrap">Choice</th>
+                                                <th class="text-left py-1 px-2 font-medium text-gray-700 whitespace-nowrap">Impact (cpd)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr class="border-b border-gray-100">
+                                                <td class="py-1 px-2 flex items-center space-x-2 whitespace-nowrap">
+                                                    <span id="modal-user-icon"></span>
+                                                    <span class="font-medium text-gray-700">Yours</span>
+                                                </td>
+                                                <td class="py-1 px-2 text-green-600 whitespace-nowrap" id="modal-user-choice">Variant</td>
+                                                <td class="py-1 px-2 text-green-600 font-semibold whitespace-nowrap" id="modal-user-impact">13</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="py-1 px-2 flex items-center space-x-2 whitespace-nowrap">
+                                                    <span id="modal-competitor-icon"></span>
+                                                    <span class="font-medium text-gray-700" id="modal-competitor-name">Opponent</span>
+                                                </td>
+                                                <td class="py-1 px-2 text-red-600 whitespace-nowrap" id="modal-competitor-choice">Base</td>
+                                                <td class="py-1 px-2 text-red-600 font-semibold whitespace-nowrap" id="modal-competitor-impact">0</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="items-center px-4 py-3">
-                        <button id="next-challenge-btn"
-                            class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition">
-                            Next!
-                        </button>
+
+                    <!-- Round Progress -->
+                    <div class="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4">
+                        <h3 class="text-lg font-bold text-purple-900 mb-3 text-center">Round Progress</h3>
+                        <div class="flex items-center justify-center space-x-3 mb-3">
+                            <div id="feedback-icon-1" class="flex items-center justify-center h-10 w-10 rounded-full bg-gray-200 shadow-md">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <div id="feedback-icon-2" class="flex items-center justify-center h-10 w-10 rounded-full bg-gray-200 shadow-md">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <div id="feedback-icon-3" class="flex items-center justify-center h-10 w-10 rounded-full bg-gray-200 shadow-md">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                        </div>
                     </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="bg-gray-50 px-6 py-4">
+                    <button id="next-challenge-btn"
+                        class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105">
+                        Next!
+                    </button>
                 </div>
             </div>
         </div>
@@ -853,10 +928,39 @@
 
                     // Get trigger position
                     const rect = this.getBoundingClientRect();
-
-                    // Position tooltip above the trigger
-                    tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
-                    tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+                    const tooltipHeight = tooltip.offsetHeight;
+                    const tooltipWidth = tooltip.offsetWidth;
+                    
+                    // Calculate available space above and below
+                    const spaceAbove = rect.top;
+                    const spaceBelow = window.innerHeight - rect.bottom;
+                    
+                    // Position tooltip horizontally centered
+                    let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+                    
+                    // Ensure tooltip doesn't overflow horizontally
+                    if (left < 10) left = 10;
+                    if (left + tooltipWidth > window.innerWidth - 10) {
+                        left = window.innerWidth - tooltipWidth - 10;
+                    }
+                    
+                    // Position tooltip vertically - prefer above, but use below if not enough space
+                    let top;
+                    if (spaceAbove >= tooltipHeight + 10) {
+                        // Position above
+                        top = rect.top - tooltipHeight - 10;
+                    } else if (spaceBelow >= tooltipHeight + 10) {
+                        // Position below
+                        top = rect.bottom + 10;
+                    } else {
+                        // If neither fits, position where there's more space
+                        top = spaceAbove > spaceBelow ? 
+                            rect.top - tooltipHeight - 10 : 
+                            rect.bottom + 10;
+                    }
+                    
+                    tooltip.style.left = left + 'px';
+                    tooltip.style.top = top + 'px';
                 });
             });
         });

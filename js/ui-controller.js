@@ -17,7 +17,8 @@ const UIController = {
         userCumulativeEffect: 0,
         competitorCumulativeEffect: 0,
         currentCompetitor: null,
-        selectedCompetitor: null
+        selectedCompetitor: null,
+        roundResults: [] // Store results for each experiment in the current round
     },
 
     init() {
@@ -890,23 +891,54 @@ const UIController = {
             this.updateImpactDisplay();
             
             // Update modal displays
+            const actualEffectCpd = calculateConversionImpact(actualEffect);
+            const bestVariant = actualEffectCpd > 0 ? "Variant" : "Base";
+            
+            // Create the narrative text based on which variant is best
+            let bestVariantText;
+            if (actualEffectCpd > 0) {
+                bestVariantText = `Variant is best with a true effect of ${actualEffectCpd} cpd.`;
+            } else {
+                bestVariantText = `Base is best, Variant's true effect is ${actualEffectCpd} cpd.`;
+            }
+            
+            // Determine if user and competitor made correct choices
+            const userMadeCorrectChoice = (userChoice === bestVariant);
+            const competitorMadeCorrectChoice = (competitorChoice === bestVariant);
+            
+            // Create icons for impact table
+            const userIcon = userMadeCorrectChoice ? 
+                '<svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
+                '<svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            
+            const competitorIcon = competitorMadeCorrectChoice ? 
+                '<svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
+                '<svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            
             const modalElements = {
+                'modal-best-variant': bestVariantText,
                 'modal-user-choice': userChoice,
-                'modal-user-impact': `${userImpact} cpd`,
+                'modal-user-impact': userImpact,
                 'modal-competitor-choice': competitorChoice,
-                'modal-competitor-impact': `${competitorImpact} cpd`,
-                'modal-actual-effect': `${calculateConversionImpact(actualEffect)} cpd`,
-                'modal-user-total-impact': `${this.state.userCumulativeEffect} cpd`,
-                'modal-competitor-total-impact': `${this.state.competitorCumulativeEffect} cpd`
+                'modal-competitor-impact': competitorImpact,
+                'modal-user-icon': userIcon,
+                'modal-competitor-icon': competitorIcon
             };
 
             // Safely update modal elements
             Object.entries(modalElements).forEach(([id, value]) => {
                 const element = document.getElementById(id);
                 if (element) {
-                    element.textContent = value;
+                    if (id.includes('icon')) {
+                        element.innerHTML = value;
+                    } else {
+                        element.textContent = value;
+                    }
                 }
             });
+
+            // Update competitor name in the modal
+            this.updateCompetitorName();
 
             // Compare user's choices with analysis result
             let correctChoices = 0;
@@ -916,27 +948,16 @@ const UIController = {
             // Check trustworthiness
             const userTrust = this.state.trustDecision === "TRUSTWORTHY";
             const analysisTrust = analysis.decision.trustworthy === "TRUSTWORTHY";
-            const displayTrust = analysisTrust ? "Trustworthy" : "Untrustworthy";
-
-            if (userTrust === analysisTrust) {
-                correctChoices++;
-                feedbackMessage += '<p>Trustworthiness: <span class="text-green-500">Correct ✓</span></p>';
-            } else {
-                feedbackMessage += `<p>Trustworthiness: <span class="text-red-500">Incorrect ✗</span> (Should be: ${displayTrust})</p>`;
-            }
+            const displayTrust = analysisTrust ? "Yes" : "No";
+            const userTrustDisplay = userTrust ? "Yes" : "No";
 
             // Check decision
             const userDecision = this.state.implementDecision;
             const analysisDecision = analysis.decision.decision;
             const displayDecision = analysisDecision === "KEEP_VARIANT" ? "Keep Variant" :
                                   analysisDecision === "KEEP_BASE" ? "Keep Base" : "Keep Running";
-
-            if (userDecision === analysisDecision) {
-                correctChoices++;
-                feedbackMessage += '<p>Decision: <span class="text-green-500">Correct ✓</span></p>';
-            } else {
-                feedbackMessage += `<p>Decision: <span class="text-red-500">Incorrect ✗</span> (Should be: ${displayDecision})</p>`;
-            }
+            const userDecisionDisplay = userDecision === "KEEP_VARIANT" ? "Keep Variant" :
+                                      userDecision === "KEEP_BASE" ? "Keep Base" : "Keep Running";
 
             // Check follow-up
             const userFollowUp = this.state.followUpDecision;
@@ -945,35 +966,161 @@ const UIController = {
                                   analysisFollowUp === "ITERATE" ? "Iterate" :
                                   analysisFollowUp === "VALIDATE" ? "Validate" :
                                   analysisFollowUp === "RERUN" ? "Fix & Rerun" : "None";
+            const userFollowUpDisplay = userFollowUp === "CELEBRATE" ? "Celebrate" :
+                                      userFollowUp === "ITERATE" ? "Iterate" :
+                                      userFollowUp === "VALIDATE" ? "Validate" :
+                                      userFollowUp === "RERUN" ? "Fix & Rerun" : "None";
 
-            if (userFollowUp === analysisFollowUp) {
-                correctChoices++;
-                feedbackMessage += '<p>Follow-up: <span class="text-green-500">Correct ✓</span></p>';
-            } else {
-                feedbackMessage += `<p>Follow-up: <span class="text-red-500">Incorrect ✗</span> (Should be: ${displayFollowUp})</p>`;
-            }
+            // Build table rows
+            const trustIcon = userTrust === analysisTrust ? 
+                '<svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
+                '<svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            
+            const decisionIcon = userDecision === analysisDecision ? 
+                '<svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
+                '<svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            
+            const followUpIcon = userFollowUp === analysisFollowUp ? 
+                '<svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
+                '<svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
 
-            // Add competitor information to feedback
-            feedbackMessage += `<p class="mt-4">Competing against: <strong>${this.state.currentCompetitor.name}</strong></p>`;
-            feedbackMessage += `<p>${this.state.currentCompetitor.description}</p>`;
+            // Count correct choices
+            if (userTrust === analysisTrust) correctChoices++;
+            if (userDecision === analysisDecision) correctChoices++;
+            if (userFollowUp === analysisFollowUp) correctChoices++;
+
+            // Create table format
+            feedbackMessage = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="text-left py-1 px-2 font-medium text-gray-700 whitespace-nowrap"></th>
+                                <th class="text-left py-1 px-2 font-medium text-gray-700 whitespace-nowrap">Your Choice</th>
+                                <th class="text-left py-1 px-2 font-medium text-gray-700 whitespace-nowrap">Correct Choice</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-gray-100">
+                                <td class="py-1 px-2 flex items-center space-x-2 whitespace-nowrap">
+                                    ${trustIcon}
+                                    <span class="font-medium text-gray-700">Trustworthy?</span>
+                                </td>
+                                <td class="py-1 px-2 text-blue-600 whitespace-nowrap">${userTrustDisplay}</td>
+                                <td class="py-1 px-2 text-gray-600 whitespace-nowrap">${displayTrust}</td>
+                            </tr>
+                            <tr class="border-b border-gray-100">
+                                <td class="py-1 px-2 flex items-center space-x-2 whitespace-nowrap">
+                                    ${decisionIcon}
+                                    <span class="font-medium text-gray-700">Decision</span>
+                                </td>
+                                <td class="py-1 px-2 text-blue-600 whitespace-nowrap">${userDecisionDisplay}</td>
+                                <td class="py-1 px-2 text-gray-600 whitespace-nowrap">${displayDecision}</td>
+                            </tr>
+                            <tr>
+                                <td class="py-1 px-2 flex items-center space-x-2 whitespace-nowrap">
+                                    ${followUpIcon}
+                                    <span class="font-medium text-gray-700">Follow-up</span>
+                                </td>
+                                <td class="py-1 px-2 text-blue-600 whitespace-nowrap">${userFollowUpDisplay}</td>
+                                <td class="py-1 px-2 text-gray-600 whitespace-nowrap">${displayFollowUp}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
 
             // Calculate score based on performance
             const isPerfect = (correctChoices === totalChoices);
             const isGood = (correctChoices >= 2);
 
+            // Store the result for this experiment in the round
+            const experimentResult = {
+                experiment: this.state.experimentsInCurrentRound,
+                isPerfect: isPerfect,
+                isGood: isGood,
+                correctChoices: correctChoices
+            };
+            this.state.roundResults[this.state.experimentsInCurrentRound - 1] = experimentResult;
+
+            // Update feedback icon and title based on performance
+            const feedbackIcon1 = document.getElementById('feedback-icon-1');
+            const feedbackIcon2 = document.getElementById('feedback-icon-2');
+            const feedbackIcon3 = document.getElementById('feedback-icon-3');
+            const feedbackTitle = document.getElementById('feedback-title');
+            const scoreCardTitle = document.getElementById('score-card-title');
+            const scoreDisplay = document.getElementById('score-display');
+            
+            // Create the score card title with round and experiment info
+            const scoreCardTitleText = `Round ${this.state.currentRound}, Experiment ${this.state.experimentsInCurrentRound}`;
+            
+            // Update tick marks based on round progress
+            this.updateRoundTickMarks();
+            
             if (isPerfect) {
                 this.state.score++;
                 this.state.correctInCurrentRound++;
-                feedbackMessage += `<p class="mt-4 text-lg font-semibold">Round ${this.state.currentRound} Progress: ${this.state.correctInCurrentRound}/${this.state.experimentsInCurrentRound} correct</p>`;
-                ModalManager.showFeedback(true, `<p class="text-xl font-semibold mb-4">Perfect! All decisions were correct.</p>${feedbackMessage}`);
+                
+                feedbackTitle.textContent = 'Score Card';
+                scoreCardTitle.textContent = scoreCardTitleText;
+                
+                // Update score display for perfect performance
+                scoreDisplay.className = 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-2 mt-2';
+                scoreDisplay.innerHTML = `
+                    <p class="text-xs text-gray-600 leading-tight text-center">
+                        <span class="text-green-700 font-semibold">Perfect! All 3 decisions right: </span>
+                        <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-green-500 rounded-full shadow-sm">+1</span>
+                        <span class="text-green-700 font-semibold"> point!</span>
+                    </p>
+                `;
+                
+                ModalManager.showFeedback(true, feedbackMessage);
             } else if (isGood) {
                 this.state.score += 0.5;
                 this.state.correctInCurrentRound++;
-                feedbackMessage += `<p class="mt-4 text-lg font-semibold">Round ${this.state.currentRound} Progress: ${this.state.correctInCurrentRound}/${this.state.experimentsInCurrentRound} correct</p>`;
-                ModalManager.showFeedback(true, `<p class="text-xl font-semibold mb-4">Good job! You got ${correctChoices}/${totalChoices} decisions correct.</p>${feedbackMessage}`);
+                
+                feedbackTitle.textContent = 'Score Card';
+                scoreCardTitle.textContent = scoreCardTitleText;
+                
+                // Update score display for good performance
+                scoreDisplay.className = 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-2 mt-2';
+                scoreDisplay.innerHTML = `
+                    <p class="text-xs text-gray-600 leading-tight text-center">
+                        <span class="text-blue-700 font-semibold">Good Job! You got ${correctChoices} out of 3 right: </span>
+                        <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-blue-500 rounded-full shadow-sm">+0.5</span>
+                        <span class="text-blue-700 font-semibold"> point!</span>
+                    </p>
+                `;
+                
+                ModalManager.showFeedback(true, feedbackMessage);
             } else {
-                feedbackMessage += `<p class="mt-4 text-lg font-semibold">Round ${this.state.currentRound} Progress: ${this.state.correctInCurrentRound}/${this.state.experimentsInCurrentRound} correct</p>`;
-                ModalManager.showFeedback(false, `<p class="text-xl font-semibold mb-4">You got ${correctChoices}/${totalChoices} decisions correct.</p>${feedbackMessage}`);
+                feedbackTitle.textContent = 'Score Card';
+                scoreCardTitle.textContent = scoreCardTitleText;
+                
+                // Update score display for poor performance
+                scoreDisplay.className = 'bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-lg p-2 mt-2';
+                if (correctChoices === 0) {
+                    scoreDisplay.innerHTML = `
+                        <p class="text-xs text-gray-600 leading-tight text-center">
+                            <span class="text-red-700 font-semibold">Oops! No right decisions, no points!</span>
+                            <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full shadow-sm">+0</span>
+                        </p>
+                    `;
+                } else {
+                    scoreDisplay.innerHTML = `
+                        <p class="text-xs text-gray-600 leading-tight text-center">
+                            <span class="text-red-700 font-semibold">Oops! Just 1, not enough to score: </span>
+                            <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full shadow-sm">+0</span>
+                            <span class="text-red-700 font-semibold"> points!</span>
+                        </p>
+                    `;
+                }
+                
+                if (correctChoices === 0) {
+                    ModalManager.showFeedback(false, feedbackMessage);
+                } else {
+                    ModalManager.showFeedback(false, feedbackMessage);
+                }
             }
 
             const accuracy = Math.round((this.state.score / this.state.totalAttempts) * 100);
@@ -1004,13 +1151,27 @@ const UIController = {
     },
 
     updateScoreDisplay() {
-        document.getElementById('score').textContent = this.state.score;
-        document.getElementById('modal-score').textContent = this.state.score;
+        const scoreElement = document.getElementById('score');
+        const modalScoreElement = document.getElementById('modal-score');
+        
+        if (scoreElement) {
+            scoreElement.textContent = this.state.score;
+        }
+        if (modalScoreElement) {
+            modalScoreElement.textContent = this.state.score;
+        }
     },
 
     updateAccuracyDisplay(accuracy) {
-        document.getElementById('accuracy').textContent = `${accuracy}%`;
-        document.getElementById('modal-accuracy').textContent = `${accuracy}%`;
+        const accuracyElement = document.getElementById('accuracy');
+        const modalAccuracyElement = document.getElementById('modal-accuracy');
+        
+        if (accuracyElement) {
+            accuracyElement.textContent = `${accuracy}%`;
+        }
+        if (modalAccuracyElement) {
+            modalAccuracyElement.textContent = `${accuracy}%`;
+        }
     },
 
     updateRoundDisplay() {
@@ -1037,6 +1198,7 @@ const UIController = {
                 this.state.experimentsInCurrentRound = 0;
                 this.state.correctInCurrentRound = 0;
                 this.state.currentRound++; // Increment the round number
+                this.state.roundResults = []; // Reset round results for new round
                 this.updateRoundDisplay(); // Update the round display
                 // Show round splash first
                 this.showRoundSplash();
@@ -1158,6 +1320,7 @@ const UIController = {
         this.state.competitorCumulativeEffect = 0;
         this.state.currentCompetitor = null;
         this.state.selectedCompetitor = null;
+        this.state.roundResults = []; // Reset round results
 
         // Update displays
         this.updateScoreDisplay();
@@ -1201,9 +1364,62 @@ const UIController = {
 
     updateCompetitorName() {
         const competitorName = this.state.currentCompetitor.name;
-        document.getElementById('competitor-name').textContent = competitorName;
-        document.getElementById('modal-competitor-name').textContent = competitorName;
-        document.getElementById('final-competitor-name').textContent = competitorName;
+        const competitorNameElement = document.getElementById('competitor-name');
+        const finalCompetitorNameElement = document.getElementById('final-competitor-name');
+        const modalCompetitorNameElement = document.getElementById('modal-competitor-name');
+        
+        if (competitorNameElement) {
+            competitorNameElement.textContent = competitorName;
+        }
+        if (finalCompetitorNameElement) {
+            finalCompetitorNameElement.textContent = competitorName;
+        }
+        if (modalCompetitorNameElement) {
+            modalCompetitorNameElement.textContent = competitorName;
+        }
+    },
+
+    updateRoundTickMarks() {
+        const feedbackIcon1 = document.getElementById('feedback-icon-1');
+        const feedbackIcon2 = document.getElementById('feedback-icon-2');
+        const feedbackIcon3 = document.getElementById('feedback-icon-3');
+        const roundProgressText = document.getElementById('round-progress-text');
+        
+        // Update round progress text
+        if (roundProgressText) {
+            roundProgressText.textContent = `Round ${this.state.currentRound} Progress: ${this.state.correctInCurrentRound}/${this.state.experimentsInCurrentRound} correct`;
+        }
+        
+        // Reset all icons to gray placeholder (empty circles)
+        [feedbackIcon1, feedbackIcon2, feedbackIcon3].forEach(icon => {
+            icon.className = 'flex items-center justify-center h-10 w-10 rounded-full bg-gray-200';
+            icon.innerHTML = '';
+        });
+        
+        // Update icons based on round results
+        for (let i = 0; i < this.state.roundResults.length; i++) {
+            const result = this.state.roundResults[i];
+            const icon = [feedbackIcon1, feedbackIcon2, feedbackIcon3][i];
+            const isCurrentExperiment = (i === this.state.experimentsInCurrentRound - 1);
+            
+            if (result) {
+                if (result.isPerfect || result.isGood) {
+                    // Green checkmark for any points scored (perfect or good)
+                    const baseClass = 'flex items-center justify-center rounded-full bg-green-100';
+                    const sizeClass = isCurrentExperiment ? 'h-12 w-12 border-2 border-green-600' : 'h-10 w-10';
+                    icon.className = `${baseClass} ${sizeClass}`;
+                    const iconSize = isCurrentExperiment ? 'h-6 w-6' : 'h-5 w-5';
+                    icon.innerHTML = `<svg class="${iconSize} text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+                } else {
+                    // Red X only when no points are scored (poor performance)
+                    const baseClass = 'flex items-center justify-center rounded-full bg-red-100';
+                    const sizeClass = isCurrentExperiment ? 'h-12 w-12 border-2 border-red-600' : 'h-10 w-10';
+                    icon.className = `${baseClass} ${sizeClass}`;
+                    const iconSize = isCurrentExperiment ? 'h-6 w-6' : 'h-5 w-5';
+                    icon.innerHTML = `<svg class="${iconSize} text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+                }
+            }
+        }
     }
 };
 
