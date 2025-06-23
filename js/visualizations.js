@@ -84,12 +84,17 @@ const ModalManager = {
         }
 
         document.getElementById('feedback-message').innerHTML = message;
-        
+
         // Update competitor name in the modal
         if (typeof UIController !== 'undefined' && UIController.updateCompetitorName) {
             UIController.updateCompetitorName();
         }
-        
+
+        // Initialize tooltip behaviour for dynamic content
+        if (typeof UIController !== 'undefined' && UIController.initializeTooltipTriggers) {
+            UIController.initializeTooltipTriggers(document.getElementById('feedback-message'));
+        }
+
         this.show(this.modals.feedback);
     },
 

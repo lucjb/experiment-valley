@@ -908,6 +908,9 @@ function analyzeExperiment(experiment) {
     let trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
     let decision = EXPERIMENT_DECISION.KEEP_RUNNING;
     let followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
+    let trustworthyReason = '';
+    let decisionReason = '';
+    let followUpReason = '';
 
     const { pValue: ratioPValue } = checkSampleRatioMismatch(actualVisitorsBase, actualVisitorsVariant);
     const hasSampleRatioMismatch = ratioPValue < 0.0001;
@@ -935,6 +938,12 @@ function analyzeExperiment(experiment) {
     const significant = pValue < alpha;
     const isEffectPositive = actualConversionsBase < actualConversionsVariant;
 
+    const issues = [];
+    if (hasSampleRatioMismatch) issues.push('sample ratio mismatch');
+    if (hasBaseRateMismatch) issues.push('base rate mismatch');
+    if (hasTrafficMismatch) issues.push('traffic mismatch');
+    if (hasDataLoss) issues.push('data loss');
+
     const mismatch = hasSampleRatioMismatch ||
         hasBaseRateMismatch ||
         hasTrafficMismatch ||
@@ -942,31 +951,49 @@ function analyzeExperiment(experiment) {
 
     if (mismatch) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
+        trustworthyReason = `Data issues detected: ${issues.join(', ')}`;
         decision = EXPERIMENT_DECISION.KEEP_BASE;
+        decisionReason = 'Results unreliable due to data issues';
         followUp = EXPERIMENT_FOLLOW_UP.RERUN;
+        followUpReason = 'Fix issues and rerun the experiment';
     } else if (!finished && (lowSampleSize || !fullWeek)) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
+        trustworthyReason = 'Data quality checks passed so far';
         decision = EXPERIMENT_DECISION.KEEP_RUNNING;
+        decisionReason = 'Need more data before deciding';
         followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
+        followUpReason = 'Collect additional data';
     } else if (finished && (lowSampleSize || !fullWeek)) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
+        trustworthyReason = 'Runtime finished without enough data or full weeks';
         decision = EXPERIMENT_DECISION.KEEP_RUNNING;
+        decisionReason = 'Not enough data even though runtime finished';
         followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
+        followUpReason = 'Continue gathering data';
     } else if (!significant || !isEffectPositive) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
+        trustworthyReason = 'Data quality checks passed';
         decision = EXPERIMENT_DECISION.KEEP_BASE;
+        decisionReason = 'Variant does not outperform base significantly';
         followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
+        followUpReason = 'Try a new variant';
     } else {
         trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
+        trustworthyReason = 'Data quality checks passed';
         decision = EXPERIMENT_DECISION.KEEP_VARIANT;
+        decisionReason = 'Variant performs significantly better';
         followUp = EXPERIMENT_FOLLOW_UP.CELEBRATE;
+        followUpReason = 'Launch the variant';
     }
 
     return {
         decision: {
             trustworthy: trustworthy,
+            trustworthyReason: trustworthyReason,
             decision: decision,
-            followUp: followUp
+            decisionReason: decisionReason,
+            followUp: followUp,
+            followUpReason: followUpReason
         },
         analysis: {
             hasSignificantRatioMismatch: hasSampleRatioMismatch,

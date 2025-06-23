@@ -465,6 +465,57 @@ const UIController = {
         visitorsHeader.appendChild(this.createWarningIcon(message));
     },
 
+    // Attach tooltip behaviour to dynamically added elements
+    initializeTooltipTriggers(parent) {
+        if (!parent) return;
+        const triggers = parent.querySelectorAll('.tooltip-trigger');
+        triggers.forEach(trigger => {
+            trigger.addEventListener('mousemove', function (e) {
+                const tooltip = this.querySelector('.tooltip-content');
+                if (!tooltip) return;
+
+                const rect = this.getBoundingClientRect();
+                const tooltipHeight = tooltip.offsetHeight;
+                const tooltipWidth = tooltip.offsetWidth;
+                const spaceAbove = rect.top;
+                const spaceBelow = window.innerHeight - rect.bottom;
+
+                let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+                if (left < 10) left = 10;
+                if (left + tooltipWidth > window.innerWidth - 10) {
+                    left = window.innerWidth - tooltipWidth - 10;
+                }
+
+                let top;
+                if (spaceAbove >= tooltipHeight + 10) {
+                    top = rect.top - tooltipHeight - 10;
+                } else if (spaceBelow >= tooltipHeight + 10) {
+                    top = rect.bottom + 10;
+                } else {
+                    top = spaceAbove > spaceBelow ?
+                        rect.top - tooltipHeight - 10 :
+                        rect.bottom + 10;
+                }
+
+                tooltip.style.left = left + 'px';
+                tooltip.style.top = top + 'px';
+            });
+        });
+    },
+
+    // Explanations for each decision are provided in the analysis object
+    getTrustExplanation(analysis) {
+        return analysis.decision.trustworthyReason || '';
+    },
+
+    getDecisionExplanation(analysis) {
+        return analysis.decision.decisionReason || '';
+    },
+
+    getFollowUpExplanation(analysis) {
+        return analysis.decision.followUpReason || '';
+    },
+
     updateExperimentDisplay() {
         const challenge = this.state.challenge;
         const formatPercentage = (value) => {
@@ -971,18 +1022,22 @@ const UIController = {
                                       userFollowUp === "VALIDATE" ? "Validate" :
                                       userFollowUp === "RERUN" ? "Fix & Rerun" : "None";
 
-            // Build table rows
-            const trustIcon = userTrust === analysisTrust ? 
+            // Build table rows with optional tooltips
+            const trustExplanation = userTrust === analysisTrust ? '' : this.getTrustExplanation(analysis);
+            const decisionExplanation = userDecision === analysisDecision ? '' : this.getDecisionExplanation(analysis);
+            const followUpExplanation = userFollowUp === analysisFollowUp ? '' : this.getFollowUpExplanation(analysis);
+
+            const trustIcon = userTrust === analysisTrust ?
                 '<svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
-                '<svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
-            
-            const decisionIcon = userDecision === analysisDecision ? 
+                `<span class="tooltip-trigger"><svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg><span class="tooltip-content">${trustExplanation}</span></span>`;
+
+            const decisionIcon = userDecision === analysisDecision ?
                 '<svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
-                '<svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
-            
-            const followUpIcon = userFollowUp === analysisFollowUp ? 
+                `<span class="tooltip-trigger"><svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg><span class="tooltip-content">${decisionExplanation}</span></span>`;
+
+            const followUpIcon = userFollowUp === analysisFollowUp ?
                 '<svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
-                '<svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+                `<span class="tooltip-trigger"><svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg><span class="tooltip-content">${followUpExplanation}</span></span>`;
 
             // Count correct choices
             if (userTrust === analysisTrust) correctChoices++;
@@ -1122,6 +1177,9 @@ const UIController = {
                     ModalManager.showFeedback(false, feedbackMessage);
                 }
             }
+
+            // Initialize tooltips for any mistake explanations
+            this.initializeTooltipTriggers(document.getElementById('feedback-message'));
 
             const accuracy = Math.round((this.state.score / this.state.totalAttempts) * 100);
             this.updateScoreDisplay();
