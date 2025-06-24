@@ -649,11 +649,6 @@
                                 IMPACT
                             </h4>
                             <div class="space-y-2 text-sm">
-                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-2">
-                                    <p class="text-gray-700" id="modal-best-variant">
-                                        Variant is best with a true effect of <span class="font-semibold text-blue-600" id="modal-actual-effect">13 cpd</span>.
-                                    </p>
-                                </div>
                                 <div class="overflow-x-auto">
                                     <table class="w-full text-sm border-collapse">
                                         <thead>
@@ -682,6 +677,15 @@
                                             </tr>
                                         </tbody>
                                     </table>
+                                </div>
+                                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-2 mt-2" id="impact-display">
+                                    <div class="text-xs text-gray-600 leading-tight text-center space-y-1">
+                                        <div id="modal-best-variant">
+                                            Variant is best with a true effect of <span id="modal-actual-effect">13 cpd</span>.
+                                        </div>
+                                        <div id="modal-opponent-choice"></div>
+                                        <div id="modal-impact-line"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
