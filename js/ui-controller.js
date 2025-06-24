@@ -945,12 +945,105 @@ const UIController = {
             const actualEffectCpd = calculateConversionImpact(actualEffect);
             const bestVariant = actualEffectCpd > 0 ? "Variant" : "Base";
             
-            // Create the narrative text based on which variant is best
-            let bestVariantText;
-            if (actualEffectCpd > 0) {
-                bestVariantText = `Variant is best with a true effect of ${actualEffectCpd} cpd.`;
+            // Determine if user made the correct decision
+            const userImplementDecision = this.state.implementDecision;
+            const correctDecision = analysis.decision.decision;
+            const userMadeCorrectDecision = (userImplementDecision === correctDecision);
+            
+            // Create the impact message based on relative impact compared to opponent
+            let impactMessage;
+            let impactDisplayClass;
+            let impactTextClass;
+            
+            // Calculate relative impact (user impact - opponent impact)
+            const userImpactValue = (userImplementDecision === "KEEP_VARIANT") ? actualEffectCpd : 0;
+            const opponentImpactValue = (competitorDecision.decision === "KEEP_VARIANT") ? actualEffectCpd : 0;
+            const relativeImpact = userImpactValue - opponentImpactValue;
+            
+            // Determine if user made the optimal choice (chose the better variant)
+            const userChoseBest = (actualEffectCpd > 0 && userImplementDecision === "KEEP_VARIANT") || 
+                                 (actualEffectCpd < 0 && userImplementDecision === "KEEP_BASE");
+            
+            // Color coding based on relative impact
+            if (relativeImpact > 0) {
+                // User scores positive relative impact
+                impactDisplayClass = 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-2 mt-2';
+                impactTextClass = 'text-green-700 font-semibold';
+            } else if (relativeImpact < 0) {
+                // User scores negative relative impact
+                impactDisplayClass = 'bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-lg p-2 mt-2';
+                impactTextClass = 'text-red-700 font-semibold';
             } else {
-                bestVariantText = `Base is best, Variant's true effect is ${actualEffectCpd} cpd.`;
+                // User scores zero relative impact
+                impactDisplayClass = 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-2 mt-2';
+                impactTextClass = 'text-blue-700 font-semibold';
+            }
+            
+            // Construct message based on true effect and choices
+            if (actualEffectCpd === 0) {
+                // Line 1: Prefix and true effect
+                impactMessage = `No difference between base and variant.`;
+                
+                // Line 2: Opponent choice (empty for no effect case)
+                const opponentChoiceElement = document.getElementById('modal-opponent-choice');
+                if (opponentChoiceElement) {
+                    opponentChoiceElement.textContent = '';
+                }
+                
+                // Line 3: Impact with badge
+                const impactLineElement = document.getElementById('modal-impact-line');
+                if (impactLineElement) {
+                    impactLineElement.innerHTML = `your relative impact is <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-blue-500 rounded-full shadow-sm">0 cpd</span>`;
+                }
+            } else {
+                const isCorrect = userChoseBest || actualEffectCpd === 0;
+                var prefix = isCorrect ? "Correct!" : "Oops!";
+                if (userImplementDecision === "KEEP_RUNNING") {
+                    prefix = "";
+                }
+                
+                let opponentChoiceText;
+                if (competitorDecision.decision === "KEEP_VARIANT") {
+                    opponentChoiceText = "variant";
+                } else if (competitorDecision.decision === "KEEP_BASE") {
+                    opponentChoiceText = "base";
+                } else {
+                    opponentChoiceText = "keep running";
+                }
+                
+                // Line 1: Prefix and true effect
+                impactMessage = `${prefix} The true effect is ${actualEffectCpd} cpd.`;
+                
+                // Line 2: Opponent choice
+                const opponentChoiceElement = document.getElementById('modal-opponent-choice');
+                if (opponentChoiceElement) {
+                    const opponentName = this.state.currentCompetitor ? this.state.currentCompetitor.name : 'Opponent';
+                    opponentChoiceElement.textContent = `Since ${opponentName} chose ${opponentChoiceText},`;
+                }
+                
+                // Line 3: Impact with badge
+                const badgeColor = relativeImpact > 0 ? 'bg-green-500' : relativeImpact < 0 ? 'bg-red-500' : 'bg-blue-500';
+                const impactLineElement = document.getElementById('modal-impact-line');
+                const plus = relativeImpact >= 0 ? '+' : '';
+                if (impactLineElement) {
+                    impactLineElement.innerHTML = `your relative impact is <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white ${badgeColor} rounded-full shadow-sm">${plus}${relativeImpact} cpd</span>`;
+                }
+            }
+            
+            // Apply consistent styling to all text elements based on the color scheme
+            const textColorClass = relativeImpact > 0 ? 'text-green-700 font-semibold' : relativeImpact < 0 ? 'text-red-700 font-semibold' : 'text-blue-700 font-semibold';
+            
+            const bestVariantElement = document.getElementById('modal-best-variant');
+            const opponentChoiceElement = document.getElementById('modal-opponent-choice');
+            const impactLineElement = document.getElementById('modal-impact-line');
+            
+            if (bestVariantElement) bestVariantElement.className = textColorClass;
+            if (opponentChoiceElement) opponentChoiceElement.className = textColorClass;
+            if (impactLineElement) {
+                // Keep the existing content but update the text color
+                const currentContent = impactLineElement.innerHTML;
+                impactLineElement.className = textColorClass;
+                impactLineElement.innerHTML = currentContent;
             }
             
             // Determine if user and competitor made correct choices
@@ -967,7 +1060,7 @@ const UIController = {
                 '<svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
             
             const modalElements = {
-                'modal-best-variant': bestVariantText,
+                'modal-best-variant': impactMessage,
                 'modal-user-choice': userChoice,
                 'modal-user-impact': userImpact,
                 'modal-competitor-choice': competitorChoice,
@@ -987,6 +1080,41 @@ const UIController = {
                     }
                 }
             });
+
+            // Set impact table content cell colors to match their icons
+            const userChoiceElement = document.getElementById('modal-user-choice');
+            const userImpactElement = document.getElementById('modal-user-impact');
+            const competitorChoiceElement = document.getElementById('modal-competitor-choice');
+            const competitorImpactElement = document.getElementById('modal-competitor-impact');
+            
+            // Determine colors based on impact values
+            let userColor, competitorColor;
+            if (userImpact === competitorImpact) {
+                // Same impact - both blue
+                userColor = 'text-blue-600';
+                competitorColor = 'text-blue-600';
+            } else if (userImpact > competitorImpact) {
+                // User has higher impact - user green, competitor red
+                userColor = 'text-green-600';
+                competitorColor = 'text-red-600';
+            } else {
+                // Competitor has higher impact - competitor green, user red
+                userColor = 'text-red-600';
+                competitorColor = 'text-green-600';
+            }
+            
+            if (userChoiceElement) userChoiceElement.className = `py-1 px-2 ${userColor} whitespace-nowrap`;
+            if (userImpactElement) userImpactElement.className = `py-1 px-2 ${userColor} font-semibold whitespace-nowrap`;
+            if (competitorChoiceElement) competitorChoiceElement.className = `py-1 px-2 ${competitorColor} whitespace-nowrap`;
+            if (competitorImpactElement) competitorImpactElement.className = `py-1 px-2 ${competitorColor} font-semibold whitespace-nowrap`;
+
+            // Update impact display styling
+            const impactDisplay = document.getElementById('impact-display');
+            const impactText = document.getElementById('modal-best-variant');
+            if (impactDisplay && impactText) {
+                impactDisplay.className = impactDisplayClass;
+                impactText.className = impactTextClass;
+            }
 
             // Update competitor name in the modal
             this.updateCompetitorName();
@@ -1061,7 +1189,7 @@ const UIController = {
                                     ${trustIcon}
                                     <span class="font-medium text-gray-700">Trustworthy?</span>
                                 </td>
-                                <td class="py-1 px-2 text-blue-600 whitespace-nowrap">${userTrustDisplay}</td>
+                                <td class="py-1 px-2 ${userTrust === analysisTrust ? 'text-green-600' : 'text-red-600'} whitespace-nowrap">${userTrustDisplay}</td>
                                 <td class="py-1 px-2 text-gray-600 whitespace-nowrap">${displayTrust}</td>
                             </tr>
                             <tr class="border-b border-gray-100">
@@ -1069,7 +1197,7 @@ const UIController = {
                                     ${decisionIcon}
                                     <span class="font-medium text-gray-700">Decision</span>
                                 </td>
-                                <td class="py-1 px-2 text-blue-600 whitespace-nowrap">${userDecisionDisplay}</td>
+                                <td class="py-1 px-2 ${userDecision === analysisDecision ? 'text-green-600' : 'text-red-600'} whitespace-nowrap">${userDecisionDisplay}</td>
                                 <td class="py-1 px-2 text-gray-600 whitespace-nowrap">${displayDecision}</td>
                             </tr>
                             <tr>
@@ -1077,7 +1205,7 @@ const UIController = {
                                     ${followUpIcon}
                                     <span class="font-medium text-gray-700">Follow-up</span>
                                 </td>
-                                <td class="py-1 px-2 text-blue-600 whitespace-nowrap">${userFollowUpDisplay}</td>
+                                <td class="py-1 px-2 ${userFollowUp === analysisFollowUp ? 'text-green-600' : 'text-red-600'} whitespace-nowrap">${userFollowUpDisplay}</td>
                                 <td class="py-1 px-2 text-gray-600 whitespace-nowrap">${displayFollowUp}</td>
                             </tr>
                         </tbody>
