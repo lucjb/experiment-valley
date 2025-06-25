@@ -532,6 +532,8 @@ const UIController = {
         document.getElementById('exp-required-sample').textContent = challenge.experiment.requiredSampleSizePerVariant.toLocaleString();
         document.getElementById('exp-total-required-sample').textContent = (challenge.experiment.requiredSampleSizePerVariant * 2).toLocaleString();
         document.getElementById('exp-required-days').textContent = `${challenge.experiment.requiredRuntimeDays} days`;
+        const direction = challenge.experiment.improvementDirection === window.IMPROVEMENT_DIRECTION.LOWER ? 'Lower is Better' : 'Higher is Better';
+        document.getElementById('exp-improvement-direction').textContent = direction;
 
         // Update conversion rates tab header if there's data loss
         if (this.debugMode() && window.currentAnalysis?.analysis?.hasDataLoss) {
@@ -943,7 +945,9 @@ const UIController = {
             
             // Update modal displays
             const actualEffectCpd = calculateConversionImpact(actualEffect);
-            const bestVariant = actualEffectCpd > 0 ? "Variant" : "Base";
+            const directionFactor = challenge.experiment.improvementDirection === window.IMPROVEMENT_DIRECTION.LOWER ? -1 : 1;
+            const adjustedEffect = actualEffectCpd * directionFactor;
+            const bestVariant = adjustedEffect > 0 ? "Variant" : "Base";
             
             // Determine if user made the correct decision
             const userImplementDecision = this.state.implementDecision;
@@ -956,13 +960,13 @@ const UIController = {
             let impactTextClass;
             
             // Calculate relative impact (user impact - opponent impact)
-            const userImpactValue = (userImplementDecision === "KEEP_VARIANT") ? actualEffectCpd : 0;
-            const opponentImpactValue = (competitorDecision.decision === "KEEP_VARIANT") ? actualEffectCpd : 0;
+            const userImpactValue = (userImplementDecision === "KEEP_VARIANT") ? adjustedEffect : 0;
+            const opponentImpactValue = (competitorDecision.decision === "KEEP_VARIANT") ? adjustedEffect : 0;
             const relativeImpact = userImpactValue - opponentImpactValue;
             
             // Determine if user made the optimal choice (chose the better variant)
-            const userChoseBest = (actualEffectCpd > 0 && userImplementDecision === "KEEP_VARIANT") || 
-                                 (actualEffectCpd < 0 && userImplementDecision === "KEEP_BASE");
+            const userChoseBest = (adjustedEffect > 0 && userImplementDecision === "KEEP_VARIANT") ||
+                                 (adjustedEffect < 0 && userImplementDecision === "KEEP_BASE");
             
             // Color coding based on relative impact
             if (relativeImpact > 0) {

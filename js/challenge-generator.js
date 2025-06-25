@@ -680,6 +680,7 @@ const BASE_RATE_MISMATCH = { NO: 10000000, YES: 100 };
 const EFFECT_SIZE = { NONE: 0, SMALL_IMPROVEMENT: 0.05, IMPROVEMENT: 0.85, LARGE_IMPROVEMENT: 2, DEGRADATION: -0.8, SMALL_DEGRADATION: -0.05, LARGE_DEGRADATION: -2 };
 const SAMPLE_RATIO_MISMATCH = { NO: 0.5, LARGE: 0.4, SMALL: 0.47 };
 const VISITORS_LOSS = { NO: false, YES: true };
+const IMPROVEMENT_DIRECTION = { HIGHER: 'HIGHER_IS_BETTER', LOWER: 'LOWER_IS_BETTER' };
 
 function generateABTestChallenge(
     timeProgress = TIME_PROGRESS.FULL,
@@ -687,7 +688,8 @@ function generateABTestChallenge(
     effectSize = EFFECT_SIZE.NONE,
     sampleRatioMismatch = SAMPLE_RATIO_MISMATCH.NO,
     sampleProgress = SAMPLE_PROGRESS.TIME,
-    visitorsLoss = VISITORS_LOSS.NO) {
+    visitorsLoss = VISITORS_LOSS.NO,
+    improvementDirection = IMPROVEMENT_DIRECTION.HIGHER) {
 
     // Predefined options for each parameter
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
@@ -814,7 +816,8 @@ function generateABTestChallenge(
             visitorsPerDay: VISITORS_PER_DAY,
             businessCycleDays: BUSINESS_CYCLE_DAYS,
             requiredSampleSizePerVariant: requiredSampleSizePerVariant,
-            requiredRuntimeDays: requiredRuntimeDays
+            requiredRuntimeDays: requiredRuntimeDays,
+            improvementDirection: improvementDirection
         },
         simulation: {
             actualBaseConversionRate: actualBaseConversionRate,
@@ -900,7 +903,8 @@ function analyzeExperiment(experiment) {
             baseConversionRate,
             visitorsPerDay,
             requiredSampleSizePerVariant,
-            requiredRuntimeDays
+            requiredRuntimeDays,
+            improvementDirection
         }
     } = experiment;
 
@@ -936,7 +940,10 @@ function analyzeExperiment(experiment) {
     const fullWeek = currentRuntimeDays >= 7 && currentRuntimeDays % 7 === 0;
     const finished = requiredRuntimeDays === currentRuntimeDays;
     const significant = pValue < alpha;
-    const isEffectPositive = actualConversionsBase < actualConversionsVariant;
+    const variantRate = actualConversionsVariant / actualVisitorsVariant;
+    const baseRate = actualConversionsBase / actualVisitorsBase;
+    const directionFactor = improvementDirection === IMPROVEMENT_DIRECTION.LOWER ? -1 : 1;
+    const isEffectPositive = directionFactor * (variantRate - baseRate) > 0;
 
     const issues = [];
     if (hasSampleRatioMismatch) issues.push('sample ratio mismatch');
@@ -974,14 +981,18 @@ function analyzeExperiment(experiment) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
         trustworthyReason = 'Data quality checks passed';
         decision = EXPERIMENT_DECISION.KEEP_BASE;
-        decisionReason = 'Variant does not outperform base significantly';
+        decisionReason = 'Variant does not beat base in the required direction';
         followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
         followUpReason = 'Try a new variant';
     } else {
         trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
         trustworthyReason = 'Data quality checks passed';
         decision = EXPERIMENT_DECISION.KEEP_VARIANT;
-        decisionReason = 'Variant performs significantly better';
+        if (improvementDirection === IMPROVEMENT_DIRECTION.LOWER) {
+            decisionReason = 'Variant conversion rate is significantly lower as desired';
+        } else {
+            decisionReason = 'Variant performs significantly better';
+        }
         followUp = EXPERIMENT_FOLLOW_UP.CELEBRATE;
         followUpReason = 'Launch the variant';
     }
@@ -1034,3 +1045,4 @@ function analyzeExperiment(experiment) {
 
 window.generateABTestChallenge = generateABTestChallenge;
 window.analyzeExperiment = analyzeExperiment;
+window.IMPROVEMENT_DIRECTION = IMPROVEMENT_DIRECTION;

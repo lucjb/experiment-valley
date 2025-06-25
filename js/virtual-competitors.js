@@ -51,7 +51,8 @@ const VirtualCompetitors = {
             const day14Point = timeline.timePoints.find(point => 
                 point.period.startDay <= 14 && point.period.endDay >= 14
             );
-            const cumulativeDiff = day14Point ? day14Point.difference.cumulativeRate : 0;
+            const directionFactor = experiment.experiment.improvementDirection === IMPROVEMENT_DIRECTION.LOWER ? -1 : 1;
+            const cumulativeDiff = day14Point ? day14Point.difference.cumulativeRate * directionFactor : 0;
             
             if (daysElapsed >= 14) {
                 if (cumulativeDiff > 0) {
@@ -99,8 +100,9 @@ const VirtualCompetitors = {
 
             // After a week, check confidence intervals
             // Look for at least one time point after day 6 where the lower bound of the cumulative difference CI is positive
-            const hasPositiveLowerBound = timePoints.some(point => 
-                point.period.startDay > 6 && point.difference.cumulativeRateCI[0] > 0
+            const directionFactor = experiment.experiment.improvementDirection === IMPROVEMENT_DIRECTION.LOWER ? -1 : 1;
+            const hasPositiveLowerBound = timePoints.some(point =>
+                point.period.startDay > 6 && (point.difference.cumulativeRateCI[0] * directionFactor) > 0
             );
 
             if (hasPositiveLowerBound) {
