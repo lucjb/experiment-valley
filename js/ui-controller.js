@@ -910,11 +910,10 @@ const UIController = {
                 return Math.round(effectSize * expectedDailyVisitors);
             };
 
-            // Calculate user's impact for this challenge
+            // Record user's chosen option
             let userImpact = 0;
             let userChoice = "None";
             if (this.state.implementDecision === "KEEP_VARIANT") {
-                userImpact = calculateConversionImpact(actualEffect);
                 userChoice = "Variant";
             } else if (this.state.implementDecision === "KEEP_BASE") {
                 userChoice = "Base";
@@ -922,18 +921,36 @@ const UIController = {
                 userChoice = "Keep Running";
             }
 
-            // Get competitor's decision and calculate their impact
+            // Get competitor's decision
             const competitorDecision = this.state.currentCompetitor.makeDecision(experiment);
             let competitorImpact = 0;
             let competitorChoice = "None";
-            
+
             if (competitorDecision.decision === "KEEP_VARIANT") {
-                competitorImpact = calculateConversionImpact(actualEffect);
                 competitorChoice = "Variant";
             } else if (competitorDecision.decision === "KEEP_BASE") {
                 competitorChoice = "Base";
             } else if (competitorDecision.decision === "KEEP_RUNNING") {
                 competitorChoice = "Keep Running";
+            }
+
+            // Determine which variant is better based on improvement direction
+            const actualEffectCpd = calculateConversionImpact(actualEffect);
+            const directionFactor = experiment.experiment.improvementDirection === window.IMPROVEMENT_DIRECTION.LOWER ? -1 : 1;
+            const adjustedEffect = actualEffectCpd * directionFactor;
+            const variantBetter = adjustedEffect > 0;
+            const effectMagnitude = Math.abs(actualEffectCpd);
+
+            // Calculate impact for user based on correctness
+            if ((variantBetter && this.state.implementDecision === "KEEP_VARIANT") ||
+                (!variantBetter && this.state.implementDecision === "KEEP_BASE")) {
+                userImpact = effectMagnitude;
+            }
+
+            // Calculate impact for competitor based on correctness
+            if ((variantBetter && competitorDecision.decision === "KEEP_VARIANT") ||
+                (!variantBetter && competitorDecision.decision === "KEEP_BASE")) {
+                competitorImpact = effectMagnitude;
             }
 
             // Update cumulative effects
@@ -942,12 +959,9 @@ const UIController = {
 
             // Update impact displays
             this.updateImpactDisplay();
-            
+
             // Update modal displays
-            const actualEffectCpd = calculateConversionImpact(actualEffect);
-            const directionFactor = experiment.experiment.improvementDirection === window.IMPROVEMENT_DIRECTION.LOWER ? -1 : 1;
-            const adjustedEffect = actualEffectCpd * directionFactor;
-            const bestVariant = adjustedEffect > 0 ? "Variant" : "Base";
+            const bestVariant = variantBetter ? "Variant" : "Base";
             
             // Determine if user made the correct decision
             const userImplementDecision = this.state.implementDecision;
@@ -960,13 +974,13 @@ const UIController = {
             let impactTextClass;
             
             // Calculate relative impact (user impact - opponent impact)
-            const userImpactValue = (userImplementDecision === "KEEP_VARIANT") ? adjustedEffect : 0;
-            const opponentImpactValue = (competitorDecision.decision === "KEEP_VARIANT") ? adjustedEffect : 0;
+            const userImpactValue = userImpact;
+            const opponentImpactValue = competitorImpact;
             const relativeImpact = userImpactValue - opponentImpactValue;
             
             // Determine if user made the optimal choice (chose the better variant)
-            const userChoseBest = (adjustedEffect > 0 && userImplementDecision === "KEEP_VARIANT") ||
-                                 (adjustedEffect < 0 && userImplementDecision === "KEEP_BASE");
+            const userChoseBest = (variantBetter && userImplementDecision === "KEEP_VARIANT") ||
+                                 (!variantBetter && userImplementDecision === "KEEP_BASE");
             
             // Color coding based on relative impact
             if (relativeImpact > 0) {
