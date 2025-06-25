@@ -981,7 +981,7 @@ function analyzeExperiment(experiment) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
         trustworthyReason = 'Data quality checks passed';
         decision = EXPERIMENT_DECISION.KEEP_BASE;
-        decisionReason = 'Variant does not beat base in the required direction';
+        decisionReason = 'Variant does not beat base in the required direction. The observed delta must align with the improvement direction to declare a winner';
         followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
         followUpReason = 'Try a new variant';
     } else {

@@ -945,7 +945,7 @@ const UIController = {
             
             // Update modal displays
             const actualEffectCpd = calculateConversionImpact(actualEffect);
-            const directionFactor = challenge.experiment.improvementDirection === window.IMPROVEMENT_DIRECTION.LOWER ? -1 : 1;
+            const directionFactor = experiment.experiment.improvementDirection === window.IMPROVEMENT_DIRECTION.LOWER ? -1 : 1;
             const adjustedEffect = actualEffectCpd * directionFactor;
             const bestVariant = adjustedEffect > 0 ? "Variant" : "Base";
             
