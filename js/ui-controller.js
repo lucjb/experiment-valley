@@ -941,6 +941,17 @@ const UIController = {
             const variantBetter = adjustedEffect > 0;
             const effectMagnitude = Math.abs(actualEffectCpd);
 
+            // Impacts shown in the table should reflect the signed true effect
+            let userImpactDisplay = 0;
+            if (this.state.implementDecision === "KEEP_VARIANT") {
+                userImpactDisplay = actualEffectCpd;
+            }
+
+            let competitorImpactDisplay = 0;
+            if (competitorDecision.decision === "KEEP_VARIANT") {
+                competitorImpactDisplay = actualEffectCpd;
+            }
+
             // Calculate impact for user based on correctness
             if ((variantBetter && this.state.implementDecision === "KEEP_VARIANT") ||
                 (!variantBetter && this.state.implementDecision === "KEEP_BASE")) {
@@ -1080,9 +1091,9 @@ const UIController = {
             const modalElements = {
                 'modal-best-variant': impactMessage,
                 'modal-user-choice': userChoice,
-                'modal-user-impact': userImpact,
+                'modal-user-impact': userImpactDisplay,
                 'modal-competitor-choice': competitorChoice,
-                'modal-competitor-impact': competitorImpact,
+                'modal-competitor-impact': competitorImpactDisplay,
                 'modal-user-icon': userIcon,
                 'modal-competitor-icon': competitorIcon
             };
