@@ -25,6 +25,7 @@ const UIController = {
         this.initializeEventListeners();
         //this.initializeCheatSheet();
         this.initializeTabs();
+        // Leaderboard moved to separate page; no refresh here
     },
 
     debugMode() {
@@ -70,9 +71,32 @@ const UIController = {
         // Start button
         const startBtn = document.getElementById('start-btn');
         if (startBtn) {
-            startBtn.addEventListener('click', (e) => {
+            startBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 if (this.state.selectedCompetitor) {
+                    // Ask for display name once and cache
+                    const key = 'abgym_display_name';
+                    let name = localStorage.getItem(key);
+                    if (!name) {
+                        name = prompt('Enter your display name for the leaderboard:') || 'Player';
+                        localStorage.setItem(key, name);
+                    }
+                    // Start backend session and log event
+                    try {
+                        if (typeof Backend !== 'undefined') {
+                            await Backend.startSession({
+                                displayName: name,
+                                meta: { ts: Date.now(), competitor: this.state.selectedCompetitor }
+                            });
+                            await Backend.logEvent({
+                                eventType: 'session_start',
+                                roundNumber: this.state.currentRound,
+                                payload: { competitor: this.state.selectedCompetitor }
+                            });
+                        }
+                    } catch (err) {
+                        console.error('Failed to start backend session', err);
+                    }
                     this.startSession();
                 }
             });
@@ -178,6 +202,8 @@ const UIController = {
         });
     },
 
+    // refreshLeaderboard removed
+
     initializeCheatSheet() {
         const cheatSheetBtn = document.getElementById('cheat-sheet-btn');
         const cheatSheetModal = document.getElementById('cheat-sheet-modal');
@@ -265,6 +291,14 @@ const UIController = {
         // Show experiment container
         experimentContainer.classList.remove('hidden');
         experimentContainer.classList.add('fade-in');
+        experimentContainer.classList.add('compact');
+
+        // Reset scroll to top when entering the first challenge
+        try {
+            window.scrollTo({ top: 0, behavior: 'auto' });
+        } catch (_) {
+            window.scrollTo(0, 0);
+        }
 
         // Set the selected competitor for the entire session
         this.state.currentCompetitor = VirtualCompetitors[this.state.selectedCompetitor];
@@ -278,6 +312,13 @@ const UIController = {
 
     async loadChallenge() {
         try {
+            // Ensure viewport starts at top for each challenge
+            try {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (_) {
+                window.scrollTo(0, 0);
+            }
+            
             if (typeof generateABTestChallenge !== 'function') {
                 throw new Error("generateABTestChallenge function is not defined");
             }
@@ -938,6 +979,44 @@ const UIController = {
             this.state.userCumulativeEffect += userImpact;
             this.state.competitorCumulativeEffect += competitorImpact;
 
+            // Emit a single experiment event per experiment
+            try {
+                if (typeof Backend !== 'undefined') {
+                    const totalChoices = 3;
+                    const correctChoices = (analysis.trustworthy === (this.state.trustDecision === 'TRUSTWORTHY') ? 1 : 0)
+                        + (analysis.bestDecision === this.state.implementDecision ? 1 : 0)
+                        + (analysis.followUp === this.state.followUpDecision ? 1 : 0);
+                    const isPerfect = (correctChoices === totalChoices);
+                    const isGood = (correctChoices === totalChoices - 1);
+                    const scoreDelta = isPerfect ? 1 : (isGood ? 0.5 : 0);
+                    await Backend.logEvent({
+                        eventType: 'experiment',
+                        roundNumber: this.state.currentRound,
+                        experimentNumber: this.state.experimentsInCurrentRound,
+                        scoreDelta,
+                        payload: {
+                            correctChoices,
+                            totalChoices,
+                            userChoice: {
+                                trust: this.state.trustDecision,
+                                implement: this.state.implementDecision,
+                                follow_up: this.state.followUpDecision
+                            },
+                            analysisSummary: {
+                                trustworthy: analysis.trustworthy,
+                                bestDecision: analysis.bestDecision,
+                                followUp: analysis.followUp
+                            },
+                            impacts: {
+                                userImpact,
+                                competitorImpact,
+                                actualEffectCpd: Math.round(experiment.simulation.actualEffectSize * experiment.experiment.visitorsPerDay)
+                            }
+                        }
+                    });
+                }
+            } catch (e) { console.error(e); }
+
             // Update impact displays
             this.updateImpactDisplay();
             
@@ -1379,6 +1458,32 @@ const UIController = {
             await new Promise(resolve => setTimeout(resolve, 500));
 
             if (this.state.correctInCurrentRound >= 2) {
+                // Log round_end and update session summary
+                (async () => {
+                    try {
+                        if (typeof Backend !== 'undefined') {
+                            await Backend.logEvent({
+                                eventType: 'round_end',
+                                roundNumber: this.state.currentRound,
+                                payload: {
+                                    round_score: this.state.score,
+                                    correct_in_round: this.state.correctInCurrentRound,
+                                    experiments_in_round: this.state.EXPERIMENTS_PER_SESSION
+                                }
+                            });
+                            await Backend.submitScore(this.state.score);
+                            // Update session summary with current metrics
+                            const accuracy = this.state.totalAttempts > 0 ? 
+                                Math.round((this.state.score / this.state.totalAttempts) * 100) : 0;
+                            await Backend.upsertSessionSummary({
+                                score: this.state.score,
+                                maxRound: this.state.currentRound,
+                                impactCpd: this.state.userCumulativeEffect,
+                                accuracyPct: accuracy
+                            });
+                        }
+                    } catch (e) { console.error('Failed to update session summary after round', e); }
+                })();
                 // Start new round
                 this.state.currentExperiment = 1; // Reset the experiment counter
                 this.state.experimentsInCurrentRound = 0;
@@ -1477,6 +1582,37 @@ const UIController = {
             setTimeout(() => {
                 completionModal.classList.add('fade-in');
             }, 10);
+            // Submit score, end session, log event, and update final session summary
+            (async () => {
+                try {
+                    if (typeof Backend !== 'undefined') {
+                        await Backend.submitScore(this.state.score);
+                        await Backend.logEvent({
+                            eventType: 'session_end',
+                            roundNumber: this.state.currentRound,
+                            payload: {
+                                total_score: this.state.score,
+                                total_attempts: this.state.totalAttempts,
+                                accuracy_pct: Math.round((this.state.score / this.state.totalAttempts) * 100),
+                                user_impact_cpd: this.state.userCumulativeEffect,
+                                competitor_impact_cpd: this.state.competitorCumulativeEffect
+                            }
+                        });
+                        // Final session summary update
+                        const accuracy = this.state.totalAttempts > 0 ? 
+                            Math.round((this.state.score / this.state.totalAttempts) * 100) : 0;
+                        await Backend.upsertSessionSummary({
+                            score: this.state.score,
+                            maxRound: this.state.currentRound,
+                            impactCpd: this.state.userCumulativeEffect,
+                            accuracyPct: accuracy
+                        });
+                        await Backend.endSession();
+                    }
+                } catch (err) {
+                    console.error('Failed to finalize session with backend', err);
+                }
+            })();
         }, 500);
     },
 
@@ -1493,6 +1629,7 @@ const UIController = {
 
         // Show tutorial section
         tutorialSection.classList.remove('hidden');
+        experimentContainer.classList.remove('compact');
 
         // Reset state
         this.state.currentExperiment = 1;
