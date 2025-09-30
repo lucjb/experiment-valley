@@ -573,6 +573,8 @@ const UIController = {
         document.getElementById('exp-required-sample').textContent = challenge.experiment.requiredSampleSizePerVariant.toLocaleString();
         document.getElementById('exp-total-required-sample').textContent = (challenge.experiment.requiredSampleSizePerVariant * 2).toLocaleString();
         document.getElementById('exp-required-days').textContent = `${challenge.experiment.requiredRuntimeDays} days`;
+        const direction = challenge.experiment.improvementDirection === window.IMPROVEMENT_DIRECTION.LOWER ? 'Lower is Better' : 'Higher is Better';
+        document.getElementById('exp-improvement-direction').textContent = direction;
 
         // Update conversion rates tab header if there's data loss
         if (this.debugMode() && window.currentAnalysis?.analysis?.hasDataLoss) {
@@ -949,11 +951,10 @@ const UIController = {
                 return Math.round(effectSize * expectedDailyVisitors);
             };
 
-            // Calculate user's impact for this challenge
+            // Record user's chosen option
             let userImpact = 0;
             let userChoice = "None";
             if (this.state.implementDecision === "KEEP_VARIANT") {
-                userImpact = calculateConversionImpact(actualEffect);
                 userChoice = "Variant";
             } else if (this.state.implementDecision === "KEEP_BASE") {
                 userChoice = "Base";
@@ -961,18 +962,47 @@ const UIController = {
                 userChoice = "Keep Running";
             }
 
-            // Get competitor's decision and calculate their impact
+            // Get competitor's decision
             const competitorDecision = this.state.currentCompetitor.makeDecision(experiment);
             let competitorImpact = 0;
             let competitorChoice = "None";
-            
+
             if (competitorDecision.decision === "KEEP_VARIANT") {
-                competitorImpact = calculateConversionImpact(actualEffect);
                 competitorChoice = "Variant";
             } else if (competitorDecision.decision === "KEEP_BASE") {
                 competitorChoice = "Base";
             } else if (competitorDecision.decision === "KEEP_RUNNING") {
                 competitorChoice = "Keep Running";
+            }
+
+            // Determine which variant is better based on improvement direction
+            const actualEffectCpd = calculateConversionImpact(actualEffect);
+            const directionFactor = experiment.experiment.improvementDirection === window.IMPROVEMENT_DIRECTION.LOWER ? -1 : 1;
+            const adjustedEffect = actualEffectCpd * directionFactor;
+            const variantBetter = adjustedEffect > 0;
+            const effectMagnitude = Math.abs(actualEffectCpd);
+
+            // Impacts shown in the table should reflect the signed true effect
+            let userImpactDisplay = 0;
+            if (this.state.implementDecision === "KEEP_VARIANT") {
+                userImpactDisplay = actualEffectCpd;
+            }
+
+            let competitorImpactDisplay = 0;
+            if (competitorDecision.decision === "KEEP_VARIANT") {
+                competitorImpactDisplay = actualEffectCpd;
+            }
+
+            // Calculate impact for user based on correctness
+            if ((variantBetter && this.state.implementDecision === "KEEP_VARIANT") ||
+                (!variantBetter && this.state.implementDecision === "KEEP_BASE")) {
+                userImpact = effectMagnitude;
+            }
+
+            // Calculate impact for competitor based on correctness
+            if ((variantBetter && competitorDecision.decision === "KEEP_VARIANT") ||
+                (!variantBetter && competitorDecision.decision === "KEEP_BASE")) {
+                competitorImpact = effectMagnitude;
             }
 
             // Update cumulative effects
@@ -1019,10 +1049,9 @@ const UIController = {
 
             // Update impact displays
             this.updateImpactDisplay();
-            
+
             // Update modal displays
-            const actualEffectCpd = calculateConversionImpact(actualEffect);
-            const bestVariant = actualEffectCpd > 0 ? "Variant" : "Base";
+            const bestVariant = variantBetter ? "Variant" : "Base";
             
             // Determine if user made the correct decision
             const userImplementDecision = this.state.implementDecision;
@@ -1035,13 +1064,13 @@ const UIController = {
             let impactTextClass;
             
             // Calculate relative impact (user impact - opponent impact)
-            const userImpactValue = (userImplementDecision === "KEEP_VARIANT") ? actualEffectCpd : 0;
-            const opponentImpactValue = (competitorDecision.decision === "KEEP_VARIANT") ? actualEffectCpd : 0;
+            const userImpactValue = userImpact;
+            const opponentImpactValue = competitorImpact;
             const relativeImpact = userImpactValue - opponentImpactValue;
             
             // Determine if user made the optimal choice (chose the better variant)
-            const userChoseBest = (actualEffectCpd > 0 && userImplementDecision === "KEEP_VARIANT") || 
-                                 (actualEffectCpd < 0 && userImplementDecision === "KEEP_BASE");
+            const userChoseBest = (variantBetter && userImplementDecision === "KEEP_VARIANT") ||
+                                 (!variantBetter && userImplementDecision === "KEEP_BASE");
             
             // Color coding based on relative impact
             if (relativeImpact > 0) {
@@ -1141,9 +1170,9 @@ const UIController = {
             const modalElements = {
                 'modal-best-variant': impactMessage,
                 'modal-user-choice': userChoice,
-                'modal-user-impact': userImpact,
+                'modal-user-impact': userImpactDisplay,
                 'modal-competitor-choice': competitorChoice,
-                'modal-competitor-impact': competitorImpact,
+                'modal-competitor-impact': competitorImpactDisplay,
                 'modal-user-icon': userIcon,
                 'modal-competitor-icon': competitorIcon
             };
