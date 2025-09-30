@@ -1421,14 +1421,18 @@ const UIController = {
             this.updateScoreDisplay();
             this.updateAccuracyDisplay(accuracy);
 
-            // Check if this was the last experiment in the current round
+            // Set button text based on experiment number
+            const nextButton = document.getElementById('next-challenge-btn');
             if (this.state.experimentsInCurrentRound === this.state.EXPERIMENTS_PER_SESSION) {
-                // Check if player got at least 2 experiments right
+                // Experiment 3 - check if player got at least 2 experiments right
                 if (this.state.correctInCurrentRound >= 2) {
-                    document.getElementById('next-challenge-btn').textContent = 'Next Round!';
+                    nextButton.textContent = 'Next Round!';
                 } else {
-                    document.getElementById('next-challenge-btn').textContent = 'Done';
+                    nextButton.textContent = 'Done';
                 }
+            } else {
+                // Experiments 1 and 2 - just "Next"
+                nextButton.textContent = 'Next';
             }
 
             // Disable all decision buttons after submission
