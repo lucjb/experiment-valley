@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Leaderboards - A/B Testing Gym</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="js/backend.js"></script>
@@ -15,22 +17,69 @@
         });
     </script>
     <script src="js/leaderboard.js" defer></script>
-</head>
-<body class="bg-gray-100">
-    <div class="max-w-4xl mx-auto p-4">
-        <div class="flex justify-between items-center mb-4">
-            <h1 class="text-2xl font-bold">Leaderboards</h1>
-            <a href="index.html" class="text-blue-600 hover:underline">Back to Game</a>
-        </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const roundTab = document.getElementById('round-tab');
+            const impactTab = document.getElementById('impact-tab');
+            const roundContent = document.getElementById('round-content');
+            const impactContent = document.getElementById('impact-content');
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="bg-white rounded-lg shadow p-4">
-                <h2 class="font-semibold mb-2">Max Round</h2>
-                <ol id="round-list" class="list-decimal list-inside text-gray-700"></ol>
+            function switchToRound() {
+                roundTab.className = 'px-4 py-2 rounded-lg font-semibold transition-colors bg-orange-500 text-white';
+                impactTab.className = 'px-4 py-2 rounded-lg font-semibold transition-colors bg-gray-600 text-gray-300 hover:bg-gray-500';
+                roundContent.classList.remove('hidden');
+                impactContent.classList.add('hidden');
+            }
+
+            function switchToImpact() {
+                impactTab.className = 'px-4 py-2 rounded-lg font-semibold transition-colors bg-orange-500 text-white';
+                roundTab.className = 'px-4 py-2 rounded-lg font-semibold transition-colors bg-gray-600 text-gray-300 hover:bg-gray-500';
+                impactContent.classList.remove('hidden');
+                roundContent.classList.add('hidden');
+            }
+
+            roundTab.addEventListener('click', switchToRound);
+            impactTab.addEventListener('click', switchToImpact);
+        });
+    </script>
+</head>
+<body class="bg-gray-100" style="background-image: url('ev-bg.png'); background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed;">
+    <!-- Page Header - Full Width -->
+    <div class="text-center mb-8 mt-6">
+        <h1 class="text-7xl font-bold text-white mb-4 tracking-wider" style="text-shadow: 0 0 20px rgba(255,255,255,0.5);">
+            EXPERIMENT VALLEY
+        </h1>
+            <div class="flex justify-center space-x-8 text-xl">
+                <a href="index.html" class="text-white hover:text-yellow-300 transition-colors duration-200">Back to Game</a>
+                <a href="how-to-play.html" class="text-white hover:text-yellow-300 transition-colors duration-200">How to</a>
+                <a href="about.html" class="text-white hover:text-yellow-300 transition-colors duration-200">About</a>
             </div>
-            <div class="bg-white rounded-lg shadow p-4">
-                <h2 class="font-semibold mb-2">Impact</h2>
-                <ol id="impact-list" class="list-decimal list-inside text-gray-700"></ol>
+    </div>
+
+    <!-- Leaderboard Tabs - Narrow Width -->
+    <div class="max-w-2xl mx-auto p-4">
+        <div class="bg-gray-900 rounded-lg shadow-lg p-4 md:p-6" style="background-color: rgba(17, 24, 39, 0.6);">
+            <!-- Leaderboard Title -->
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-white">RANKINGS</h2>
+            </div>
+            
+            <!-- Tab Navigation -->
+            <div class="flex space-x-4 mb-6">
+                <button id="round-tab" class="px-4 py-2 rounded-lg font-semibold transition-colors bg-orange-500 text-white">
+                    Max Round
+                </button>
+                <button id="impact-tab" class="px-4 py-2 rounded-lg font-semibold transition-colors bg-gray-600 text-gray-300 hover:bg-gray-500">
+                    Impact
+                </button>
+            </div>
+            
+            <!-- Tab Content -->
+            <div id="round-content" class="space-y-2 max-h-96 overflow-y-auto">
+                <div id="round-list"></div>
+            </div>
+            <div id="impact-content" class="space-y-2 max-h-96 overflow-y-auto hidden">
+                <div id="impact-list"></div>
             </div>
         </div>
     </div>

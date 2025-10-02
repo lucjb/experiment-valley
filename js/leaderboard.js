@@ -79,10 +79,30 @@
         const list = document.getElementById(containerId);
         if (!list) return;
         list.innerHTML = '';
-        items.slice(0, 20).forEach((it) => {
-            const li = document.createElement('li');
-            li.textContent = formatter(it);
-            list.appendChild(li);
+        items.slice(0, 20).forEach((it, index) => {
+            const entry = document.createElement('div');
+            entry.className = 'flex items-center justify-between p-3 rounded-lg hover:bg-gray-700 transition-colors';
+            entry.style.backgroundColor = 'transparent';
+            
+            const rank = index + 1;
+            const rankBadge = document.createElement('div');
+            
+            if (rank <= 3) {
+                rankBadge.className = 'flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold bg-green-500 text-white shadow-lg';
+                rankBadge.style.boxShadow = '0 0 10px rgba(34, 197, 94, 0.5)';
+            } else {
+                rankBadge.className = 'flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold bg-gray-600 text-gray-200';
+            }
+            
+            rankBadge.textContent = rank;
+            
+            const content = document.createElement('div');
+            content.className = 'flex-1 ml-3';
+            content.innerHTML = formatter(it);
+            
+            entry.appendChild(rankBadge);
+            entry.appendChild(content);
+            list.appendChild(entry);
         });
     }
 
@@ -98,8 +118,21 @@
         try {
             const data = await fetchAllData();
             const { roundBoard, impactBoard } = aggregateLeaderboards(data);
-            renderList('round-list', roundBoard, (r) => `${r.name} — Round ${r.maxRound} (${r.accuracy}%)`);
-            renderList('impact-list', impactBoard, (r) => `${r.name} — ${r.impact} cpd`);
+            renderList('round-list', roundBoard, (r) => `
+                <div class="flex items-center justify-between w-full">
+                    <div class="text-white font-semibold text-lg">${r.name}</div>
+                    <div class="text-right">
+                        <div class="text-green-400 font-bold text-lg">Round ${r.maxRound}</div>
+                        <div class="text-gray-300 text-sm">${r.accuracy}% accuracy</div>
+                    </div>
+                </div>
+            `);
+            renderList('impact-list', impactBoard, (r) => `
+                <div class="flex items-center justify-between w-full">
+                    <div class="text-white font-semibold text-lg">${r.name}</div>
+                    <div class="text-green-400 font-bold text-xl">${r.impact} cpd</div>
+                </div>
+            `);
         } catch (e) {
             console.error('Failed to load leaderboards', e);
         }

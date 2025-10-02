@@ -12,16 +12,22 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
 </head>
 
-<body class="bg-gray-100">
-    <div class="max-w-6xl mx-auto p-2 md:p-4">
-        <!-- Navigation -->
-        <div class="mb-6">
-            <a href="index.html" class="text-blue-600 hover:text-blue-800 font-semibold">← Back to Home</a>
+<body class="bg-gray-100" style="background-image: url('ev-bg.png'); background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed;">
+    <!-- Page Header - Full Width -->
+    <div class="text-center mb-8 mt-6">
+        <h1 class="text-7xl font-bold text-white mb-4 tracking-wider" style="text-shadow: 0 0 20px rgba(255,255,255,0.5);">
+            EXPERIMENT VALLEY
+        </h1>
+        <div class="flex justify-center space-x-8 text-xl">
+            <a href="index.html" class="text-white hover:text-yellow-300 transition-colors duration-200">Back to Game</a>
+            <a href="leaderboard.html" class="text-white hover:text-yellow-300 transition-colors duration-200">Rankings</a>
+            <a href="about.html" class="text-white hover:text-yellow-300 transition-colors duration-200">About</a>
         </div>
+    </div>
 
-        <!-- Tutorial Section -->
-        <div class="bg-gray-900 rounded-lg shadow-lg p-6">
-            <h1 class="text-4xl font-bold mb-4 text-white">A/B Testing Gym: Exercise Your Decision Power!</h1>
+    <!-- Tutorial Section - Full Width -->
+    <div class="max-w-6xl mx-auto p-2 md:p-4">
+        <div class="bg-gray-900 rounded-lg shadow-lg p-6" style="background-color: rgba(17, 24, 39, 0.8);">
             <div class="mb-6">
                 <h3 class="text-xl font-semibold mb-2" style="color: #f97316;">How to Play</h3>
                 <p class="mb-4 text-gray-300">Analyze experiments, make decisions, score and learn!<br />
@@ -60,37 +66,16 @@
             </div>
 
             <div class="mb-6">
-                <h3 class="text-xl font-semibold mb-2" style="color: #f97316;">Choose Your Opponent</h3>
-                <p class="text-gray-300 mb-4">Progressing through rounds proves your skills, but the real measure of
-                    success is your impact on conversion rates. Compare your performance against different
-                    decision-making approaches to see how your choices stack up in real-world scenarios:</p>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="p-4 rounded-lg text-white" style="background-color: #f97316;">
-                        <h4 class="font-bold text-lg mb-2">HiPPO</h4>
-                        <p class="text-white opacity-90">Makes decisions based on personal opinion, ignoring statistical
-                            significance and data quality</p>
-                    </div>
-                    <div class="p-4 rounded-lg text-white" style="background-color: #f97316;">
-                        <h4 class="font-bold text-lg mb-2">Random</h4>
-                        <p class="text-white opacity-90">Makes decisions randomly, without analyzing the data</p>
-                    </div>
-                    <div class="p-4 rounded-lg text-white" style="background-color: #f97316;">
-                        <h4 class="font-bold text-lg mb-2">Naive</h4>
-                        <p class="text-white opacity-90">Chooses the variant with the highest conversion rate at day 14,
-                            ignoring confidence intervals and p-values</p>
-                    </div>
-                    <div class="p-4 rounded-lg text-white" style="background-color: #f97316;">
-                        <h4 class="font-bold text-lg mb-2">Peek-a-boo</h4>
-                        <p class="text-white opacity-90">Peek-a-boo! Still not significant… maybe tomorrow!</p>
-                    </div>
-                </div>
+                <h3 class="text-xl font-semibold mb-2" style="color: #f97316;">Opponents</h3>
+                <p class="text-gray-300 mb-4">You'll compete against different decision-making approaches to see how your choices stack up in real-world scenarios:</p>
+                <ul class="list-disc list-inside space-y-2 text-gray-300">
+                    <li><strong>HiPPO:</strong> Makes decisions based on personal opinion, ignoring statistical significance and data quality</li>
+                    <li><strong>Random:</strong> Makes decisions randomly, without analyzing the data</li>
+                    <li><strong>Naive:</strong> Chooses the variant with the highest conversion rate at day 14, ignoring confidence intervals and p-values</li>
+                    <li><strong>Peek-a-boo:</strong> Still not significant… maybe tomorrow!</li>
+                </ul>
             </div>
 
-            <div class="text-center">
-                <a href="index.html" class="inline-block px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition">
-                    Start Playing
-                </a>
-            </div>
         </div>
     </div>
 </body>
