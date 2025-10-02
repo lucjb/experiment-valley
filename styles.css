@@ -558,3 +558,131 @@ select:focus {
 #submit-decision {
     margin-top: -0.75rem; /* counteract parent mt-4 */
 }
+
+/* Make challenge containers semi-transparent */
+#challenge-container .bg-gray-900.rounded-lg.shadow-lg {
+    background-color: rgba(17, 24, 39, 0.8) !important; /* semi-transparent dark background */
+}
+
+#challenge-container .bg-gray-800.rounded-lg.shadow-lg {
+    background-color: rgba(31, 41, 55, 0.8) !important; /* semi-transparent dark background */
+}
+
+#challenge-container .bg-white.rounded-lg.shadow-lg {
+    background-color: rgba(255, 255, 255, 0.8) !important; /* semi-transparent white background */
+}
+
+#challenge-container .bg-gray-50.rounded-lg.shadow-lg {
+    background-color: rgba(249, 250, 251, 0.8) !important; /* semi-transparent light gray background */
+}
+
+#challenge-container .bg-gray-100.rounded-lg.shadow-lg {
+    background-color: rgba(243, 244, 246, 0.1) !important; /* semi-transparent light gray background */
+}
+
+/* Catch all other container types in challenge section */
+#challenge-container .bg-gray-900 {
+    background-color: rgba(17, 24, 39, 0.8) !important;
+}
+
+#challenge-container .bg-gray-800 {
+    background-color: rgba(31, 41, 55, 0.8) !important;
+}
+
+#challenge-container .bg-white {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+#challenge-container .bg-gray-50 {
+    background-color: rgba(249, 250, 251, 0.8) !important;
+}
+
+#challenge-container .bg-gray-100 {
+    background-color: rgba(243, 244, 246, 0.1) !important;
+}
+
+#challenge-container .bg-gray-200 {
+    background-color: rgba(229, 231, 235, 0.8) !important;
+}
+
+#challenge-container .bg-gray-300 {
+    background-color: rgba(209, 213, 219, 0.8) !important;
+}
+
+/* Target table headers specifically */
+#challenge-container table th {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+#challenge-container table thead {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Target all table rows in challenge container */
+#challenge-container table tr {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+#challenge-container table td {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Target the specific p-value row structure */
+#challenge-container .bg-gray-50 {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Target the p-value display span specifically */
+#challenge-container #p-value-display {
+    background-color: transparent !important;
+}
+
+/* Target all results tables specifically */
+#challenge-container .metrics-table {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+#challenge-container .metrics-table thead {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+#challenge-container .metrics-table thead tr {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+#challenge-container .metrics-table thead th {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+#challenge-container .metrics-table tbody tr {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+#challenge-container .metrics-table tbody td {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Target the feedback results table */
+#challenge-container table.w-full.text-sm.border-collapse {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+#challenge-container table.w-full.text-sm.border-collapse thead {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+#challenge-container table.w-full.text-sm.border-collapse thead tr {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+#challenge-container table.w-full.text-sm.border-collapse thead th {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+#challenge-container table.w-full.text-sm.border-collapse tbody tr {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+#challenge-container table.w-full.text-sm.border-collapse tbody td {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}

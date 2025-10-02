@@ -74,9 +74,9 @@ const UIController = {
             startBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 if (this.state.selectedCompetitor) {
-                    // Ask for display name once and cache
+                    // Use the name from the modal if available, otherwise use cached name or prompt
                     const key = 'abgym_display_name';
-                    let name = localStorage.getItem(key);
+                    let name = window.playerName || localStorage.getItem(key);
                     if (!name) {
                         name = prompt('Enter your display name for the leaderboard:') || 'Player';
                         localStorage.setItem(key, name);
@@ -282,11 +282,17 @@ const UIController = {
     },
 
     startSession() {
+        const gameMenu = document.getElementById('game-menu');
         const tutorialSection = document.getElementById('tutorial-section');
         const experimentContainer = document.getElementById('challenge-container');
 
-        // Hide tutorial section
-        tutorialSection.classList.add('hidden');
+        // Hide game menu and tutorial section
+        if (gameMenu) {
+            gameMenu.classList.add('hidden');
+        }
+        if (tutorialSection) {
+            tutorialSection.classList.add('hidden');
+        }
 
         // Show experiment container
         experimentContainer.classList.remove('hidden');

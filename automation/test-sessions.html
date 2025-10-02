@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Sessions</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../js/backend.js"></script>
+</head>
+<body>
+    <h1>Generating Test Sessions...</h1>
+    <div id="status">Initializing...</div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Initialize backend
+            Backend.init({ 
+                url: 'https://sbjeoqpmotjroptbegir.supabase.co', 
+                anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNiamVvcXBtb3Rqcm9wdGJlZ2lyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNzY1MDksImV4cCI6MjA3NDc1MjUwOX0.m-zwQHbSqAaFPFk0BQY_qoZisfUdjrwPYrRZC2EhdBI' 
+            });
+            
+            const status = document.getElementById('status');
+            
+            try {
+                // Create test users and sessions
+                const testUsers = [
+                    { name: 'Alice', rounds: 5, accuracy: 85, impact: 12.3, score: 8.5 },
+                    { name: 'Bob', rounds: 4, accuracy: 78, impact: 9.8, score: 7.0 },
+                    { name: 'Charlie', rounds: 4, accuracy: 72, impact: 8.1, score: 6.5 },
+                    { name: 'Diana', rounds: 3, accuracy: 65, impact: 6.5, score: 5.0 },
+                    { name: 'Eve', rounds: 3, accuracy: 58, impact: 5.2, score: 4.0 }
+                ];
+                
+                for (let i = 0; i < testUsers.length; i++) {
+                    const user = testUsers[i];
+                    status.textContent = `Creating session for ${user.name}...`;
+                    
+                    // Start session
+                    await Backend.startSession({ displayName: user.name, meta: {} });
+                    
+                    // Submit score
+                    await Backend.submitScore(user.score);
+                    
+                    // Create session summary
+                    await Backend.upsertSessionSummary({
+                        score: user.score,
+                        maxRound: user.rounds,
+                        impactCpd: user.impact,
+                        accuracyPct: user.accuracy
+                    });
+                    
+                    // End session
+                    await Backend.endSession();
+                    
+                    console.log(`Created session for ${user.name}`);
+                }
+                
+                status.textContent = 'All test sessions created! Check the leaderboard.';
+                status.innerHTML += '<br><a href="../leaderboard.html" style="color: blue;">View Leaderboard</a>';
+                
+            } catch (error) {
+                console.error('Error creating test sessions:', error);
+                status.textContent = 'Error: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
