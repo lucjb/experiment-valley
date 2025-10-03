@@ -3,7 +3,6 @@ create table if not exists public.session_summaries (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid not null references public.profiles(id) on delete cascade,
   session_id uuid not null references public.sessions(id) on delete cascade,
-  current_score numeric not null default 0,
   max_round_reached int not null default 1,
   total_impact_cpd numeric not null default 0,
   accuracy_pct numeric not null default 0,

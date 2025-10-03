@@ -1,8 +1,9 @@
 // UI Controller
 const UIController = {
     state: {
-        score: 0,
         totalAttempts: 0,
+        totalDecisions: 0,
+        correctDecisions: 0,
         currentExperiment: 1,
         EXPERIMENTS_PER_SESSION: 3,
         trustDecision: null,
@@ -975,6 +976,27 @@ const UIController = {
             // Use the global analysis
             const analysis = window.currentAnalysis;
             const experiment = window.currentExperiment;
+            
+
+            // Calculate decision comparison once for all uses
+            const totalChoices = 3;
+            const correctChoices = (analysis.decision?.trustworthy === this.state.trustDecision ? 1 : 0)
+                + (analysis.decision?.decision === this.state.implementDecision ? 1 : 0)
+                + (analysis.decision?.followUp === this.state.followUpDecision ? 1 : 0);
+            
+            // Store for use in feedback modal and backend logging
+            this.state.currentExperimentCorrectChoices = correctChoices;
+            this.state.currentExperimentTotalChoices = totalChoices;
+            
+            // Update accuracy tracking
+            this.state.totalDecisions += totalChoices;
+            this.state.correctDecisions += correctChoices;
+            
+            // Update accuracy display immediately
+            const accuracy = this.state.totalDecisions > 0 ? 
+                Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100) : 0;
+            this.updateAccuracyDisplay(accuracy);
+            
 
             // Calculate impact
             const actualEffect = experiment.simulation.actualEffectSize;
@@ -1062,21 +1084,20 @@ const UIController = {
             this.state.userCumulativeEffect += userImpact;
             this.state.competitorCumulativeEffect += competitorImpact;
 
+            // Decision tracking is now done immediately after submission
+
             // Emit a single experiment event per experiment
             try {
                 if (typeof Backend !== 'undefined') {
-                    const totalChoices = 3;
-                    const correctChoices = (analysis.trustworthy === (this.state.trustDecision === 'TRUSTWORTHY') ? 1 : 0)
-                        + (analysis.bestDecision === this.state.implementDecision ? 1 : 0)
-                        + (analysis.followUp === this.state.followUpDecision ? 1 : 0);
+                    // Use the values calculated once above
+                    const correctChoices = this.state.currentExperimentCorrectChoices;
+                    const totalChoices = this.state.currentExperimentTotalChoices;
                     const isPerfect = (correctChoices === totalChoices);
                     const isGood = (correctChoices === totalChoices - 1);
-                    const scoreDelta = isPerfect ? 1 : (isGood ? 0.5 : 0);
                     await Backend.logEvent({
                         eventType: 'experiment',
                         roundNumber: this.state.currentRound,
                         experimentNumber: this.state.experimentsInCurrentRound,
-                        scoreDelta,
                         payload: {
                             correctChoices,
                             totalChoices,
@@ -1284,8 +1305,6 @@ const UIController = {
             this.updateCompetitorName();
 
             // Compare user's choices with analysis result
-            let correctChoices = 0;
-            const totalChoices = 3;
             let feedbackMessage = '';
 
             // Check trustworthiness
@@ -1331,10 +1350,9 @@ const UIController = {
                 '<svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
                 `<span class="tooltip-trigger"><svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg><span class="tooltip-content">${followUpExplanation}</span></span>`;
 
-            // Count correct choices
-            if (userTrust === analysisTrust) correctChoices++;
-            if (userDecision === analysisDecision) correctChoices++;
-            if (userFollowUp === analysisFollowUp) correctChoices++;
+            // Use the values calculated once above
+            const feedbackCorrectChoices = this.state.currentExperimentCorrectChoices;
+            const feedbackTotalChoices = this.state.currentExperimentTotalChoices;
 
             // Create table format
             feedbackMessage = `
@@ -1377,16 +1395,16 @@ const UIController = {
                 </div>
             `;
 
-            // Calculate score based on performance
-            const isPerfect = (correctChoices === totalChoices);
-            const isGood = (correctChoices >= 2);
+            // Calculate performance
+            const isPerfect = (feedbackCorrectChoices === feedbackTotalChoices);
+            const isGood = (feedbackCorrectChoices >= 2);
 
             // Store the result for this experiment in the round
             const experimentResult = {
                 experiment: this.state.experimentsInCurrentRound,
                 isPerfect: isPerfect,
                 isGood: isGood,
-                correctChoices: correctChoices
+                correctChoices: feedbackCorrectChoices
             };
             this.state.roundResults[this.state.experimentsInCurrentRound - 1] = experimentResult;
 
@@ -1395,75 +1413,66 @@ const UIController = {
             const feedbackIcon2 = document.getElementById('feedback-icon-2');
             const feedbackIcon3 = document.getElementById('feedback-icon-3');
             const feedbackTitle = document.getElementById('feedback-title');
-            const scoreCardTitle = document.getElementById('score-card-title');
-            const scoreDisplay = document.getElementById('score-display');
+            const resultsCardTitle = document.getElementById('results-card-title');
+            const resultsDisplay = document.getElementById('results-display');
             
-            // Create the score card title with round and experiment info
-            const scoreCardTitleText = `Round ${this.state.currentRound}, Experiment ${this.state.experimentsInCurrentRound}`;
+            // Create the results card title with round and experiment info
+            const resultsCardTitleText = `Round ${this.state.currentRound}, Experiment ${this.state.experimentsInCurrentRound}`;
             
             // Update tick marks based on round progress
             this.updateRoundTickMarks();
             
             if (isPerfect) {
-                this.state.score++;
                 this.state.correctInCurrentRound++;
                 
-                feedbackTitle.textContent = 'Score Card';
-                scoreCardTitle.textContent = scoreCardTitleText;
+                feedbackTitle.textContent = 'Results';
+                resultsCardTitle.textContent = resultsCardTitleText;
                 
-                // Update score display for perfect performance
-                scoreDisplay.className = 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-2 mt-2';
-                scoreDisplay.innerHTML = `
+                // Update results display for perfect performance
+                resultsDisplay.className = 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-2 mt-2';
+                resultsDisplay.innerHTML = `
                     <p class="text-xs text-gray-600 leading-tight text-center">
-                        <span class="text-green-700 font-semibold">Perfect! All 3 decisions right: </span>
-                        <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-green-500 rounded-full shadow-sm">+1</span>
-                        <span class="text-green-700 font-semibold"> point!</span>
+                        <span class="text-green-700 font-semibold">Perfect! All 3 decisions correct!</span>
                     </p>
                 `;
                 
                 ModalManager.showFeedback(true, feedbackMessage);
             } else if (isGood) {
-                this.state.score += 0.5;
                 this.state.correctInCurrentRound++;
                 
-                feedbackTitle.textContent = 'Score Card';
-                scoreCardTitle.textContent = scoreCardTitleText;
+                feedbackTitle.textContent = 'Results';
+                resultsCardTitle.textContent = resultsCardTitleText;
                 
-                // Update score display for good performance
-                scoreDisplay.className = 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-2 mt-2';
-                scoreDisplay.innerHTML = `
+                // Update results display for good performance
+                resultsDisplay.className = 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-2 mt-2';
+                resultsDisplay.innerHTML = `
                     <p class="text-xs text-gray-600 leading-tight text-center">
-                        <span class="text-blue-700 font-semibold">Good Job! You got ${correctChoices} out of 3 right: </span>
-                        <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-blue-500 rounded-full shadow-sm">+0.5</span>
-                        <span class="text-blue-700 font-semibold"> point!</span>
+                        <span class="text-blue-700 font-semibold">Good Job! You got ${feedbackCorrectChoices} out of 3 right!</span>
                     </p>
                 `;
                 
                 ModalManager.showFeedback(true, feedbackMessage);
             } else {
-                feedbackTitle.textContent = 'Score Card';
-                scoreCardTitle.textContent = scoreCardTitleText;
+                feedbackTitle.textContent = 'Results';
+                resultsCardTitle.textContent = resultsCardTitleText;
                 
-                // Update score display for poor performance
-                scoreDisplay.className = 'bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-lg p-2 mt-2';
-                if (correctChoices === 0) {
-                    scoreDisplay.innerHTML = `
+                // Update results display for poor performance
+                resultsDisplay.className = 'bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-lg p-2 mt-2';
+                if (feedbackCorrectChoices === 0) {
+                    resultsDisplay.innerHTML = `
                         <p class="text-xs text-gray-600 leading-tight text-center">
-                            <span class="text-red-700 font-semibold">Oops! No right decisions, no points!</span>
-                            <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full shadow-sm">+0</span>
+                            <span class="text-red-700 font-semibold">Oops! No correct decisions!</span>
                         </p>
                     `;
                 } else {
-                    scoreDisplay.innerHTML = `
+                    resultsDisplay.innerHTML = `
                         <p class="text-xs text-gray-600 leading-tight text-center">
-                            <span class="text-red-700 font-semibold">Oops! Just 1, not enough to score: </span>
-                            <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-full shadow-sm">+0</span>
-                            <span class="text-red-700 font-semibold"> points!</span>
+                            <span class="text-red-700 font-semibold">Oops! Just ${feedbackCorrectChoices} correct, not enough!</span>
                         </p>
                     `;
                 }
                 
-                if (correctChoices === 0) {
+                if (feedbackCorrectChoices === 0) {
                     ModalManager.showFeedback(false, feedbackMessage);
                 } else {
                     ModalManager.showFeedback(false, feedbackMessage);
@@ -1473,9 +1482,7 @@ const UIController = {
             // Initialize tooltips for any mistake explanations
             this.initializeTooltipTriggers(document.getElementById('feedback-message'));
 
-            const accuracy = Math.round((this.state.score / this.state.totalAttempts) * 100);
-            this.updateScoreDisplay();
-            this.updateAccuracyDisplay(accuracy);
+            // Accuracy is now updated immediately after each decision submission
 
             // Set button text based on experiment number
             const nextButton = document.getElementById('next-challenge-btn');
@@ -1504,27 +1511,25 @@ const UIController = {
         }
     },
 
-    updateScoreDisplay() {
-        const scoreElement = document.getElementById('score');
-        const modalScoreElement = document.getElementById('modal-score');
-        
-        if (scoreElement) {
-            scoreElement.textContent = this.state.score;
-        }
-        if (modalScoreElement) {
-            modalScoreElement.textContent = this.state.score;
-        }
-    },
 
     updateAccuracyDisplay(accuracy) {
         const accuracyElement = document.getElementById('accuracy');
         const modalAccuracyElement = document.getElementById('modal-accuracy');
         
+        console.log(`Updating accuracy display to: ${accuracy}%`);
+        console.log(`Accuracy element found:`, !!accuracyElement);
+        console.log(`Modal accuracy element found:`, !!modalAccuracyElement);
+        
         if (accuracyElement) {
             accuracyElement.textContent = `${accuracy}%`;
+            console.log(`Updated accuracy element to: ${accuracy}%`);
+            console.log(`Element content after update:`, accuracyElement.textContent);
+        } else {
+            console.error('Accuracy element not found!');
         }
         if (modalAccuracyElement) {
             modalAccuracyElement.textContent = `${accuracy}%`;
+            console.log(`Updated modal accuracy element to: ${accuracy}%`);
         }
     },
 
@@ -1565,17 +1570,14 @@ const UIController = {
                                 eventType: 'round_end',
                                 roundNumber: this.state.currentRound,
                                 payload: {
-                                    round_score: this.state.score,
                                     correct_in_round: this.state.correctInCurrentRound,
                                     experiments_in_round: this.state.EXPERIMENTS_PER_SESSION
                                 }
                             });
-                            await Backend.submitScore(this.state.score);
                             // Update session summary with current metrics
-                            const accuracy = this.state.totalAttempts > 0 ? 
-                                Math.round((this.state.score / this.state.totalAttempts) * 100) : 0;
+                            const accuracy = this.state.totalDecisions > 0 ? 
+                                Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100) : 0;
                             await Backend.upsertSessionSummary({
-                                score: this.state.score,
                                 maxRound: this.state.currentRound,
                                 impactCpd: this.state.userCumulativeEffect,
                                 accuracyPct: accuracy
@@ -1676,8 +1678,7 @@ const UIController = {
         experimentContainer.classList.add('fade-out');
 
         setTimeout(() => {
-            document.getElementById('final-score').textContent = this.state.score;
-            document.getElementById('final-accuracy').textContent = `${Math.round((this.state.score / this.state.totalAttempts) * 100)}%`;
+            document.getElementById('final-accuracy').textContent = `${Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100)}%`;
             document.getElementById('final-user-impact').textContent = `${this.state.userCumulativeEffect} cpd`;
             document.getElementById('final-opponent-impact').textContent = `${this.state.competitorCumulativeEffect} cpd`;
             document.getElementById('final-round').textContent = this.state.currentRound;
@@ -1690,23 +1691,20 @@ const UIController = {
             (async () => {
                 try {
                     if (typeof Backend !== 'undefined') {
-                        await Backend.submitScore(this.state.score);
                         await Backend.logEvent({
                             eventType: 'session_end',
                             roundNumber: this.state.currentRound,
                             payload: {
-                                total_score: this.state.score,
                                 total_attempts: this.state.totalAttempts,
-                                accuracy_pct: Math.round((this.state.score / this.state.totalAttempts) * 100),
+                                accuracy_pct: Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100),
                                 user_impact_cpd: this.state.userCumulativeEffect,
                                 competitor_impact_cpd: this.state.competitorCumulativeEffect
                             }
                         });
                         // Final session summary update
-                        const accuracy = this.state.totalAttempts > 0 ? 
-                            Math.round((this.state.score / this.state.totalAttempts) * 100) : 0;
+                        const accuracy = this.state.totalDecisions > 0 ? 
+                            Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100) : 0;
                         await Backend.upsertSessionSummary({
-                            score: this.state.score,
                             maxRound: this.state.currentRound,
                             impactCpd: this.state.userCumulativeEffect,
                             accuracyPct: accuracy
@@ -1737,8 +1735,9 @@ const UIController = {
 
         // Reset state
         this.state.currentExperiment = 1;
-        this.state.score = 0;
         this.state.totalAttempts = 0;
+        this.state.totalDecisions = 0;
+        this.state.correctDecisions = 0;
         this.state.currentRound = 1; // Reset round number for new session
         this.state.experimentsInCurrentRound = 0;
         this.state.correctInCurrentRound = 0;
@@ -1750,7 +1749,6 @@ const UIController = {
         this.state.roundResults = []; // Reset round results
 
         // Update displays
-        this.updateScoreDisplay();
         this.updateAccuracyDisplay(0);
         this.updateRoundDisplay(); // Update the round display
         this.updateImpactDisplay(); // Update impact display
@@ -1771,12 +1769,12 @@ const UIController = {
     },
 
     shareOnTwitter() {
-        const text = `I just completed the A/B Testing Gym challenge with a score of ${this.state.score} and ${Math.round((this.state.score / this.state.totalAttempts) * 100)}% accuracy! Try it yourself!`;
+        const text = `I just completed the A/B Testing Gym challenge with ${Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100)}% accuracy! Try it yourself!`;
         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`);
     },
 
     shareOnLinkedIn() {
-        const text = `I just completed the A/B Testing Gym challenge with a score of ${this.state.score} and ${Math.round((this.state.score / this.state.totalAttempts) * 100)}% accuracy! Try it yourself!`;
+        const text = `I just completed the A/B Testing Gym challenge with ${Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100)}% accuracy! Try it yourself!`;
         window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(text)}`);
     },
 

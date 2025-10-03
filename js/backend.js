@@ -103,13 +103,6 @@ const Backend = (() => {
         sessionId = null;
     }
 
-    async function submitScore(score) {
-        if (!supabase || profileId == null) return;
-        const { error } = await supabase
-            .from('scores')
-            .insert({ profile_id: profileId, score });
-        if (error) throw error;
-    }
 
     async function upsertSessionSummary(data) {
         if (!supabase || !sessionId || !profileId) return;
@@ -118,7 +111,6 @@ const Backend = (() => {
             .upsert({
                 session_id: sessionId,
                 profile_id: profileId,
-                current_score: data.score || 0,
                 max_round_reached: data.maxRound || 1,
                 total_impact_cpd: data.impactCpd || 0,
                 accuracy_pct: data.accuracyPct || 0
@@ -128,17 +120,6 @@ const Backend = (() => {
         if (error) throw error;
     }
 
-    async function getLeaderboard(limit = 10) {
-        if (!supabase) throw new Error('Backend not initialized');
-        const { data, error } = await supabase
-            .from('leaderboard')
-            .select('display_name, best_score, plays')
-            .order('best_score', { ascending: false })
-            .order('plays', { ascending: false })
-            .limit(limit);
-        if (error) throw error;
-        return data || [];
-    }
 
     async function logEvent(event) {
         if (!supabase) throw new Error('Backend not initialized');
@@ -172,9 +153,7 @@ const Backend = (() => {
         getClient: () => supabase,
         startSession,
         endSession,
-        submitScore,
         upsertSessionSummary,
-        getLeaderboard,
         logEvent
     };
 })();

@@ -6,7 +6,7 @@
         // Pull minimal needed data from session_summaries
         const [profiles, summaries] = await Promise.all([
             client.from('profiles').select('id, display_name'),
-            client.from('session_summaries').select('profile_id, current_score, max_round_reached, total_impact_cpd, accuracy_pct')
+            client.from('session_summaries').select('profile_id, max_round_reached, total_impact_cpd, accuracy_pct')
         ]);
 
         if (profiles.error) throw profiles.error;
@@ -19,7 +19,6 @@
         profiles.forEach(p => {
             byProfile.set(p.id, {
                 displayName: p.display_name,
-                bestScore: 0,
                 bestAccuracy: 0,
                 maxRound: 0,
                 maxImpact: 0,
@@ -36,10 +35,6 @@
             const round = Number(s.max_round_reached) || 0;
             const accuracy = Number(s.accuracy_pct) || 0;
             const impact = Number(s.total_impact_cpd) || 0;
-            const score = Number(s.current_score) || 0;
-            
-            // Best score across all sessions
-            agg.bestScore = Math.max(agg.bestScore, score);
             
             // Best accuracy across all sessions
             agg.bestAccuracy = Math.max(agg.bestAccuracy, accuracy);

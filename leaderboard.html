@@ -12,11 +12,21 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="js/backend.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            try {
-                Backend.init({ url: 'https://sbjeoqpmotjroptbegir.supabase.co', anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNiamVvcXBtb3Rqcm9wdGJlZ2lyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNzY1MDksImV4cCI6MjA3NDc1MjUwOX0.m-zwQHbSqAaFPFk0BQY_qoZisfUdjrwPYrRZC2EhdBI' });
-            } catch (e) { console.error('Backend init failed', e); }
-        });
+        // Initialize backend immediately after backend.js loads
+        try {
+            Backend.init({ url: 'https://sbjeoqpmotjroptbegir.supabase.co', anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNiamVvcXBtb3Rqcm9wdGJlZ2lyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNzY1MDksImV4cCI6MjA3NDc1MjUwOX0.m-zwQHbSqAaFPFk0BQY_qoZisfUdjrwPYrRZC2EhdBI' });
+            // Dispatch event to signal backend is ready
+            window.dispatchEvent(new CustomEvent('backend:ready'));
+        } catch (e) { 
+            console.error('Backend init failed', e);
+            // Retry on DOMContentLoaded if immediate init failed
+            document.addEventListener('DOMContentLoaded', function () {
+                try {
+                    Backend.init({ url: 'https://sbjeoqpmotjroptbegir.supabase.co', anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNiamVvcXBtb3Rqcm9wdGJlZ2lyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNzY1MDksImV4cCI6MjA3NDc1MjUwOX0.m-zwQHbSqAaFPFk0BQY_qoZisfUdjrwPYrRZC2EhdBI' });
+                    window.dispatchEvent(new CustomEvent('backend:ready'));
+                } catch (e2) { console.error('Backend init retry failed', e2); }
+            });
+        }
     </script>
     <script src="js/leaderboard.js" defer></script>
     <script>
