@@ -337,7 +337,7 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [winner(), inconclusive(), partialLoser()],
+                1: [winner().withLowerIsBetter(), winner(), loser().withLowerIsBetter()],
                 2: [partialLoser().withBaseRateMismatch(), partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch()],
                 3: [slowCompletion(), fastWinner(), fastLoserWithPartialWeek()],
                 4: [slowCompletion().withBaseRateMismatch(), fastLoserWithPartialWeek().withVisitorsLoss(), loser()],
@@ -988,27 +988,46 @@ const UIController = {
             const variantBetter = adjustedEffect > 0;
             const effectMagnitude = Math.abs(actualEffectCpd);
 
+            // Calculate the actual impact based on improvement direction
+            // For LOWER_IS_BETTER: positive impact when variant is lower (negative effect)
+            // For HIGHER_IS_BETTER: positive impact when variant is higher (positive effect)
+            const actualImpactCpd = actualEffectCpd * directionFactor;
+
             // Impacts shown in the table should reflect the signed true effect
             let userImpactDisplay = 0;
             if (this.state.implementDecision === "KEEP_VARIANT") {
-                userImpactDisplay = actualEffectCpd;
+                userImpactDisplay = actualImpactCpd;
             }
 
             let competitorImpactDisplay = 0;
             if (competitorDecision.decision === "KEEP_VARIANT") {
-                competitorImpactDisplay = actualEffectCpd;
+                competitorImpactDisplay = actualImpactCpd;
             }
 
-            // Calculate impact for user based on correctness
-            if ((variantBetter && this.state.implementDecision === "KEEP_VARIANT") ||
-                (!variantBetter && this.state.implementDecision === "KEEP_BASE")) {
-                userImpact = effectMagnitude;
+            // Calculate impact for user
+            if (this.state.implementDecision === "KEEP_VARIANT") {
+                // User chose variant: impact depends on whether variant is better
+                if (variantBetter) {
+                    userImpact = effectMagnitude; // Positive impact for good variant
+                } else {
+                    userImpact = -effectMagnitude; // Negative impact for bad variant
+                }
+            } else {
+                // User chose base or keep running: always 0 impact (no change from baseline)
+                userImpact = 0;
             }
 
-            // Calculate impact for competitor based on correctness
-            if ((variantBetter && competitorDecision.decision === "KEEP_VARIANT") ||
-                (!variantBetter && competitorDecision.decision === "KEEP_BASE")) {
-                competitorImpact = effectMagnitude;
+            // Calculate impact for competitor
+            if (competitorDecision.decision === "KEEP_VARIANT") {
+                // Competitor chose variant: impact depends on whether variant is better
+                if (variantBetter) {
+                    competitorImpact = effectMagnitude; // Positive impact for good variant
+                } else {
+                    competitorImpact = -effectMagnitude; // Negative impact for bad variant
+                }
+            } else {
+                // Competitor chose base or keep running: always 0 impact (no change from baseline)
+                competitorImpact = 0;
             }
 
             // Update cumulative effects
@@ -1126,7 +1145,9 @@ const UIController = {
                 }
                 
                 // Line 1: Prefix and true effect
-                impactMessage = `${prefix} The true effect is ${actualEffectCpd} cpd.`;
+                const isLowerBetter = experiment.experiment.improvementDirection === window.IMPROVEMENT_DIRECTION.LOWER;
+                const lowerBetterClarification = isLowerBetter ? ' (but lower is better)' : '';
+                impactMessage = `${prefix} The true effect is ${actualEffectCpd} cpd${lowerBetterClarification}.`;
                 
                 // Line 2: Opponent choice
                 const opponentChoiceElement = document.getElementById('modal-opponent-choice');
@@ -1173,6 +1194,7 @@ const UIController = {
                 '<svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
                 '<svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
             
+
             const modalElements = {
                 'modal-best-variant': impactMessage,
                 'modal-user-choice': userChoice,

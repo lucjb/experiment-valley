@@ -140,16 +140,30 @@ function updateConfidenceIntervals(challenge) {
     const conversionViewMin = Math.floor((minConversionValue - viewPadding) * 100) / 100;
     const conversionViewMax = Math.ceil((maxConversionValue + viewPadding) * 100) / 100;
 
-    // Determine result type based on CI difference
+    // Determine result type based on CI difference and improvement direction
     const lowDiff = challenge.simulation.confidenceIntervalDifference[0];
     const highDiff = challenge.simulation.confidenceIntervalDifference[1];
+    const improvementDirection = challenge.experiment.improvementDirection;
     let resultType;
-    if (lowDiff > 0) {
-        resultType = 'positive';
-    } else if (highDiff < 0) {
-        resultType = 'negative';
+    
+    if (improvementDirection === 'LOWER_IS_BETTER') {
+        // For lower-is-better: green when variant is lower (negative difference), red when higher (positive difference)
+        if (highDiff < 0) {
+            resultType = 'positive'; // Good result (variant is lower)
+        } else if (lowDiff > 0) {
+            resultType = 'negative'; // Bad result (variant is higher)
+        } else {
+            resultType = 'inconclusive';
+        }
     } else {
-        resultType = 'inconclusive';
+        // For higher-is-better (default): green when variant is higher (positive difference), red when lower (negative difference)
+        if (lowDiff > 0) {
+            resultType = 'positive';
+        } else if (highDiff < 0) {
+            resultType = 'negative';
+        } else {
+            resultType = 'inconclusive';
+        }
     }
 
     // Update base CI (always purple)

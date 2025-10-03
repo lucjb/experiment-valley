@@ -544,7 +544,8 @@ class ChallengeDesign {
         effectSize = EFFECT_SIZE.NONE,
         sampleRatioMismatch = SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress = SAMPLE_PROGRESS.TIME,
-        visitorsLoss = VISITORS_LOSS.NO
+        visitorsLoss = VISITORS_LOSS.NO,
+        improvementDirection = IMPROVEMENT_DIRECTION.HIGHER
     } = {}) {
         this.timeProgress = timeProgress;
         this.baseRateMismatch = baseRateMismatch;
@@ -552,6 +553,7 @@ class ChallengeDesign {
         this.sampleRatioMismatch = sampleRatioMismatch;
         this.sampleProgress = sampleProgress;
         this.visitorsLoss = visitorsLoss;
+        this.improvementDirection = improvementDirection;
     }
 
     generate() {
@@ -561,7 +563,8 @@ class ChallengeDesign {
             this.effectSize,
             this.sampleRatioMismatch,
             this.sampleProgress,
-            this.visitorsLoss
+            this.visitorsLoss,
+            this.improvementDirection
         );
     }
 
@@ -580,6 +583,10 @@ class ChallengeDesign {
         return this;
     }
 
+    withLowerIsBetter() {
+        this.improvementDirection = IMPROVEMENT_DIRECTION.LOWER;
+        return this;
+    }
 
 }
 
