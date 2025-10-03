@@ -337,11 +337,12 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [winner().withLowerIsBetter(), winner(), loser().withLowerIsBetter()],
+                1: [winner(), inconclusive(), partialLoser()],
                 2: [partialLoser().withBaseRateMismatch(), partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch()],
                 3: [slowCompletion(), fastWinner(), fastLoserWithPartialWeek()],
                 4: [slowCompletion().withBaseRateMismatch(), fastLoserWithPartialWeek().withVisitorsLoss(), loser()],
-                5: [partialWinner(), partialLoser(), inconclusive()]
+                5: [partialWinner(), partialLoser(), inconclusive()],
+                6: [winner().withLowerIsBetter(), inconclusive(), loser().withLowerIsBetter()]
             };
 
             // Define round captions
