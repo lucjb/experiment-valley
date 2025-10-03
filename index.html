@@ -168,9 +168,14 @@
                             console.error('Failed to start backend session', err);
                         }
                         
-                        // Start the game session directly
+                        // Show Round 1 splash transition using the existing system
                         if (typeof UIController !== 'undefined') {
+                            // Set the current round to 1 for the splash
+                            UIController.state.currentRound = 1;
+                            // Start the session first (this will load the challenge blurred)
                             UIController.startSession();
+                            // Then show the round splash
+                            UIController.showRoundSplash();
                         }
                     }
                 });

@@ -1483,6 +1483,14 @@ const UIController = {
     },
 
     async handleNextChallenge() {
+        console.log('handleNextChallenge called');
+        console.log('Current state:', {
+            experimentsInCurrentRound: this.state.experimentsInCurrentRound,
+            EXPERIMENTS_PER_SESSION: this.state.EXPERIMENTS_PER_SESSION,
+            correctInCurrentRound: this.state.correctInCurrentRound,
+            currentRound: this.state.currentRound
+        });
+        
         const feedbackModal = document.getElementById('feedback-modal');
         const nextChallengeBtn = document.getElementById('next-challenge-btn');
 
@@ -1496,7 +1504,9 @@ const UIController = {
             // Wait a moment to show the full progress bar
             await new Promise(resolve => setTimeout(resolve, 500));
 
+            console.log('Round completed. Correct answers:', this.state.correctInCurrentRound, 'Required: 2');
             if (this.state.correctInCurrentRound >= 2) {
+                console.log('Advancing to next round. Current round:', this.state.currentRound);
                 // Log round_end and update session summary
                 (async () => {
                     try {
@@ -1531,6 +1541,7 @@ const UIController = {
                 this.state.roundResults = []; // Reset round results for new round
                 this.updateRoundDisplay(); // Update the round display
                 // Show round splash first
+                console.log('About to show splash for round:', this.state.currentRound);
                 this.showRoundSplash();
                 // Wait for splash animation to complete before loading new challenge
                 await new Promise(resolve => setTimeout(resolve, 2000));
@@ -1550,9 +1561,13 @@ const UIController = {
     },
 
     showRoundSplash() {
+        console.log('showRoundSplash called for round:', this.state.currentRound);
         const splash = document.getElementById('round-splash');
         const overlay = document.getElementById('round-splash-overlay');
+        console.log('Splash element found:', !!splash);
+        console.log('Overlay element found:', !!overlay);
         if (!splash || !overlay) {
+            console.log('Missing splash elements!');
             return;
         }
 
@@ -1571,29 +1586,29 @@ const UIController = {
             ${caption ? `<div style="font-size: 2rem; margin-top: 1rem;">${caption}</div>` : ''}
         </div>`;
 
+        // Reset splash state first
+        splash.classList.remove('show');
+        splash.style.display = 'block';
+        
+        // Force reflow
+        void splash.offsetWidth;
+
         // Show the overlay and blur effect
         overlay.classList.add('active');
 
         // Show the splash
-        splash.style.display = 'block';
-        splash.style.opacity = '0';
-        splash.style.transform = 'translate(-50%, -50%) scale(0.5)';
-
-        // Force reflow
-        void splash.offsetWidth;
-
-        // Start animation
-        splash.style.opacity = '1';
-        splash.style.transform = 'translate(-50%, -50%) scale(1)';
+        splash.classList.add('show');
 
         // Hide the splash and overlay after animation completes
         setTimeout(() => {
-            splash.style.opacity = '0';
-            splash.style.transform = 'translate(-50%, -50%) scale(0.5)';
+            splash.classList.remove('show');
 
             setTimeout(() => {
-                splash.style.display = 'none';
                 overlay.classList.remove('active');
+                // If this is Round 1, we need to ensure the challenge is properly loaded
+                if (this.state.currentRound === 1) {
+                    // The challenge should already be loaded but blurred, now it will be unblurred
+                }
             }, 500);
         }, 1500);
     },
