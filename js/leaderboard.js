@@ -81,7 +81,7 @@
         list.innerHTML = '';
         items.slice(0, 20).forEach((it, index) => {
             const entry = document.createElement('div');
-            entry.className = 'flex items-center justify-between p-3 rounded-lg hover:bg-gray-700 transition-colors';
+            entry.className = 'flex items-center justify-between p-2 rounded-lg hover:bg-gray-700 transition-colors';
             entry.style.backgroundColor = 'transparent';
             
             const rank = index + 1;

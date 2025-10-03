@@ -294,10 +294,13 @@ const UIController = {
             tutorialSection.classList.add('hidden');
         }
 
-        // Show experiment container
+        // Show experiment container with loading state
         experimentContainer.classList.remove('hidden');
         experimentContainer.classList.add('fade-in');
         experimentContainer.classList.add('compact');
+        
+        // Show loading state
+        this.showLoadingState();
 
         // Reset scroll to top when entering the first challenge
         try {
@@ -314,6 +317,26 @@ const UIController = {
 
         // Load the first challenge
         this.loadChallenge();
+    },
+
+    showLoadingState() {
+        const experimentContainer = document.getElementById('challenge-container');
+        const loadingHTML = `
+            <div id="loading-overlay" class="loading-overlay">
+                <div class="text-center">
+                    <div class="loading-spinner mx-auto mb-4"></div>
+                    <p class="text-white text-lg font-medium">Loading experiment...</p>
+                </div>
+            </div>
+        `;
+        experimentContainer.insertAdjacentHTML('beforeend', loadingHTML);
+    },
+
+    hideLoadingState() {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.remove();
+        }
     },
 
     async loadChallenge() {
@@ -404,6 +427,10 @@ const UIController = {
             if (this.debugMode()) {
                 this.addDebugAlerts();
             }
+            
+            // Hide loading state
+            this.hideLoadingState();
+            
             return true;
         } catch (error) {
             console.error('Error loading challenge:', error);
