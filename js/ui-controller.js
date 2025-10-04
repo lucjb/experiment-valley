@@ -1682,19 +1682,19 @@ const UIController = {
         // Show the home page background (game menu)
         gameMenu.classList.remove('hidden');
 
-        setTimeout(() => {
-            document.getElementById('final-accuracy').textContent = `${Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100)}%`;
-            document.getElementById('final-user-impact').textContent = `${this.state.userCumulativeEffect} cpd`;
-            document.getElementById('final-opponent-impact').textContent = `${this.state.competitorCumulativeEffect} cpd`;
-            // Calculate rounds completed: if they failed on current round, they completed currentRound - 1
-            // If they're still in round 1 and failed, they completed 0 rounds
-            const roundsCompleted = this.state.currentRound > 1 ? this.state.currentRound - 1 : 0;
-            document.getElementById('final-round').textContent = roundsCompleted;
+        // Update the completion modal content immediately
+        document.getElementById('final-accuracy').textContent = `${Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100)}%`;
+        document.getElementById('final-user-impact').textContent = `${this.state.userCumulativeEffect} cpd`;
+        document.getElementById('final-opponent-impact').textContent = `${this.state.competitorCumulativeEffect} cpd`;
+        // Calculate rounds completed: if they failed on current round, they completed currentRound - 1
+        // If they're still in round 1 and failed, they completed 0 rounds
+        const roundsCompleted = this.state.currentRound > 1 ? this.state.currentRound - 1 : 0;
+        document.getElementById('final-round').textContent = roundsCompleted;
 
-            completionModal.classList.remove('hidden');
-            setTimeout(() => {
-                completionModal.classList.add('fade-in');
-            }, 10);
+        // Show completion modal immediately to prevent flashing
+        completionModal.classList.remove('hidden');
+        setTimeout(() => {
+            completionModal.classList.add('fade-in');
             // Submit score, end session, log event, and update final session summary
             (async () => {
                 try {
@@ -1723,7 +1723,7 @@ const UIController = {
                     console.error('Failed to finalize session with backend', err);
                 }
             })();
-        }, 500);
+        });
     },
 
     startNewSession() {
