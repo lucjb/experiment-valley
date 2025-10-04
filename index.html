@@ -43,7 +43,6 @@
             const tutorialSection = document.getElementById('tutorial-section');
             const playerNameInput = document.getElementById('player-name');
             const startGameBtn = document.getElementById('start-game');
-            const cancelPlayBtn = document.getElementById('cancel-play');
             
             if (playBtn) {
                 playBtn.addEventListener('click', function() {
@@ -76,10 +75,22 @@
                 });
             }
 
-            // Handle modal interactions
-            if (cancelPlayBtn) {
-                cancelPlayBtn.addEventListener('click', function() {
-                    playModal.classList.add('hidden');
+            // Handle click outside modal to close
+            if (playModal) {
+                playModal.addEventListener('click', function(e) {
+                    if (e.target === playModal) {
+                        playModal.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Handle click outside completion modal to close
+            const completionModal = document.getElementById('completion-modal');
+            if (completionModal) {
+                completionModal.addEventListener('click', function(e) {
+                    if (e.target === completionModal) {
+                        completionModal.classList.add('hidden');
+                    }
                 });
             }
 
@@ -289,11 +300,8 @@
                 </div>
 
                 <!-- Modal Actions -->
-                <div class="flex justify-end space-x-3">
-                    <button id="cancel-play" class="px-4 py-2 text-gray-300 border border-gray-600 rounded hover:bg-gray-700 transition">
-                        Cancel
-                    </button>
-                    <button id="start-game" class="px-6 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                <div class="flex justify-center">
+                    <button id="start-game" class="px-6 py-3 bg-gray-800 text-white font-medium rounded-lg border border-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                         Start Game
                     </button>
                 </div>
