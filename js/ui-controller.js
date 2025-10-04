@@ -264,8 +264,33 @@ const UIController = {
 
     async exitGame() {
         try {
-            // End the backend session
+            // Save session summary with opponent data before ending session
             if (typeof Backend !== 'undefined' && Backend.isInitialized()) {
+                // Log session end event with current data
+                await Backend.logEvent({
+                    eventType: 'session_end',
+                    roundNumber: this.state.currentRound,
+                    payload: {
+                        total_attempts: this.state.totalAttempts,
+                        accuracy_pct: this.state.totalDecisions > 0 ? 
+                            Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100) : 0,
+                        user_impact_cpd: this.state.userCumulativeEffect,
+                        competitor_impact_cpd: this.state.competitorCumulativeEffect
+                    }
+                });
+
+                // Save final session summary with opponent data
+                const accuracy = this.state.totalDecisions > 0 ? 
+                    Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100) : 0;
+                await Backend.upsertSessionSummary({
+                    maxRound: this.state.currentRound,
+                    impactCpd: this.state.userCumulativeEffect,
+                    accuracyPct: accuracy,
+                    opponentName: this.state.selectedCompetitor,
+                    opponentImpactCpd: this.state.competitorCumulativeEffect
+                });
+
+                // End the backend session
                 await Backend.endSession();
             }
         } catch (error) {
