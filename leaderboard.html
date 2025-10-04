@@ -31,27 +31,7 @@
     <script src="js/leaderboard.js" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const roundTab = document.getElementById('round-tab');
-            const impactTab = document.getElementById('impact-tab');
-            const roundContent = document.getElementById('round-content');
-            const impactContent = document.getElementById('impact-content');
-
-            function switchToRound() {
-                roundTab.className = 'px-4 py-2 rounded-lg font-semibold transition-colors bg-orange-500 text-white';
-                impactTab.className = 'px-4 py-2 rounded-lg font-semibold transition-colors bg-gray-600 text-gray-300 hover:bg-gray-500';
-                roundContent.classList.remove('hidden');
-                impactContent.classList.add('hidden');
-            }
-
-            function switchToImpact() {
-                impactTab.className = 'px-4 py-2 rounded-lg font-semibold transition-colors bg-orange-500 text-white';
-                roundTab.className = 'px-4 py-2 rounded-lg font-semibold transition-colors bg-gray-600 text-gray-300 hover:bg-gray-500';
-                impactContent.classList.remove('hidden');
-                roundContent.classList.add('hidden');
-            }
-
-            roundTab.addEventListener('click', switchToRound);
-            impactTab.addEventListener('click', switchToImpact);
+            // Both leaderboards are now always visible, no tab switching needed
         });
     </script>
 </head>
@@ -61,7 +41,7 @@
         <div class="flex items-center justify-center p-4">
             <div class="max-w-4xl w-full">
                 <!-- Page Title -->
-                <div class="text-center mb-12 mt-36">
+                <div class="text-center mb-6 mt-36">
                     <h1 class="text-8xl font-bold text-white mb-4 tracking-wider" style="text-shadow: 0 0 20px rgba(255,255,255,0.5);">
                         EXPERIMENT VALLEY
                     </h1>
@@ -71,29 +51,34 @@
 
         <!-- Leaderboard Section -->
         <div class="mt-0">
-            <div class="max-w-xl mx-auto">
+            <div class="max-w-6xl mx-auto">
                 <div class="bg-gray-900 rounded-lg shadow-lg p-1 md:p-2" style="background-color: rgba(17, 24, 39, 0.6);">
             <!-- Leaderboard Title -->
             <div class="text-center mb-0">
-                <h2 class="text-2xl font-bold text-white">RANKINGS</h2>
+                <h2 class="text-2xl font-bold text-white">LEADERBOARDS</h2>
             </div>
             
-            <!-- Tab Navigation -->
-            <div class="flex space-x-2 mb-1">
-                <button id="round-tab" class="px-3 py-1.5 rounded-lg font-semibold transition-colors bg-orange-500 text-white">
-                    Max Round
-                </button>
-                <button id="impact-tab" class="px-3 py-1.5 rounded-lg font-semibold transition-colors bg-gray-600 text-gray-300 hover:bg-gray-500">
-                    Impact
-                </button>
-            </div>
-            
-            <!-- Tab Content -->
-            <div id="round-content" class="max-h-96" data-simplebar data-simplebar-auto-hide="false">
-                <div id="round-list" class="space-y-1 pr-2"></div>
-            </div>
-            <div id="impact-content" class="max-h-96 hidden" data-simplebar data-simplebar-auto-hide="false">
-                <div id="impact-list" class="space-y-1 pr-2"></div>
+            <!-- Side by Side Leaderboards -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Max Round Leaderboard -->
+                <div class="bg-gray-900/40 rounded-lg">
+                    <div class="px-4 py-3 border-b border-gray-700/50">
+                        <h3 class="text-lg font-bold text-white">Max Round Leaderboard <span class="text-sm text-gray-400 font-normal">- Who reached the highest round?</span></h3>
+                    </div>
+                    <div id="round-content" class="max-h-96" data-simplebar data-simplebar-auto-hide="false">
+                        <div id="round-list" class="py-1 pr-4"></div>
+                    </div>
+                </div>
+                
+                <!-- Impact Leaderboard -->
+                <div class="bg-gray-900/40 rounded-lg">
+                    <div class="px-4 py-3 border-b border-gray-700/50 text-right">
+                        <h3 class="text-lg font-bold text-white"><span class="text-sm text-gray-400 font-normal">Who had the highest impact? - </span>Impact Leaderboard</h3>
+                    </div>
+                    <div id="impact-content" class="max-h-96" data-simplebar data-simplebar-auto-hide="false">
+                        <div id="impact-list" class="py-1 pr-4"></div>
+                    </div>
+                </div>
             </div>
         </div>
             </div>

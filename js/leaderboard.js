@@ -76,23 +76,23 @@
         list.innerHTML = '';
         items.slice(0, 20).forEach((it, index) => {
             const entry = document.createElement('div');
-            entry.className = 'flex items-center justify-between p-2 rounded-lg hover:bg-gray-700 transition-colors';
+            entry.className = 'flex items-center justify-between px-4 py-2 hover:bg-gray-700/30 transition-colors';
             entry.style.backgroundColor = 'transparent';
             
             const rank = index + 1;
             const rankBadge = document.createElement('div');
             
             if (rank <= 3) {
-                rankBadge.className = 'flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold bg-green-500 text-white shadow-lg';
-                rankBadge.style.boxShadow = '0 0 10px rgba(34, 197, 94, 0.5)';
+                rankBadge.className = 'flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold bg-green-500 text-white shadow-md';
+                rankBadge.style.boxShadow = '0 0 8px rgba(34, 197, 94, 0.4)';
             } else {
-                rankBadge.className = 'flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold bg-gray-600 text-gray-200';
+                rankBadge.className = 'flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold bg-gray-600 text-gray-200';
             }
             
             rankBadge.textContent = rank;
             
             const content = document.createElement('div');
-            content.className = 'flex-1 ml-3';
+            content.className = 'flex-1 ml-1';
             content.innerHTML = formatter(it);
             
             entry.appendChild(rankBadge);
