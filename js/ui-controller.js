@@ -892,7 +892,9 @@ const UIController = {
         const progressBar = document.getElementById('progress-bar');
         const progressPercent = (this.state.experimentsInCurrentRound / this.state.EXPERIMENTS_PER_SESSION) * 100;
         progressBar.style.width = `${progressPercent}%`;
-        document.getElementById('current-experiment').textContent = this.state.experimentsInCurrentRound + 1;
+        
+        // Update experiment dots
+        this.updateExperimentDots();
     },
 
     handleDecision(decisionType, value) {
@@ -1408,6 +1410,9 @@ const UIController = {
             };
             this.state.roundResults[this.state.experimentsInCurrentRound - 1] = experimentResult;
 
+            // Update experiment dots
+            this.updateExperimentDots();
+
             // Update feedback icon and title based on performance
             const feedbackIcon1 = document.getElementById('feedback-icon-1');
             const feedbackIcon2 = document.getElementById('feedback-icon-2');
@@ -1591,6 +1596,7 @@ const UIController = {
                 this.state.correctInCurrentRound = 0;
                 this.state.currentRound++; // Increment the round number
                 this.state.roundResults = []; // Reset round results for new round
+                this.updateExperimentDots(); // Update experiment dots for new round
                 this.updateRoundDisplay(); // Update the round display
                 // Show round splash first
                 console.log('About to show splash for round:', this.state.currentRound);
@@ -1601,7 +1607,6 @@ const UIController = {
                 this.loadChallenge();
                 // Reset progress bar
                 progressBar.style.width = '0%';
-                document.getElementById('current-experiment').textContent = '1';
             } else {
                 // End game
                 this.showCompletionModal();
@@ -1900,12 +1905,12 @@ const UIController = {
         this.state.currentCompetitor = null;
         this.state.selectedCompetitor = null;
         this.state.roundResults = []; // Reset round results
+        this.updateExperimentDots(); // Update experiment dots for new session
 
         // Update displays
         this.updateAccuracyDisplay(0);
         this.updateRoundDisplay(); // Update the round display
         this.updateImpactDisplay(); // Update impact display
-        document.getElementById('current-experiment').textContent = this.state.currentExperiment;
 
         // Reset button text
         const nextButton = document.getElementById('next-challenge-btn');
@@ -1954,6 +1959,48 @@ const UIController = {
         }
         if (modalCompetitorNameElement) {
             modalCompetitorNameElement.textContent = competitorName;
+        }
+    },
+
+    updateExperimentDots() {
+        const dot1 = document.getElementById('exp-dot-1');
+        const dot2 = document.getElementById('exp-dot-2');
+        const dot3 = document.getElementById('exp-dot-3');
+        const dots = [dot1, dot2, dot3];
+        
+        // Reset all dots to gray
+        dots.forEach(dot => {
+            if (dot) {
+                dot.className = 'w-3 h-3 rounded-full bg-gray-400 transition-colors duration-300';
+            }
+        });
+        
+        // Update dots based on experiment results and current position
+        for (let i = 0; i < 3; i++) {
+            const dot = dots[i];
+            if (!dot) continue;
+            
+            const experimentIndex = i; // 0-based index for experiments
+            const result = this.state.roundResults[experimentIndex];
+            const isCurrentExperiment = (i === this.state.experimentsInCurrentRound);
+            const isFutureExperiment = (i > this.state.experimentsInCurrentRound);
+            
+            if (result) {
+                // Experiment is completed
+                if (result.isPerfect || result.isGood) {
+                    // Green for passed experiments
+                    dot.className = 'w-3 h-3 rounded-full bg-green-500 transition-colors duration-300';
+                } else {
+                    // Red for failed experiments
+                    dot.className = 'w-3 h-3 rounded-full bg-red-500 transition-colors duration-300';
+                }
+            } else if (isCurrentExperiment) {
+                // Current experiment (not yet completed)
+                dot.className = 'w-3 h-3 rounded-full bg-gray-400 transition-colors duration-300';
+            } else if (isFutureExperiment) {
+                // Future experiments
+                dot.className = 'w-3 h-3 rounded-full bg-gray-400 transition-colors duration-300';
+            }
         }
     },
 
