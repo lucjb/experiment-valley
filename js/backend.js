@@ -48,18 +48,35 @@ const Backend = (() => {
             }
         } catch (_) { /* ignore */ }
 
-        // 2) Try to find an existing profile by display_name (avoid duplicates after cache loss)
+        // 2) Check if there are existing profiles with this name
         try {
-            const { data: byName } = await supabase
+            const { data: existingProfiles } = await supabase
                 .from('profiles')
-                .select('id, display_name')
+                .select('id, display_name, created_at')
                 .eq('display_name', displayName)
-                .limit(1)
-                .maybeSingle();
-            if (byName && byName.id) {
-                profileId = byName.id;
-                localStorage.setItem(key, JSON.stringify(byName));
-                return profileId;
+                .order('created_at', { ascending: true });
+            
+            if (existingProfiles && existingProfiles.length > 0) {
+                // Check if this is a returning user by looking for their specific profile
+                const sessionKey = `abgym_session_${displayName}`;
+                const sessionId = localStorage.getItem(sessionKey);
+                
+                if (sessionId) {
+                    const { data: existing } = await supabase
+                        .from('profiles')
+                        .select('id, display_name')
+                        .eq('id', sessionId)
+                        .maybeSingle();
+                    if (existing && existing.id) {
+                        profileId = existing.id;
+                        localStorage.setItem(key, JSON.stringify(existing));
+                        return profileId;
+                    }
+                }
+                
+                // If we get here, it's a new user with an existing name
+                // We'll create a new profile but the leaderboard will handle the collision display
+                console.log(`Warning: Name "${displayName}" already exists. Creating new profile.`);
             }
         } catch (_) { /* ignore */ }
 
@@ -72,7 +89,27 @@ const Backend = (() => {
         if (error) throw error;
         profileId = data.id;
         localStorage.setItem(key, JSON.stringify(data));
+        
+        // Store session-specific profile ID for future reference
+        const sessionKey = `abgym_session_${displayName}`;
+        localStorage.setItem(sessionKey, data.id);
+        
         return profileId;
+    }
+
+    async function checkNameCollision(displayName) {
+        try {
+            const { data: existingProfiles } = await supabase
+                .from('profiles')
+                .select('id, display_name, created_at')
+                .eq('display_name', displayName)
+                .order('created_at', { ascending: true });
+            
+            return existingProfiles && existingProfiles.length > 0;
+        } catch (error) {
+            console.error('Error checking name collision:', error);
+            return false;
+        }
     }
 
     async function startSession(params) {
@@ -156,7 +193,8 @@ const Backend = (() => {
         startSession,
         endSession,
         upsertSessionSummary,
-        logEvent
+        logEvent,
+        checkNameCollision
     };
 })();
 

@@ -1684,9 +1684,22 @@ const UIController = {
 
             // Aggregate leaderboard data (same logic as leaderboard.js)
             const byProfile = new Map();
+            const nameCounts = new Map();
+            
+            // Count occurrences of each display name to handle collisions
             profiles.data.forEach(p => {
+                const count = nameCounts.get(p.display_name) || 0;
+                nameCounts.set(p.display_name, count + 1);
+            });
+            
+            profiles.data.forEach(p => {
+                const count = nameCounts.get(p.display_name);
+                const displayName = count > 1 ? `${p.display_name} #${p.id.slice(-4)}` : p.display_name;
+                
                 byProfile.set(p.id, {
-                    displayName: p.display_name,
+                    displayName: displayName,
+                    originalName: p.display_name,
+                    profileId: p.id,
                     bestAccuracy: 0,
                     maxRound: 0,
                     maxImpact: 0,
@@ -1727,7 +1740,9 @@ const UIController = {
             // Create rounds leaderboard
             const roundsBoard = rows
                 .map(r => ({ 
-                    name: r.displayName, 
+                    name: r.displayName,
+                    originalName: r.originalName,
+                    profileId: r.profileId,
                     maxRound: r.maxRound, 
                     accuracy: r.maxRoundSession ? r.maxRoundSession.accuracy : 0 
                 }))
@@ -1740,7 +1755,9 @@ const UIController = {
             // Create impact leaderboard
             const impactBoard = rows
                 .map(r => ({ 
-                    name: r.displayName, 
+                    name: r.displayName,
+                    originalName: r.originalName,
+                    profileId: r.profileId,
                     impact: r.maxImpact,
                     opponentName: r.opponentName,
                     opponentImpact: r.opponentImpact
@@ -1749,11 +1766,11 @@ const UIController = {
 
             // Find user's ranks
             const roundsRank = roundsBoard.findIndex(player => 
-                player.name === window.playerName
+                player.originalName === window.playerName
             ) + 1;
 
             const impactRank = impactBoard.findIndex(player => 
-                player.name === window.playerName
+                player.originalName === window.playerName
             ) + 1;
 
             return {

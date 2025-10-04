@@ -119,9 +119,16 @@
             });
 
             // Handle name input
+            let nameCheckTimeout;
             if (playerNameInput) {
                 playerNameInput.addEventListener('input', function() {
                     updateStartButtonState();
+                    
+                    // Debounce name collision check
+                    clearTimeout(nameCheckTimeout);
+                    nameCheckTimeout = setTimeout(() => {
+                        checkNameCollision();
+                    }, 500);
                 });
             }
 
@@ -132,6 +139,58 @@
                 
                 if (startGameBtn) {
                     startGameBtn.disabled = !(hasName && hasOpponent);
+                }
+            }
+
+            // Check for name collisions
+            async function checkNameCollision() {
+                const name = playerNameInput.value.trim();
+                if (name.length < 2) {
+                    hideNameWarning();
+                    return;
+                }
+
+                try {
+                    if (typeof Backend !== 'undefined' && Backend.isInitialized()) {
+                        const hasCollision = await Backend.checkNameCollision(name);
+                        if (hasCollision) {
+                            showNameWarning(name);
+                        } else {
+                            hideNameWarning();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking name collision:', error);
+                }
+            }
+
+            // Show name collision warning
+            function showNameWarning(name) {
+                let warningDiv = document.getElementById('name-collision-warning');
+                if (!warningDiv) {
+                    warningDiv = document.createElement('div');
+                    warningDiv.id = 'name-collision-warning';
+                    warningDiv.className = 'mt-2 p-3 bg-yellow-900 border border-yellow-600 rounded-md text-yellow-200 text-sm';
+                    warningDiv.innerHTML = `
+                        <div class="flex items-start">
+                            <svg class="w-4 h-4 mt-0.5 mr-2 text-yellow-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                            <div>
+                                <strong>Name already exists!</strong><br>
+                                The name "${name}" is already taken. You can still use it, but you'll appear as "${name} #XXXX" on the leaderboard to distinguish you from other players with the same name.
+                            </div>
+                        </div>
+                    `;
+                    playerNameInput.parentNode.appendChild(warningDiv);
+                }
+            }
+
+            // Hide name collision warning
+            function hideNameWarning() {
+                const warningDiv = document.getElementById('name-collision-warning');
+                if (warningDiv) {
+                    warningDiv.remove();
                 }
             }
 

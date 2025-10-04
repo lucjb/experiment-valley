@@ -16,9 +16,22 @@
 
     function aggregateLeaderboards({ profiles, summaries }) {
         const byProfile = new Map();
+        const nameCounts = new Map();
+        
+        // Count occurrences of each display name to handle collisions
         profiles.forEach(p => {
+            const count = nameCounts.get(p.display_name) || 0;
+            nameCounts.set(p.display_name, count + 1);
+        });
+        
+        profiles.forEach(p => {
+            const count = nameCounts.get(p.display_name);
+            const displayName = count > 1 ? `${p.display_name} #${p.id.slice(-4)}` : p.display_name;
+            
             byProfile.set(p.id, {
-                displayName: p.display_name,
+                displayName: displayName,
+                originalName: p.display_name,
+                profileId: p.id,
                 bestAccuracy: 0,
                 maxRound: 0,
                 maxImpact: 0,
@@ -61,7 +74,9 @@
         
         const roundBoard = rows
             .map(r => ({ 
-                name: r.displayName, 
+                name: r.displayName,
+                originalName: r.originalName,
+                profileId: r.profileId,
                 maxRound: r.maxRound, 
                 accuracy: r.maxRoundSession ? r.maxRoundSession.accuracy : 0 
             }))
@@ -73,7 +88,9 @@
 
         const impactBoard = rows
             .map(r => ({ 
-                name: r.displayName, 
+                name: r.displayName,
+                originalName: r.originalName,
+                profileId: r.profileId,
                 impact: r.maxImpact,
                 opponentName: r.opponentName,
                 opponentImpact: r.opponentImpact
@@ -87,12 +104,13 @@
         const list = document.getElementById(containerId);
         if (!list) return;
         list.innerHTML = '';
-        items.slice(0, 20).forEach((it, index) => {
+        items.forEach((it, index) => {
             const entry = document.createElement('div');
             const isHighlighted = highlightUser && it.name === highlightUser;
             
-            // Add data attribute for scrolling
+            // Add data attributes for scrolling
             entry.setAttribute('data-user-name', it.name);
+            entry.setAttribute('data-user-id', it.profileId || '');
             
             if (isHighlighted) {
                 entry.className = 'flex items-center justify-between px-4 py-2 hover:bg-gray-700/30 transition-colors';
@@ -138,7 +156,8 @@
         
         const entries = list.querySelectorAll('[data-user-name]');
         entries.forEach(entry => {
-            if (entry.getAttribute('data-user-name') === userName) {
+            const entryName = entry.getAttribute('data-user-name');
+            if (entryName === userName || entryName === `${userName} #${entry.getAttribute('data-user-id')?.slice(-4)}`) {
                 entry.scrollIntoView({ 
                     behavior: 'smooth', 
                     block: 'center' 
