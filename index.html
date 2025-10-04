@@ -531,12 +531,7 @@
                             <span class="font-medium text-white tooltip-trigger">
                                 Is it Trustworthy?
                                 <span class="tooltip-content">
-                                    Evaluate if the experiment results can be trusted based on:
-                                    <ul class="list-disc pl-4 mt-2">
-                                        <li>Sample size adequacy</li>
-                                        <li>Statistical significance</li>
-                                        <li>Data quality and consistency</li>
-                                    </ul>
+                                    Can the experiment be trusted to make a decision?
                                 </span>
                             </span>
                         </div>
@@ -554,7 +549,7 @@
                     <div class="decision-section decision">
                         <div class="text-center mb-2">
                             <span class="font-medium text-white tooltip-trigger">
-                                DECISIONS
+                                Decision
                                 <span class="tooltip-content">
                                     Based on the experiment results, choose whether to:
                                     <ul class="list-disc pl-4 mt-2">
@@ -729,8 +724,8 @@
                                 </span>
                                 <span id="exp-beta"></span>
                             </div>
-                            <div><span class="font-medium">Experiment Type:</span> <span>2-sided Test</span></div>
-                            <div><span class="font-medium">Null Hypothesis:</span> <span>No difference</span></div>
+                            <div><span class="font-medium">Experiment Type:</span> <span class="tooltip-trigger">2-sided Test<span class="tooltip-content">Tests for any difference between variants, whether positive or negative<br><a href="https://en.wikipedia.org/wiki/One-_and_two-tailed_tests" target="_blank" class="text-blue-500 hover:text-blue-700">Learn more →</a></span></span></div>
+                            <div><span class="font-medium">Null Hypothesis:</span> <span class="tooltip-trigger">No difference<span class="tooltip-content">We assume that there is no difference between the base and variant versions, and look for evidence against it<br><a href="https://en.wikipedia.org/wiki/Null_hypothesis" target="_blank" class="text-blue-500 hover:text-blue-700">Learn more →</a></span></span></div>
                             <div><span class="font-medium">Improvement Direction:</span> <span id="exp-improvement-direction"></span></div>
                         </div>
                     </div>
@@ -740,8 +735,7 @@
                             <div><span class="font-medium">Base Conversion Rate:</span> <span id="exp-base-rate"></span>
                             </div>
                             <div><span class="font-medium">Daily Visitors:</span> <span id="exp-visitors"></span></div>
-                            <div><span class="font-medium">Minimum Relevant Effect (absolute):</span> <span
-                                    id="exp-min-effect"></span></div>
+                            <div><span class="font-medium tooltip-trigger">Minimum Relevant Effect (absolute):<span class="tooltip-content">The smallest effect size that would be considered practically meaningful for your business<br><a href="https://en.wikipedia.org/wiki/Effect_size" target="_blank" class="text-blue-500 hover:text-blue-700">Learn more →</a></span></span> <span id="exp-min-effect"></span></div>
                             <div><span class="font-medium">Required Visitors:</span> <span
                                     id="exp-required-sample"></span> per variant, <span
                                     id="exp-total-required-sample"></span> total</div>
@@ -780,7 +774,7 @@
                         <table class="w-full border-collapse border metrics-table">
                             <thead>
                                 <tr class="bg-gray-100">
-                                    <th class="border px-2 py-2 text-left whitespace-nowrap">Variant</th>
+                                    <th class="border px-2 py-2 text-left whitespace-nowrap"></th>
                                     <th class="border px-2 py-2 text-right whitespace-nowrap">Visitors</th>
                                     <th class="border px-2 py-2 text-right whitespace-nowrap">Conversions</th>
                                     <th class="border px-2 py-2 text-right whitespace-nowrap">Rate</th>
