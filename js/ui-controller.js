@@ -1665,7 +1665,108 @@ const UIController = {
         }, 1500);
     },
 
-    showCompletionModal() {
+    async getUserRanks() {
+        try {
+            if (typeof Backend === 'undefined' || !Backend.isInitialized()) {
+                return { roundsRank: null, impactRank: null };
+            }
+            
+            const client = Backend.getClient();
+            const [profiles, summaries] = await Promise.all([
+                client.from('profiles').select('id, display_name'),
+                client.from('session_summaries').select('profile_id, max_round_reached, total_impact_cpd, accuracy_pct, opponent_name, opponent_impact_cpd')
+            ]);
+
+            if (profiles.error || summaries.error) {
+                console.error('Failed to fetch leaderboard data:', profiles.error || summaries.error);
+                return { roundsRank: null, impactRank: null };
+            }
+
+            // Aggregate leaderboard data (same logic as leaderboard.js)
+            const byProfile = new Map();
+            profiles.data.forEach(p => {
+                byProfile.set(p.id, {
+                    displayName: p.display_name,
+                    bestAccuracy: 0,
+                    maxRound: 0,
+                    maxImpact: 0,
+                    maxRoundSession: null,
+                    opponentName: null,
+                    opponentImpact: 0
+                });
+            });
+
+            summaries.data.forEach(s => {
+                const agg = byProfile.get(s.profile_id);
+                if (!agg) return;
+                
+                const round = Number(s.max_round_reached) || 0;
+                const accuracy = Number(s.accuracy_pct) || 0;
+                const impact = Number(s.total_impact_cpd) || 0;
+                const opponentImpact = Number(s.opponent_impact_cpd) || 0;
+                
+                // Best accuracy across all sessions
+                agg.bestAccuracy = Math.max(agg.bestAccuracy, accuracy);
+                
+                // Max round reached across all sessions
+                if (round > agg.maxRound) {
+                    agg.maxRound = round;
+                    agg.maxRoundSession = { round, accuracy };
+                }
+                
+                // Max impact across all sessions - also track opponent info from this session
+                if (impact > agg.maxImpact) {
+                    agg.maxImpact = impact;
+                    agg.opponentName = s.opponent_name || 'Unknown';
+                    agg.opponentImpact = opponentImpact;
+                }
+            });
+
+            const rows = Array.from(byProfile.values());
+            
+            // Create rounds leaderboard
+            const roundsBoard = rows
+                .map(r => ({ 
+                    name: r.displayName, 
+                    maxRound: r.maxRound, 
+                    accuracy: r.maxRoundSession ? r.maxRoundSession.accuracy : 0 
+                }))
+                .sort((a, b) => {
+                    // Primary sort by max round, secondary by accuracy for ties
+                    if (b.maxRound !== a.maxRound) return b.maxRound - a.maxRound;
+                    return b.accuracy - a.accuracy;
+                });
+
+            // Create impact leaderboard
+            const impactBoard = rows
+                .map(r => ({ 
+                    name: r.displayName, 
+                    impact: r.maxImpact,
+                    opponentName: r.opponentName,
+                    opponentImpact: r.opponentImpact
+                }))
+                .sort((a, b) => b.impact - a.impact);
+
+            // Find user's ranks
+            const roundsRank = roundsBoard.findIndex(player => 
+                player.name === window.playerName
+            ) + 1;
+
+            const impactRank = impactBoard.findIndex(player => 
+                player.name === window.playerName
+            ) + 1;
+
+            return {
+                roundsRank: roundsRank > 0 ? roundsRank : null,
+                impactRank: impactRank > 0 ? impactRank : null
+            };
+        } catch (error) {
+            console.error('Error getting user ranks:', error);
+            return { roundsRank: null, impactRank: null };
+        }
+    },
+
+    async showCompletionModal() {
         const experimentContainer = document.getElementById('challenge-container');
         const completionModal = document.getElementById('completion-modal');
         const feedbackModal = document.getElementById('feedback-modal');
@@ -1720,6 +1821,20 @@ const UIController = {
                             opponentImpactCpd: this.state.competitorCumulativeEffect
                         });
                         await Backend.endSession();
+                        
+                        // Now calculate and display ranks after data is saved
+                        const userRanks = await this.getUserRanks();
+                        if (userRanks.roundsRank) {
+                            document.getElementById('final-rounds-rank').textContent = `#${userRanks.roundsRank}`;
+                        } else {
+                            document.getElementById('final-rounds-rank').textContent = '#?';
+                        }
+                        
+                        if (userRanks.impactRank) {
+                            document.getElementById('final-impact-rank').textContent = `#${userRanks.impactRank}`;
+                        } else {
+                            document.getElementById('final-impact-rank').textContent = '#?';
+                        }
                     }
                 } catch (err) {
                     console.error('Failed to finalize session with backend', err);
