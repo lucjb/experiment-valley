@@ -1033,30 +1033,45 @@
         </div>
 
         <!-- Completion Modal -->
-        <div id="completion-modal"
-            class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div class="relative top-32 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                <div class="mt-3 text-center">
-                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-                        <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
-                            </path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Session Complete!</h3>
-                    <div class="text-center mb-6">
-                        <h2 class="text-2xl font-bold mb-4">Game Complete!</h2>
-                        <div class="space-y-2">
-                            <p>Accuracy: <span id="final-accuracy" class="font-bold">0%</span></p>
-                            <p>Your Total Impact: <span id="final-user-impact" class="font-bold text-green-600">0
-                                    cpd</span></p>
-                            <p><span id="final-competitor-name">Opponent</span> Total Impact: <span
-                                    id="final-opponent-impact" class="font-bold text-red-600">0 cpd</span></p>
-                            <p>Round Reached: <span id="final-round" class="font-bold">1</span></p>
+        <div id="completion-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50 hidden pb-20">
+            <div class="bg-gray-900 rounded-lg shadow-xl p-8 max-w-lg w-full mx-4" style="background-color: rgba(17, 24, 39, 0.9);">
+                <div class="text-center">
+                    <!-- Game Over -->
+                    <h2 class="text-6xl font-bold text-white mb-8 tracking-wider" style="text-shadow: 0 0 10px rgba(255,255,255,0.6), 0 0 20px rgba(255,255,255,0.4);">GAME OVER</h2>
+                    
+                    <!-- Rounds Completed Block -->
+                    <div class="bg-gray-800 rounded-lg p-6 mb-6" style="background-color: rgba(31, 41, 55, 0.8);">
+                        <h3 class="text-xl font-semibold text-white mb-4">Rounds Completed</h3>
+                        <div class="flex justify-between items-center">
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-white" id="final-round">1</div>
+                                <div class="text-sm text-gray-300">Rounds</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-white" id="final-accuracy">0%</div>
+                                <div class="text-sm text-gray-300">Accuracy</div>
+                            </div>
                         </div>
                     </div>
-                    <div class="mt-4">
-                        <p class="text-sm font-medium text-gray-700 mb-2">Share your achievement:</p>
+
+                    <!-- Impact Block -->
+                    <div class="bg-gray-800 rounded-lg p-6 mb-8" style="background-color: rgba(31, 41, 55, 0.8);">
+                        <h3 class="text-xl font-semibold text-white mb-4">Impact</h3>
+                        <div class="flex justify-between items-center">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-400" id="final-user-impact">0 cpd</div>
+                                <div class="text-sm text-gray-300">You</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-red-400" id="final-opponent-impact">0 cpd</div>
+                                <div class="text-sm text-gray-300"><span id="final-competitor-name">Opponent</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Share Section -->
+                    <div class="mb-8">
+                        <p class="text-sm text-gray-400 mb-4">Share your achievement:</p>
                         <div class="flex justify-center space-x-4">
                             <button onclick="UIController.shareOnTwitter()"
                                 class="bg-blue-400 text-white px-4 py-2 rounded hover:bg-blue-500">
@@ -1068,12 +1083,7 @@
                             </button>
                         </div>
                     </div>
-                </div>
-                <div class="items-center px-4 py-3">
-                    <button id="start-new-session"
-                        class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition">
-                        Start New Session
-                    </button>
+                    
                 </div>
             </div>
         </div>

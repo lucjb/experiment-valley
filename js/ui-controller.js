@@ -1425,7 +1425,7 @@ const UIController = {
             if (isPerfect) {
                 this.state.correctInCurrentRound++;
                 
-                feedbackTitle.textContent = 'Results';
+                feedbackTitle.textContent = 'Score Card';
                 resultsCardTitle.textContent = resultsCardTitleText;
                 
                 // Update results display for perfect performance
@@ -1440,7 +1440,7 @@ const UIController = {
             } else if (isGood) {
                 this.state.correctInCurrentRound++;
                 
-                feedbackTitle.textContent = 'Results';
+                feedbackTitle.textContent = 'Score Card';
                 resultsCardTitle.textContent = resultsCardTitleText;
                 
                 // Update results display for good performance
@@ -1453,7 +1453,7 @@ const UIController = {
                 
                 ModalManager.showFeedback(true, feedbackMessage);
             } else {
-                feedbackTitle.textContent = 'Results';
+                feedbackTitle.textContent = 'Score Card';
                 resultsCardTitle.textContent = resultsCardTitleText;
                 
                 // Update results display for poor performance
@@ -1669,19 +1669,27 @@ const UIController = {
         const experimentContainer = document.getElementById('challenge-container');
         const completionModal = document.getElementById('completion-modal');
         const feedbackModal = document.getElementById('feedback-modal');
+        const gameMenu = document.getElementById('game-menu');
 
         // Hide feedback modal first
         feedbackModal.classList.add('hidden');
         feedbackModal.classList.remove('fade-in');
 
-        // Then hide experiment container
-        experimentContainer.classList.add('fade-out');
+        // Hide experiment container completely
+        experimentContainer.classList.add('hidden');
+        experimentContainer.classList.remove('fade-out');
+        
+        // Show the home page background (game menu)
+        gameMenu.classList.remove('hidden');
 
         setTimeout(() => {
             document.getElementById('final-accuracy').textContent = `${Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100)}%`;
             document.getElementById('final-user-impact').textContent = `${this.state.userCumulativeEffect} cpd`;
             document.getElementById('final-opponent-impact').textContent = `${this.state.competitorCumulativeEffect} cpd`;
-            document.getElementById('final-round').textContent = this.state.currentRound;
+            // Calculate rounds completed: if they failed on current round, they completed currentRound - 1
+            // If they're still in round 1 and failed, they completed 0 rounds
+            const roundsCompleted = this.state.currentRound > 1 ? this.state.currentRound - 1 : 0;
+            document.getElementById('final-round').textContent = roundsCompleted;
 
             completionModal.classList.remove('hidden');
             setTimeout(() => {
