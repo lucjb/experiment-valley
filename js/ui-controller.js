@@ -141,16 +141,35 @@ const UIController = {
             });
         });
 
-        // Submit decision
-        document.getElementById('submit-decision').addEventListener('click', () => {
-            this.evaluateDecision();
+        // Use event delegation for elements that might not exist initially
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'submit-decision') {
+                this.evaluateDecision();
+            } else if (e.target && e.target.id === 'next-challenge-btn') {
+                this.handleNextChallenge();
+            } else if (e.target && e.target.id === 'start-new-session') {
+                this.startNewSession();
+            } else if (e.target && e.target.id === 'exit-game-btn') {
+                this.showExitConfirmation();
+            } else if (e.target && e.target.id === 'exit-confirm-btn') {
+                this.exitGame();
+            } else if (e.target && e.target.id === 'exit-cancel-btn') {
+                const exitModal = document.getElementById('exit-confirmation-modal');
+                if (exitModal) {
+                    exitModal.classList.add('hidden');
+                }
+            }
         });
 
-        // Next challenge
-        document.getElementById('next-challenge-btn').addEventListener('click', () => this.handleNextChallenge());
-
-        // Start new session
-        document.getElementById('start-new-session').addEventListener('click', () => this.startNewSession());
+        // Initialize exit confirmation modal
+        const exitModal = document.getElementById('exit-confirmation-modal');
+        if (exitModal) {
+            exitModal.addEventListener('click', (e) => {
+                if (e.target === exitModal) {
+                    exitModal.classList.add('hidden');
+                }
+            });
+        }
 
         // Initialize cheat sheet
         //this.initializeCheatSheet();
@@ -158,10 +177,10 @@ const UIController = {
         // Initialize feedback modal
         const feedbackModal = document.getElementById('feedback-modal');
         const closeFeedback = document.getElementById('close-feedback');
-        const nextChallengeBtn = document.getElementById('next-challenge-btn');
 
         // Close feedback modal
-        closeFeedback.addEventListener('click', () => {
+        if (closeFeedback) {
+            closeFeedback.addEventListener('click', () => {
             ModalManager.hide('feedback-modal');
             // Batch DOM operations
             const submitButton = document.getElementById('submit-decision');
@@ -179,9 +198,11 @@ const UIController = {
                 button.style.cursor = 'not-allowed';
             });
         });
+        }
 
         // Close feedback when clicking outside
-        feedbackModal.addEventListener('click', (e) => {
+        if (feedbackModal) {
+            feedbackModal.addEventListener('click', (e) => {
             if (e.target === feedbackModal) {
                 ModalManager.hide('feedback-modal');
                 // Batch DOM operations
@@ -201,6 +222,7 @@ const UIController = {
                 });
             }
         });
+        }
     },
 
     // refreshLeaderboard removed
@@ -224,6 +246,69 @@ const UIController = {
                 ModalManager.hide('cheat-sheet-modal');
             }
         });
+
+        // Exit game button - use event delegation since the button is in a hidden container initially
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'exit-game-btn') {
+                this.exitGame();
+            }
+        });
+    },
+
+    showExitConfirmation() {
+        const exitModal = document.getElementById('exit-confirmation-modal');
+        if (exitModal) {
+            exitModal.classList.remove('hidden');
+        }
+    },
+
+    async exitGame() {
+        try {
+            // End the backend session
+            if (typeof Backend !== 'undefined' && Backend.isInitialized()) {
+                await Backend.endSession();
+            }
+        } catch (error) {
+            console.error('Error ending session:', error);
+        }
+
+        // Hide the exit confirmation modal
+        const exitModal = document.getElementById('exit-confirmation-modal');
+        if (exitModal) {
+            exitModal.classList.add('hidden');
+        }
+
+        // Show the completion modal (game over)
+        await this.showCompletionModal();
+    },
+
+    resetGameState() {
+        // Reset all state variables
+        this.state.totalAttempts = 0;
+        this.state.totalDecisions = 0;
+        this.state.correctDecisions = 0;
+        this.state.currentExperiment = 1;
+        this.state.trustDecision = null;
+        this.state.implementDecision = null;
+        this.state.followUpDecision = null;
+        this.state.challenge = null;
+        this.state.currentRound = 1;
+        this.state.experimentsInCurrentRound = 0;
+        this.state.correctInCurrentRound = 0;
+        this.state.hasSubmitted = false;
+        this.state.impact = 0;
+        this.state.userCumulativeEffect = 0;
+        this.state.competitorCumulativeEffect = 0;
+        this.state.currentCompetitor = null;
+        this.state.selectedCompetitor = null;
+        this.state.roundResults = [];
+
+        // Reset UI elements
+        this.updateRoundDisplay();
+        this.updateAccuracyDisplay();
+        this.updateImpactDisplay();
+        this.resetDecisions();
+        this.updateExperimentDots();
     },
 
     initializeTabs() {
