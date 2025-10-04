@@ -1824,16 +1824,27 @@ const UIController = {
                         
                         // Now calculate and display ranks after data is saved
                         const userRanks = await this.getUserRanks();
+                        const playerName = window.playerName || 'Player';
+                        const leaderboardUrl = `leaderboard.html?user=${encodeURIComponent(playerName)}`;
+                        
                         if (userRanks.roundsRank) {
-                            document.getElementById('final-rounds-rank').textContent = `#${userRanks.roundsRank}`;
+                            const roundsRankElement = document.getElementById('final-rounds-rank');
+                            roundsRankElement.textContent = `#${userRanks.roundsRank}`;
+                            roundsRankElement.href = leaderboardUrl;
                         } else {
-                            document.getElementById('final-rounds-rank').textContent = '#?';
+                            const roundsRankElement = document.getElementById('final-rounds-rank');
+                            roundsRankElement.textContent = '#?';
+                            roundsRankElement.href = leaderboardUrl;
                         }
                         
                         if (userRanks.impactRank) {
-                            document.getElementById('final-impact-rank').textContent = `#${userRanks.impactRank}`;
+                            const impactRankElement = document.getElementById('final-impact-rank');
+                            impactRankElement.textContent = `#${userRanks.impactRank}`;
+                            impactRankElement.href = leaderboardUrl;
                         } else {
-                            document.getElementById('final-impact-rank').textContent = '#?';
+                            const impactRankElement = document.getElementById('final-impact-rank');
+                            impactRankElement.textContent = '#?';
+                            impactRankElement.href = leaderboardUrl;
                         }
                     }
                 } catch (err) {

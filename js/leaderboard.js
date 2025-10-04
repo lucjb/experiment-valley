@@ -83,14 +83,27 @@
         return { roundBoard, impactBoard };
     }
 
-    function renderList(containerId, items, formatter) {
+    function renderList(containerId, items, formatter, highlightUser = null) {
         const list = document.getElementById(containerId);
         if (!list) return;
         list.innerHTML = '';
         items.slice(0, 20).forEach((it, index) => {
             const entry = document.createElement('div');
-            entry.className = 'flex items-center justify-between px-4 py-2 hover:bg-gray-700/30 transition-colors';
-            entry.style.backgroundColor = 'transparent';
+            const isHighlighted = highlightUser && it.name === highlightUser;
+            
+            // Add data attribute for scrolling
+            entry.setAttribute('data-user-name', it.name);
+            
+            if (isHighlighted) {
+                entry.className = 'flex items-center justify-between px-4 py-2 hover:bg-gray-700/30 transition-colors';
+                entry.style.backgroundColor = 'rgba(255, 255, 0, 0.2)';
+                entry.style.border = '2px solid #fbbf24';
+                entry.style.borderRadius = '8px';
+                entry.style.boxShadow = '0 0 20px rgba(251, 191, 36, 0.5)';
+            } else {
+                entry.className = 'flex items-center justify-between px-4 py-2 hover:bg-gray-700/30 transition-colors';
+                entry.style.backgroundColor = 'transparent';
+            }
             
             const rank = index + 1;
             const rankBadge = document.createElement('div');
@@ -114,6 +127,26 @@
         });
     }
 
+    function getUrlParameter(name) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(name);
+    }
+
+    function scrollToUser(userName, listId) {
+        const list = document.getElementById(listId);
+        if (!list) return;
+        
+        const entries = list.querySelectorAll('[data-user-name]');
+        entries.forEach(entry => {
+            if (entry.getAttribute('data-user-name') === userName) {
+                entry.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+            }
+        });
+    }
+
     async function init() {
         // Wait for backend readiness if needed
         const ensureReady = () => (typeof Backend !== 'undefined' && Backend.isInitialized && Backend.isInitialized());
@@ -126,6 +159,10 @@
         try {
             const data = await fetchAllData();
             const { roundBoard, impactBoard } = aggregateLeaderboards(data);
+            
+            // Get user parameter from URL
+            const highlightUser = getUrlParameter('user');
+            
             renderList('round-list', roundBoard, (r) => `
                 <div class="flex items-center justify-between w-full">
                     <div class="text-white font-semibold text-lg">${r.name}</div>
@@ -134,7 +171,8 @@
                         <div class="text-gray-300 text-sm">${r.accuracy}% accuracy</div>
                     </div>
                 </div>
-            `);
+            `, highlightUser);
+            
             renderList('impact-list', impactBoard, (r) => {
                 // Determine if player scored higher than opponent
                 const playerWon = r.impact > r.opponentImpact;
@@ -149,7 +187,15 @@
                         </div>
                     </div>
                 `;
-            });
+            }, highlightUser);
+            
+            // Auto-scroll to user if specified
+            if (highlightUser) {
+                setTimeout(() => {
+                    scrollToUser(highlightUser, 'round-list');
+                    scrollToUser(highlightUser, 'impact-list');
+                }, 500); // Small delay to ensure rendering is complete
+            }
         } catch (e) {
             console.error('Failed to load leaderboards', e);
         }
