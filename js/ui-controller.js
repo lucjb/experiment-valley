@@ -889,10 +889,6 @@ const UIController = {
     },
 
     updateProgress() {
-        const progressBar = document.getElementById('progress-bar');
-        const progressPercent = (this.state.experimentsInCurrentRound / this.state.EXPERIMENTS_PER_SESSION) * 100;
-        progressBar.style.width = `${progressPercent}%`;
-        
         // Update experiment dots
         this.updateExperimentDots();
     },
@@ -1557,12 +1553,6 @@ const UIController = {
         ModalManager.hide('feedback-modal');
 
         if (this.state.experimentsInCurrentRound === this.state.EXPERIMENTS_PER_SESSION) {
-            // Always advance progress bar to 100% at the end of a round
-            const progressBar = document.getElementById('progress-bar');
-            progressBar.style.width = '100%';
-
-            // Wait a moment to show the full progress bar
-            await new Promise(resolve => setTimeout(resolve, 500));
 
             console.log('Round completed. Correct answers:', this.state.correctInCurrentRound, 'Required: 2');
             if (this.state.correctInCurrentRound >= 2) {
@@ -1605,8 +1595,6 @@ const UIController = {
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 this.resetDecisions();
                 this.loadChallenge();
-                // Reset progress bar
-                progressBar.style.width = '0%';
             } else {
                 // End game
                 this.showCompletionModal();
@@ -1971,7 +1959,7 @@ const UIController = {
         // Reset all dots to gray
         dots.forEach(dot => {
             if (dot) {
-                dot.className = 'w-3 h-3 rounded-full bg-gray-400 transition-colors duration-300';
+                dot.className = 'w-3 h-3 rounded-full bg-gray-400 transition-colors duration-300 tooltip-trigger';
             }
         });
         
@@ -1984,22 +1972,38 @@ const UIController = {
             const result = this.state.roundResults[experimentIndex];
             const isCurrentExperiment = (i === this.state.experimentsInCurrentRound);
             const isFutureExperiment = (i > this.state.experimentsInCurrentRound);
+            const experimentNumber = i + 1;
+            
+            // Update tooltip content
+            const tooltipContent = dot.querySelector('.tooltip-content');
             
             if (result) {
                 // Experiment is completed
                 if (result.isPerfect || result.isGood) {
                     // Green for passed experiments
-                    dot.className = 'w-3 h-3 rounded-full bg-green-500 transition-colors duration-300';
+                    dot.className = 'w-3 h-3 rounded-full bg-green-500 transition-colors duration-300 tooltip-trigger';
+                    if (tooltipContent) {
+                        tooltipContent.textContent = `Experiment ${experimentNumber}: Passed`;
+                    }
                 } else {
                     // Red for failed experiments
-                    dot.className = 'w-3 h-3 rounded-full bg-red-500 transition-colors duration-300';
+                    dot.className = 'w-3 h-3 rounded-full bg-red-500 transition-colors duration-300 tooltip-trigger';
+                    if (tooltipContent) {
+                        tooltipContent.textContent = `Experiment ${experimentNumber}: Failed`;
+                    }
                 }
             } else if (isCurrentExperiment) {
                 // Current experiment (not yet completed)
-                dot.className = 'w-3 h-3 rounded-full bg-gray-400 transition-colors duration-300';
+                dot.className = 'w-3 h-3 rounded-full bg-gray-400 transition-colors duration-300 tooltip-trigger';
+                if (tooltipContent) {
+                    tooltipContent.textContent = `Experiment ${experimentNumber}: In progress`;
+                }
             } else if (isFutureExperiment) {
                 // Future experiments
-                dot.className = 'w-3 h-3 rounded-full bg-gray-400 transition-colors duration-300';
+                dot.className = 'w-3 h-3 rounded-full bg-gray-400 transition-colors duration-300 tooltip-trigger';
+                if (tooltipContent) {
+                    tooltipContent.textContent = `Experiment ${experimentNumber}: Not started`;
+                }
             }
         }
     },
