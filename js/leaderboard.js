@@ -6,7 +6,7 @@
         // Pull minimal needed data from session_summaries
         const [profiles, summaries] = await Promise.all([
             client.from('profiles').select('id, display_name'),
-            client.from('session_summaries').select('profile_id, max_round_reached, total_impact_cpd, accuracy_pct')
+            client.from('session_summaries').select('profile_id, max_round_reached, total_impact_cpd, accuracy_pct, opponent_name, opponent_impact_cpd')
         ]);
 
         if (profiles.error) throw profiles.error;
@@ -23,7 +23,10 @@
                 maxRound: 0,
                 maxImpact: 0,
                 // For max round leaderboard: track the session with highest round
-                maxRoundSession: null
+                maxRoundSession: null,
+                // For opponent tracking: track opponent info from best impact session
+                opponentName: null,
+                opponentImpact: 0
             });
         });
 
@@ -35,6 +38,7 @@
             const round = Number(s.max_round_reached) || 0;
             const accuracy = Number(s.accuracy_pct) || 0;
             const impact = Number(s.total_impact_cpd) || 0;
+            const opponentImpact = Number(s.opponent_impact_cpd) || 0;
             
             // Best accuracy across all sessions
             agg.bestAccuracy = Math.max(agg.bestAccuracy, accuracy);
@@ -45,8 +49,12 @@
                 agg.maxRoundSession = { round, accuracy };
             }
             
-            // Max impact across all sessions
-            agg.maxImpact = Math.max(agg.maxImpact, impact);
+            // Max impact across all sessions - also track opponent info from this session
+            if (impact > agg.maxImpact) {
+                agg.maxImpact = impact;
+                agg.opponentName = s.opponent_name || 'Unknown';
+                agg.opponentImpact = opponentImpact;
+            }
         });
 
         const rows = Array.from(byProfile.values());
@@ -64,7 +72,12 @@
             });
 
         const impactBoard = rows
-            .map(r => ({ name: r.displayName, impact: r.maxImpact }))
+            .map(r => ({ 
+                name: r.displayName, 
+                impact: r.maxImpact,
+                opponentName: r.opponentName,
+                opponentImpact: r.opponentImpact
+            }))
             .sort((a, b) => b.impact - a.impact);
 
         return { roundBoard, impactBoard };
@@ -122,12 +135,21 @@
                     </div>
                 </div>
             `);
-            renderList('impact-list', impactBoard, (r) => `
-                <div class="flex items-center justify-between w-full">
-                    <div class="text-white font-semibold text-lg">${r.name}</div>
-                    <div class="text-green-400 font-bold text-xl">${r.impact} cpd</div>
-                </div>
-            `);
+            renderList('impact-list', impactBoard, (r) => {
+                // Determine if player scored higher than opponent
+                const playerWon = r.impact > r.opponentImpact;
+                const impactColor = playerWon ? 'text-green-400' : 'text-red-400';
+                
+                return `
+                    <div class="flex items-center justify-between w-full">
+                        <div class="text-white font-semibold text-lg">${r.name}</div>
+                        <div class="text-right">
+                            <div class="${impactColor} font-bold text-xl">${r.impact} cpd</div>
+                            <div class="text-gray-300 text-sm">vs ${r.opponentName || 'Unknown'}: ${r.opponentImpact} cpd</div>
+                        </div>
+                    </div>
+                `;
+            });
         } catch (e) {
             console.error('Failed to load leaderboards', e);
         }

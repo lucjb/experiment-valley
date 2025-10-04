@@ -113,7 +113,9 @@ const Backend = (() => {
                 profile_id: profileId,
                 max_round_reached: data.maxRound || 1,
                 total_impact_cpd: data.impactCpd || 0,
-                accuracy_pct: data.accuracyPct || 0
+                accuracy_pct: data.accuracyPct || 0,
+                opponent_name: data.opponentName || null,
+                opponent_impact_cpd: data.opponentImpactCpd || 0
             }, {
                 onConflict: 'session_id'
             });
