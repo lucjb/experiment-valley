@@ -587,15 +587,42 @@ class ChallengeDesign {
         this.improvementDirection = IMPROVEMENT_DIRECTION.LOWER;
         return this;
     }
+    withLarrgePositiveEffect() {
+        this.effectSize = EFFECT_SIZE.LARGE_IMPROVEMENT;
+        return this;
+    }
+    withLargeNegativeEffect() {
+        this.effectSize = EFFECT_SIZE.LARGE_DEGRADATION;
+        return this;
+    }
+    withSmallPositiveEffect() {
+        this.effectSize = EFFECT_SIZE.SMALL_IMPROVEMENT;
+        return this;
+    }
+    withSmallNegativeEffect() {
+        this.effectSize = EFFECT_SIZE.SMALL_DEGRADATION;
+        return this;
+    }
+    withNoEffect() {
+        this.effectSize = EFFECT_SIZE.NONE;
+        return this;
+    }
+
+    withPostiveEffect() {
+        this.effectSize = EFFECT_SIZE.IMPROVEMENT;
+        return this;
+    }
+    withNegativeEffect() {
+        this.effectSize = EFFECT_SIZE.DEGRADATION;
+        return this;
+    }
 
 }
 
 function winner() {
     return new ChallengeDesign({
         timeProgress: TIME_PROGRESS.FULL,
-        baseRateMismatch: BASE_RATE_MISMATCH.NO,
         effectSize: EFFECT_SIZE.IMPROVEMENT,
-        sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.TIME
     });
 }
@@ -615,6 +642,16 @@ function loser() {
         timeProgress: TIME_PROGRESS.FULL,
         baseRateMismatch: BASE_RATE_MISMATCH.NO,
         effectSize: EFFECT_SIZE.SMALL_DEGRADATION,
+        sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
+        sampleProgress: SAMPLE_PROGRESS.TIME
+    });
+}
+
+function bigLoser() {
+    return new ChallengeDesign({
+        timeProgress: TIME_PROGRESS.FULL,
+        baseRateMismatch: BASE_RATE_MISMATCH.NO,
+        effectSize: EFFECT_SIZE.DEGRADATION,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.TIME
     });
@@ -660,6 +697,14 @@ function fastWinner() {
     });
 }
 
+// achieves required sample size faster than expected, but always in full weeks
+function fast() {
+    return new ChallengeDesign({
+        timeProgress: TIME_PROGRESS.PARTIAL_WEEKS,
+        sampleProgress: SAMPLE_PROGRESS.FULL
+    });
+}
+
 function slowCompletion() {
     return new ChallengeDesign({
         timeProgress: TIME_PROGRESS.FULL,
@@ -698,16 +743,16 @@ function generateABTestChallenge(
     visitorsLoss = VISITORS_LOSS.NO,
     improvementDirection = IMPROVEMENT_DIRECTION.HIGHER) {
 
-    // Predefined options for each parameter
+    // Predefined options for each parameter ,
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
     const BETA_OPTIONS = [0.2];
-    const SAMPLE_SIZE_INPUT_OPTIONS = [[0.1241, 9650, 0.005]]//, [0.05, 500, 0.01], [0.0127, 8300, 0.001]]
+    const SAMPLE_SIZE_INPUT_OPTIONS = [[0.1241, 9650, 0.005]]//, [0.34, 380, 0.1]]//, [0.05, 500, 0.01], [0.0127, 8300, 0.001]]
     const BUSINESS_CYCLE_DAYS_OPTIONS = [7];
 
     // Randomly select one option from each array
     const ALPHA = ALPHA_OPTIONS[Math.floor(Math.random() * ALPHA_OPTIONS.length)];
     const BETA = BETA_OPTIONS[Math.floor(Math.random() * BETA_OPTIONS.length)];
-    
+
     const SAMPLE_SIZE_INPUT = SAMPLE_SIZE_INPUT_OPTIONS[Math.floor(Math.random() * SAMPLE_SIZE_INPUT_OPTIONS.length)];
     const BASE_CONVERSION_RATE = SAMPLE_SIZE_INPUT[0];
     const VISITORS_PER_DAY = SAMPLE_SIZE_INPUT[1];
@@ -738,7 +783,6 @@ function generateABTestChallenge(
             currentRuntimeDays = requiredRuntimeDays;
         }
     }
-    // currentRuntimeDays = Math.floor(requiredRuntimeDays * (Math.random() * 0.1 + 0.9));
 
     var actualBaseConversionRate = BASE_CONVERSION_RATE;
     actualBaseConversionRate = sampleBetaDistribution(
@@ -813,7 +857,7 @@ function generateABTestChallenge(
         ALPHA
     );
 
-    console.log(actualBaseConversionRate, actualVariantConversionRate,  actualVariantConversionRate - actualBaseConversionRate);
+    console.log(actualBaseConversionRate, actualVariantConversionRate, actualVariantConversionRate - actualBaseConversionRate);
     return {
         experiment: {
             alpha: ALPHA,
