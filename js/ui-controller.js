@@ -205,7 +205,6 @@ const UIController = {
             const decisionButtons = document.querySelectorAll('.decision-btn');
 
             // Update submit button
-            submitButton.textContent = 'Show Feedback';
             submitButton.disabled = false;
             submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
 
@@ -228,7 +227,6 @@ const UIController = {
                 const decisionButtons = document.querySelectorAll('.decision-btn');
 
                 // Update submit button
-                submitButton.textContent = 'Show Feedback';
                 submitButton.disabled = false;
                 submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
 
@@ -1081,7 +1079,6 @@ const UIController = {
         const submitButton = document.getElementById('submit-decision');
         submitButton.disabled = true;
         submitButton.classList.add('opacity-50', 'cursor-not-allowed');
-        submitButton.textContent = 'Submit Decision';
     },
 
     async evaluateDecision() {

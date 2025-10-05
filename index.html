@@ -9,6 +9,26 @@
     <title>Experiment Valley</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    
+    <style>
+        .experiment-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        @media (min-width: 768px) {
+            .experiment-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        @media (min-width: 1280px) {
+            .experiment-grid {
+                grid-template-columns: 2fr 1fr 2fr 2fr;
+            }
+        }
+    </style>
 
     <!-- CDN Resources -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
@@ -531,7 +551,7 @@
                 <!-- Decision Grid -->
                 <div class="decision-container">
                     <!-- Trustworthy Section -->
-                    <div class="decision-section trustworthy">
+                    <div class="decision-section trustworthy mb-8">
                         <div class="text-center mb-2">
                             <span class="font-medium text-white tooltip-trigger">
                                 Is it Trustworthy?
@@ -551,17 +571,12 @@
                     </div>
 
                     <!-- Decision Section -->
-                    <div class="decision-section decision">
+                    <div class="decision-section decision mb-8">
                         <div class="text-center mb-2">
                             <span class="font-medium text-white tooltip-trigger">
                                 Decision
                                 <span class="tooltip-content">
-                                    Based on the experiment results, choose whether to:
-                                    <ul class="list-disc pl-4 mt-2">
-                                        <li><strong>Keep Base:</strong> Stick with the original version</li>
-                                        <li><strong>Keep Variant:</strong> Implement the new version</li>
-                                        <li><strong>Keep Running:</strong> Continue the experiment</li>
-                                    </ul>
+                                    Based on the experiment results, choose whether to keep the base version, implement the variant, or continue running the experiment.
                                 </span>
                             </span>
                         </div>
@@ -579,19 +594,12 @@
                     </div>
 
                     <!-- Follow Up Section -->
-                    <div class="decision-section follow-up">
+                    <div class="decision-section follow-up mb-8">
                         <div class="text-center mb-2">
                             <span class="font-medium text-white tooltip-trigger">
                                 What's your Follow Up?
                                 <span class="tooltip-content">
-                                    Choose the next steps based on your decision:
-                                    <ul class="list-disc pl-4 mt-2">
-                                        <li><strong>Celebrate:</strong> Successfully implemented a winning variant</li>
-                                        <li><strong>Iterate:</strong> Make improvements to the winning variant</li>
-                                        <li><strong>Validate:</strong> Run additional tests to confirm results</li>
-                                        <li><strong>Fix & Rerun:</strong> Address issues and restart the experiment</li>
-                                        <li><strong>None:</strong> No immediate action needed</li>
-                                    </ul>
+                                    Choose the next steps: celebrate success, iterate improvements, validate results, fix and rerun, or take no action.
                                 </span>
                             </span>
                         </div>
@@ -613,15 +621,17 @@
                             </button>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Submit Button -->
-                <div class="flex justify-end mt-4">
-                    <button id="submit-decision" disabled
-                        class="px-6 py-2 text-white text-sm rounded shadow transition opacity-50 cursor-not-allowed hover:opacity-90"
-                        style="background-color: #f97316">
-                        Submit Decision
-                    </button>
+                    
+                    <!-- Submit Button -->
+                    <div class="flex justify-center mt-8">
+                        <button id="submit-decision" disabled
+                            class="w-16 h-20 rounded-lg shadow-lg transition-all duration-200 opacity-50 cursor-not-allowed hover:opacity-90 transform hover:scale-105 flex items-center justify-center"
+                            style="background: linear-gradient(135deg, #f97316, #ea580c);">
+                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <polygon points="8,5 8,19 19,12"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -692,60 +702,99 @@
 
 
             <!-- Experiment Design Section -->
-            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 md:p-4 mb-4">
+            <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 mb-4">
                 <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Experiment Design</h2>
-                <div id="experiment-card" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div class="border rounded p-3">
-                        <h3 class="font-semibold mb-2 text-base md:text-lg">Statistical Parameters</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-sm md:text-base">
-                            <div>
-                                <span class="font-medium">
-                                    <span class="tooltip-trigger">
-                                        Significance Level
-                                        <span class="tooltip-content">
-                                            The probability threshold (α) used to determine if a result is statistically
-                                            significant. A lower value (e.g., 0.05) means we require stronger evidence
-                                            to reject the null hypothesis.
-                                            <a href="https://en.wikipedia.org/wiki/Statistical_significance"
-                                                target="_blank" class="text-blue-500 hover:text-blue-700">Learn more
-                                                →</a>
-                                        </span>
-                                    </span>:
-                                </span>
-                                <span id="exp-alpha"></span>
-                            </div>
-                            <div>
-                                <span class="font-medium">
-                                    <span class="tooltip-trigger">
-                                        Power
-                                        <span class="tooltip-content">
-                                            The probability (1-β) of correctly detecting a true effect when it exists. A
-                                            higher power (e.g., 0.80) means we're more likely to detect meaningful
-                                            differences between variants.
-                                            <a href="https://en.wikipedia.org/wiki/Power_(statistics)" target="_blank"
-                                                class="text-blue-500 hover:text-blue-700">Learn more →</a>
-                                        </span>
-                                    </span>:
-                                </span>
-                                <span id="exp-beta"></span>
-                            </div>
-                            <div><span class="font-medium">Experiment Type:</span> <span class="tooltip-trigger">2-sided Test<span class="tooltip-content">Tests for any difference between variants, whether positive or negative<br><a href="https://en.wikipedia.org/wiki/One-_and_two-tailed_tests" target="_blank" class="text-blue-500 hover:text-blue-700">Learn more →</a></span></span></div>
-                            <div><span class="font-medium">Null Hypothesis:</span> <span class="tooltip-trigger">No difference<span class="tooltip-content">We assume that there is no difference between the base and variant versions, and look for evidence against it<br><a href="https://en.wikipedia.org/wiki/Null_hypothesis" target="_blank" class="text-blue-500 hover:text-blue-700">Learn more →</a></span></span></div>
-                            <div><span class="font-medium">Improvement Direction:</span> <span id="exp-improvement-direction"></span></div>
+                <div id="experiment-card" class="experiment-grid">
+                    <!-- Column 1: Null Hypothesis, Experiment Type, Improvement Direction -->
+                    <div class="space-y-1 border-r-2 border-gray-300 pr-4">
+                        <div class="flex justify-between items-center py-1 text-sm">
+                            <span class="font-medium text-gray-700">Null Hypothesis</span>
+                            <span class="font-semibold text-gray-900">
+                                <span class="tooltip-trigger">No difference<span class="tooltip-content">We assume that there is no difference between the base and variant versions, and look for evidence against it<br><a href="https://en.wikipedia.org/wiki/Null_hypothesis" target="_blank" class="text-blue-500 hover:text-blue-700">Learn more →</a></span></span>
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 text-sm">
+                            <span class="font-medium text-gray-700">Experiment Type</span>
+                            <span class="font-semibold text-gray-900">
+                                <span class="tooltip-trigger">2-sided Test<span class="tooltip-content">Tests for any difference between variants, whether positive or negative<br><a href="https://en.wikipedia.org/wiki/One-_and_two-tailed_tests" target="_blank" class="text-blue-500 hover:text-blue-700">Learn more →</a></span></span>
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 text-sm">
+                            <span class="font-medium text-gray-700">Improvement Direction</span>
+                            <span class="font-semibold text-gray-900" id="exp-improvement-direction"></span>
                         </div>
                     </div>
-                    <div class="border rounded p-3">
-                        <h3 class="font-semibold mb-2 text-base md:text-lg">Sample Size Parameters</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 text-sm md:text-base">
-                            <div><span class="font-medium">Base Conversion Rate:</span> <span id="exp-base-rate"></span>
-                            </div>
-                            <div><span class="font-medium">Daily Visitors:</span> <span id="exp-visitors"></span></div>
-                            <div><span class="font-medium tooltip-trigger">Minimum Relevant Effect (absolute):<span class="tooltip-content">The smallest effect size that would be considered practically meaningful for your business<br><a href="https://en.wikipedia.org/wiki/Effect_size" target="_blank" class="text-blue-500 hover:text-blue-700">Learn more →</a></span></span> <span id="exp-min-effect"></span></div>
-                            <div><span class="font-medium">Required Visitors:</span> <span
-                                    id="exp-required-sample"></span> per variant, <span
-                                    id="exp-total-required-sample"></span> total</div>
-                            <div><span class="font-medium">Estimated Runtime:</span> <span
-                                    id="exp-required-days"></span></div>
+                    
+                    <!-- Column 2: Significance Level, Power (narrower) -->
+                    <div class="space-y-1 border-r-2 border-gray-300 pr-4">
+                        <div class="flex justify-between items-center py-1 text-sm">
+                            <span class="font-medium text-gray-700">
+                                <span class="tooltip-trigger">
+                                    Significance
+                                    <span class="tooltip-content">
+                                        The probability threshold (α) used to determine if a result is statistically
+                                        significant. A lower value (e.g., 0.05) means we require stronger evidence
+                                        to reject the null hypothesis.
+                                        <a href="https://en.wikipedia.org/wiki/Statistical_significance"
+                                            target="_blank" class="text-blue-500 hover:text-blue-700">Learn more
+                                            →</a>
+                                    </span>
+                                </span>
+                            </span>
+                            <span id="exp-alpha" class="font-semibold text-gray-900"></span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 text-sm">
+                            <span class="font-medium text-gray-700">
+                                <span class="tooltip-trigger">
+                                    Power
+                                    <span class="tooltip-content">
+                                        The probability (1-β) of correctly detecting a true effect when it exists. A
+                                        higher power (e.g., 0.80) means we're more likely to detect meaningful
+                                        differences between variants.
+                                        <a href="https://en.wikipedia.org/wiki/Power_(statistics)" target="_blank"
+                                            class="text-blue-500 hover:text-blue-700">Learn more →</a>
+                                    </span>
+                                </span>
+                            </span>
+                            <span id="exp-beta" class="font-semibold text-gray-900"></span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 text-sm">
+                            <span class="font-medium text-gray-700">Variants</span>
+                            <span class="font-semibold text-gray-900">2</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Column 3: Base Conversion Rate, Daily Visitors, Minimum Relevant Effect -->
+                    <div class="space-y-1 border-r-2 border-gray-300 pr-4">
+                        <div class="flex justify-between items-center py-1 text-sm">
+                            <span class="font-medium text-gray-700">Base Conversion Rate</span>
+                            <span id="exp-base-rate" class="font-semibold text-gray-900"></span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 text-sm">
+                            <span class="font-medium text-gray-700">Daily Visitors</span>
+                            <span id="exp-visitors" class="font-semibold text-gray-900"></span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 text-sm">
+                            <span class="font-medium text-gray-700">
+                                <span class="tooltip-trigger">Minimum Relevant Effect<span class="tooltip-content">The smallest effect size (absolute) that would be considered practically meaningful for your business<br><a href="https://en.wikipedia.org/wiki/Effect_size" target="_blank" class="text-blue-500 hover:text-blue-700">Learn more →</a></span></span>
+                            </span>
+                            <span id="exp-min-effect" class="font-semibold text-gray-900"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Column 4: Required Visitors, Estimated Runtime -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center py-1 text-sm">
+                            <span class="font-medium text-gray-700">Required Visitors per Variant</span>
+                            <span class="font-semibold text-gray-900" id="exp-required-sample"></span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 text-sm">
+                            <span class="font-medium text-gray-700">Required Visitors Total</span>
+                            <span class="font-semibold text-gray-900" id="exp-total-required-sample"></span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 text-sm">
+                            <span class="font-medium text-gray-700">Estimated Runtime</span>
+                            <span id="exp-required-days" class="font-semibold text-gray-900"></span>
                         </div>
                     </div>
                 </div>
@@ -858,7 +907,7 @@
                         </table>
                     </div>
 
-                    <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <div class="mt-0 p-3 bg-gray-50 rounded-lg">
                         <div class="flex items-center space-x-2">
                             <span class="text-lg font-medium">
                                 <span class="tooltip-trigger">
