@@ -33,6 +33,24 @@ const UIController = {
         return document.getElementById('debug-mode').checked;
     },
 
+	// Protect against accidental refresh/close while a session is active
+	enableUnloadProtection() {
+		if (this._beforeUnloadHandler) return;
+		this._beforeUnloadHandler = (e) => {
+			e.preventDefault();
+			// Setting returnValue triggers the browser's confirmation dialog
+			e.returnValue = '';
+			return '';
+		};
+		window.addEventListener('beforeunload', this._beforeUnloadHandler);
+	},
+
+	disableUnloadProtection() {
+		if (!this._beforeUnloadHandler) return;
+		window.removeEventListener('beforeunload', this._beforeUnloadHandler);
+		this._beforeUnloadHandler = null;
+	},
+
     initializeEventListeners() {
         // Competitor selection
         document.querySelectorAll('.competitor-card').forEach(card => {
@@ -297,6 +315,9 @@ const UIController = {
             console.error('Error ending session:', error);
         }
 
+        // Re-allow navigation once exiting
+        this.disableUnloadProtection();
+
         // Hide the exit confirmation modal
         const exitModal = document.getElementById('exit-confirmation-modal');
         if (exitModal) {
@@ -396,6 +417,9 @@ const UIController = {
         const gameMenu = document.getElementById('game-menu');
         const tutorialSection = document.getElementById('tutorial-section');
         const experimentContainer = document.getElementById('challenge-container');
+
+        // Prevent accidental page refresh/close during gameplay
+        this.enableUnloadProtection();
 
         // Hide game menu and tutorial section
         if (gameMenu) {
@@ -1892,6 +1916,9 @@ const UIController = {
         const completionModal = document.getElementById('completion-modal');
         const feedbackModal = document.getElementById('feedback-modal');
         const gameMenu = document.getElementById('game-menu');
+
+        // Re-allow navigation/refresh once the session completes
+        this.disableUnloadProtection();
 
         // Hide feedback modal first
         feedbackModal.classList.add('hidden');
