@@ -1710,7 +1710,9 @@ const UIController = {
                             await Backend.upsertSessionSummary({
                                 maxRound: this.state.currentRound,
                                 impactCpd: this.state.userCumulativeEffect,
-                                accuracyPct: accuracy
+                                accuracyPct: accuracy,
+                                opponentName: this.state.selectedCompetitor,
+                                opponentImpactCpd: this.state.competitorCumulativeEffect
                             });
                         }
                     } catch (e) { console.error('Failed to update session summary after round', e); }
