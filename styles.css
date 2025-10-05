@@ -454,10 +454,10 @@ select:focus {
 .decision-container {
     display: flex;
     width: 100%;
-    padding: 0.5rem; /* reduced padding to compact layout */
-    align-items: flex-start;
-    --section-gap: 0.5rem; /* reduced section gap */
-    --button-gap: 0.25rem; /* small button gap */
+    padding: 0; /* no padding */
+    align-items: stretch;
+    --section-gap: 0.125rem; /* very minimal section gap */
+    --button-gap: 0.125rem; /* very small button gap */
     gap: var(--section-gap);
 }
 
@@ -465,7 +465,9 @@ select:focus {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.25rem; /* tighter vertical spacing */
+    gap: 0.125rem; /* very tight vertical spacing */
+    height: fit-content; /* make height fit content only */
+    margin-bottom: 0;
 }
 
 .decision-section.trustworthy {
@@ -483,6 +485,11 @@ select:focus {
     min-width: 0;
 }
 
+.decision-section.submit-section {
+    width: calc(15% - var(--section-gap));
+    min-width: 0;
+}
+
 .decision-btn-group {
     display: flex;
     flex-direction: row;
@@ -490,6 +497,7 @@ select:focus {
     justify-content: center;
     align-items: center;
     gap: var(--button-gap);
+    margin-bottom: 0;
 }
 
 /* Decision Button Styles */
