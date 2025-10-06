@@ -455,7 +455,7 @@ select:focus {
     display: flex;
     width: 100%;
     padding: 0; /* no padding */
-    align-items: stretch;
+    align-items: flex-start;
     --section-gap: 0.125rem; /* very minimal section gap */
     --button-gap: 0.125rem; /* very small button gap */
     gap: var(--section-gap);
