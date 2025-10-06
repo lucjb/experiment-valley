@@ -476,19 +476,26 @@ select:focus {
 }
 
 .decision-section.decision {
-    width: calc(35% - var(--section-gap));
+    width: calc(30% - var(--section-gap));
     min-width: 0;
 }
 
 .decision-section.follow-up {
-    width: calc(50% - var(--section-gap));
+    width: calc(40% - var(--section-gap));
     min-width: 0;
 }
 
-.decision-section.submit-section {
-    width: calc(15% - var(--section-gap));
+.decision-section.submit-btn {
+    width: calc(10% - var(--section-gap));
     min-width: 0;
 }
+
+#submit-decision {
+    width: 4rem !important;
+    max-width: 4rem !important;
+    min-width: 4rem !important;
+}
+
 
 .decision-btn-group {
     display: flex;
@@ -562,10 +569,6 @@ select:focus {
     margin-bottom: 0.25rem !important;
 }
 
-/* Pull submit button up to reduce dead space below decisions */
-#submit-decision {
-    margin-top: -0.75rem; /* counteract parent mt-4 */
-}
 
 /* Make challenge containers semi-transparent */
 #challenge-container .bg-gray-900.rounded-lg.shadow-lg {
