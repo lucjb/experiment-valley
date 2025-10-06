@@ -566,12 +566,70 @@ const UIController = {
             
             // Hide loading state
             this.hideLoadingState();
+
+            // Ensure the execution bar always animates from 0 after content is visible
+            setTimeout(() => {
+                try {
+                    this.animateExecutionBarFromZero();
+                } catch (_) {}
+            }, 20);
             
             return true;
         } catch (error) {
             console.error('Error loading challenge:', error);
             return false;
         }
+    },
+
+    animateExecutionBarFromZero() {
+        const challenge = this.state.challenge;
+        if (!challenge) return;
+        const daysElapsed = challenge.simulation.timeline.currentRuntimeDays;
+        const totalDays = challenge.experiment.requiredRuntimeDays;
+        const progressPercent = Math.round((daysElapsed / totalDays) * 100);
+
+        const progressBar = document.getElementById('exp-progress-bar');
+        const progressBarInvisible = document.getElementById('exp-progress-bar-invisible');
+        const remainingBar = document.getElementById('exp-remaining-bar');
+        const remainingBarInvisible = document.getElementById('exp-remaining-bar-invisible');
+        if (!progressBar || !progressBarInvisible || !remainingBar || !remainingBarInvisible) return;
+
+        // Reset widths to start state without animating
+        const prevTransitionsAE = [
+            progressBar.style.transition,
+            progressBarInvisible.style.transition,
+            remainingBar.style.transition,
+            remainingBarInvisible.style.transition
+        ];
+        progressBar.style.transition = 'none';
+        progressBarInvisible.style.transition = 'none';
+        remainingBar.style.transition = 'none';
+        remainingBarInvisible.style.transition = 'none';
+
+        progressBar.style.width = '0%';
+        progressBarInvisible.style.width = '0%';
+        remainingBar.style.width = '100%';
+        remainingBarInvisible.style.width = '100%';
+
+        // Force reflow so next change animates
+        // eslint-disable-next-line no-unused-expressions
+        progressBar.offsetHeight;
+
+        // Restore transitions and animate to final widths
+        progressBar.style.transition = prevTransitionsAE[0] || '';
+        progressBarInvisible.style.transition = prevTransitionsAE[1] || '';
+        remainingBar.style.transition = prevTransitionsAE[2] || '';
+        remainingBarInvisible.style.transition = prevTransitionsAE[3] || '';
+
+        const clampedProgress = Math.min(100, progressPercent);
+        const clampedRemaining = Math.max(0, 100 - clampedProgress);
+
+        requestAnimationFrame(() => {
+            progressBar.style.width = `${clampedProgress}%`;
+            progressBarInvisible.style.width = `${clampedProgress}%`;
+            remainingBar.style.width = `${clampedRemaining}%`;
+            remainingBarInvisible.style.width = `${clampedRemaining}%`;
+        });
     },
 
     // Helper function to create a warning icon with tooltip
@@ -913,11 +971,42 @@ const UIController = {
         const requiredVisitors = challenge.experiment.requiredSampleSizePerVariant * 2;
         const remainingVisitors = Math.max(0, requiredVisitors - totalVisitors);
 
-        // Update bar widths
-        progressBar.style.width = `${Math.min(100, progressPercent)}%`;
-        progressBarInvisible.style.width = `${Math.min(100, progressPercent)}%`;
-        remainingBar.style.width = `${Math.max(0, 100 - progressPercent)}%`;
-        remainingBarInvisible.style.width = `${Math.max(0, 100 - progressPercent)}%`;
+        // Update bar widths - always animate from 0
+        const prevTransitionsUE = [
+            progressBar.style.transition,
+            progressBarInvisible.style.transition,
+            remainingBar.style.transition,
+            remainingBarInvisible.style.transition
+        ];
+        progressBar.style.transition = 'none';
+        progressBarInvisible.style.transition = 'none';
+        remainingBar.style.transition = 'none';
+        remainingBarInvisible.style.transition = 'none';
+
+        progressBar.style.width = '0%';
+        progressBarInvisible.style.width = '0%';
+        remainingBar.style.width = '100%';
+        remainingBarInvisible.style.width = '100%';
+
+        // Force reflow to ensure animation restarts even if percentage is unchanged
+        // eslint-disable-next-line no-unused-expressions
+        progressBar.offsetHeight;
+
+        // Restore transitions and animate to target in next frame
+        progressBar.style.transition = prevTransitionsUE[0] || '';
+        progressBarInvisible.style.transition = prevTransitionsUE[1] || '';
+        remainingBar.style.transition = prevTransitionsUE[2] || '';
+        remainingBarInvisible.style.transition = prevTransitionsUE[3] || '';
+
+        requestAnimationFrame(() => {
+            const clampedProgress = Math.min(100, progressPercent);
+            const clampedRemaining = Math.max(0, 100 - clampedProgress);
+
+            progressBar.style.width = `${clampedProgress}%`;
+            progressBarInvisible.style.width = `${clampedProgress}%`;
+            remainingBar.style.width = `${clampedRemaining}%`;
+            remainingBarInvisible.style.width = `${clampedRemaining}%`;
+        });
 
         // Update progress bar classes based on completion state
         if (isComplete) {
