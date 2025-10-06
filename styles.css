@@ -458,7 +458,8 @@ select:focus {
     align-items: flex-start;
     --section-gap: 0.125rem; /* very minimal section gap */
     --button-gap: 0.125rem; /* very small button gap */
-    gap: var(--section-gap);
+    gap: 0; /* use explicit margins on children for precise edges */
+    justify-content: flex-start; /* distribute by flex-grow ratios */
 }
 
 .decision-section {
@@ -468,26 +469,23 @@ select:focus {
     gap: 0.125rem; /* very tight vertical spacing */
     height: fit-content; /* make height fit content only */
     margin-bottom: 0;
+    margin-right: var(--section-gap);
 }
 
-.decision-section.trustworthy {
-    width: calc(20% - var(--section-gap));
-    min-width: 0;
+/* Remove extra space at the far right edge */
+.decision-container > .decision-section:last-child {
+    margin-right: 0;
 }
 
-.decision-section.decision {
-    width: calc(30% - var(--section-gap));
-    min-width: 0;
-}
+.decision-section.trustworthy { flex: 2 1 0; min-width: 0; }
+.decision-section.decision     { flex: 3 1 0; min-width: 0; }
+.decision-section.follow-up    { flex: 4 1 0; min-width: 0; }
+.decision-section.submit-btn   { flex: 0 0 auto; min-width: 0; margin-left: 1.5rem; }
 
-.decision-section.follow-up {
-    width: calc(40% - var(--section-gap));
-    min-width: 0;
-}
-
-.decision-section.submit-btn {
-    width: calc(10% - var(--section-gap));
-    min-width: 0;
+/* Let submit section size to its content instead of stretching */
+.decision-section.submit-btn .decision-btn-group {
+    width: auto;
+    justify-content: center;
 }
 
 #submit-decision {
@@ -500,7 +498,7 @@ select:focus {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background-color: rgb(249, 115, 22);
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6); /* match Next button: blue → purple */
     transition: all 0.2s ease-in-out;
     white-space: normal;
     border: none;
@@ -509,16 +507,31 @@ select:focus {
     color: white;
     font-weight: 500;
     cursor: pointer;
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.28);
+    outline: 2px solid rgba(124, 58, 237, 0.0); /* hidden by default */
 }
 
 .submit-btn-custom:hover {
-    background-color: rgb(234, 88, 12);
-    transform: translateY(-1px);
+    background: linear-gradient(90deg, #2563eb, #7c3aed); /* blue-600 → purple-700 */
+    transform: translateY(-1px) scale(1.05);
+    box-shadow: 0 10px 22px rgba(59, 130, 246, 0.35);
+    outline-color: rgba(124, 58, 237, 0.6);
 }
 
 .submit-btn-custom:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Make the submit title subtly highlighted */
+.decision-section.submit-btn .text-center span {
+    color: #ffffff; /* match other section titles */
+}
+
+/* Slightly larger icon inside submit button for emphasis */
+#submit-decision svg {
+    width: 1.1rem;
+    height: 1.1rem;
 }
 
 
