@@ -270,6 +270,93 @@
                     }
                 });
             }
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function (e) {
+                const active = document.activeElement;
+                const typing = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
+
+                // If feedback modal is open, allow Next via Space or ArrowRight
+                const feedbackOpen = document.querySelector('#feedback-modal:not(.hidden)');
+                // ESC should close whichever modal is open
+                if (e.key === 'Escape') {
+                    const closeBtn = document.getElementById('close-feedback');
+                    const playModalEl = document.getElementById('play-modal');
+                    const exitModalEl = document.getElementById('exit-confirmation-modal');
+                    const completionModalEl = document.getElementById('completion-modal');
+                    if (feedbackOpen && closeBtn) {
+                        e.preventDefault();
+                        closeBtn.click();
+                        return;
+                    }
+                    if (playModalEl && !playModalEl.classList.contains('hidden')) {
+                        e.preventDefault();
+                        playModalEl.classList.add('hidden');
+                        return;
+                    }
+                    if (exitModalEl && !exitModalEl.classList.contains('hidden')) {
+                        e.preventDefault();
+                        document.getElementById('exit-cancel-btn')?.click();
+                        return;
+                    }
+                    if (completionModalEl && !completionModalEl.classList.contains('hidden')) {
+                        e.preventDefault();
+                        completionModalEl.classList.add('hidden');
+                        return;
+                    }
+                    // If no modal is open, trigger exit confirmation (same as clicking exit button)
+                    const exitBtn = document.getElementById('exit-game-btn');
+                    if (exitBtn) {
+                        e.preventDefault();
+                        exitBtn.click();
+                        return;
+                    }
+                }
+                if (feedbackOpen) {
+                    if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        document.getElementById('next-challenge-btn')?.click();
+                    }
+                    return; // do not process other shortcuts while feedback is open
+                }
+
+                // Ignore other modals and typing contexts
+                const otherModalOpen = document.querySelector('#play-modal:not(.hidden), #exit-confirmation-modal:not(.hidden), #completion-modal:not(.hidden)');
+                if (typing || otherModalOpen) return;
+
+                const key = e.key.toLowerCase();
+                // Trustworthy: 1 = Yes, 2 = No
+                if (key === '1') {
+                    document.querySelector('button[name="trust"][value="TRUSTWORTHY"]')?.click();
+                } else if (key === '2') {
+                    document.querySelector('button[name="trust"][value="UNTRUSTWORTHY"]')?.click();
+                }
+                // Decision: q = Keep Base, w = Keep Variant, e = Keep Running
+                else if (key === 'q') {
+                    document.querySelector('button[name="decision"][value="KEEP_BASE"]')?.click();
+                } else if (key === 'w') {
+                    document.querySelector('button[name="decision"][value="KEEP_VARIANT"]')?.click();
+                } else if (key === 'e') {
+                    document.querySelector('button[name="decision"][value="KEEP_RUNNING"]')?.click();
+                }
+                // Follow up: z = Celebrate, x = Iterate, c = Validate, v = Fix & Rerun, n = None
+                else if (key === 'z') {
+                    document.querySelector('button[name="follow_up"][value="CELEBRATE"]')?.click();
+                } else if (key === 'x') {
+                    document.querySelector('button[name="follow_up"][value="ITERATE"]')?.click();
+                } else if (key === 'c') {
+                    document.querySelector('button[name="follow_up"][value="VALIDATE"]')?.click();
+                } else if (key === 'v') {
+                    document.querySelector('button[name="follow_up"][value="RERUN"]')?.click();
+                } else if (key === 'n') {
+                    document.querySelector('button[name="follow_up"][value="DO_NOTHING"]')?.click();
+                }
+                // Submit: Enter
+                else if (key === 'enter') {
+                    document.getElementById('submit-decision')?.click();
+                }
+                // Next from main screen is not active; handled only when feedback is open
+            });
         });
     </script>
 </head>
