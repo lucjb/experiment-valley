@@ -496,6 +496,31 @@ select:focus {
     min-width: 4rem !important;
 }
 
+.submit-btn-custom {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgb(249, 115, 22);
+    transition: all 0.2s ease-in-out;
+    white-space: normal;
+    border: none;
+    border-radius: 0.5rem;
+    height: 2.25rem;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.submit-btn-custom:hover {
+    background-color: rgb(234, 88, 12);
+    transform: translateY(-1px);
+}
+
+.submit-btn-custom:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 
 .decision-btn-group {
     display: flex;

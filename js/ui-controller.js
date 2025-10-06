@@ -207,6 +207,8 @@ const UIController = {
             // Update submit button
             submitButton.disabled = false;
             submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            submitButton.classList.add('hover:opacity-90');
+            submitButton.innerHTML = '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style="pointer-events: none;"><polygon points="8,5 8,19 19,12"/></svg>';
 
             // Update decision buttons in a single operation
             decisionButtons.forEach(button => {
