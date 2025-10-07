@@ -351,10 +351,19 @@ const UIController = {
 
         // Reset UI elements
         this.updateRoundDisplay();
-        this.updateAccuracyDisplay();
+        this.updateAccuracyDisplay(0);
         this.updateImpactDisplay();
         this.resetDecisions();
         this.updateExperimentDots();
+        this.updateRoundTickMarks();
+
+        // Reset progress bar and clear globals
+        const progressBar = document.getElementById('progress-bar');
+        if (progressBar) {
+            progressBar.style.width = '0%';
+        }
+        window.currentExperiment = null;
+        window.currentAnalysis = null;
     },
 
     initializeTabs() {
@@ -414,6 +423,11 @@ const UIController = {
     },
 
     startSession() {
+        // Always start from a clean slate, but keep selected opponent choice
+        const preservedCompetitor = this.state.selectedCompetitor;
+        this.resetGameState();
+        this.state.selectedCompetitor = preservedCompetitor;
+
         const gameMenu = document.getElementById('game-menu');
         const tutorialSection = document.getElementById('tutorial-section');
         const experimentContainer = document.getElementById('challenge-container');

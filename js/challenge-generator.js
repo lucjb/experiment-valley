@@ -1009,43 +1009,57 @@ function analyzeExperiment(experiment) {
 
     if (mismatch) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
-        trustworthyReason = `Data issues detected: ${issues.join(', ')}`;
+        const issueBits = [];
+        if (hasSampleRatioMismatch) issueBits.push(`sample ratio mismatch (χ² p=${ratioPValue.toFixed(5)})`);
+        if (hasBaseRateMismatch) issueBits.push(`base rate mismatch (z-test p=${baseRateTestpValue.toFixed(5)})`);
+        if (hasTrafficMismatch) issueBits.push('traffic mismatch');
+        if (hasDataLoss) issueBits.push(`data loss at day ${dataLossIndex + 1}`);
+        trustworthyReason = `Data quality issues detected: ${issueBits.join('; ')}. When data quality is compromised, inference is unreliable.`;
         decision = EXPERIMENT_DECISION.KEEP_BASE;
-        decisionReason = 'Results unreliable due to data issues';
+        decisionReason = 'Results are unreliable due to data quality issues; picking a winner could lock in a false signal.';
         followUp = EXPERIMENT_FOLLOW_UP.RERUN;
-        followUpReason = 'Fix issues and rerun the experiment';
+        followUpReason = 'Resolve data issues (fix allocation, restore tracking, ensure stable traffic), then rerun to collect clean data.';
     } else if (!finished && (lowSampleSize || !fullWeek)) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
-        trustworthyReason = 'Data quality checks passed so far';
+        const remainingDays = Math.max(0, requiredRuntimeDays - currentRuntimeDays);
+        const needSample = lowSampleSize ? `sample size is insufficient (have base=${actualVisitorsBase.toLocaleString()}, variant=${actualVisitorsVariant.toLocaleString()}, need ≥ ${requiredSampleSizePerVariant.toLocaleString()} each)` : 'sample size is on track';
+        const needCycle = !fullWeek ? 'not a full number of business cycles yet' : 'covers full-week cycles';
+        trustworthyReason = `Data quality checks pass so far, but more data/time is needed: ${needSample}; ${needCycle}.`;
         decision = EXPERIMENT_DECISION.KEEP_RUNNING;
-        decisionReason = 'Need more data before deciding';
+        decisionReason = `Evidence is still forming (p=${pValue.toFixed(4)} vs α=${alpha}). Let the test run approximately ${remainingDays} more day(s) to reach required power.`;
         followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
-        followUpReason = 'Collect additional data';
+        followUpReason = 'Continue collecting data; avoid peeking-driven decisions before reaching required sample and full cycles.';
     } else if (finished && (lowSampleSize || !fullWeek)) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
-        trustworthyReason = 'Runtime finished without enough data or full weeks';
+        trustworthyReason = `Runtime finished without enough data or full-week coverage (have base=${actualVisitorsBase.toLocaleString()}, variant=${actualVisitorsVariant.toLocaleString()}, need ≥ ${requiredSampleSizePerVariant.toLocaleString()} each; fullWeek=${fullWeek}).`;
         decision = EXPERIMENT_DECISION.KEEP_RUNNING;
-        decisionReason = 'Not enough data even though runtime finished';
+        decisionReason = 'Insufficient data at planned stop makes any winner declaration unstable; extend to reach sample and full cycles.';
         followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
-        followUpReason = 'Continue gathering data';
+        followUpReason = 'Extend the test window or increase traffic until the minimum sample and full cycles are met.';
     } else if (!significant || !isEffectPositive) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
-        trustworthyReason = 'Data quality checks passed';
+        trustworthyReason = 'Data quality checks passed.';
         decision = EXPERIMENT_DECISION.KEEP_BASE;
-        decisionReason = 'Variant does not beat base in the required direction. The observed delta must align with the improvement direction to declare a winner';
+        const [ciLow, ciHigh] = confidenceIntervalDifference;
+        const delta = (variantRate - baseRate);
+        const directionNote = improvementDirection === IMPROVEMENT_DIRECTION.LOWER ? 'lower is better' : 'higher is better';
+        const aligns = isEffectPositive ? 'aligns' : 'does not align';
+        decisionReason = `No winning evidence: p=${pValue.toFixed(4)} (α=${alpha}), effect ${aligns} with goal (${directionNote}), Δ=${(delta*100).toFixed(2)}pp, CI[Δ]=[${(ciLow*100).toFixed(2)}pp, ${(ciHigh*100).toFixed(2)}pp].`;
         followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
-        followUpReason = 'Try a new variant';
+        followUpReason = 'Explore new hypotheses: larger expected lift, improved UX, or reduced variance; rerun with adequate power.';
     } else {
         trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
-        trustworthyReason = 'Data quality checks passed';
+        trustworthyReason = 'Data quality checks passed.';
         decision = EXPERIMENT_DECISION.KEEP_VARIANT;
+        const [ciLow, ciHigh] = confidenceIntervalDifference;
+        const delta = (variantRate - baseRate);
         if (improvementDirection === IMPROVEMENT_DIRECTION.LOWER) {
-            decisionReason = 'Variant conversion rate is significantly lower as desired';
+            decisionReason = `Variant is significantly lower as desired: p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta*100).toFixed(2)}pp, CI[Δ]=[${(ciLow*100).toFixed(2)}pp, ${(ciHigh*100).toFixed(2)}pp].`;
         } else {
-            decisionReason = 'Variant performs significantly better';
+            decisionReason = `Variant is significantly better: p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta*100).toFixed(2)}pp, CI[Δ]=[${(ciLow*100).toFixed(2)}pp, ${(ciHigh*100).toFixed(2)}pp].`;
         }
         followUp = EXPERIMENT_FOLLOW_UP.CELEBRATE;
-        followUpReason = 'Launch the variant';
+        followUpReason = 'Roll out the variant and monitor post-launch performance to confirm lift generalizes.';
     }
 
     return {

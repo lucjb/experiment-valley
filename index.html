@@ -104,12 +104,16 @@
                 });
             }
 
-            // Handle click outside completion modal to close
+            // Handle click outside completion modal to close and reset session state
             const completionModal = document.getElementById('completion-modal');
             if (completionModal) {
                 completionModal.addEventListener('click', function (e) {
                     if (e.target === completionModal) {
                         completionModal.classList.add('hidden');
+                        // Trigger a full in-app reset so state doesn't carry over
+                        if (window.UIController && typeof UIController.startNewSession === 'function') {
+                            UIController.startNewSession();
+                        }
                     }
                 });
             }
