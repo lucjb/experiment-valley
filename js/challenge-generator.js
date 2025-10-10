@@ -725,6 +725,16 @@ function fastLoserWithPartialWeek() {
     });
 }
 
+function twymansLawTrap() {
+    return new ChallengeDesign({
+        timeProgress: TIME_PROGRESS.FULL,
+        baseRateMismatch: BASE_RATE_MISMATCH.NO,
+        effectSize: EFFECT_SIZE.LARGE_IMPROVEMENT,
+        sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
+        sampleProgress: SAMPLE_PROGRESS.FULL
+    });
+}
+
 
 const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY", PARTIAL_WEEKS: "PARTIAL_WEEKS" };
 const SAMPLE_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", TIME: "TIME" };
@@ -996,6 +1006,10 @@ function analyzeExperiment(experiment) {
     const directionFactor = improvementDirection === IMPROVEMENT_DIRECTION.LOWER ? -1 : 1;
     const isEffectPositive = directionFactor * (variantRate - baseRate) > 0;
 
+    // Check for Twyman's Law trap: p-value with 6 or more zeros
+    const pValueString = pValue.toFixed(10);
+    const hasTwymansLaw = pValueString.includes('0.000000') || pValue < 0.000001;
+
     const issues = [];
     if (hasSampleRatioMismatch) issues.push('sample ratio mismatch');
     if (hasBaseRateMismatch) issues.push('base rate mismatch');
@@ -1006,6 +1020,7 @@ function analyzeExperiment(experiment) {
         hasBaseRateMismatch ||
         hasTrafficMismatch ||
         hasDataLoss;
+
 
     if (mismatch) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
@@ -1048,18 +1063,28 @@ function analyzeExperiment(experiment) {
         followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
         followUpReason = 'Explore new hypotheses: larger expected lift, improved UX, or reduced variance; rerun with adequate power.';
     } else {
-        trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
-        trustworthyReason = 'Data quality checks passed.';
-        decision = EXPERIMENT_DECISION.KEEP_VARIANT;
-        const [ciLow, ciHigh] = confidenceIntervalDifference;
-        const delta = (variantRate - baseRate);
-        if (improvementDirection === IMPROVEMENT_DIRECTION.LOWER) {
-            decisionReason = `Variant is significantly lower as desired: p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta*100).toFixed(2)}pp, CI[Δ]=[${(ciLow*100).toFixed(2)}pp, ${(ciHigh*100).toFixed(2)}pp].`;
+        // Check for Twyman's Law trap: suspiciously low p-value with positive effect
+        if (hasTwymansLaw && isEffectPositive) {
+            trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
+            trustworthyReason = `Twyman's Law detected: p-value is suspiciously low (p=${pValue.toFixed(10)}). Results that are "too good to be true" often indicate data quality issues, p-hacking, or other problems that make the experiment unreliable.`;
+            decision = EXPERIMENT_DECISION.KEEP_VARIANT;
+            decisionReason = 'Despite the suspicious p-value, the effect direction aligns with business goals. Proceed with caution and validate thoroughly.';
+            followUp = EXPERIMENT_FOLLOW_UP.VALIDATE;
+            followUpReason = 'Validate the results through additional testing, data quality checks, and monitoring. The suspiciously low p-value suggests potential issues that need investigation.';
         } else {
-            decisionReason = `Variant is significantly better: p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta*100).toFixed(2)}pp, CI[Δ]=[${(ciLow*100).toFixed(2)}pp, ${(ciHigh*100).toFixed(2)}pp].`;
+            trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
+            trustworthyReason = 'Data quality checks passed.';
+            decision = EXPERIMENT_DECISION.KEEP_VARIANT;
+            const [ciLow, ciHigh] = confidenceIntervalDifference;
+            const delta = (variantRate - baseRate);
+            if (improvementDirection === IMPROVEMENT_DIRECTION.LOWER) {
+                decisionReason = `Variant is significantly lower as desired: p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta*100).toFixed(2)}pp, CI[Δ]=[${(ciLow*100).toFixed(2)}pp, ${(ciHigh*100).toFixed(2)}pp].`;
+            } else {
+                decisionReason = `Variant is significantly better: p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta*100).toFixed(2)}pp, CI[Δ]=[${(ciLow*100).toFixed(2)}pp, ${(ciHigh*100).toFixed(2)}pp].`;
+            }
+            followUp = EXPERIMENT_FOLLOW_UP.CELEBRATE;
+            followUpReason = 'Roll out the variant and monitor post-launch performance to confirm lift generalizes.';
         }
-        followUp = EXPERIMENT_FOLLOW_UP.CELEBRATE;
-        followUpReason = 'Roll out the variant and monitor post-launch performance to confirm lift generalizes.';
     }
 
     return {
@@ -1078,6 +1103,7 @@ function analyzeExperiment(experiment) {
             hasInsufficientSampleSize: lowSampleSize,
             hasDataLoss: hasDataLoss,
             dataLossIndex: dataLossIndex,
+            hasTwymansLaw: hasTwymansLaw,
             ratioMismatch: {
                 pValue: ratioPValue
             },

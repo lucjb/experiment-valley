@@ -515,7 +515,8 @@ const UIController = {
                 4: [slowCompletion().withBaseRateMismatch(), fastLoserWithPartialWeek().withVisitorsLoss(), loser()],
                 5: [partialWinner(), partialLoser(), inconclusive()],
                 6: [winner().withLowerIsBetter(), inconclusive(), loser().withLowerIsBetter()],
-                7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()]
+                7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()],
+                8: [twymansLawTrap(), twymansLawTrap().withLowerIsBetter(), twymansLawTrap()]
             };
 
             // Define round captions
