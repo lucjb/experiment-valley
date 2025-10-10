@@ -1020,11 +1020,11 @@ function analyzeExperiment(experiment) {
         followUp = EXPERIMENT_FOLLOW_UP.RERUN;
         followUpReason = 'Resolve data issues (fix allocation, restore tracking, ensure stable traffic), then rerun to collect clean data.';
     } else if (!finished && (lowSampleSize || !fullWeek)) {
-        trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
+        trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
         const remainingDays = Math.max(0, requiredRuntimeDays - currentRuntimeDays);
         const needSample = lowSampleSize ? `sample size is insufficient (have base=${actualVisitorsBase.toLocaleString()}, variant=${actualVisitorsVariant.toLocaleString()}, need ≥ ${requiredSampleSizePerVariant.toLocaleString()} each)` : 'sample size is on track';
         const needCycle = !fullWeek ? 'not a full number of business cycles yet' : 'covers full-week cycles';
-        trustworthyReason = `Data quality checks pass so far, but more data/time is needed: ${needSample}; ${needCycle}.`;
+        trustworthyReason = `Cannot make trustworthy decisions before achieving full sample size: ${needSample}; ${needCycle}.`;
         decision = EXPERIMENT_DECISION.KEEP_RUNNING;
         decisionReason = `Evidence is still forming (p=${pValue.toFixed(4)} vs α=${alpha}). Let the test run approximately ${remainingDays} more day(s) to reach required power.`;
         followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
