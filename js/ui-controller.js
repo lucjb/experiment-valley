@@ -696,7 +696,7 @@ const UIController = {
         const baseRateCell = document.getElementById('base-rate');
         const { expected, actual, difference, pValue } = analysis.analysis.baseRate;
         
-        const message = `Design Base Rate: ${formatPercent(expected)}\nActual Base Rate: ${formatPercent(actual)}\nDifference: ${formatPercent(difference)}\np-value: ${pValue.toFixed(4)}`;
+        const message = `Design Base Rate: ${formatPercent(expected)}\nActual Base Rate: ${formatPercent(actual)}\nDifference: ${formatPercent(difference)}\np-value: ${pValue.toFixed(4)}\n\n<a href="base-rate-mismatch.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about base rate mismatches →</a>`;
         this.addWarningToCell(baseRateCell, message);
     },
 
@@ -818,6 +818,13 @@ const UIController = {
         document.getElementById('exp-required-days').textContent = `${challenge.experiment.requiredRuntimeDays} days`;
         const direction = challenge.experiment.improvementDirection === window.IMPROVEMENT_DIRECTION.LOWER ? 'Lower is Better' : 'Higher is Better';
         document.getElementById('exp-improvement-direction').textContent = direction;
+
+        // Update tooltip with prior estimate explanation and CI from experiment data
+        const priorCI = challenge.experiment.priorEstimateCI;
+        const [ciLow, ciHigh] = priorCI.confidenceInterval;
+        const confidenceLevel = ((1 - challenge.experiment.dataQualityAlpha) * 100).toFixed(2);
+        const tooltipContent = `Prior estimate from one month before experiment start (n=${priorCI.sampleSize.toLocaleString()}, ${confidenceLevel}% CI: ${(ciLow * 100).toFixed(2)}% - ${(ciHigh * 100).toFixed(2)}%)`;
+        document.getElementById('base-rate-tooltip').textContent = tooltipContent;
 
         // Update conversion rates tab header if there's data loss
         if (this.debugMode() && window.currentAnalysis?.analysis?.hasDataLoss) {

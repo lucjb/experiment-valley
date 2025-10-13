@@ -59,6 +59,22 @@ function computeConfidenceInterval(conversionRate, visitors, alpha) {
     ];
 }
 
+function computePriorEstimateConfidenceInterval(baseConversionRate, businessCycleDays, visitorsPerDay, dataQualityAlpha) {
+    // Calculate confidence interval for the prior estimate using specified alpha level
+    const priorSampleSize = 4 * businessCycleDays * visitorsPerDay;
+    const priorStandardError = Math.sqrt((baseConversionRate * (1 - baseConversionRate)) / priorSampleSize);
+    const zScore = jStat.normal.inv(1 - dataQualityAlpha / 2, 0, 1);
+    const marginOfError = zScore * priorStandardError;
+    const ciLow = Math.max(0, baseConversionRate - marginOfError);
+    const ciHigh = Math.min(1, baseConversionRate + marginOfError);
+    
+    return {
+        sampleSize: priorSampleSize,
+        confidenceInterval: [ciLow, ciHigh],
+        standardError: priorStandardError
+    };
+}
+
 function solveSampleSizeTTest(effectSize, power, varianceA, varianceB, alpha) {
     var zAlpha = jStat.normal.inv(1 - alpha / 2, 0, 1);
     var zBeta = jStat.normal.inv(power, 0, 1);
@@ -738,7 +754,7 @@ function twymansLawTrap() {
 
 const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY", PARTIAL_WEEKS: "PARTIAL_WEEKS" };
 const SAMPLE_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", TIME: "TIME" };
-const BASE_RATE_MISMATCH = { NO: 10000000, YES: 100 };
+const BASE_RATE_MISMATCH = { NO: 1000000, YES: 100 };
 const EFFECT_SIZE = { NONE: 0, SMALL_IMPROVEMENT: 0.05, IMPROVEMENT: 0.85, LARGE_IMPROVEMENT: 2, DEGRADATION: -0.8, SMALL_DEGRADATION: -0.05, LARGE_DEGRADATION: -2 };
 const SAMPLE_RATIO_MISMATCH = { NO: 0.5, LARGE: 0.4, SMALL: 0.47 };
 const VISITORS_LOSS = { NO: false, YES: true };
@@ -867,7 +883,10 @@ function generateABTestChallenge(
         ALPHA
     );
 
-    console.log(actualBaseConversionRate, actualVariantConversionRate, actualVariantConversionRate - actualBaseConversionRate);
+    // Calculate prior estimate confidence interval
+    const dataQualityAlpha = 0.0001; // 99.99% confidence level for data quality checks
+    const priorEstimateCI = computePriorEstimateConfidenceInterval(BASE_CONVERSION_RATE, BUSINESS_CYCLE_DAYS, VISITORS_PER_DAY, dataQualityAlpha);
+
     return {
         experiment: {
             alpha: ALPHA,
@@ -878,7 +897,9 @@ function generateABTestChallenge(
             businessCycleDays: BUSINESS_CYCLE_DAYS,
             requiredSampleSizePerVariant: requiredSampleSizePerVariant,
             requiredRuntimeDays: requiredRuntimeDays,
-            improvementDirection: improvementDirection
+            improvementDirection: improvementDirection,
+            priorEstimateCI: priorEstimateCI,
+            dataQualityAlpha: dataQualityAlpha
         },
         simulation: {
             actualBaseConversionRate: actualBaseConversionRate,
@@ -965,7 +986,8 @@ function analyzeExperiment(experiment) {
             visitorsPerDay,
             requiredSampleSizePerVariant,
             requiredRuntimeDays,
-            improvementDirection
+            improvementDirection,
+            dataQualityAlpha
         }
     } = experiment;
 
@@ -981,11 +1003,19 @@ function analyzeExperiment(experiment) {
     const hasSampleRatioMismatch = ratioPValue < 0.0001;
 
     const actualBaseRate = actualConversionsBase / actualVisitorsBase;
-    const standardError = Math.sqrt((baseConversionRate * (1 - baseConversionRate)) / actualVisitorsBase);
-    const zScore = Math.abs(actualBaseRate - baseConversionRate) / standardError;
-    // Two-tailed p-value computation using normal distribution
+    const priorBaseConversionRate = baseConversionRate;
+    
+    // Calculate standard error accounting for noise in the prior estimate
+    // The prior estimate is based on a sample size equivalent to 4 business cycles
+    const priorEstimateCI = computePriorEstimateConfidenceInterval(priorBaseConversionRate, businessCycleDays, visitorsPerDay, dataQualityAlpha);
+    const priorStandardError = priorEstimateCI.standardError;
+    const currentStandardError = Math.sqrt((actualBaseRate * (1 - actualBaseRate)) / actualVisitorsBase);
+    const combinedStandardError = Math.sqrt(priorStandardError * priorStandardError + currentStandardError * currentStandardError);
+    
+    const zScore = Math.abs(actualBaseRate - priorBaseConversionRate) / combinedStandardError;
+    // Two-tailed p-value computation using normal distribution for data quality confidence level
     const baseRateTestpValue = 2 * (1 - jStat.normal.cdf(zScore, 0, 1));
-    const hasBaseRateMismatch = baseRateTestpValue < 0.0001;
+    const hasBaseRateMismatch = baseRateTestpValue < dataQualityAlpha;
 
     const actualDailyTraffic = (actualVisitorsBase + actualVisitorsVariant) / currentRuntimeDays;
     const trafficDifference = (actualDailyTraffic - visitorsPerDay) / visitorsPerDay;
@@ -1108,9 +1138,9 @@ function analyzeExperiment(experiment) {
                 pValue: ratioPValue
             },
             baseRate: {
-                expected: baseConversionRate,
+                expected: priorBaseConversionRate,
                 actual: actualBaseRate,
-                difference: actualBaseRate - baseConversionRate,
+                difference: actualBaseRate - priorBaseConversionRate,
                 pValue: baseRateTestpValue
             },
             traffic: {

@@ -900,7 +900,9 @@
                     <!-- Column 3: Base Conversion Rate, Daily Visitors, Minimum Relevant Effect -->
                     <div class="space-y-1 border-r-2 border-gray-300 pr-4">
                         <div class="flex justify-between items-center py-1 text-sm">
-                            <span class="font-medium text-gray-700">Base Conversion Rate</span>
+                            <span class="font-medium text-gray-700">
+                                <span class="tooltip-trigger">Prior Conversion Rate<span class="tooltip-content" id="base-rate-tooltip">Prior estimate from one month before experiment start</span></span>
+                            </span>
                             <span id="exp-base-rate" class="font-semibold text-gray-900"></span>
                         </div>
                         <div class="flex justify-between items-center py-1 text-sm">
