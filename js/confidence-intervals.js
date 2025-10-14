@@ -39,8 +39,61 @@ function updateCIVisualization(containerId, low, high, mean, colorSet, showBound
     const highLabel = document.getElementById(`${containerId}-high`);
 
     // Calculate positions
-    const lowPercent = toViewPercent(low, viewMin, viewMax);
-    const highPercent = toViewPercent(high, viewMin, viewMax);
+    const rawLowPercent = toViewPercent(low, viewMin, viewMax);
+    const rawHighPercent = toViewPercent(high, viewMin, viewMax);
+
+    // Base clamp to avoid overflow on the edges
+    const clamp = (val) => Math.min(Math.max(val, 2), 98);
+
+    // Gaps and thresholds (in percentage points)
+    const outwardGap = 2;       // gap when placing labels outside the bar
+    const innerGap = 2;         // gap when placing labels inside the bar
+    const edgeThreshold = 8;    // near-edge zone to avoid overlapping scale labels (which sit at ~2% and 98%)
+    const minSeparation = 10;   // ensure labels never overlap (wider to account for text width)
+    const narrowThreshold = 10; // CI width below which we try outside placement
+
+    // Determine narrow vs wide CI
+    const ciWidth = Math.abs(rawHighPercent - rawLowPercent);
+    const isNarrow = ciWidth < narrowThreshold;
+
+    // Decide placement per bound with edge-aware logic
+    let lowLabelPos;
+    if (isNarrow) {
+        // Prefer outside-left; if too close to left edge, place inside-right
+        if (rawLowPercent < edgeThreshold) {
+            lowLabelPos = clamp(rawLowPercent + innerGap);
+        } else {
+            lowLabelPos = clamp(rawLowPercent - outwardGap);
+        }
+    } else {
+        // Wide: place inside-right of the bar start
+        lowLabelPos = clamp(rawLowPercent + innerGap);
+    }
+
+    let highLabelPos;
+    if (isNarrow) {
+        // Prefer outside-right; if too close to right edge, place inside-left
+        if (rawHighPercent > 100 - edgeThreshold) {
+            highLabelPos = clamp(rawHighPercent - innerGap);
+        } else {
+            highLabelPos = clamp(rawHighPercent + outwardGap);
+        }
+    } else {
+        // Wide: place inside-left of the bar end
+        highLabelPos = clamp(rawHighPercent - innerGap);
+    }
+
+    // Ensure minimum separation between labels
+    if (highLabelPos - lowLabelPos < minSeparation) {
+        // Spread around the midpoint while respecting edges
+        const mid = Math.min(Math.max((lowLabelPos + highLabelPos) / 2, 2 + minSeparation / 2), 98 - minSeparation / 2);
+        lowLabelPos = clamp(mid - minSeparation / 2);
+        highLabelPos = clamp(mid + minSeparation / 2);
+    }
+
+    // Also compute clamped bar edges for drawing bar/marker
+    const lowPercent = clamp(rawLowPercent);
+    const highPercent = clamp(rawHighPercent);
     const meanPercent = toViewPercent(mean, viewMin, viewMax);
 
     // Update visual elements
@@ -57,15 +110,21 @@ function updateCIVisualization(containerId, low, high, mean, colorSet, showBound
 
     // Update labels
     if (lowLabel) {
-        lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colorSet.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
+        lowLabel.className = `absolute text-xs font-medium ${colorSet.text} drop-shadow-sm`;
         lowLabel.textContent = formatPercent(low);
-        lowLabel.style.left = `${lowPercent}%`;
+        lowLabel.style.left = `${lowLabelPos}%`;
+        // Always keep on the same horizontal axis (centered vertically on the bar)
+        lowLabel.style.top = '50%';
+        lowLabel.style.transform = 'translate(-50%, -50%)';
     }
 
     if (highLabel) {
-        highLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colorSet.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
+        highLabel.className = `absolute text-xs font-medium ${colorSet.text} drop-shadow-sm`;
         highLabel.textContent = formatPercent(high);
-        highLabel.style.left = `${highPercent}%`;
+        highLabel.style.left = `${highLabelPos}%`;
+        // Always keep on the same horizontal axis (centered vertically on the bar)
+        highLabel.style.top = '50%';
+        highLabel.style.transform = 'translate(-50%, -50%)';
     }
 
     // Add view range bounds if needed
@@ -111,6 +170,51 @@ function updateConfidenceIntervals(challenge) {
         } else {
             pValueElement.classList.add('text-blue-600');
             pValueElement.classList.remove('text-green-600');
+        }
+        
+        // Check for Twyman's Law: extremely low p-value AND unusually large effect size (|Δ| ≥ 2×MRE)
+        const pValueString = pValue.toFixed(10);
+        const suspiciousPValue = pValueString.includes('0.000000') || pValue < 0.000001;
+        const absoluteDelta = Math.abs(challenge.simulation.variantConversionRate - challenge.simulation.baseConversionRate);
+        const largeEffect = absoluteDelta >= 2 * challenge.experiment.minimumRelevantEffect;
+        const hasTwymansLaw = suspiciousPValue && largeEffect;
+        
+        // Add Twyman's Law alert if detected
+        if (hasTwymansLaw) {
+            const message = `Twyman's Law detected: Suspiciously low p-value (p=${pValue.toFixed(10)}) and unusually large effect (more than 10 x the MRE)\n\n<a href=\"twymans-law.html\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-blue-500 hover:text-blue-700\">Learn more about Twyman's Law →</a>`;
+            
+            // Store the original text content
+            const originalText = pValueElement.textContent;
+            
+            // Clear the element and rebuild it with warning icon
+            pValueElement.textContent = '';
+            
+            // Add the original text back
+            const textSpan = document.createElement('span');
+            textSpan.textContent = originalText;
+            pValueElement.appendChild(textSpan);
+            
+            // Add warning icon
+            const warningIcon = document.createElement('span');
+            warningIcon.className = 'text-yellow-500 cursor-help tooltip-trigger text-lg font-medium ml-2';
+            warningIcon.textContent = '⚠️';
+
+            const tooltipContent = document.createElement('span');
+            tooltipContent.className = 'tooltip-content';
+            tooltipContent.innerHTML = message.replace(/\n/g, '<br>');
+            warningIcon.appendChild(tooltipContent);
+
+            // Add tooltip positioning
+            warningIcon.addEventListener('mousemove', (e) => {
+                const tooltip = warningIcon.querySelector('.tooltip-content');
+                if (!tooltip) return;
+
+                const rect = warningIcon.getBoundingClientRect();
+                tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
+                tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+            });
+
+            pValueElement.appendChild(warningIcon);
         }
     }
 
@@ -245,41 +349,92 @@ function updateConfidenceIntervals(challenge) {
             diffContainer.appendChild(zeroLabel);
         }
 
-        // Update labels after zero line is in place
-        if (lowLabel) {
-            lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
-            lowLabel.textContent = formatPercent(lowDiff);
-            
-            // Position low label
-            if (Math.abs(lowPercent - zeroPercent) < 5) { // 5% threshold for overlap
-                if (lowDiff > 0) {
-                    // If positive and close to zero, push it into the bar
-                    lowLabel.style.left = `${lowPercent + 3}%`; // Push 3% into the bar
-                } else {
-                    // If negative and close to zero, push it out of the bar
-                    lowLabel.style.left = `${lowPercent - 3}%`; // Push 3% out of the bar
-                }
-            } else {
-                lowLabel.style.left = `${lowPercent}%`;
-            }
-        }
+        // Update labels after zero line is in place (pixel-accurate collision handling)
+        if (lowLabel && highLabel) {
+            const clampPct = (val) => Math.min(Math.max(val, 2), 98);
+            const innerGapPct = 1.2;
+            const outwardGapPx = 8; // pixels outside the bar edge
+            const minGapPx = 8;      // minimal gap between label boxes
 
-        if (highLabel) {
+            // 1) Default: place inside near edges
+            let lowCenterPct = clampPct(lowPercent + innerGapPct);
+            let highCenterPct = clampPct(highPercent - innerGapPct);
+
+            // Avoid zero label when inside
+            if (Math.abs(lowCenterPct - zeroPercent) < 4) lowCenterPct = clampPct(lowCenterPct + innerGapPct);
+            if (Math.abs(highCenterPct - zeroPercent) < 4) highCenterPct = clampPct(highCenterPct - innerGapPct);
+
+            // Apply and measure
+            lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
             highLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
+            lowLabel.textContent = formatPercent(lowDiff);
             highLabel.textContent = formatPercent(highDiff);
-            
-            // Position high label
-            if (Math.abs(highPercent - zeroPercent) < 5) { // 5% threshold for overlap
-                if (highDiff > 0) {
-                    // If positive and close to zero, push it out of the bar
-                    highLabel.style.left = `${highPercent + 3}%`; // Push 3% out of the bar
-                } else {
-                    // If negative and close to zero, push it into the bar
-                    highLabel.style.left = `${highPercent - 3}%`; // Push 3% into the bar
-                }
-            } else {
-                highLabel.style.left = `${highPercent}%`;
-            }
+            lowLabel.style.left = `${lowCenterPct}%`;
+            highLabel.style.left = `${highCenterPct}%`;
+
+            const containerWidth = diffContainer.clientWidth || 0;
+            const pctToPx = (pct) => (pct / 100) * containerWidth;
+            const lowWidth = lowLabel.offsetWidth || 0;
+            const highWidth = highLabel.offsetWidth || 0;
+            const zeroEl = diffContainer.querySelector('.zero-label');
+            const zeroWidth = zeroEl ? zeroEl.offsetWidth || 0 : 0;
+            const zeroCenterPx = pctToPx(zeroPercent);
+
+            const getBox = (centerPct, widthPx) => {
+                const centerPx = pctToPx(centerPct);
+                return { left: centerPx - widthPx / 2, right: centerPx + widthPx / 2 };
+            };
+
+            let lowBox = getBox(lowCenterPct, lowWidth);
+            let highBox = getBox(highCenterPct, highWidth);
+            const zeroBox = { left: zeroCenterPx - zeroWidth / 2, right: zeroCenterPx + zeroWidth / 2 };
+
+			const overlaps = (a, b, gapPx = minGapPx) => a.left < b.right + gapPx && b.left < a.right + gapPx;
+
+			// 2) If labels overlap each other or zero, try nudging inward before moving outside
+			if (overlaps(lowBox, highBox) || overlaps(lowBox, zeroBox, 4) || overlaps(highBox, zeroBox, 4)) {
+				// Attempt gentle nudge away from zero and from each other
+				let nudgedLowPct = clampPct(lowCenterPct + innerGapPct);
+				let nudgedHighPct = clampPct(highCenterPct - innerGapPct);
+				let nudgedLowBox = getBox(nudgedLowPct, lowWidth);
+				let nudgedHighBox = getBox(nudgedHighPct, highWidth);
+				if (!overlaps(nudgedLowBox, nudgedHighBox) && !overlaps(nudgedLowBox, zeroBox, 4) && !overlaps(nudgedHighBox, zeroBox, 4)) {
+					lowCenterPct = nudgedLowPct;
+					highCenterPct = nudgedHighPct;
+					lowLabel.style.left = `${lowCenterPct}%`;
+					highLabel.style.left = `${highCenterPct}%`;
+				} else {
+					// If still overlapping, move only the overlapping label(s) outside
+					const barLeftPx = pctToPx(lowPercent);
+					const barRightPx = pctToPx(highPercent);
+
+					let newLowCenterPx = pctToPx(lowCenterPct);
+					let newHighCenterPx = pctToPx(highCenterPct);
+
+					if (overlaps(lowBox, zeroBox, 4) || overlaps(lowBox, highBox)) {
+						newLowCenterPx = barLeftPx - outwardGapPx - lowWidth / 2;
+					}
+					if (overlaps(highBox, zeroBox, 4) || overlaps(lowBox, highBox)) {
+						newHighCenterPx = barRightPx + outwardGapPx + highWidth / 2;
+					}
+
+					// Keep within container bounds
+					newLowCenterPx = Math.max(lowWidth / 2, Math.min(containerWidth - lowWidth / 2, newLowCenterPx));
+					newHighCenterPx = Math.max(highWidth / 2, Math.min(containerWidth - highWidth / 2, newHighCenterPx));
+
+					// Ensure min gap between labels if both ended outside
+					if (newHighCenterPx - highWidth / 2 < newLowCenterPx + lowWidth / 2 + minGapPx) {
+						newHighCenterPx = newLowCenterPx + (lowWidth / 2) + (highWidth / 2) + minGapPx;
+						newHighCenterPx = Math.min(newHighCenterPx, containerWidth - highWidth / 2);
+					}
+
+					lowCenterPct = (newLowCenterPx / containerWidth) * 100;
+					highCenterPct = (newHighCenterPx / containerWidth) * 100;
+
+					lowLabel.style.left = `${lowCenterPct}%`;
+					highLabel.style.left = `${highCenterPct}%`;
+				}
+			}
         }
     }
 
@@ -343,41 +498,95 @@ function updateConfidenceIntervals(challenge) {
             container.appendChild(zeroLabel);
         }
 
-        // Update labels after zero line is in place
-        if (lowLabel) {
-            lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
-            lowLabel.textContent = formatPercent(lowUplift);
-            
-            // Position low label
-            if (Math.abs(toViewPercent(lowUplift) - toViewPercent(0)) < 5) { // 5% threshold for overlap
-                if (lowUplift > 0) {
-                    // If positive and close to zero, push it into the bar
-                    lowLabel.style.left = `${toViewPercent(lowUplift) + 3}%`; // Push 3% into the bar
-                } else {
-                    // If negative and close to zero, push it out of the bar
-                    lowLabel.style.left = `${toViewPercent(lowUplift) - 3}%`; // Push 3% out of the bar
-                }
-            } else {
-                lowLabel.style.left = `${toViewPercent(lowUplift)}%`;
-            }
-        }
+        // Update labels after zero line is in place (pixel-accurate collision handling)
+        if (lowLabel && highLabel) {
+            const clampPct = (val) => Math.min(Math.max(val, 2), 98);
+            const innerGapPct = 1.2;
+            const outwardGapPx = 8;
+            const minGapPx = 8;
 
-        if (highLabel) {
+            const lowPct = clampPct(toViewPercent(lowUplift));
+            const highPct = clampPct(toViewPercent(highUplift));
+            const zeroPct = toViewPercent(0);
+
+            // 1) Default: inside near edges
+            let lowCenterPct = clampPct(lowPct + innerGapPct);
+            let highCenterPct = clampPct(highPct - innerGapPct);
+
+            if (Math.abs(lowCenterPct - zeroPct) < 4) lowCenterPct = clampPct(lowCenterPct + innerGapPct);
+            if (Math.abs(highCenterPct - zeroPct) < 4) highCenterPct = clampPct(highCenterPct - innerGapPct);
+
+            // Apply and measure
+            lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
             highLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
+            lowLabel.textContent = formatPercent(lowUplift);
             highLabel.textContent = formatPercent(highUplift);
-            
-            // Position high label
-            if (Math.abs(toViewPercent(highUplift) - toViewPercent(0)) < 5) { // 5% threshold for overlap
-                if (highUplift > 0) {
-                    // If positive and close to zero, push it out of the bar
-                    highLabel.style.left = `${toViewPercent(highUplift) + 3}%`; // Push 3% out of the bar
-                } else {
-                    // If negative and close to zero, push it into the bar
-                    highLabel.style.left = `${toViewPercent(highUplift) - 3}%`; // Push 3% into the bar
-                }
-            } else {
-                highLabel.style.left = `${toViewPercent(highUplift)}%`;
-            }
+            lowLabel.style.left = `${lowCenterPct}%`;
+            highLabel.style.left = `${highCenterPct}%`;
+
+            const containerWidth = container.clientWidth || 0;
+            const pctToPx = (pct) => (pct / 100) * containerWidth;
+            const lowWidth = lowLabel.offsetWidth || 0;
+            const highWidth = highLabel.offsetWidth || 0;
+            const zeroEl = container.querySelector('.zero-label');
+            const zeroWidth = zeroEl ? zeroEl.offsetWidth || 0 : 0;
+            const zeroCenterPx = pctToPx(zeroPct);
+
+            const getBox = (centerPct, widthPx) => {
+                const centerPx = pctToPx(centerPct);
+                return { left: centerPx - widthPx / 2, right: centerPx + widthPx / 2 };
+            };
+
+            let lowBox = getBox(lowCenterPct, lowWidth);
+            let highBox = getBox(highCenterPct, highWidth);
+            const zeroBox = { left: zeroCenterPx - zeroWidth / 2, right: zeroCenterPx + zeroWidth / 2 };
+
+			const overlaps = (a, b, gapPx = minGapPx) => a.left < b.right + gapPx && b.left < a.right + gapPx;
+
+			// 2) If labels overlap each other or zero, try nudging inward before moving outside
+			if (overlaps(lowBox, highBox) || overlaps(lowBox, zeroBox, 4) || overlaps(highBox, zeroBox, 4)) {
+				// Attempt gentle nudge away from zero and from each other
+				let nudgedLowPct = clampPct(lowCenterPct + innerGapPct);
+				let nudgedHighPct = clampPct(highCenterPct - innerGapPct);
+				let nudgedLowBox = getBox(nudgedLowPct, lowWidth);
+				let nudgedHighBox = getBox(nudgedHighPct, highWidth);
+				if (!overlaps(nudgedLowBox, nudgedHighBox) && !overlaps(nudgedLowBox, zeroBox, 4) && !overlaps(nudgedHighBox, zeroBox, 4)) {
+					lowCenterPct = nudgedLowPct;
+					highCenterPct = nudgedHighPct;
+					lowLabel.style.left = `${lowCenterPct}%`;
+					highLabel.style.left = `${highCenterPct}%`;
+				} else {
+					// If still overlapping, move only the overlapping label(s) outside
+					const barLeftPx = pctToPx(lowPct);
+					const barRightPx = pctToPx(highPct);
+
+					let newLowCenterPx = pctToPx(lowCenterPct);
+					let newHighCenterPx = pctToPx(highCenterPct);
+
+					if (overlaps(lowBox, zeroBox, 4) || overlaps(lowBox, highBox)) {
+						newLowCenterPx = barLeftPx - outwardGapPx - lowWidth / 2;
+					}
+					if (overlaps(highBox, zeroBox, 4) || overlaps(lowBox, highBox)) {
+						newHighCenterPx = barRightPx + outwardGapPx + highWidth / 2;
+					}
+
+					// Keep within container bounds
+					newLowCenterPx = Math.max(lowWidth / 2, Math.min(containerWidth - lowWidth / 2, newLowCenterPx));
+					newHighCenterPx = Math.max(highWidth / 2, Math.min(containerWidth - highWidth / 2, newHighCenterPx));
+
+					// Ensure min gap between labels if both ended outside
+					if (newHighCenterPx - highWidth / 2 < newLowCenterPx + lowWidth / 2 + minGapPx) {
+						newHighCenterPx = newLowCenterPx + (lowWidth / 2) + (highWidth / 2) + minGapPx;
+						newHighCenterPx = Math.min(newHighCenterPx, containerWidth - highWidth / 2);
+					}
+
+					lowCenterPct = (newLowCenterPx / containerWidth) * 100;
+					highCenterPct = (newHighCenterPx / containerWidth) * 100;
+
+					lowLabel.style.left = `${lowCenterPct}%`;
+					highLabel.style.left = `${highCenterPct}%`;
+				}
+			}
         }
     }
 }

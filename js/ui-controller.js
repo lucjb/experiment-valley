@@ -687,6 +687,7 @@ const UIController = {
         this.addBaseConversionRateMissmatchAlert();
         this.addSampleSizeWarning();
         this.addSampleRatioMismatchAlert();
+        this.addTwymansLawAlert();
     },
 
     addBaseConversionRateMissmatchAlert() {
@@ -709,13 +710,13 @@ const UIController = {
 
         // Check base variant
         if (sampleSize.actualBase < sampleSize.required) {
-            const message = `Insufficient sample size (${sampleSize.actualBase.toLocaleString()} < ${sampleSize.required.toLocaleString()})`;
+            const message = `Insufficient sample size (${sampleSize.actualBase.toLocaleString()} < ${sampleSize.required.toLocaleString()})\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about sample size warnings →</a>`;
             this.addWarningToCell(document.getElementById('base-visitors'), message);
         }
 
         // Check variant
         if (sampleSize.actualVariant < sampleSize.required) {
-            const message = `Insufficient sample size (${sampleSize.actualVariant.toLocaleString()} < ${sampleSize.required.toLocaleString()})`;
+            const message = `Insufficient sample size (${sampleSize.actualVariant.toLocaleString()} < ${sampleSize.required.toLocaleString()})\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about sample size warnings →</a>`;
             this.addWarningToCell(document.getElementById('variant-visitors'), message);
         }
 
@@ -725,7 +726,7 @@ const UIController = {
         
         if (totalVisitors < requiredTotal) {
             const completeTextElement = document.getElementById('exp-complete-text');
-            const message = `Runtime Complete but Insufficient sample size: ${totalVisitors.toLocaleString()} < ${requiredTotal.toLocaleString()}`;
+            const message = `Runtime Complete but Insufficient sample size: ${totalVisitors.toLocaleString()} < ${requiredTotal.toLocaleString()}\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about sample size warnings →</a>`;
             
             completeTextElement.textContent = '';
             completeTextElement.appendChild(this.createWarningIcon(message));
@@ -742,11 +743,43 @@ const UIController = {
         const visitorsHeader = document.querySelector('.metrics-table th:nth-child(2)');
         if (!visitorsHeader) return;
 
-        const message = `Sample Ratio Mismatch detected (p-value<0.0001)`;
+        const message = `Sample Ratio Mismatch detected (p-value<0.0001)\n\n<a href="sample-ratio-mismatch.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about sample ratio mismatches →</a>`;
         
         visitorsHeader.textContent = '';
         visitorsHeader.appendChild(document.createTextNode('Visitors'));
         visitorsHeader.appendChild(this.createWarningIcon(message));
+    },
+
+    addTwymansLawAlert() {
+        const analysis = window.currentAnalysis;
+        if (!analysis || !analysis.analysis || !analysis.analysis.hasTwymansLaw) return;
+
+        const pValueElement = document.getElementById('p-value-display');
+        if (!pValueElement) return;
+
+        // Check if simulation data exists
+        if (!analysis.simulation || typeof analysis.simulation.pValue === 'undefined') {
+            console.log('Simulation data not available yet');
+            return;
+        }
+
+        const pValue = analysis.simulation.pValue;
+        const message = `Twyman's Law detected: Suspiciously low p-value (p=${pValue.toFixed(10)}) and unusually large effect (more than 10 x the MRE)\n\n<a href="twymans-law.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about Twyman's Law →</a>`;
+        
+        // Store the original text content
+        const originalText = pValueElement.textContent;
+        
+        // Clear the element and rebuild it with warning icon
+        pValueElement.textContent = '';
+        
+        // Add the original text back
+        const textSpan = document.createElement('span');
+        textSpan.textContent = originalText;
+        pValueElement.appendChild(textSpan);
+        
+        // Add warning icon
+        const warningIcon = this.createWarningIcon(message);
+        pValueElement.appendChild(warningIcon);
     },
 
     // Attach tooltip behaviour to dynamically added elements
@@ -830,9 +863,18 @@ const UIController = {
         if (this.debugMode() && window.currentAnalysis?.analysis?.hasDataLoss) {
             const conversionTab = document.querySelector('[data-tab="conversion"]');
             if (conversionTab) {
-                conversionTab.textContent = 'Conversion Rate ⚠️';
+                conversionTab.innerHTML = `
+                    <span class="tooltip-trigger">
+                        Conversion Rate ⚠️
+                        <span class="tooltip-content">
+                            Data loss detected in experiment data
+                            <br><a href="data-loss-alert.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about data loss →</a>
+                        </span>
+                    </span>
+                `;
             }
         }
+
     },
 
     // Helper function to measure text width

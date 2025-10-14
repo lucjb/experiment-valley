@@ -561,7 +561,8 @@ class ChallengeDesign {
         sampleRatioMismatch = SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress = SAMPLE_PROGRESS.TIME,
         visitorsLoss = VISITORS_LOSS.NO,
-        improvementDirection = IMPROVEMENT_DIRECTION.HIGHER
+		improvementDirection = IMPROVEMENT_DIRECTION.HIGHER,
+		twymanFabrication = false
     } = {}) {
         this.timeProgress = timeProgress;
         this.baseRateMismatch = baseRateMismatch;
@@ -570,6 +571,7 @@ class ChallengeDesign {
         this.sampleProgress = sampleProgress;
         this.visitorsLoss = visitorsLoss;
         this.improvementDirection = improvementDirection;
+		this.twymanFabrication = twymanFabrication;
     }
 
     generate() {
@@ -579,8 +581,9 @@ class ChallengeDesign {
             this.effectSize,
             this.sampleRatioMismatch,
             this.sampleProgress,
-            this.visitorsLoss,
-            this.improvementDirection
+			this.visitorsLoss,
+			this.improvementDirection,
+			this.twymanFabrication
         );
     }
 
@@ -745,9 +748,10 @@ function twymansLawTrap() {
     return new ChallengeDesign({
         timeProgress: TIME_PROGRESS.FULL,
         baseRateMismatch: BASE_RATE_MISMATCH.NO,
-        effectSize: EFFECT_SIZE.LARGE_IMPROVEMENT,
+		effectSize: EFFECT_SIZE.NONE,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
-        sampleProgress: SAMPLE_PROGRESS.FULL
+		sampleProgress: SAMPLE_PROGRESS.FULL,
+		twymanFabrication: true
     });
 }
 
@@ -767,7 +771,8 @@ function generateABTestChallenge(
     sampleRatioMismatch = SAMPLE_RATIO_MISMATCH.NO,
     sampleProgress = SAMPLE_PROGRESS.TIME,
     visitorsLoss = VISITORS_LOSS.NO,
-    improvementDirection = IMPROVEMENT_DIRECTION.HIGHER) {
+	improvementDirection = IMPROVEMENT_DIRECTION.HIGHER,
+	twymanFabrication = false) {
 
     // Predefined options for each parameter ,
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
@@ -810,17 +815,19 @@ function generateABTestChallenge(
         }
     }
 
-    var actualBaseConversionRate = BASE_CONVERSION_RATE;
-    actualBaseConversionRate = sampleBetaDistribution(
-        baseRateMismatch * BASE_CONVERSION_RATE,
-        baseRateMismatch * (1 - BASE_CONVERSION_RATE)
-    );
+	var actualBaseConversionRate = BASE_CONVERSION_RATE;
+	if (!twymanFabrication) {
+		actualBaseConversionRate = sampleBetaDistribution(
+			baseRateMismatch * BASE_CONVERSION_RATE,
+			baseRateMismatch * (1 - BASE_CONVERSION_RATE)
+		);
+	}
 
     // Calculate effect size as a relative change instead of absolute
-    const actualRelativeEffectSize = effectSize * MRE / actualBaseConversionRate //sampleNormalDistribution(MRE / BASE_CONVERSION_RATE, MRE / (10 * BASE_CONVERSION_RATE));
+	const actualRelativeEffectSize = effectSize * MRE / actualBaseConversionRate //sampleNormalDistribution(MRE / BASE_CONVERSION_RATE, MRE / (10 * BASE_CONVERSION_RATE));
 
     // Apply effect size as a relative change, ensuring we don't go below 20% of base rate
-    const actualVariantConversionRate = actualBaseConversionRate * (1 + actualRelativeEffectSize);
+	let actualVariantConversionRate = actualBaseConversionRate * (1 + actualRelativeEffectSize);
 
 
     var observedVisitorsTotal = currentRuntimeDays * VISITORS_PER_DAY + sampleBinomial(VISITORS_PER_DAY, 0.1);
@@ -833,11 +840,30 @@ function generateABTestChallenge(
 
     observedVisitorsTotal = Math.ceil(observedVisitorsTotal / (2 * sampleRatioMismatch));
 
-    var observedVisitorsBase = sampleBinomial(observedVisitorsTotal, sampleRatioMismatch);
-    var observedVisitorsVariant = observedVisitorsTotal - observedVisitorsBase;
+	var observedVisitorsBase = sampleBinomial(observedVisitorsTotal, sampleRatioMismatch);
+	var observedVisitorsVariant = observedVisitorsTotal - observedVisitorsBase;
 
-    const observedConversionsBase = Math.ceil(observedVisitorsBase * actualBaseConversionRate);
-    const observedConversionsVariant = sampleBinomial(observedVisitorsVariant, actualVariantConversionRate);
+	let observedConversionsBase = Math.ceil(observedVisitorsBase * actualBaseConversionRate);
+	let observedConversionsVariant = sampleBinomial(observedVisitorsVariant, actualVariantConversionRate);
+
+	// Twyman's Law fabrication mode: zero true effect, but fabricate a huge observed lift
+	if (twymanFabrication) {
+		// Ensure true effect is exactly zero
+		actualBaseConversionRate = BASE_CONVERSION_RATE;
+		actualVariantConversionRate = actualBaseConversionRate;
+
+		// Keep base aligned with prior to avoid base rate mismatch
+		observedConversionsBase = Math.round(observedVisitorsBase * actualBaseConversionRate);
+
+		// Fabricate variant conversions to create an extremely large, "too good" effect
+		// Choose a variant rate far above base but below 100%, and above base + 10*MRE
+		const targetLift = Math.max(0.15, 10 * MRE + 0.05); // at least +15pp or +10*MRE+5pp
+		const fabricatedVariantRate = Math.min(0.98, actualBaseConversionRate + targetLift);
+		observedConversionsVariant = Math.min(
+			observedVisitorsVariant,
+			Math.max(observedConversionsBase + 1, Math.round(observedVisitorsVariant * fabricatedVariantRate))
+		);
+	}
 
     const { pValue } = computeTTest(observedConversionsBase, observedVisitorsBase, observedConversionsVariant, observedVisitorsVariant);
 
@@ -987,6 +1013,7 @@ function analyzeExperiment(experiment) {
             requiredSampleSizePerVariant,
             requiredRuntimeDays,
             improvementDirection,
+            minimumRelevantEffect,
             dataQualityAlpha
         }
     } = experiment;
@@ -1036,9 +1063,12 @@ function analyzeExperiment(experiment) {
     const directionFactor = improvementDirection === IMPROVEMENT_DIRECTION.LOWER ? -1 : 1;
     const isEffectPositive = directionFactor * (variantRate - baseRate) > 0;
 
-    // Check for Twyman's Law trap: p-value with 6 or more zeros
+    // Check for Twyman's Law trap: extremely low p-value AND unusually large effect size
     const pValueString = pValue.toFixed(10);
-    const hasTwymansLaw = pValueString.includes('0.000000') || pValue < 0.000001;
+    const suspiciousPValue = pValueString.includes('0.000000') || pValue < 0.000001;
+    const absoluteDelta = Math.abs(variantRate - baseRate);
+    const largeEffect = absoluteDelta >= 10 * minimumRelevantEffect;
+    const hasTwymansLaw = suspiciousPValue && largeEffect;
 
     const issues = [];
     if (hasSampleRatioMismatch) issues.push('sample ratio mismatch');
