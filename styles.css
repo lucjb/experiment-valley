@@ -313,7 +313,8 @@ button:disabled {
 .metrics-table th {
     padding: 0.5rem;
     border: 1px solid #e5e7eb;
-    text-align: left;
+    border-right: 1px solid #d1d5db;
+    text-align: center;
     background-color: #f9fafb;
     font-weight: 600;
     position: relative;
@@ -335,6 +336,7 @@ button:disabled {
 .metrics-table td {
     padding: 0.5rem 0.5rem 0.25rem 0.5rem;
     border: 1px solid #e5e7eb;
+    border-right: 1px solid #d1d5db;
     text-align: left;
 }
 
