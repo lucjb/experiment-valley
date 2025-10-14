@@ -33,23 +33,23 @@ const UIController = {
         return document.getElementById('debug-mode').checked;
     },
 
-	// Protect against accidental refresh/close while a session is active
-	enableUnloadProtection() {
-		if (this._beforeUnloadHandler) return;
-		this._beforeUnloadHandler = (e) => {
-			e.preventDefault();
-			// Setting returnValue triggers the browser's confirmation dialog
-			e.returnValue = '';
-			return '';
-		};
-		window.addEventListener('beforeunload', this._beforeUnloadHandler);
-	},
+    // Protect against accidental refresh/close while a session is active
+    enableUnloadProtection() {
+        if (this._beforeUnloadHandler) return;
+        this._beforeUnloadHandler = (e) => {
+            e.preventDefault();
+            // Setting returnValue triggers the browser's confirmation dialog
+            e.returnValue = '';
+            return '';
+        };
+        window.addEventListener('beforeunload', this._beforeUnloadHandler);
+    },
 
-	disableUnloadProtection() {
-		if (!this._beforeUnloadHandler) return;
-		window.removeEventListener('beforeunload', this._beforeUnloadHandler);
-		this._beforeUnloadHandler = null;
-	},
+    disableUnloadProtection() {
+        if (!this._beforeUnloadHandler) return;
+        window.removeEventListener('beforeunload', this._beforeUnloadHandler);
+        this._beforeUnloadHandler = null;
+    },
 
     initializeEventListeners() {
         // Competitor selection
@@ -60,15 +60,15 @@ const UIController = {
                     c.style.opacity = '0.7';
                     c.style.transform = 'scale(1)';
                 });
-                
+
                 // Add selected state to clicked card
                 card.style.opacity = '1';
                 card.style.transform = 'scale(1.05)';
-                
+
                 // Enable start button
                 const startBtn = document.getElementById('start-btn');
                 startBtn.disabled = false;
-                
+
                 // Store selected competitor
                 this.state.selectedCompetitor = card.getAttribute('data-competitor');
             });
@@ -199,30 +199,6 @@ const UIController = {
         // Close feedback modal
         if (closeFeedback) {
             closeFeedback.addEventListener('click', () => {
-            ModalManager.hide('feedback-modal');
-            // Batch DOM operations
-            const submitButton = document.getElementById('submit-decision');
-            const decisionButtons = document.querySelectorAll('.decision-btn');
-
-            // Update submit button
-            submitButton.disabled = false;
-            submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
-            submitButton.classList.add('hover:opacity-90');
-            submitButton.innerHTML = '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style="pointer-events: none;"><polygon points="8,5 8,19 19,12"/></svg>';
-
-            // Update decision buttons in a single operation
-            decisionButtons.forEach(button => {
-                button.disabled = true;
-                button.style.opacity = '0.5';
-                button.style.cursor = 'not-allowed';
-            });
-        });
-        }
-
-        // Close feedback when clicking outside
-        if (feedbackModal) {
-            feedbackModal.addEventListener('click', (e) => {
-            if (e.target === feedbackModal) {
                 ModalManager.hide('feedback-modal');
                 // Batch DOM operations
                 const submitButton = document.getElementById('submit-decision');
@@ -231,6 +207,8 @@ const UIController = {
                 // Update submit button
                 submitButton.disabled = false;
                 submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                submitButton.classList.add('hover:opacity-90');
+                submitButton.innerHTML = '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style="pointer-events: none;"><polygon points="8,5 8,19 19,12"/></svg>';
 
                 // Update decision buttons in a single operation
                 decisionButtons.forEach(button => {
@@ -238,8 +216,30 @@ const UIController = {
                     button.style.opacity = '0.5';
                     button.style.cursor = 'not-allowed';
                 });
-            }
-        });
+            });
+        }
+
+        // Close feedback when clicking outside
+        if (feedbackModal) {
+            feedbackModal.addEventListener('click', (e) => {
+                if (e.target === feedbackModal) {
+                    ModalManager.hide('feedback-modal');
+                    // Batch DOM operations
+                    const submitButton = document.getElementById('submit-decision');
+                    const decisionButtons = document.querySelectorAll('.decision-btn');
+
+                    // Update submit button
+                    submitButton.disabled = false;
+                    submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+
+                    // Update decision buttons in a single operation
+                    decisionButtons.forEach(button => {
+                        button.disabled = true;
+                        button.style.opacity = '0.5';
+                        button.style.cursor = 'not-allowed';
+                    });
+                }
+            });
         }
     },
 
@@ -290,7 +290,7 @@ const UIController = {
                     roundNumber: this.state.currentRound,
                     payload: {
                         total_attempts: this.state.totalAttempts,
-                        accuracy_pct: this.state.totalDecisions > 0 ? 
+                        accuracy_pct: this.state.totalDecisions > 0 ?
                             Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100) : 0,
                         user_impact_cpd: this.state.userCumulativeEffect,
                         competitor_impact_cpd: this.state.competitorCumulativeEffect
@@ -298,7 +298,7 @@ const UIController = {
                 });
 
                 // Save final session summary with opponent data
-                const accuracy = this.state.totalDecisions > 0 ? 
+                const accuracy = this.state.totalDecisions > 0 ?
                     Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100) : 0;
                 await Backend.upsertSessionSummary({
                     maxRound: this.state.currentRound,
@@ -381,7 +381,7 @@ const UIController = {
             // Remove active class from all buttons
             button.classList.remove('active', 'border-blue-500', 'text-blue-600');
             button.classList.add('text-gray-500');
-            
+
             // Add click handler
             button.addEventListener('click', () => {
                 this.switchTab(button.getAttribute('data-tab'));
@@ -447,7 +447,7 @@ const UIController = {
         experimentContainer.classList.remove('hidden');
         experimentContainer.classList.add('fade-in');
         experimentContainer.classList.add('compact');
-        
+
         // Show loading state
         this.showLoadingState();
 
@@ -460,7 +460,7 @@ const UIController = {
 
         // Set the selected competitor for the entire session
         this.state.currentCompetitor = VirtualCompetitors[this.state.selectedCompetitor];
-        
+
         // Update competitor name in UI
         this.updateCompetitorName();
 
@@ -496,7 +496,7 @@ const UIController = {
             } catch (_) {
                 window.scrollTo(0, 0);
             }
-            
+
             if (typeof generateABTestChallenge !== 'function') {
                 throw new Error("generateABTestChallenge function is not defined");
             }
@@ -510,23 +510,14 @@ const UIController = {
             // Define challenge sequence for each round
             const challengeSequences = {
                 1: [winner(), inconclusive(), partialLoser()],
-                2: [partialLoser().withBaseRateMismatch(), partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch()],
+                2: [partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch(), partialLoser().withBaseRateMismatch()],
                 3: [slowCompletion(), fastWinner(), fastLoserWithPartialWeek()],
-                4: [slowCompletion().withBaseRateMismatch(), fastLoserWithPartialWeek().withVisitorsLoss(), loser()],
-                5: [partialWinner(), partialLoser(), inconclusive()],
-                6: [winner().withLowerIsBetter(), inconclusive(), loser().withLowerIsBetter()],
+                4: [slowCompletion().withBaseRateMismatch(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
+                5: [partialWinner(), winner().withLowerIsBetter(), inconclusive()],
+                6: [twymansLawTrap(), inconclusive(), loser().withLowerIsBetter()],
                 7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()],
-                8: [twymansLawTrap(), twymansLawTrap().withLowerIsBetter(), twymansLawTrap()]
+                8: [partialLoser().withSampleRatioMismatch(), winner(), fastLoserWithPartialWeek()]
             };
-
-            // Define round captions
-            const roundCaptions = {
-                1: "Warm Up!", // First round caption
-                2: "Let's Begin!", // Second round caption
-                // Add more round captions here as needed
-            };
-
-            const caption = roundCaptions[this.state.currentRound] || "";
 
             // Reset visitors header
             const visitorsHeader = document.querySelector('.metrics-table th:nth-child(2)');
@@ -555,6 +546,7 @@ const UIController = {
             // Analyze the experiment and store it globally
             window.currentAnalysis = analyzeExperiment(window.currentExperiment);
 
+
             // Log the analysis result
             console.log('=== EXPERIMENT ANALYSIS ===');
             console.log('Round:', this.state.currentRound);
@@ -578,7 +570,7 @@ const UIController = {
             if (this.debugMode()) {
                 this.addDebugAlerts();
             }
-            
+
             // Hide loading state
             this.hideLoadingState();
 
@@ -586,9 +578,9 @@ const UIController = {
             setTimeout(() => {
                 try {
                     this.animateExecutionBarFromZero();
-                } catch (_) {}
+                } catch (_) { }
             }, 20);
-            
+
             return true;
         } catch (error) {
             console.error('Error loading challenge:', error);
@@ -696,7 +688,7 @@ const UIController = {
 
         const baseRateCell = document.getElementById('base-rate');
         const { expected, actual, difference, pValue } = analysis.analysis.baseRate;
-        
+
         const message = `Design Base Rate: ${formatPercent(expected)}\nActual Base Rate: ${formatPercent(actual)}\nDifference: ${formatPercent(difference)}\np-value: ${pValue.toFixed(4)}\n\n<a href="base-rate-mismatch.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about base rate mismatches →</a>`;
         this.addWarningToCell(baseRateCell, message);
     },
@@ -705,7 +697,7 @@ const UIController = {
         const analysis = window.currentAnalysis;
         const { sampleSize } = analysis.analysis;
         const { current, required } = analysis.analysis.runtime;
-        
+
         if (current < required) return;
 
         // Check base variant
@@ -723,11 +715,11 @@ const UIController = {
         // Check total sample size
         const totalVisitors = sampleSize.actualBase + sampleSize.actualVariant;
         const requiredTotal = sampleSize.required * 2;
-        
+
         if (totalVisitors < requiredTotal) {
             const completeTextElement = document.getElementById('exp-complete-text');
             const message = `Runtime Complete but Insufficient sample size: ${totalVisitors.toLocaleString()} < ${requiredTotal.toLocaleString()}\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about sample size warnings →</a>`;
-            
+
             completeTextElement.textContent = '';
             completeTextElement.appendChild(this.createWarningIcon(message));
             completeTextElement.appendChild(document.createTextNode(` Complete | ${current}d | ${totalVisitors.toLocaleString()}v`));
@@ -744,7 +736,7 @@ const UIController = {
         if (!visitorsHeader) return;
 
         const message = `Sample Ratio Mismatch detected (p-value<0.0001)\n\n<a href="sample-ratio-mismatch.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about sample ratio mismatches →</a>`;
-        
+
         visitorsHeader.textContent = '';
         visitorsHeader.appendChild(document.createTextNode('Visitors'));
         visitorsHeader.appendChild(this.createWarningIcon(message));
@@ -765,18 +757,18 @@ const UIController = {
 
         const pValue = analysis.simulation.pValue;
         const message = `Twyman's Law detected: Suspiciously low p-value (p=${pValue.toFixed(10)}) and unusually large effect (more than 10 x the MRE)\n\n<a href="twymans-law.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about Twyman's Law →</a>`;
-        
+
         // Store the original text content
         const originalText = pValueElement.textContent;
-        
+
         // Clear the element and rebuild it with warning icon
         pValueElement.textContent = '';
-        
+
         // Add the original text back
         const textSpan = document.createElement('span');
         textSpan.textContent = originalText;
         pValueElement.appendChild(textSpan);
-        
+
         // Add warning icon
         const warningIcon = this.createWarningIcon(message);
         pValueElement.appendChild(warningIcon);
@@ -959,18 +951,18 @@ const UIController = {
             tooltipContent.style.borderRadius = '4px';
             tooltipContent.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
             tooltipContent.textContent = matchingScenario.message;
-            
+
             // Add tooltip to the progress bar
             progressBar.appendChild(tooltipContent);
 
             // Add mousemove event listener for tooltip positioning
-            const mousemoveHandler = function(e) {
+            const mousemoveHandler = function (e) {
                 const tooltip = this.querySelector('.tooltip-content');
                 if (!tooltip) return;
 
                 // Get trigger position
                 const rect = this.getBoundingClientRect();
-                
+
                 // Position tooltip above the trigger
                 tooltip.style.left = (e.clientX - rect.left) + 'px';
                 tooltip.style.top = (e.clientY - rect.top - tooltip.offsetHeight - 10) + 'px';
@@ -1261,27 +1253,27 @@ const UIController = {
             // Use the global analysis
             const analysis = window.currentAnalysis;
             const experiment = window.currentExperiment;
-            
+
 
             // Calculate decision comparison once for all uses
             const totalChoices = 3;
             const correctChoices = (analysis.decision?.trustworthy === this.state.trustDecision ? 1 : 0)
                 + (analysis.decision?.decision === this.state.implementDecision ? 1 : 0)
                 + (analysis.decision?.followUp === this.state.followUpDecision ? 1 : 0);
-            
+
             // Store for use in feedback modal and backend logging
             this.state.currentExperimentCorrectChoices = correctChoices;
             this.state.currentExperimentTotalChoices = totalChoices;
-            
+
             // Update accuracy tracking
             this.state.totalDecisions += totalChoices;
             this.state.correctDecisions += correctChoices;
-            
+
             // Update accuracy display immediately
-            const accuracy = this.state.totalDecisions > 0 ? 
+            const accuracy = this.state.totalDecisions > 0 ?
                 Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100) : 0;
             this.updateAccuracyDisplay(accuracy);
-            
+
 
             // Calculate impact
             const actualEffect = experiment.simulation.actualEffectSize;
@@ -1411,26 +1403,26 @@ const UIController = {
 
             // Update modal displays
             const bestVariant = variantBetter ? "Variant" : "Base";
-            
+
             // Determine if user made the correct decision
             const userImplementDecision = this.state.implementDecision;
             const correctDecision = analysis.decision.decision;
             const userMadeCorrectDecision = (userImplementDecision === correctDecision);
-            
+
             // Create the impact message based on relative impact compared to opponent
             let impactMessage;
             let impactDisplayClass;
             let impactTextClass;
-            
+
             // Calculate relative impact (user impact - opponent impact)
             const userImpactValue = userImpact;
             const opponentImpactValue = competitorImpact;
             const relativeImpact = userImpactValue - opponentImpactValue;
-            
+
             // Determine if user made the optimal choice (chose the better variant)
             const userChoseBest = (variantBetter && userImplementDecision === "KEEP_VARIANT") ||
-                                 (!variantBetter && userImplementDecision === "KEEP_BASE");
-            
+                (!variantBetter && userImplementDecision === "KEEP_BASE");
+
             // Color coding based on relative impact
             if (relativeImpact > 0) {
                 // User scores positive relative impact
@@ -1445,18 +1437,18 @@ const UIController = {
                 impactDisplayClass = 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-2 mt-2';
                 impactTextClass = 'text-blue-700 font-semibold';
             }
-            
+
             // Construct message based on true effect and choices
             if (actualEffectCpd === 0) {
                 // Line 1: Prefix and true effect
                 impactMessage = `No difference between base and variant.`;
-                
+
                 // Line 2: Opponent choice (empty for no effect case)
                 const opponentChoiceElement = document.getElementById('modal-opponent-choice');
                 if (opponentChoiceElement) {
                     opponentChoiceElement.textContent = '';
                 }
-                
+
                 // Line 3: Impact with badge
                 const impactLineElement = document.getElementById('modal-impact-line');
                 if (impactLineElement) {
@@ -1468,7 +1460,7 @@ const UIController = {
                 if (userImplementDecision === "KEEP_RUNNING") {
                     prefix = "";
                 }
-                
+
                 let opponentChoiceText;
                 if (competitorDecision.decision === "KEEP_VARIANT") {
                     opponentChoiceText = "variant";
@@ -1477,19 +1469,19 @@ const UIController = {
                 } else {
                     opponentChoiceText = "keep running";
                 }
-                
+
                 // Line 1: Prefix and true effect
                 const isLowerBetter = experiment.experiment.improvementDirection === window.IMPROVEMENT_DIRECTION.LOWER;
                 const lowerBetterClarification = isLowerBetter ? ' (but lower is better)' : '';
                 impactMessage = `${prefix} The true effect is ${actualEffectCpd} cpd${lowerBetterClarification}.`;
-                
+
                 // Line 2: Opponent choice
                 const opponentChoiceElement = document.getElementById('modal-opponent-choice');
                 if (opponentChoiceElement) {
                     const opponentName = this.state.currentCompetitor ? this.state.currentCompetitor.name : 'Opponent';
                     opponentChoiceElement.textContent = `Since ${opponentName} chose ${opponentChoiceText},`;
                 }
-                
+
                 // Line 3: Impact with badge
                 const badgeColor = relativeImpact > 0 ? 'bg-green-500' : relativeImpact < 0 ? 'bg-red-500' : 'bg-blue-500';
                 const impactLineElement = document.getElementById('modal-impact-line');
@@ -1498,14 +1490,14 @@ const UIController = {
                     impactLineElement.innerHTML = `your relative impact is <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white ${badgeColor} rounded-full shadow-sm">${plus}${relativeImpact} cpd</span>`;
                 }
             }
-            
+
             // Apply consistent styling to all text elements based on the color scheme
             const textColorClass = relativeImpact > 0 ? 'text-green-700 font-semibold' : relativeImpact < 0 ? 'text-red-700 font-semibold' : 'text-blue-700 font-semibold';
-            
+
             const bestVariantElement = document.getElementById('modal-best-variant');
             const opponentChoiceElement = document.getElementById('modal-opponent-choice');
             const impactLineElement = document.getElementById('modal-impact-line');
-            
+
             if (bestVariantElement) bestVariantElement.className = textColorClass;
             if (opponentChoiceElement) opponentChoiceElement.className = textColorClass;
             if (impactLineElement) {
@@ -1514,20 +1506,20 @@ const UIController = {
                 impactLineElement.className = textColorClass;
                 impactLineElement.innerHTML = currentContent;
             }
-            
+
             // Determine if user and competitor made correct choices
             const userMadeCorrectChoice = (userChoice === bestVariant);
             const competitorMadeCorrectChoice = (competitorChoice === bestVariant);
-            
+
             // Create icons for impact table
-            const userIcon = userMadeCorrectChoice ? 
+            const userIcon = userMadeCorrectChoice ?
                 '<svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
                 '<svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
-            
-            const competitorIcon = competitorMadeCorrectChoice ? 
+
+            const competitorIcon = competitorMadeCorrectChoice ?
                 '<svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
                 '<svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
-            
+
 
             const modalElements = {
                 'modal-best-variant': impactMessage,
@@ -1556,7 +1548,7 @@ const UIController = {
             const userImpactElement = document.getElementById('modal-user-impact');
             const competitorChoiceElement = document.getElementById('modal-competitor-choice');
             const competitorImpactElement = document.getElementById('modal-competitor-impact');
-            
+
             // Determine colors based on impact values
             let userColor, competitorColor;
             if (userImpact === competitorImpact) {
@@ -1572,7 +1564,7 @@ const UIController = {
                 userColor = 'text-red-600';
                 competitorColor = 'text-green-600';
             }
-            
+
             if (userChoiceElement) userChoiceElement.className = `py-1 px-2 ${userColor} whitespace-nowrap`;
             if (userImpactElement) userImpactElement.className = `py-1 px-2 ${userColor} font-semibold whitespace-nowrap`;
             if (competitorChoiceElement) competitorChoiceElement.className = `py-1 px-2 ${competitorColor} whitespace-nowrap`;
@@ -1602,21 +1594,21 @@ const UIController = {
             const userDecision = this.state.implementDecision;
             const analysisDecision = analysis.decision.decision;
             const displayDecision = analysisDecision === "KEEP_VARIANT" ? "Keep Variant" :
-                                  analysisDecision === "KEEP_BASE" ? "Keep Base" : "Keep Running";
+                analysisDecision === "KEEP_BASE" ? "Keep Base" : "Keep Running";
             const userDecisionDisplay = userDecision === "KEEP_VARIANT" ? "Keep Variant" :
-                                      userDecision === "KEEP_BASE" ? "Keep Base" : "Keep Running";
+                userDecision === "KEEP_BASE" ? "Keep Base" : "Keep Running";
 
             // Check follow-up
             const userFollowUp = this.state.followUpDecision;
             const analysisFollowUp = analysis.decision.followUp;
             const displayFollowUp = analysisFollowUp === "CELEBRATE" ? "Celebrate" :
-                                  analysisFollowUp === "ITERATE" ? "Iterate" :
-                                  analysisFollowUp === "VALIDATE" ? "Validate" :
-                                  analysisFollowUp === "RERUN" ? "Fix & Rerun" : "None";
+                analysisFollowUp === "ITERATE" ? "Iterate" :
+                    analysisFollowUp === "VALIDATE" ? "Validate" :
+                        analysisFollowUp === "RERUN" ? "Fix & Rerun" : "None";
             const userFollowUpDisplay = userFollowUp === "CELEBRATE" ? "Celebrate" :
-                                      userFollowUp === "ITERATE" ? "Iterate" :
-                                      userFollowUp === "VALIDATE" ? "Validate" :
-                                      userFollowUp === "RERUN" ? "Fix & Rerun" : "None";
+                userFollowUp === "ITERATE" ? "Iterate" :
+                    userFollowUp === "VALIDATE" ? "Validate" :
+                        userFollowUp === "RERUN" ? "Fix & Rerun" : "None";
 
             // Build table rows with optional tooltips
             const trustExplanation = userTrust === analysisTrust ? '' : this.getTrustExplanation(analysis);
@@ -1703,19 +1695,19 @@ const UIController = {
             const feedbackTitle = document.getElementById('feedback-title');
             const resultsCardTitle = document.getElementById('results-card-title');
             const resultsDisplay = document.getElementById('results-display');
-            
+
             // Create the results card title with round and experiment info
             const resultsCardTitleText = `Round ${this.state.currentRound}, Experiment ${this.state.experimentsInCurrentRound}`;
-            
+
             // Update tick marks based on round progress
             this.updateRoundTickMarks();
-            
+
             if (isPerfect) {
                 this.state.correctInCurrentRound++;
-                
+
                 feedbackTitle.textContent = 'Score Card';
                 resultsCardTitle.textContent = resultsCardTitleText;
-                
+
                 // Update results display for perfect performance
                 resultsDisplay.className = 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-2 mt-2';
                 resultsDisplay.innerHTML = `
@@ -1723,14 +1715,14 @@ const UIController = {
                         <span class="text-green-700 font-semibold">Perfect! All 3 decisions correct!</span>
                     </p>
                 `;
-                
+
                 ModalManager.showFeedback(true, feedbackMessage);
             } else if (isGood) {
                 this.state.correctInCurrentRound++;
-                
+
                 feedbackTitle.textContent = 'Score Card';
                 resultsCardTitle.textContent = resultsCardTitleText;
-                
+
                 // Update results display for good performance
                 resultsDisplay.className = 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-2 mt-2';
                 resultsDisplay.innerHTML = `
@@ -1738,12 +1730,12 @@ const UIController = {
                         <span class="text-blue-700 font-semibold">Good Job! You got ${feedbackCorrectChoices} out of 3 right!</span>
                     </p>
                 `;
-                
+
                 ModalManager.showFeedback(true, feedbackMessage);
             } else {
                 feedbackTitle.textContent = 'Score Card';
                 resultsCardTitle.textContent = resultsCardTitleText;
-                
+
                 // Update results display for poor performance
                 resultsDisplay.className = 'bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-lg p-2 mt-2';
                 if (feedbackCorrectChoices === 0) {
@@ -1759,7 +1751,7 @@ const UIController = {
                         </p>
                     `;
                 }
-                
+
                 if (feedbackCorrectChoices === 0) {
                     ModalManager.showFeedback(false, feedbackMessage);
                 } else {
@@ -1803,11 +1795,11 @@ const UIController = {
     updateAccuracyDisplay(accuracy) {
         const accuracyElement = document.getElementById('accuracy');
         const modalAccuracyElement = document.getElementById('modal-accuracy');
-        
+
         console.log(`Updating accuracy display to: ${accuracy}%`);
         console.log(`Accuracy element found:`, !!accuracyElement);
         console.log(`Modal accuracy element found:`, !!modalAccuracyElement);
-        
+
         if (accuracyElement) {
             accuracyElement.textContent = `${accuracy}%`;
             console.log(`Updated accuracy element to: ${accuracy}%`);
@@ -1833,7 +1825,7 @@ const UIController = {
             correctInCurrentRound: this.state.correctInCurrentRound,
             currentRound: this.state.currentRound
         });
-        
+
         const feedbackModal = document.getElementById('feedback-modal');
         const nextChallengeBtn = document.getElementById('next-challenge-btn');
 
@@ -1857,7 +1849,7 @@ const UIController = {
                                 }
                             });
                             // Update session summary with current metrics
-                            const accuracy = this.state.totalDecisions > 0 ? 
+                            const accuracy = this.state.totalDecisions > 0 ?
                                 Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100) : 0;
                             await Backend.upsertSessionSummary({
                                 maxRound: this.state.currentRound,
@@ -1905,11 +1897,17 @@ const UIController = {
             return;
         }
 
-        // Get the round caption if it exists
+        // Use the same roundCaptions object as defined in loadChallenge()
         const roundCaptions = {
-            1: "Warm Up", // First round caption
+            1: "Warm Up!", // First round caption
             2: "Let's Begin!", // Second round caption
-            // Add more round captions here as needed
+            3: "Tuesdays are not Sundays", // Add more round captions here as needed,
+            4: "Peeking increases Power ;-)",
+            5: "SRM: Because math hates you.",
+            6: "Inconclusive?, call it a learning.",
+            7: "Correlation is faster than causation.",
+            8: "What could go wrong?",
+            9: "One does not simply control for confounders."
         };
 
         const caption = roundCaptions[this.state.currentRound] || "";
@@ -1923,7 +1921,7 @@ const UIController = {
         // Reset splash state first
         splash.classList.remove('show');
         splash.style.display = 'block';
-        
+
         // Force reflow
         void splash.offsetWidth;
 
@@ -1952,7 +1950,7 @@ const UIController = {
             if (typeof Backend === 'undefined' || !Backend.isInitialized()) {
                 return { roundsRank: null, impactRank: null };
             }
-            
+
             const client = Backend.getClient();
             const [profiles, summaries] = await Promise.all([
                 client.from('profiles').select('id, display_name'),
@@ -1967,17 +1965,17 @@ const UIController = {
             // Aggregate leaderboard data (same logic as leaderboard.js)
             const byProfile = new Map();
             const nameCounts = new Map();
-            
+
             // Count occurrences of each display name to handle collisions
             profiles.data.forEach(p => {
                 const count = nameCounts.get(p.display_name) || 0;
                 nameCounts.set(p.display_name, count + 1);
             });
-            
+
             profiles.data.forEach(p => {
                 const count = nameCounts.get(p.display_name);
                 const displayName = count > 1 ? `${p.display_name} #${p.id.slice(-4)}` : p.display_name;
-                
+
                 byProfile.set(p.id, {
                     displayName: displayName,
                     originalName: p.display_name,
@@ -1994,21 +1992,21 @@ const UIController = {
             summaries.data.forEach(s => {
                 const agg = byProfile.get(s.profile_id);
                 if (!agg) return;
-                
+
                 const round = Number(s.max_round_reached) || 0;
                 const accuracy = Number(s.accuracy_pct) || 0;
                 const impact = Number(s.total_impact_cpd) || 0;
                 const opponentImpact = Number(s.opponent_impact_cpd) || 0;
-                
+
                 // Best accuracy across all sessions
                 agg.bestAccuracy = Math.max(agg.bestAccuracy, accuracy);
-                
+
                 // Max round reached across all sessions
                 if (round > agg.maxRound) {
                     agg.maxRound = round;
                     agg.maxRoundSession = { round, accuracy };
                 }
-                
+
                 // Max impact across all sessions - also track opponent info from this session
                 if (impact > agg.maxImpact) {
                     agg.maxImpact = impact;
@@ -2018,15 +2016,15 @@ const UIController = {
             });
 
             const rows = Array.from(byProfile.values());
-            
+
             // Create rounds leaderboard
             const roundsBoard = rows
-                .map(r => ({ 
+                .map(r => ({
                     name: r.displayName,
                     originalName: r.originalName,
                     profileId: r.profileId,
-                    maxRound: r.maxRound, 
-                    accuracy: r.maxRoundSession ? r.maxRoundSession.accuracy : 0 
+                    maxRound: r.maxRound,
+                    accuracy: r.maxRoundSession ? r.maxRoundSession.accuracy : 0
                 }))
                 .sort((a, b) => {
                     // Primary sort by max round, secondary by accuracy for ties
@@ -2036,7 +2034,7 @@ const UIController = {
 
             // Create impact leaderboard
             const impactBoard = rows
-                .map(r => ({ 
+                .map(r => ({
                     name: r.displayName,
                     originalName: r.originalName,
                     profileId: r.profileId,
@@ -2047,11 +2045,11 @@ const UIController = {
                 .sort((a, b) => b.impact - a.impact);
 
             // Find user's ranks
-            const roundsRank = roundsBoard.findIndex(player => 
+            const roundsRank = roundsBoard.findIndex(player =>
                 player.originalName === window.playerName
             ) + 1;
 
-            const impactRank = impactBoard.findIndex(player => 
+            const impactRank = impactBoard.findIndex(player =>
                 player.originalName === window.playerName
             ) + 1;
 
@@ -2081,7 +2079,7 @@ const UIController = {
         // Hide experiment container completely
         experimentContainer.classList.add('hidden');
         experimentContainer.classList.remove('fade-out');
-        
+
         // Show the home page background (game menu)
         gameMenu.classList.remove('hidden');
 
@@ -2113,7 +2111,7 @@ const UIController = {
                             }
                         });
                         // Final session summary update
-                        const accuracy = this.state.totalDecisions > 0 ? 
+                        const accuracy = this.state.totalDecisions > 0 ?
                             Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100) : 0;
                         await Backend.upsertSessionSummary({
                             maxRound: this.state.currentRound,
@@ -2123,12 +2121,12 @@ const UIController = {
                             opponentImpactCpd: this.state.competitorCumulativeEffect
                         });
                         await Backend.endSession();
-                        
+
                         // Now calculate and display ranks after data is saved
                         const userRanks = await this.getUserRanks();
                         const playerName = window.playerName || 'Player';
                         const leaderboardUrl = `leaderboard.html?user=${encodeURIComponent(playerName)}`;
-                        
+
                         if (userRanks.roundsRank) {
                             const roundsRankElement = document.getElementById('final-rounds-rank');
                             roundsRankElement.textContent = `#${userRanks.roundsRank}`;
@@ -2138,7 +2136,7 @@ const UIController = {
                             roundsRankElement.textContent = '#?';
                             roundsRankElement.href = leaderboardUrl;
                         }
-                        
+
                         if (userRanks.impactRank) {
                             const impactRankElement = document.getElementById('final-impact-rank');
                             impactRankElement.textContent = `#${userRanks.impactRank}`;
@@ -2230,7 +2228,7 @@ const UIController = {
         const competitorNameElement = document.getElementById('competitor-name');
         const finalCompetitorNameElement = document.getElementById('final-competitor-name');
         const modalCompetitorNameElement = document.getElementById('modal-competitor-name');
-        
+
         if (competitorNameElement) {
             competitorNameElement.textContent = competitorName;
         }
@@ -2247,28 +2245,28 @@ const UIController = {
         const dot2 = document.getElementById('exp-dot-2');
         const dot3 = document.getElementById('exp-dot-3');
         const dots = [dot1, dot2, dot3];
-        
+
         // Reset all dots to gray
         dots.forEach(dot => {
             if (dot) {
                 dot.className = 'w-3 h-3 rounded-full bg-gray-400 transition-colors duration-300 tooltip-trigger';
             }
         });
-        
+
         // Update dots based on experiment results and current position
         for (let i = 0; i < 3; i++) {
             const dot = dots[i];
             if (!dot) continue;
-            
+
             const experimentIndex = i; // 0-based index for experiments
             const result = this.state.roundResults[experimentIndex];
             const isCurrentExperiment = (i === this.state.experimentsInCurrentRound);
             const isFutureExperiment = (i > this.state.experimentsInCurrentRound);
             const experimentNumber = i + 1;
-            
+
             // Update tooltip content
             const tooltipContent = dot.querySelector('.tooltip-content');
-            
+
             if (result) {
                 // Experiment is completed
                 if (result.isPerfect || result.isGood) {
@@ -2305,24 +2303,24 @@ const UIController = {
         const feedbackIcon2 = document.getElementById('feedback-icon-2');
         const feedbackIcon3 = document.getElementById('feedback-icon-3');
         const roundProgressText = document.getElementById('round-progress-text');
-        
+
         // Update round progress text
         if (roundProgressText) {
             roundProgressText.textContent = `Round ${this.state.currentRound} Progress: ${this.state.correctInCurrentRound}/${this.state.experimentsInCurrentRound} correct`;
         }
-        
+
         // Reset all icons to gray placeholder (empty circles)
         [feedbackIcon1, feedbackIcon2, feedbackIcon3].forEach(icon => {
             icon.className = 'flex items-center justify-center h-10 w-10 rounded-full bg-gray-200';
             icon.innerHTML = '';
         });
-        
+
         // Update icons based on round results
         for (let i = 0; i < this.state.roundResults.length; i++) {
             const result = this.state.roundResults[i];
             const icon = [feedbackIcon1, feedbackIcon2, feedbackIcon3][i];
             const isCurrentExperiment = (i === this.state.experimentsInCurrentRound - 1);
-            
+
             if (result) {
                 if (result.isPerfect || result.isGood) {
                     // Green checkmark for any points scored (perfect or good)
