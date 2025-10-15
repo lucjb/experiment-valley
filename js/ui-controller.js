@@ -1899,14 +1899,14 @@ const UIController = {
 
         // Use the same roundCaptions object as defined in loadChallenge()
         const roundCaptions = {
-            1: "Warm Up!", // First round caption
-            2: "Let's Begin!", // Second round caption
-            3: "Tuesdays are not Sundays", // Add more round captions here as needed,
-            4: "Peeking increases Power ;-)",
-            5: "SRM: Because math hates you.",
-            6: "Inconclusive?, call it a learning.",
-            7: "Correlation is faster than causation.",
-            8: "What could go wrong?",
+            1: "Warm Up!",
+            2: "Let's Begin!",
+            3: "Shocking: Tuesdays are not Sundays.",
+            4: "Analysis Paralysis: Begin!",
+            5: "Fact: Peeking increases Power.",
+            6: "SRM: Because math hates you.",
+            7: "Inconclusive? Call it a learning.",
+            8: "Correlation is faster than causation.",
             9: "One does not simply control for confounders."
         };
 
