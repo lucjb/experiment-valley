@@ -67,7 +67,7 @@ function computePriorEstimateConfidenceInterval(baseConversionRate, businessCycl
     const marginOfError = zScore * priorStandardError;
     const ciLow = Math.max(0, baseConversionRate - marginOfError);
     const ciHigh = Math.min(1, baseConversionRate + marginOfError);
-    
+
     return {
         sampleSize: priorSampleSize,
         confidenceInterval: [ciLow, ciHigh],
@@ -561,8 +561,8 @@ class ChallengeDesign {
         sampleRatioMismatch = SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress = SAMPLE_PROGRESS.TIME,
         visitorsLoss = VISITORS_LOSS.NO,
-		improvementDirection = IMPROVEMENT_DIRECTION.HIGHER,
-		twymanFabrication = false
+        improvementDirection = IMPROVEMENT_DIRECTION.HIGHER,
+        twymanFabrication = false
     } = {}) {
         this.timeProgress = timeProgress;
         this.baseRateMismatch = baseRateMismatch;
@@ -571,7 +571,7 @@ class ChallengeDesign {
         this.sampleProgress = sampleProgress;
         this.visitorsLoss = visitorsLoss;
         this.improvementDirection = improvementDirection;
-		this.twymanFabrication = twymanFabrication;
+        this.twymanFabrication = twymanFabrication;
     }
 
     generate() {
@@ -581,9 +581,9 @@ class ChallengeDesign {
             this.effectSize,
             this.sampleRatioMismatch,
             this.sampleProgress,
-			this.visitorsLoss,
-			this.improvementDirection,
-			this.twymanFabrication
+            this.visitorsLoss,
+            this.improvementDirection,
+            this.twymanFabrication
         );
     }
 
@@ -748,17 +748,17 @@ function twymansLawTrap() {
     return new ChallengeDesign({
         timeProgress: TIME_PROGRESS.FULL,
         baseRateMismatch: BASE_RATE_MISMATCH.NO,
-		effectSize: EFFECT_SIZE.NONE,
+        effectSize: EFFECT_SIZE.NONE,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
-		sampleProgress: SAMPLE_PROGRESS.FULL,
-		twymanFabrication: true
+        sampleProgress: SAMPLE_PROGRESS.FULL,
+        twymanFabrication: true
     });
 }
 
 
 const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY", PARTIAL_WEEKS: "PARTIAL_WEEKS" };
 const SAMPLE_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", TIME: "TIME" };
-const BASE_RATE_MISMATCH = { NO: 1000000, YES: 100 };
+const BASE_RATE_MISMATCH = { NO: 1, YES: 0.1 };
 const EFFECT_SIZE = { NONE: 0, SMALL_IMPROVEMENT: 0.05, IMPROVEMENT: 0.85, LARGE_IMPROVEMENT: 2, DEGRADATION: -0.8, SMALL_DEGRADATION: -0.05, LARGE_DEGRADATION: -2 };
 const SAMPLE_RATIO_MISMATCH = { NO: 0.5, LARGE: 0.4, SMALL: 0.47 };
 const VISITORS_LOSS = { NO: false, YES: true };
@@ -771,8 +771,8 @@ function generateABTestChallenge(
     sampleRatioMismatch = SAMPLE_RATIO_MISMATCH.NO,
     sampleProgress = SAMPLE_PROGRESS.TIME,
     visitorsLoss = VISITORS_LOSS.NO,
-	improvementDirection = IMPROVEMENT_DIRECTION.HIGHER,
-	twymanFabrication = false) {
+    improvementDirection = IMPROVEMENT_DIRECTION.HIGHER,
+    twymanFabrication = false) {
 
     // Predefined options for each parameter ,
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
@@ -815,19 +815,20 @@ function generateABTestChallenge(
         }
     }
 
-	var actualBaseConversionRate = BASE_CONVERSION_RATE;
-	if (!twymanFabrication) {
-		actualBaseConversionRate = sampleBetaDistribution(
-			baseRateMismatch * BASE_CONVERSION_RATE,
-			baseRateMismatch * (1 - BASE_CONVERSION_RATE)
-		);
-	}
+    var actualBaseConversionRate = BASE_CONVERSION_RATE;
+    if (!twymanFabrication) {
+        actualBaseConversionRate = sampleBetaDistribution(
+            1000000 * baseRateMismatch * BASE_CONVERSION_RATE,
+            1000000 * (1 - BASE_CONVERSION_RATE * baseRateMismatch)
+        );
+
+    }
 
     // Calculate effect size as a relative change instead of absolute
-	const actualRelativeEffectSize = effectSize * MRE / actualBaseConversionRate //sampleNormalDistribution(MRE / BASE_CONVERSION_RATE, MRE / (10 * BASE_CONVERSION_RATE));
+    const actualRelativeEffectSize = effectSize * MRE / actualBaseConversionRate //sampleNormalDistribution(MRE / BASE_CONVERSION_RATE, MRE / (10 * BASE_CONVERSION_RATE));
 
     // Apply effect size as a relative change, ensuring we don't go below 20% of base rate
-	let actualVariantConversionRate = actualBaseConversionRate * (1 + actualRelativeEffectSize);
+    let actualVariantConversionRate = actualBaseConversionRate * (1 + actualRelativeEffectSize);
 
 
     var observedVisitorsTotal = currentRuntimeDays * VISITORS_PER_DAY + sampleBinomial(VISITORS_PER_DAY, 0.1);
@@ -840,30 +841,30 @@ function generateABTestChallenge(
 
     observedVisitorsTotal = Math.ceil(observedVisitorsTotal / (2 * sampleRatioMismatch));
 
-	var observedVisitorsBase = sampleBinomial(observedVisitorsTotal, sampleRatioMismatch);
-	var observedVisitorsVariant = observedVisitorsTotal - observedVisitorsBase;
+    var observedVisitorsBase = sampleBinomial(observedVisitorsTotal, sampleRatioMismatch);
+    var observedVisitorsVariant = observedVisitorsTotal - observedVisitorsBase;
 
-	let observedConversionsBase = Math.ceil(observedVisitorsBase * actualBaseConversionRate);
-	let observedConversionsVariant = sampleBinomial(observedVisitorsVariant, actualVariantConversionRate);
+    let observedConversionsBase = Math.ceil(observedVisitorsBase * actualBaseConversionRate);
+    let observedConversionsVariant = sampleBinomial(observedVisitorsVariant, actualVariantConversionRate);
 
-	// Twyman's Law fabrication mode: zero true effect, but fabricate a huge observed lift
-	if (twymanFabrication) {
-		// Ensure true effect is exactly zero
-		actualBaseConversionRate = BASE_CONVERSION_RATE;
-		actualVariantConversionRate = actualBaseConversionRate;
+    // Twyman's Law fabrication mode: zero true effect, but fabricate a huge observed lift
+    if (twymanFabrication) {
+        // Ensure true effect is exactly zero
+        actualBaseConversionRate = BASE_CONVERSION_RATE;
+        actualVariantConversionRate = actualBaseConversionRate;
 
-		// Keep base aligned with prior to avoid base rate mismatch
-		observedConversionsBase = Math.round(observedVisitorsBase * actualBaseConversionRate);
+        // Keep base aligned with prior to avoid base rate mismatch
+        observedConversionsBase = Math.round(observedVisitorsBase * actualBaseConversionRate);
 
-		// Fabricate variant conversions to create an extremely large, "too good" effect
-		// Choose a variant rate far above base but below 100%, and above base + 10*MRE
-		const targetLift = Math.max(0.15, 10 * MRE + 0.05); // at least +15pp or +10*MRE+5pp
-		const fabricatedVariantRate = Math.min(0.98, actualBaseConversionRate + targetLift);
-		observedConversionsVariant = Math.min(
-			observedVisitorsVariant,
-			Math.max(observedConversionsBase + 1, Math.round(observedVisitorsVariant * fabricatedVariantRate))
-		);
-	}
+        // Fabricate variant conversions to create an extremely large, "too good" effect
+        // Choose a variant rate far above base but below 100%, and above base + 10*MRE
+        const targetLift = Math.max(0.15, 10 * MRE + 0.05); // at least +15pp or +10*MRE+5pp
+        const fabricatedVariantRate = Math.min(0.98, actualBaseConversionRate + targetLift);
+        observedConversionsVariant = Math.min(
+            observedVisitorsVariant,
+            Math.max(observedConversionsBase + 1, Math.round(observedVisitorsVariant * fabricatedVariantRate))
+        );
+    }
 
     const { pValue } = computeTTest(observedConversionsBase, observedVisitorsBase, observedConversionsVariant, observedVisitorsVariant);
 
@@ -1031,18 +1032,18 @@ function analyzeExperiment(experiment) {
 
     const actualBaseRate = actualConversionsBase / actualVisitorsBase;
     const priorBaseConversionRate = baseConversionRate;
-    
+
     // Calculate standard error accounting for noise in the prior estimate
     // The prior estimate is based on a sample size equivalent to 4 business cycles
     const priorEstimateCI = computePriorEstimateConfidenceInterval(priorBaseConversionRate, businessCycleDays, visitorsPerDay, dataQualityAlpha);
     const priorStandardError = priorEstimateCI.standardError;
     const currentStandardError = Math.sqrt((actualBaseRate * (1 - actualBaseRate)) / actualVisitorsBase);
     const combinedStandardError = Math.sqrt(priorStandardError * priorStandardError + currentStandardError * currentStandardError);
-    
+
     const zScore = Math.abs(actualBaseRate - priorBaseConversionRate) / combinedStandardError;
     // Two-tailed p-value computation using normal distribution for data quality confidence level
     const baseRateTestpValue = 2 * (1 - jStat.normal.cdf(zScore, 0, 1));
-    const hasBaseRateMismatch = baseRateTestpValue < dataQualityAlpha;
+    const hasBaseRateMismatch = baseRateTestpValue < dataQualityAlpha && Math.abs(priorBaseConversionRate - actualBaseRate) > priorBaseConversionRate *0.5;
 
     const actualDailyTraffic = (actualVisitorsBase + actualVisitorsVariant) / currentRuntimeDays;
     const trafficDifference = (actualDailyTraffic - visitorsPerDay) / visitorsPerDay;
@@ -1119,7 +1120,7 @@ function analyzeExperiment(experiment) {
         const delta = (variantRate - baseRate);
         const directionNote = improvementDirection === IMPROVEMENT_DIRECTION.LOWER ? 'lower is better' : 'higher is better';
         const aligns = isEffectPositive ? 'aligns' : 'does not align';
-        decisionReason = `No winning evidence: p=${pValue.toFixed(4)} (α=${alpha}), effect ${aligns} with goal (${directionNote}), Δ=${(delta*100).toFixed(2)}pp, CI[Δ]=[${(ciLow*100).toFixed(2)}pp, ${(ciHigh*100).toFixed(2)}pp].`;
+        decisionReason = `No winning evidence: p=${pValue.toFixed(4)} (α=${alpha}), effect ${aligns} with goal (${directionNote}), Δ=${(delta * 100).toFixed(2)}pp, CI[Δ]=[${(ciLow * 100).toFixed(2)}pp, ${(ciHigh * 100).toFixed(2)}pp].`;
         followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
         followUpReason = 'Explore new hypotheses: larger expected lift, improved UX, or reduced variance; rerun with adequate power.';
     } else {
@@ -1138,9 +1139,9 @@ function analyzeExperiment(experiment) {
             const [ciLow, ciHigh] = confidenceIntervalDifference;
             const delta = (variantRate - baseRate);
             if (improvementDirection === IMPROVEMENT_DIRECTION.LOWER) {
-                decisionReason = `Variant is significantly lower as desired: p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta*100).toFixed(2)}pp, CI[Δ]=[${(ciLow*100).toFixed(2)}pp, ${(ciHigh*100).toFixed(2)}pp].`;
+                decisionReason = `Variant is significantly lower as desired: p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta * 100).toFixed(2)}pp, CI[Δ]=[${(ciLow * 100).toFixed(2)}pp, ${(ciHigh * 100).toFixed(2)}pp].`;
             } else {
-                decisionReason = `Variant is significantly better: p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta*100).toFixed(2)}pp, CI[Δ]=[${(ciLow*100).toFixed(2)}pp, ${(ciHigh*100).toFixed(2)}pp].`;
+                decisionReason = `Variant is significantly better: p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta * 100).toFixed(2)}pp, CI[Δ]=[${(ciLow * 100).toFixed(2)}pp, ${(ciHigh * 100).toFixed(2)}pp].`;
             }
             followUp = EXPERIMENT_FOLLOW_UP.CELEBRATE;
             followUpReason = 'Roll out the variant and monitor post-launch performance to confirm lift generalizes.';
