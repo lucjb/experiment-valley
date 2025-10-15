@@ -1907,7 +1907,7 @@ const UIController = {
             6: "SRM: Because math hates you.",
             7: "Inconclusive? Call it a learning.",
             8: "Correlation is faster than causation.",
-            9: "One does not simply control for confounders."
+            9: "One does not simply report observed effects."
         };
 
         const caption = roundCaptions[this.state.currentRound] || "";
