@@ -562,7 +562,8 @@ class ChallengeDesign {
         sampleProgress = SAMPLE_PROGRESS.TIME,
         visitorsLoss = VISITORS_LOSS.NO,
         improvementDirection = IMPROVEMENT_DIRECTION.HIGHER,
-        twymanFabrication = false
+        twymanFabrication = false,
+        overdue = false
     } = {}) {
         this.timeProgress = timeProgress;
         this.baseRateMismatch = baseRateMismatch;
@@ -572,6 +573,7 @@ class ChallengeDesign {
         this.visitorsLoss = visitorsLoss;
         this.improvementDirection = improvementDirection;
         this.twymanFabrication = twymanFabrication;
+        this.overdue = overdue;
     }
 
     generate() {
@@ -583,7 +585,8 @@ class ChallengeDesign {
             this.sampleProgress,
             this.visitorsLoss,
             this.improvementDirection,
-            this.twymanFabrication
+            this.twymanFabrication,
+            this.overdue
         );
     }
 
@@ -633,6 +636,11 @@ class ChallengeDesign {
     }
     withNegativeEffect() {
         this.effectSize = EFFECT_SIZE.DEGRADATION;
+        return this;
+    }
+
+    withOverdue() {
+        this.overdue = true;
         return this;
     }
 
@@ -756,6 +764,7 @@ function twymansLawTrap() {
 }
 
 
+
 const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY", PARTIAL_WEEKS: "PARTIAL_WEEKS" };
 const SAMPLE_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", TIME: "TIME" };
 const BASE_RATE_MISMATCH = { NO: 1, YES: 0.1 };
@@ -772,7 +781,8 @@ function generateABTestChallenge(
     sampleProgress = SAMPLE_PROGRESS.TIME,
     visitorsLoss = VISITORS_LOSS.NO,
     improvementDirection = IMPROVEMENT_DIRECTION.HIGHER,
-    twymanFabrication = false) {
+    twymanFabrication = false,
+    overdue = false) {
 
     // Predefined options for each parameter ,
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
@@ -813,6 +823,13 @@ function generateABTestChallenge(
         } else {
             currentRuntimeDays = requiredRuntimeDays;
         }
+    }
+    
+    // Apply overdue if specified (orthogonal to timeProgress)
+    if (overdue) {
+        // Experiment ran longer than planned - add a random number of extra days (not always full weeks)
+        const extraDays = Math.floor(Math.random() * 21) + 1; // 1..21 extra days
+        currentRuntimeDays = requiredRuntimeDays + extraDays;
     }
 
     var actualBaseConversionRate = BASE_CONVERSION_RATE;
@@ -995,8 +1012,114 @@ const EXPERIMENT_FOLLOW_UP = {
     DO_NOTHING: "DO_NOTHING",
 };
 
-function analyzeExperiment(experiment) {
+function isExperimentOverdue(experiment) {
     const {
+        simulation: {
+            timeline: { currentRuntimeDays, timePoints }
+        },
+        experiment: { requiredRuntimeDays, requiredSampleSizePerVariant }
+    } = experiment;
+
+    // Determine if sample size was already reached at a full-week boundary
+    let sampleSizeMetAtFullWeek = false;
+    if (currentRuntimeDays > 0) {
+        // Check each full-week day up to currentRuntimeDays
+        for (let day = 7; day <= currentRuntimeDays; day += 7) {
+            // Find the last timeline point ending on or before this day
+            const point = [...timePoints].reverse().find(tp => tp.period.endDay <= day);
+            if (point) {
+                const baseCum = point.base.cumulativeVisitors;
+                const variantCum = point.variant.cumulativeVisitors;
+                if (baseCum >= requiredSampleSizePerVariant && variantCum >= requiredSampleSizePerVariant) {
+                    sampleSizeMetAtFullWeek = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    // Overdue when planned end is in the past AND sample size was met at a full-week boundary
+    return currentRuntimeDays > requiredRuntimeDays && sampleSizeMetAtFullWeek;
+}
+
+function filterOverdueExperimentData(experiment) {
+    const {
+        simulation: {
+            timeline: { currentRuntimeDays, timePoints }
+        },
+        experiment: { requiredRuntimeDays, requiredSampleSizePerVariant, alpha }
+    } = experiment;
+
+    console.log('🔍 OVERDUE EXPERIMENT DETECTED - Filtering data...');
+    // Overdue handling: start at planned end, then add weeks until sample size is met or timeline ends
+    let filteredRuntimeDays = Math.ceil(requiredRuntimeDays / 7) * 7; // full-week boundary at/after planned end
+    if (filteredRuntimeDays > currentRuntimeDays) filteredRuntimeDays = currentRuntimeDays;
+    
+    console.log('📅 Starting filtered runtime:', filteredRuntimeDays, 'days');
+
+    const getCumulativesAt = (dayLimit) => {
+        const point = [...timePoints].reverse().find(tp => tp.period.endDay <= dayLimit);
+        if (!point) {
+            return { bV: 0, vV: 0, bC: 0, vC: 0 };
+        }
+        return {
+            bV: point.base.cumulativeVisitors,
+            vV: point.variant.cumulativeVisitors,
+            bC: point.base.cumulativeConversions,
+            vC: point.variant.cumulativeConversions
+        };
+    };
+
+    let { bV, vV, bC, vC } = getCumulativesAt(filteredRuntimeDays);
+    console.log('📊 Initial filtered data:', { bV, vV, bC, vC });
+    console.log('📊 Required sample size per variant:', requiredSampleSizePerVariant);
+    
+    while ((bV < requiredSampleSizePerVariant || vV < requiredSampleSizePerVariant) && filteredRuntimeDays + 7 <= currentRuntimeDays) {
+        filteredRuntimeDays += 7;
+        ({ bV, vV, bC, vC } = getCumulativesAt(filteredRuntimeDays));
+        console.log('📅 Extended to:', filteredRuntimeDays, 'days, data:', { bV, vV, bC, vC });
+    }
+
+    // Prepare filtered timeline (only periods up to filteredRuntimeDays)
+    const filteredTimePoints = timePoints.filter(tp => tp.period.endDay <= filteredRuntimeDays);
+
+    // Recompute p-value and CI for filtered totals
+    const { pValue: filteredP } = computeTTest(bC, bV, vC, vV);
+    const filteredDiffCI = computeDifferenceConfidenceInterval(
+        bV === 0 ? 0 : bC / bV,
+        vV === 0 ? 0 : vC / vV,
+        bV,
+        vV,
+        alpha
+    );
+
+    return {
+        ...experiment,
+        simulation: {
+            ...experiment.simulation,
+            actualVisitorsBase: bV,
+            actualVisitorsVariant: vV,
+            actualConversionsBase: bC,
+            actualConversionsVariant: vC,
+            pValue: filteredP,
+            confidenceIntervalDifference: filteredDiffCI,
+            timeline: {
+                ...experiment.simulation.timeline,
+                currentRuntimeDays: filteredRuntimeDays,
+                timePoints: filteredTimePoints,
+                periodsCount: filteredTimePoints.length,
+                totalDays: filteredRuntimeDays
+            }
+        },
+        experiment: {
+            ...experiment.experiment,
+            requiredRuntimeDays: filteredRuntimeDays // Set to filtered runtime to avoid re-overdue detection
+        }
+    };
+}
+
+function analyzeExperiment(experiment) {
+    let {
         simulation: {
             actualVisitorsBase,
             actualVisitorsVariant,
@@ -1004,7 +1127,7 @@ function analyzeExperiment(experiment) {
             actualConversionsVariant,
             pValue,
             confidenceIntervalDifference,
-            timeline: { currentRuntimeDays, timePoints }
+            timeline: { currentRuntimeDays, timePoints, periodsCount, totalDays }
         },
         experiment: {
             alpha,
@@ -1027,6 +1150,28 @@ function analyzeExperiment(experiment) {
     let decisionReason = '';
     let followUpReason = '';
 
+    // FIRST: Check if experiment is overdue and handle it immediately
+    const isOverdue = isExperimentOverdue(experiment);
+    console.log('=== OVERDUE ANALYSIS DEBUG ===');
+    console.log('Current runtime:', currentRuntimeDays, 'days');
+    console.log('Required runtime:', requiredRuntimeDays, 'days');
+    console.log('Is overdue:', isOverdue);
+
+    if (isOverdue) {
+        const filteredExperiment = filterOverdueExperimentData(experiment);
+        console.log('🔄 Recursively analyzing filtered experiment...');
+        const filteredAnalysis = analyzeExperiment(filteredExperiment);
+        console.log('✅ Filtered analysis complete, returning results...');
+        return filteredAnalysis;
+    }
+
+    // Calculate runtime status variables
+    const fullWeek = currentRuntimeDays >= 7 && currentRuntimeDays % 7 === 0;
+    const finished = requiredRuntimeDays === currentRuntimeDays;
+    const overdue = currentRuntimeDays > requiredRuntimeDays;
+
+    // Continue with normal analysis using the (possibly filtered) data
+    // Run data quality checks on the (possibly filtered) data
     const { pValue: ratioPValue } = checkSampleRatioMismatch(actualVisitorsBase, actualVisitorsVariant);
     const hasSampleRatioMismatch = ratioPValue < 0.0001;
 
@@ -1043,7 +1188,7 @@ function analyzeExperiment(experiment) {
     const zScore = Math.abs(actualBaseRate - priorBaseConversionRate) / combinedStandardError;
     // Two-tailed p-value computation using normal distribution for data quality confidence level
     const baseRateTestpValue = 2 * (1 - jStat.normal.cdf(zScore, 0, 1));
-    const hasBaseRateMismatch = baseRateTestpValue < dataQualityAlpha && Math.abs(priorBaseConversionRate - actualBaseRate) > priorBaseConversionRate *0.5;
+    const hasBaseRateMismatch = baseRateTestpValue < dataQualityAlpha && Math.abs(priorBaseConversionRate - actualBaseRate) > priorBaseConversionRate * 0.5;
 
     const actualDailyTraffic = (actualVisitorsBase + actualVisitorsVariant) / currentRuntimeDays;
     const trafficDifference = (actualDailyTraffic - visitorsPerDay) / visitorsPerDay;
@@ -1056,8 +1201,6 @@ function analyzeExperiment(experiment) {
     );
     const hasDataLoss = dataLossIndex !== -1;
 
-    const fullWeek = currentRuntimeDays >= 7 && currentRuntimeDays % 7 === 0;
-    const finished = requiredRuntimeDays === currentRuntimeDays;
     const significant = pValue < alpha;
     const variantRate = actualConversionsVariant / actualVisitorsVariant;
     const baseRate = actualConversionsBase / actualVisitorsBase;
@@ -1081,7 +1224,6 @@ function analyzeExperiment(experiment) {
         hasBaseRateMismatch ||
         hasTrafficMismatch ||
         hasDataLoss;
-
 
     if (mismatch) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
@@ -1189,7 +1331,8 @@ function analyzeExperiment(experiment) {
                 current: currentRuntimeDays,
                 required: requiredRuntimeDays,
                 fullWeek: fullWeek,
-                finished: finished
+                finished: finished,
+                overdue: overdue
             }
         }
     };

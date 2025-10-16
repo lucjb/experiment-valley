@@ -509,14 +509,15 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [winner(), inconclusive(), partialLoser()],
+                1: [inconclusive().withOverdue(), inconclusive(), partialLoser()],
                 2: [partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch(), partialLoser().withBaseRateMismatch()],
                 3: [slowCompletion(), fastWinner(), fastLoserWithPartialWeek()],
                 4: [slowCompletion().withBaseRateMismatch(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
                 5: [partialWinner(), winner().withLowerIsBetter(), inconclusive()],
-                6: [twymansLawTrap(), inconclusive(), loser().withLowerIsBetter()],
+                    6: [twymansLawTrap(), inconclusive(), loser().withLowerIsBetter()],
                 7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()],
-                8: [partialLoser().withSampleRatioMismatch(), winner(), fastLoserWithPartialWeek()]
+                8: [partialLoser().withSampleRatioMismatch(), winner(), fastLoserWithPartialWeek()],
+                9: [inconclusive().withOverdue(), winner(), inconclusive()]
             };
 
             // Reset visitors header
