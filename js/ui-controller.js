@@ -681,6 +681,7 @@ const UIController = {
         this.addSampleSizeWarning();
         this.addSampleRatioMismatchAlert();
         this.addTwymansLawAlert();
+        this.addOverdueAlert();
     },
 
     addBaseConversionRateMissmatchAlert() {
@@ -773,6 +774,48 @@ const UIController = {
         // Add warning icon
         const warningIcon = this.createWarningIcon(message);
         pValueElement.appendChild(warningIcon);
+    },
+
+    addOverdueAlert() {
+        console.log('🔍 Checking for overdue alert...');
+        const analysis = window.currentAnalysis;
+        console.log('Analysis:', analysis);
+        
+        if (!analysis || !analysis.analysis || !analysis.analysis.overdue) {
+            console.log('❌ No overdue data found');
+            return;
+        }
+
+        const { isOverdue, originalRuntime, actualRuntime, extraDays } = analysis.analysis.overdue;
+        console.log('Overdue data:', { isOverdue, originalRuntime, actualRuntime, extraDays });
+        
+        if (!isOverdue) {
+            console.log('❌ Not overdue');
+            return;
+        }
+
+        const completeTextElement = document.getElementById('exp-complete-text');
+        if (!completeTextElement) {
+            console.log('❌ Complete text element not found');
+            return;
+        }
+
+        console.log('✅ Adding overdue alert');
+        
+        // Get sample size information
+        const originalExperiment = analysis.originalExperiment;
+        const originalBaseVisitors = originalExperiment?.simulation?.actualVisitorsBase || 0;
+        const originalVariantVisitors = originalExperiment?.simulation?.actualVisitorsVariant || 0;
+        const originalTotalVisitors = originalBaseVisitors + originalVariantVisitors;
+        const requiredSampleSize = originalExperiment?.experiment?.requiredSampleSizePerVariant || 0;
+        const requiredTotalSampleSize = requiredSampleSize * 2;
+        
+        const message = `Overdue Experiment: Planned for ${originalRuntime} days but ran for ${actualRuntime} days (${extraDays} extra days)\n\nSample Size:\n• Intended: ${requiredTotalSampleSize.toLocaleString()} total (${requiredSampleSize.toLocaleString()} per variant)\n• Actual: ${originalTotalVisitors.toLocaleString()} total (${originalBaseVisitors.toLocaleString()} base, ${originalVariantVisitors.toLocaleString()} variant)\n<a href="overdue-experiment.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about overdue experiments →</a>`;
+
+        // Clear the element and add warning icon
+        completeTextElement.textContent = '';
+        completeTextElement.appendChild(this.createWarningIcon(message));
+        completeTextElement.appendChild(document.createTextNode(` Complete | ${actualRuntime}d | ${analysis.originalExperiment?.simulation?.actualVisitorsBase + analysis.originalExperiment?.simulation?.actualVisitorsVariant || 'N/A'}v`));
     },
 
     // Attach tooltip behaviour to dynamically added elements
@@ -978,8 +1021,11 @@ const UIController = {
     updateExecutionSection() {
         const challenge = this.state.challenge;
         const currentDate = new Date();
-        const daysElapsed = challenge.simulation.timeline.currentRuntimeDays;
-        const totalDays = challenge.experiment.requiredRuntimeDays;
+        
+        // For overdue experiments, use original experiment data for display
+        const displayChallenge = window.currentAnalysis?.originalExperiment || challenge;
+        const daysElapsed = displayChallenge.simulation.timeline.currentRuntimeDays;
+        const totalDays = displayChallenge.experiment.requiredRuntimeDays;
         const daysRemaining = totalDays - daysElapsed;
         const isComplete = daysElapsed >= totalDays;
 
@@ -1024,7 +1070,7 @@ const UIController = {
         progressEndDate.textContent = '';
 
         // Calculate visitor counts
-        const totalVisitors = challenge.simulation.actualVisitorsBase + challenge.simulation.actualVisitorsVariant;
+        const totalVisitors = displayChallenge.simulation.actualVisitorsBase + displayChallenge.simulation.actualVisitorsVariant;
         const requiredVisitors = challenge.experiment.requiredSampleSizePerVariant * 2;
         const remainingVisitors = Math.max(0, requiredVisitors - totalVisitors);
 
@@ -1094,7 +1140,7 @@ const UIController = {
         // Update text content
         if (isComplete) {
             completeText.classList.remove('hidden');
-            completeText.textContent = `Complete | ${totalDays}d | ${totalVisitors}v`;
+            completeText.textContent = `Complete | ${daysElapsed}d | ${totalVisitors}v`;
             progressStartDate.textContent = dateFormatter.format(startDate);
             visitorsText.textContent = dateFormatter.format(finishDate);
             progressEndDate.textContent = ''; // End date is not shown in complete state

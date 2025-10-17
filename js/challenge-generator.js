@@ -826,9 +826,10 @@ function generateABTestChallenge(
     }
     
     // Apply overdue if specified (orthogonal to timeProgress)
+    extraDays = 0;
     if (overdue) {
         // Experiment ran longer than planned - add a random number of extra days (not always full weeks)
-        const extraDays = Math.floor(Math.random() * 21) + 1; // 1..21 extra days
+        extraDays = Math.floor(Math.random() * 21) + 1; // 1..21 extra days
         currentRuntimeDays = requiredRuntimeDays + extraDays;
     }
 
@@ -855,7 +856,6 @@ function generateABTestChallenge(
     if (sampleProgress === SAMPLE_PROGRESS.PARTIAL && timeProgress === TIME_PROGRESS.FULL) {
         observedVisitorsTotal = Math.floor(requiredSampleSizePerVariant * 1.95);
     }
-
     observedVisitorsTotal = Math.ceil(observedVisitorsTotal / (2 * sampleRatioMismatch));
 
     var observedVisitorsBase = sampleBinomial(observedVisitorsTotal, sampleRatioMismatch);
@@ -1156,13 +1156,28 @@ function analyzeExperiment(experiment) {
     console.log('Current runtime:', currentRuntimeDays, 'days');
     console.log('Required runtime:', requiredRuntimeDays, 'days');
     console.log('Is overdue:', isOverdue);
+    console.log('Experiment data:', { currentRuntimeDays, requiredRuntimeDays, isOverdue });
 
     if (isOverdue) {
         const filteredExperiment = filterOverdueExperimentData(experiment);
         console.log('🔄 Recursively analyzing filtered experiment...');
         const filteredAnalysis = analyzeExperiment(filteredExperiment);
         console.log('✅ Filtered analysis complete, returning results...');
-        return filteredAnalysis;
+        
+        // Preserve original experiment data for UI display and overdue information
+        return {
+            ...filteredAnalysis,
+            originalExperiment: experiment,
+            analysis: {
+                ...filteredAnalysis.analysis,
+                overdue: {
+                    isOverdue: true,
+                    originalRuntime: requiredRuntimeDays,
+                    actualRuntime: currentRuntimeDays,
+                    extraDays: Math.max(0, currentRuntimeDays - requiredRuntimeDays)
+                }
+            }
+        };
     }
 
     // Calculate runtime status variables
@@ -1333,6 +1348,12 @@ function analyzeExperiment(experiment) {
                 fullWeek: fullWeek,
                 finished: finished,
                 overdue: overdue
+            },
+            overdue: {
+                isOverdue: overdue,
+                originalRuntime: requiredRuntimeDays,
+                actualRuntime: currentRuntimeDays,
+                extraDays: Math.max(0, currentRuntimeDays - requiredRuntimeDays)
             }
         }
     };
