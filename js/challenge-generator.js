@@ -1152,17 +1152,10 @@ function analyzeExperiment(experiment) {
 
     // FIRST: Check if experiment is overdue and handle it immediately
     const isOverdue = isExperimentOverdue(experiment);
-    console.log('=== OVERDUE ANALYSIS DEBUG ===');
-    console.log('Current runtime:', currentRuntimeDays, 'days');
-    console.log('Required runtime:', requiredRuntimeDays, 'days');
-    console.log('Is overdue:', isOverdue);
-    console.log('Experiment data:', { currentRuntimeDays, requiredRuntimeDays, isOverdue });
 
     if (isOverdue) {
         const filteredExperiment = filterOverdueExperimentData(experiment);
-        console.log('🔄 Recursively analyzing filtered experiment...');
         const filteredAnalysis = analyzeExperiment(filteredExperiment);
-        console.log('✅ Filtered analysis complete, returning results...');
         
         // Preserve original experiment data for UI display and overdue information
         return {

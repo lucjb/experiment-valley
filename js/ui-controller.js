@@ -509,7 +509,7 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [inconclusive().withOverdue(), inconclusive(), partialLoser()],
+                1: [inconclusive().withOverdue(), twymansLawTrap(), partialLoser()],
                 2: [partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch(), partialLoser().withBaseRateMismatch()],
                 3: [slowCompletion(), fastWinner(), fastLoserWithPartialWeek()],
                 4: [slowCompletion().withBaseRateMismatch(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
@@ -549,10 +549,6 @@ const UIController = {
 
 
             // Log the analysis result
-            console.log('=== EXPERIMENT ANALYSIS ===');
-            console.log('Round:', this.state.currentRound);
-            console.log('Experiment:', this.state.experimentsInCurrentRound + 1);
-            console.log('Analysis:', window.currentAnalysis);
 
             // Update the UI with the new challenge
             this.updateExperimentDisplay();
@@ -640,10 +636,23 @@ const UIController = {
         });
     },
 
+    // Helper functions for consistent formatting
+    formatDelta(value, isPercentage = false) {
+        const sign = value > 0 ? '+' : '';
+        return isPercentage ?
+            `${sign}${(value * 100).toFixed(2)}%` :
+            `${sign}${value}`;
+    },
+
+    formatUplift(value) {
+        const sign = value > 0 ? '+' : '';
+        return `${sign}${(value * 100).toFixed(2)}%`;
+    },
+
     // Helper function to create a warning icon with tooltip
     createWarningIcon(message) {
         const warningIcon = document.createElement('span');
-        warningIcon.className = 'text-yellow-500 cursor-help tooltip-trigger';
+        warningIcon.className = 'text-yellow-500 cursor-help tooltip-trigger text-sm';
         warningIcon.textContent = '⚠️';
 
         const tooltipContent = document.createElement('span');
@@ -651,17 +660,47 @@ const UIController = {
         tooltipContent.innerHTML = message.replace(/\n/g, '<br>');
         warningIcon.appendChild(tooltipContent);
 
-        // Add tooltip positioning
-        warningIcon.addEventListener('mousemove', (e) => {
-            const tooltip = warningIcon.querySelector('.tooltip-content');
+        return warningIcon;
+    },
+
+    // Initialize tooltip for dynamically created elements
+    initializeTooltip(tooltipTrigger) {
+        tooltipTrigger.addEventListener('mousemove', function (e) {
+            const tooltip = this.querySelector('.tooltip-content');
             if (!tooltip) return;
 
-            const rect = warningIcon.getBoundingClientRect();
-            tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
-            tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
-        });
+            // Get trigger position
+            const rect = this.getBoundingClientRect();
+            const tooltipHeight = tooltip.offsetHeight;
+            const tooltipWidth = tooltip.offsetWidth;
 
-        return warningIcon;
+            // Calculate available space above and below
+            const spaceAbove = rect.top;
+            const spaceBelow = window.innerHeight - rect.bottom;
+
+            // Position tooltip horizontally centered
+            let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+
+            // Ensure tooltip doesn't overflow horizontally
+            if (left < 10) left = 10;
+            if (left + tooltipWidth > window.innerWidth - 10) {
+                left = window.innerWidth - tooltipWidth - 10;
+            }
+
+            // Position tooltip vertically - prefer above, but use below if not enough space
+            let top;
+            if (spaceAbove >= tooltipHeight + 10) {
+                // Position above
+                top = rect.top - tooltipHeight - 10;
+            } else {
+                // Position below
+                top = rect.bottom + 10;
+            }
+
+            // Apply positioning
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+        });
     },
 
     // Helper function to add warning to a cell
@@ -674,9 +713,57 @@ const UIController = {
 
         const warningIcon = this.createWarningIcon(message);
         cell.appendChild(warningIcon);
+        
+        // Initialize tooltip for the newly created warning icon
+        this.initializeTooltip(warningIcon);
+    },
+
+    clearAllAlerts() {
+        // Clear base rate mismatch alert
+        const baseRateCell = document.getElementById('base-rate');
+        if (baseRateCell) {
+            baseRateCell.textContent = baseRateCell.textContent.replace(/⚠️.*$/, '').trim();
+        }
+        
+        // Clear sample size warnings
+        const baseVisitorsCell = document.getElementById('base-visitors');
+        const variantVisitorsCell = document.getElementById('variant-visitors');
+        if (baseVisitorsCell) {
+            baseVisitorsCell.textContent = baseVisitorsCell.textContent.replace(/⚠️.*$/, '').trim();
+        }
+        if (variantVisitorsCell) {
+            variantVisitorsCell.textContent = variantVisitorsCell.textContent.replace(/⚠️.*$/, '').trim();
+        }
+        
+        // Clear SRM alert
+        const visitorsHeader = document.querySelector('.metrics-table th:nth-child(2)');
+        if (visitorsHeader) {
+            visitorsHeader.textContent = 'Visitors';
+        }
+        
+        // Clear Twyman's Law alert
+        const pValueElement = document.getElementById('p-value-display');
+        if (pValueElement) {
+            // Remove warning icons (tooltip-trigger elements)
+            const warningIcons = pValueElement.querySelectorAll('.tooltip-trigger');
+            warningIcons.forEach(icon => icon.remove());
+        }
+        
+        // Clear overdue alert
+        const completeTextElement = document.getElementById('exp-complete-text');
+        if (completeTextElement) {
+            // Remove warning icons but keep the original text
+            const textNodes = Array.from(completeTextElement.childNodes).filter(node => node.nodeType === Node.TEXT_NODE);
+            if (textNodes.length > 0) {
+                completeTextElement.textContent = textNodes[0].textContent;
+            }
+        }
     },
 
     addDebugAlerts() {
+        // Clear existing alerts first
+        this.clearAllAlerts();
+        
         this.addBaseConversionRateMissmatchAlert();
         this.addSampleSizeWarning();
         this.addSampleRatioMismatchAlert();
@@ -685,7 +772,10 @@ const UIController = {
     },
 
     addBaseConversionRateMissmatchAlert() {
-        const analysis = window.currentAnalysis;
+        // Use time-filtered analysis if available, otherwise fall back to original analysis
+        const analysis = window.currentTimeFilteredAnalysis || window.currentAnalysis;
+        if (!analysis || !analysis.analysis) return;
+        
         if (!analysis.analysis.hasBaseRateMismatch) return;
 
         const baseRateCell = document.getElementById('base-rate');
@@ -696,27 +786,41 @@ const UIController = {
     },
 
     addSampleSizeWarning() {
-        const analysis = window.currentAnalysis;
-        const { sampleSize } = analysis.analysis;
-        const { current, required } = analysis.analysis.runtime;
+        // Use time-filtered analysis if available, otherwise fall back to original analysis
+        const analysis = window.currentTimeFilteredAnalysis || window.currentAnalysis;
+        if (!analysis || !analysis.analysis) return;
 
-        if (current < required) return;
+        const hasInsufficientSampleSize = analysis.analysis.hasInsufficientSampleSize;
+        if (!hasInsufficientSampleSize) return;
+
+        // Get data from the time-filtered data source
+        const dataSource = window.currentTimeFilteredData || window.currentAnalysis;
+        if (!dataSource) return;
+
+        const currentDay = dataSource.simulation.timeline.currentRuntimeDays;
+        const requiredSampleSize = dataSource.experiment.requiredSampleSizePerVariant;
+        const actualBase = dataSource.simulation.actualVisitorsBase;
+        const actualVariant = dataSource.simulation.actualVisitorsVariant;
+        
+        // Check if we're at or past the planned end date
+        const plannedEndDate = dataSource.experiment.requiredRuntimeDays;
+        if (currentDay < plannedEndDate) return; // Only show warnings after planned end date
 
         // Check base variant
-        if (sampleSize.actualBase < sampleSize.required) {
-            const message = `Insufficient sample size (${sampleSize.actualBase.toLocaleString()} < ${sampleSize.required.toLocaleString()})\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about sample size warnings →</a>`;
+        if (actualBase < requiredSampleSize) {
+            const message = `Insufficient sample size (${actualBase.toLocaleString()} < ${requiredSampleSize.toLocaleString()})\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about sample size warnings →</a>`;
             this.addWarningToCell(document.getElementById('base-visitors'), message);
         }
 
         // Check variant
-        if (sampleSize.actualVariant < sampleSize.required) {
-            const message = `Insufficient sample size (${sampleSize.actualVariant.toLocaleString()} < ${sampleSize.required.toLocaleString()})\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about sample size warnings →</a>`;
+        if (actualVariant < requiredSampleSize) {
+            const message = `Insufficient sample size (${actualVariant.toLocaleString()} < ${requiredSampleSize.toLocaleString()})\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about sample size warnings →</a>`;
             this.addWarningToCell(document.getElementById('variant-visitors'), message);
         }
 
         // Check total sample size
-        const totalVisitors = sampleSize.actualBase + sampleSize.actualVariant;
-        const requiredTotal = sampleSize.required * 2;
+        const totalVisitors = actualBase + actualVariant;
+        const requiredTotal = requiredSampleSize * 2;
 
         if (totalVisitors < requiredTotal) {
             const completeTextElement = document.getElementById('exp-complete-text');
@@ -724,15 +828,19 @@ const UIController = {
 
             completeTextElement.textContent = '';
             completeTextElement.appendChild(this.createWarningIcon(message));
-            completeTextElement.appendChild(document.createTextNode(` Complete | ${current}d | ${totalVisitors.toLocaleString()}v`));
+            completeTextElement.appendChild(document.createTextNode(` Complete | ${currentDay}d | ${totalVisitors.toLocaleString()}v`));
         }
     },
 
     addSampleRatioMismatchAlert() {
         if (!this.debugMode()) return;
 
-        const analysis = window.currentAnalysis;
-        if (!analysis || !analysis.analysis.hasSignificantRatioMismatch) return;
+        // Use time-filtered analysis if available, otherwise fall back to original analysis
+        const analysis = window.currentTimeFilteredAnalysis || window.currentAnalysis;
+        if (!analysis || !analysis.analysis) return;
+
+        const hasSignificantRatioMismatch = analysis.analysis.hasSignificantRatioMismatch;
+        if (!hasSignificantRatioMismatch) return;
 
         const visitorsHeader = document.querySelector('.metrics-table th:nth-child(2)');
         if (!visitorsHeader) return;
@@ -741,24 +849,560 @@ const UIController = {
 
         visitorsHeader.textContent = '';
         visitorsHeader.appendChild(document.createTextNode('Visitors'));
-        visitorsHeader.appendChild(this.createWarningIcon(message));
+        
+        const warningIcon = this.createWarningIcon(message);
+        visitorsHeader.appendChild(warningIcon);
+        
+        // Initialize tooltip for the newly created warning icon
+        this.initializeTooltip(warningIcon);
     },
 
     addTwymansLawAlert() {
-        const analysis = window.currentAnalysis;
-        if (!analysis || !analysis.analysis || !analysis.analysis.hasTwymansLaw) return;
-
-        const pValueElement = document.getElementById('p-value-display');
-        if (!pValueElement) return;
-
-        // Check if simulation data exists
-        if (!analysis.simulation || typeof analysis.simulation.pValue === 'undefined') {
-            console.log('Simulation data not available yet');
+        // Use time-filtered analysis if available, otherwise fall back to original analysis
+        const analysis = window.currentTimeFilteredAnalysis || window.currentAnalysis;
+        if (!analysis || !analysis.analysis) {
             return;
         }
 
-        const pValue = analysis.simulation.pValue;
+        const hasTwymansLaw = analysis.analysis.hasTwymansLaw;
+        
+        if (!hasTwymansLaw) {
+            return;
+        }
+
+        const pValueElement = document.getElementById('p-value-display');
+        if (!pValueElement) {
+            return;
+        }
+
+        // Get p-value from the time-filtered data source
+        const dataSource = window.currentTimeFilteredData || window.currentAnalysis;
+        if (!dataSource) {
+            return;
+        }
+
+        const pValue = dataSource.simulation.pValue;
+        
         const message = `Twyman's Law detected: Suspiciously low p-value (p=${pValue.toFixed(10)}) and unusually large effect (more than 10 x the MRE)\n\n<a href="twymans-law.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about Twyman's Law →</a>`;
+        // Use the proper warning cell helper function
+        this.addWarningToCell(pValueElement, message);
+    },
+
+    addOverdueAlert() {
+        const analysis = window.currentAnalysis;
+        
+        if (!analysis || !analysis.analysis || !analysis.analysis.overdue) {
+            return;
+        }
+
+        const { isOverdue, originalRuntime, actualRuntime, extraDays } = analysis.analysis.overdue;
+        
+        if (!isOverdue) {
+            return;
+        }
+
+        const completeTextElement = document.getElementById('exp-complete-text');
+        if (!completeTextElement) {
+            return;
+        }
+        
+        // Get sample size information
+        const originalExperiment = analysis.originalExperiment;
+        const originalBaseVisitors = originalExperiment?.simulation?.actualVisitorsBase || 0;
+        const originalVariantVisitors = originalExperiment?.simulation?.actualVisitorsVariant || 0;
+        const originalTotalVisitors = originalBaseVisitors + originalVariantVisitors;
+        const requiredSampleSize = originalExperiment?.experiment?.requiredSampleSizePerVariant || 0;
+        const requiredTotalSampleSize = requiredSampleSize * 2;
+        
+        const message = `Overdue Experiment: Planned for ${originalRuntime} days but ran for ${actualRuntime} days (${extraDays} extra days)\n\nSample Size:\n• Intended: ${requiredTotalSampleSize.toLocaleString()} total (${requiredSampleSize.toLocaleString()} per variant)\n• Actual: ${originalTotalVisitors.toLocaleString()} total (${originalBaseVisitors.toLocaleString()} base, ${originalVariantVisitors.toLocaleString()} variant)\n<a href="overdue-experiment.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about overdue experiments →</a>`;
+
+        // Clear the element completely and rebuild it
+        completeTextElement.innerHTML = '';
+        completeTextElement.textContent = '';
+        
+        // Remove any existing tooltip attributes to prevent conflicts
+        completeTextElement.removeAttribute('title');
+        completeTextElement.removeAttribute('data-tooltip');
+        
+        // Add warning icon with proper tooltip handling
+        const warningIcon = this.createWarningIcon(message);
+        completeTextElement.appendChild(warningIcon);
+        
+        // Add the complete text
+        const completeText = document.createTextNode(` Complete | ${actualRuntime}d | ${analysis.originalExperiment?.simulation?.actualVisitorsBase + analysis.originalExperiment?.simulation?.actualVisitorsVariant || 'N/A'}v`);
+        completeTextElement.appendChild(completeText);
+        
+        // Ensure the warning icon tooltip is properly isolated
+        const tooltipContent = warningIcon.querySelector('.tooltip-content');
+        if (tooltipContent) {
+            // Remove any conflicting event listeners
+            const newWarningIcon = warningIcon.cloneNode(true);
+            completeTextElement.replaceChild(newWarningIcon, warningIcon);
+        }
+    },
+
+    initializeTimeSlider(displayChallenge) {
+        const timeSlider = document.getElementById('time-slider');
+        const currentTimeDisplay = document.getElementById('current-time-display');
+        const totalTimeDisplay = document.getElementById('total-time-display');
+        const timeSliderInfo = document.getElementById('time-slider-info');
+        const plannedEndAnchor = document.getElementById('planned-end-anchor');
+        
+        if (!timeSlider || !displayChallenge) return;
+        
+        const maxDays = displayChallenge.simulation.timeline.currentRuntimeDays;
+        const totalDays = displayChallenge.experiment.requiredRuntimeDays;
+        
+        // Set slider range
+        timeSlider.min = 1;
+        timeSlider.max = maxDays;
+        timeSlider.value = maxDays; // Start at the end
+        
+        // Update current day display
+        const currentDayDisplay = document.getElementById('current-day-display');
+        if (currentDayDisplay) {
+            currentDayDisplay.textContent = `Day ${maxDays}`;
+        }
+        
+        
+        
+        // Remove any existing event listeners to prevent duplicates
+        const newSlider = timeSlider.cloneNode(true);
+        timeSlider.parentNode.replaceChild(newSlider, timeSlider);
+        
+        // Add event listener to the new slider
+        newSlider.addEventListener('input', (e) => {
+            const selectedDay = parseInt(e.target.value);
+            this.updateExperimentAtTime(displayChallenge, selectedDay);
+            
+            // Update current day display
+            if (currentDayDisplay) {
+                currentDayDisplay.textContent = `Day ${selectedDay}`;
+            }
+        });
+        
+        // Add click handler for jump to today
+        const jumpToToday = document.getElementById('jump-to-today');
+        if (jumpToToday) {
+            // Remove any existing event listeners
+            const newJumpToToday = jumpToToday.cloneNode(true);
+            jumpToToday.parentNode.replaceChild(newJumpToToday, jumpToToday);
+            
+            // Hide "Jump to Today" if planned end date is today (since they're the same)
+            if (totalDays === maxDays) {
+                newJumpToToday.style.display = 'none';
+            } else {
+                newJumpToToday.style.display = 'inline';
+                
+                newJumpToToday.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const todayDay = maxDays; // Today is the current runtime
+                    
+                    
+                    // Update the slider value
+                    newSlider.value = todayDay;
+                    
+                    // Trigger the slider's input event to ensure it moves
+                    const inputEvent = new Event('input', { bubbles: true });
+                    newSlider.dispatchEvent(inputEvent);
+                    
+                    // Update the experiment data
+                    this.updateExperimentAtTime(displayChallenge, todayDay);
+                    
+                    // Update the day display
+                    if (currentDayDisplay) {
+                        currentDayDisplay.textContent = `Day ${todayDay}`;
+                    }
+                });
+            }
+        }
+        
+        // Add click handler for jump to planned end date (only show if planned end is in the past or today)
+        const jumpToPlannedEnd = document.getElementById('jump-to-planned-end');
+        const plannedEndFutureText = document.getElementById('planned-end-future-text');
+        
+        if (jumpToPlannedEnd && plannedEndFutureText) {
+            // Remove any existing event listeners
+            const newJumpToPlannedEnd = jumpToPlannedEnd.cloneNode(true);
+            jumpToPlannedEnd.parentNode.replaceChild(newJumpToPlannedEnd, jumpToPlannedEnd);
+            
+            // Show the link if the planned end date is in the past or today (regardless of sample size)
+            if (totalDays <= maxDays) {
+                newJumpToPlannedEnd.style.display = 'inline';
+                plannedEndFutureText.style.display = 'none';
+                
+                // Update link text based on whether planned end is today
+                if (totalDays === maxDays) {
+                    newJumpToPlannedEnd.textContent = 'Jump to Planned End Date (today)';
+                } else {
+                    newJumpToPlannedEnd.textContent = 'Jump to planned end date';
+                }
+                
+                newJumpToPlannedEnd.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const plannedEndDay = totalDays;
+                    
+                    
+                    // Update the slider value
+                    newSlider.value = plannedEndDay;
+                    
+                    // Trigger the slider's input event to ensure it moves
+                    const inputEvent = new Event('input', { bubbles: true });
+                    newSlider.dispatchEvent(inputEvent);
+                    
+                    // Update the experiment data
+                    this.updateExperimentAtTime(displayChallenge, plannedEndDay);
+                    
+                    // Update the day display
+                    if (currentDayDisplay) {
+                        currentDayDisplay.textContent = `Day ${plannedEndDay}`;
+                    }
+                });
+            } else {
+                newJumpToPlannedEnd.style.display = 'none';
+                plannedEndFutureText.style.display = 'inline';
+            }
+        }
+        
+        // Initialize with current state
+        this.updateExperimentAtTime(displayChallenge, maxDays);
+    },
+
+    getTimeFilteredData(displayChallenge, selectedDay) {
+        const timePoints = displayChallenge.simulation.timeline.timePoints;
+        
+        // Find the timeline point for the selected day
+        let point = timePoints.find(tp => tp.period.startDay <= selectedDay && tp.period.endDay >= selectedDay);
+        if (!point) {
+            // Fallback to the last point that ended before or on the selected day
+            point = [...timePoints].reverse().find(tp => tp.period.endDay <= selectedDay);
+        }
+        
+        if (!point) {
+            console.warn('No timeline point found for day:', selectedDay);
+            return null;
+        }
+        
+        // Calculate p-value and confidence interval for the time-filtered data
+        const { pValue } = window.computeTTest(
+            point.base.cumulativeConversions,
+            point.base.cumulativeVisitors,
+            point.variant.cumulativeConversions,
+            point.variant.cumulativeVisitors
+        );
+        
+        
+        // Use the calculated p-value directly (0 is a valid p-value)
+        const validPValue = pValue;
+        
+        const confidenceIntervalDifference = window.computeDifferenceConfidenceInterval(
+            point.base.cumulativeVisitors > 0 ? point.base.cumulativeConversions / point.base.cumulativeVisitors : 0,
+            point.variant.cumulativeVisitors > 0 ? point.variant.cumulativeConversions / point.variant.cumulativeVisitors : 0,
+            point.base.cumulativeVisitors,
+            point.variant.cumulativeVisitors,
+            displayChallenge.experiment.alpha
+        );
+        
+        // Create a time-filtered experiment object with data from the selected day
+        const timeFilteredExperiment = {
+            ...displayChallenge,
+            simulation: {
+                ...displayChallenge.simulation,
+                actualVisitorsBase: point.base.cumulativeVisitors,
+                actualVisitorsVariant: point.variant.cumulativeVisitors,
+                actualConversionsBase: point.base.cumulativeConversions,
+                actualConversionsVariant: point.variant.cumulativeConversions,
+                pValue: validPValue,
+                confidenceIntervalDifference: confidenceIntervalDifference,
+                baseConversionRate: point.base.cumulativeVisitors > 0 ? point.base.cumulativeConversions / point.base.cumulativeVisitors : 0,
+                variantConversionRate: point.variant.cumulativeVisitors > 0 ? point.variant.cumulativeConversions / point.variant.cumulativeVisitors : 0,
+                actualEffectSize: point.actualEffectSize,
+                timeline: {
+                    ...displayChallenge.simulation.timeline,
+                    currentRuntimeDays: selectedDay
+                }
+            },
+            experiment: {
+                ...displayChallenge.experiment,
+                // Ensure minimumRelevantEffect is preserved for Twyman's Law detection
+                minimumRelevantEffect: displayChallenge.experiment.minimumRelevantEffect
+            }
+        };
+        
+        return timeFilteredExperiment;
+    },
+
+    updateExperimentAtTime(displayChallenge, selectedDay) {
+        const timePoints = displayChallenge.simulation.timeline.timePoints;
+        
+        // Store the current time-filtered data globally for alerts to use
+        window.currentTimeFilteredData = this.getTimeFilteredData(displayChallenge, selectedDay);
+        
+        // Create a time-filtered experiment and analyze it
+        const timeFilteredExperiment = this.getTimeFilteredData(displayChallenge, selectedDay);
+        if (timeFilteredExperiment) {
+            window.currentTimeFilteredAnalysis = window.analyzeExperiment(timeFilteredExperiment);
+        }
+        
+        // Find the timeline point for the selected day
+        // Look for the point that contains the selected day (startDay <= selectedDay <= endDay)
+        let point = timePoints.find(tp => tp.period.startDay <= selectedDay && tp.period.endDay >= selectedDay);
+        
+        // If no point contains the selected day, find the last point that ended before or on the selected day
+        if (!point) {
+            point = [...timePoints].reverse().find(tp => tp.period.endDay <= selectedDay);
+        }
+        
+        if (!point) {
+            return;
+        }
+        
+        
+        // Update UI components (except execution bar - it always shows full data)
+        this.updateMetricsAtTime(point, selectedDay);
+        this.updateResultsTableAtTime(point, selectedDay);
+        this.updatePValueSectionAtTime(point, selectedDay);
+        this.updateConfidenceIntervalsAtTime(point, selectedDay);
+        
+        // Refresh alerts with time-filtered analysis
+        this.addDebugAlerts();
+    },
+
+    updateMetricsAtTime(point, selectedDay) {
+        // Update base metrics
+        const baseVisitorsElement = document.getElementById('base-visitors');
+        const baseConversionsElement = document.getElementById('base-conversions');
+        const baseRateElement = document.getElementById('base-rate');
+        
+        if (baseVisitorsElement) baseVisitorsElement.textContent = point.base.cumulativeVisitors.toLocaleString();
+        if (baseConversionsElement) baseConversionsElement.textContent = point.base.cumulativeConversions.toLocaleString();
+        if (baseRateElement) baseRateElement.textContent = (point.base.cumulativeRate * 100).toFixed(2) + '%';
+        
+        // Update variant metrics
+        const variantVisitorsElement = document.getElementById('variant-visitors');
+        const variantConversionsElement = document.getElementById('variant-conversions');
+        const variantRateElement = document.getElementById('variant-rate');
+        
+        if (variantVisitorsElement) variantVisitorsElement.textContent = point.variant.cumulativeVisitors.toLocaleString();
+        if (variantConversionsElement) variantConversionsElement.textContent = point.variant.cumulativeConversions.toLocaleString();
+        if (variantRateElement) variantRateElement.textContent = (point.variant.cumulativeRate * 100).toFixed(2) + '%';
+        
+        // Update difference metrics
+        const differenceElement = document.getElementById('difference');
+        const upliftElement = document.getElementById('uplift');
+        
+        if (differenceElement) {
+            const diff = point.difference.cumulativeRate;
+            differenceElement.textContent = (diff * 100).toFixed(2) + '%';
+        }
+        
+        if (upliftElement) {
+            const uplift = point.uplift.cumulativeRate;
+            upliftElement.textContent = (uplift * 100).toFixed(2) + '%';
+        }
+        
+        // Update p-value (recalculate for this point in time)
+        this.updatePValueAtTime(point);
+    },
+
+    updatePValueAtTime(point) {
+        const pValueElement = document.getElementById('p-value-display');
+        if (!pValueElement) return;
+        
+        // Calculate p-value for this point in time
+        const { pValue } = computeTTest(
+            point.base.cumulativeConversions,
+            point.base.cumulativeVisitors,
+            point.variant.cumulativeConversions,
+            point.variant.cumulativeVisitors
+        );
+        
+        pValueElement.textContent = pValue.toFixed(4);
+    },
+
+    updateResultsTableAtTime(point, selectedDay) {
+        // Use the class formatting methods for consistency
+        
+        // Update base metrics
+        const baseVisitorsElement = document.getElementById('base-visitors');
+        const baseConversionsElement = document.getElementById('base-conversions');
+        const baseRateElement = document.getElementById('base-rate');
+        
+        if (baseVisitorsElement) {
+            baseVisitorsElement.textContent = point.base.cumulativeVisitors;
+        }
+        if (baseConversionsElement) {
+            baseConversionsElement.textContent = point.base.cumulativeConversions;
+        }
+        if (baseRateElement) {
+            baseRateElement.textContent = `${(point.base.cumulativeRate * 100).toFixed(2)}%`;
+        }
+        
+        // Update variant metrics
+        const variantVisitorsElement = document.getElementById('variant-visitors');
+        const variantConversionsElement = document.getElementById('variant-conversions');
+        const variantRateElement = document.getElementById('variant-rate');
+        
+        if (variantVisitorsElement) {
+            variantVisitorsElement.textContent = point.variant.cumulativeVisitors;
+        }
+        if (variantConversionsElement) {
+            variantConversionsElement.textContent = point.variant.cumulativeConversions;
+        }
+        if (variantRateElement) {
+            variantRateElement.textContent = `${(point.variant.cumulativeRate * 100).toFixed(2)}%`;
+        }
+        
+        // Update delta metrics
+        const deltaVisitorsElement = document.getElementById('delta-visitors');
+        const deltaConversionsElement = document.getElementById('delta-conversions');
+        const deltaRateElement = document.getElementById('delta-rate');
+        
+        if (deltaVisitorsElement) {
+            const deltaVisitors = point.variant.cumulativeVisitors - point.base.cumulativeVisitors;
+            deltaVisitorsElement.textContent = this.formatDelta(deltaVisitors);
+        }
+        if (deltaConversionsElement) {
+            const deltaConversions = point.variant.cumulativeConversions - point.base.cumulativeConversions;
+            deltaConversionsElement.textContent = this.formatDelta(deltaConversions);
+        }
+        if (deltaRateElement) {
+            const deltaRate = point.variant.cumulativeRate - point.base.cumulativeRate;
+            deltaRateElement.textContent = this.formatDelta(deltaRate, true);
+        }
+        
+        // Update uplift metrics
+        const visitorUpliftElement = document.getElementById('visitor-uplift');
+        const conversionUpliftElement = document.getElementById('conversion-uplift');
+        const upliftValueElement = document.getElementById('uplift-value');
+        
+        if (visitorUpliftElement) {
+            const visitorUplift = point.base.cumulativeVisitors > 0 ? 
+                (point.variant.cumulativeVisitors - point.base.cumulativeVisitors) / point.base.cumulativeVisitors : 0;
+            visitorUpliftElement.textContent = this.formatUplift(visitorUplift);
+        }
+        if (conversionUpliftElement) {
+            const conversionUplift = point.base.cumulativeConversions > 0 ? 
+                (point.variant.cumulativeConversions - point.base.cumulativeConversions) / point.base.cumulativeConversions : 0;
+            conversionUpliftElement.textContent = this.formatUplift(conversionUplift);
+        }
+        if (upliftValueElement) {
+            const upliftValue = point.base.cumulativeRate > 0 ? 
+                (point.variant.cumulativeRate - point.base.cumulativeRate) / point.base.cumulativeRate : 0;
+            upliftValueElement.textContent = this.formatUplift(upliftValue);
+        }
+    },
+
+    updatePValueSectionAtTime(point, selectedDay) {
+        // Update the p-value section with recalculated values
+        const pValueElement = document.getElementById('p-value-display');
+        if (!pValueElement) return;
+        
+        // Calculate p-value for this point in time
+        const { pValue } = computeTTest(
+            point.base.cumulativeConversions,
+            point.base.cumulativeVisitors,
+            point.variant.cumulativeConversions,
+            point.variant.cumulativeVisitors
+        );
+        
+        // Update p-value display
+        pValueElement.textContent = pValue.toFixed(4);
+        
+        // Update significance indicator
+        const alpha = window.currentExperiment?.experiment?.alpha || 0.05;
+        const isSignificant = pValue < alpha;
+        
+        // Update significance styling
+        if (isSignificant) {
+            pValueElement.classList.add('text-green-600', 'font-bold');
+            pValueElement.classList.remove('text-red-600');
+        } else {
+            pValueElement.classList.add('text-red-600');
+            pValueElement.classList.remove('text-green-600', 'font-bold');
+        }
+    },
+
+    updateConfidenceIntervalsAtTime(point, selectedDay) {
+        
+        // Calculate p-value for this point
+        const { pValue } = computeTTest(
+            point.base.cumulativeConversions,
+            point.base.cumulativeVisitors,
+            point.variant.cumulativeConversions,
+            point.variant.cumulativeVisitors
+        );
+        
+        // Calculate uplift for this point
+        const uplift = point.uplift.cumulativeRate;
+        const upliftCI = point.uplift.cumulativeRateCI;
+        
+        // Create a temporary challenge object with the point data for CI calculation
+        // Use the same structure as the original experiment to ensure consistent CI rendering
+        const tempChallenge = {
+            ...window.currentExperiment,
+            simulation: {
+                ...window.currentExperiment.simulation,
+                baseConversionRate: point.base.cumulativeRate,
+                variantConversionRate: point.variant.cumulativeRate,
+                confidenceIntervalBase: point.base.cumulativeRateCI,
+                confidenceIntervalVariant: point.variant.cumulativeRateCI,
+                confidenceIntervalDifference: point.difference.cumulativeRateCI,
+                pValue: pValue,
+                uplift: uplift,
+                upliftConfidenceInterval: upliftCI
+            }
+        };
+        
+        
+        // Use the standard CI update function for all experiments (overdue and normal)
+        // This ensures consistent CI bar rendering regardless of experiment type
+        if (window.updateConfidenceIntervals) {
+            window.updateConfidenceIntervals(tempChallenge);
+        } else {
+        }
+        
+        // Refresh alerts with time-filtered data
+        if (this.debugMode()) {
+            this.addDebugAlerts();
+        }
+    },
+
+    updateConfidenceIntervalsWithTwymanCheck(sliderChallenge, filteredChallenge) {
+        
+        // Update CI column header
+        const ciHeader = document.getElementById('ci-header');
+        if (ciHeader) {
+            const confidenceLevel = calculateConfidenceLevel(sliderChallenge.experiment.alpha);
+            ciHeader.textContent = `${confidenceLevel}% Confidence Intervals`;
+        }
+
+        // Display p-value from slider data
+        const pValueElement = document.getElementById('p-value-display');
+        if (pValueElement) {
+            const pValue = sliderChallenge.simulation.pValue;
+            const alpha = sliderChallenge.experiment.alpha;
+            pValueElement.textContent = pValue.toFixed(4);
+            if (pValue < alpha) {
+                pValueElement.classList.add('text-green-600');
+                pValueElement.classList.remove('text-blue-600');
+            } else {
+                pValueElement.classList.add('text-blue-600');
+                pValueElement.classList.remove('text-green-600');
+            }
+            
+            // Check for Twyman's Law using FILTERED data (not slider data)
+            const filteredPValue = filteredChallenge.simulation.pValue;
+            const pValueString = filteredPValue.toFixed(10);
+            const suspiciousPValue = pValueString.includes('0.000000') || filteredPValue < 0.000001;
+            const absoluteDelta = Math.abs(filteredChallenge.simulation.variantConversionRate - filteredChallenge.simulation.baseConversionRate);
+            const largeEffect = absoluteDelta >= 2 * filteredChallenge.experiment.minimumRelevantEffect;
+            const hasTwymansLaw = suspiciousPValue && largeEffect;
+            
+            
+            // Add Twyman's Law alert if detected (using filtered data)
+            if (hasTwymansLaw) {
+                const message = `Twyman's Law detected: Suspiciously low p-value (p=${filteredPValue.toFixed(10)}) and unusually large effect (more than 2x the MRE)\n\n<a href=\"twymans-law.html\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-blue-500 hover:text-blue-700\">Learn more about Twyman's Law →</a>`;
 
         // Store the original text content
         const originalText = pValueElement.textContent;
@@ -772,51 +1416,228 @@ const UIController = {
         pValueElement.appendChild(textSpan);
 
         // Add warning icon
-        const warningIcon = this.createWarningIcon(message);
+                const warningIcon = document.createElement('span');
+                warningIcon.className = 'text-yellow-500 cursor-help tooltip-trigger text-lg font-medium ml-2';
+                warningIcon.textContent = '⚠️';
+
+                const tooltipContent = document.createElement('span');
+                tooltipContent.className = 'tooltip-content';
+                tooltipContent.innerHTML = message.replace(/\n/g, '<br>');
+                warningIcon.appendChild(tooltipContent);
+
+                // Add tooltip positioning
+                warningIcon.addEventListener('mousemove', (e) => {
+                    const tooltip = warningIcon.querySelector('.tooltip-content');
+                    if (!tooltip) return;
+
+                    const rect = warningIcon.getBoundingClientRect();
+                    tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
+                    tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+                });
+
         pValueElement.appendChild(warningIcon);
+            }
+        }
+
+        // Calculate the difference in conversion rate from slider data
+        const diffValue = sliderChallenge.simulation.variantConversionRate - sliderChallenge.simulation.baseConversionRate;
+
+        // Display difference in conversion rate
+        const differenceDisplay = document.getElementById('difference-display');
+        if (differenceDisplay) {
+            differenceDisplay.textContent = formatPercent(diffValue);
+        }
+
+        // Find the range for conversion rate intervals (using slider data)
+        const conversionValues = [
+            ...sliderChallenge.simulation.confidenceIntervalBase,
+            ...sliderChallenge.simulation.confidenceIntervalVariant,
+            sliderChallenge.simulation.baseConversionRate,
+            sliderChallenge.simulation.variantConversionRate
+        ];
+
+        const minConversionValue = Math.min(...conversionValues);
+        const maxConversionValue = Math.max(...conversionValues);
+        const conversionViewRange = maxConversionValue - minConversionValue;
+        const viewPadding = conversionViewRange * 0.2;
+
+        // Round to nice intervals
+        const conversionViewMin = Math.floor((minConversionValue - viewPadding) * 100) / 100;
+        const conversionViewMax = Math.ceil((maxConversionValue + viewPadding) * 100) / 100;
+
+        // Determine result type based on CI difference and improvement direction (using slider data)
+        const lowDiff = sliderChallenge.simulation.confidenceIntervalDifference[0];
+        const highDiff = sliderChallenge.simulation.confidenceIntervalDifference[1];
+        const improvementDirection = sliderChallenge.experiment.improvementDirection;
+        let resultType;
+        
+        if (improvementDirection === 'LOWER_IS_BETTER') {
+            if (highDiff < 0) {
+                resultType = 'positive';
+            } else if (lowDiff > 0) {
+                resultType = 'negative';
+            } else {
+                resultType = 'inconclusive';
+            }
+        } else {
+            if (lowDiff > 0) {
+                resultType = 'positive';
+            } else if (highDiff < 0) {
+                resultType = 'negative';
+            } else {
+                resultType = 'inconclusive';
+            }
+        }
+
+        // Update base CI (always purple)
+        updateCIVisualization(
+            'base-ci',
+            sliderChallenge.simulation.confidenceIntervalBase[0],
+            sliderChallenge.simulation.confidenceIntervalBase[1],
+            sliderChallenge.simulation.baseConversionRate,
+            CIColorMappings.base,
+            true,
+            conversionViewMin,
+            conversionViewMax
+        );
+
+        // Update variant CI with result-based colors
+        updateCIVisualization(
+            'variant-ci',
+            sliderChallenge.simulation.confidenceIntervalVariant[0],
+            sliderChallenge.simulation.confidenceIntervalVariant[1],
+            sliderChallenge.simulation.variantConversionRate,
+            CIColorMappings[resultType],
+            true,
+            conversionViewMin,
+            conversionViewMax
+        );
+
+        // Update difference CI using original logic (no scale labels)
+        const diffContainer = document.getElementById('diff-ci');
+        if (diffContainer) {
+            const [lowDiff, highDiff] = sliderChallenge.simulation.confidenceIntervalDifference;
+            const diffBar = document.getElementById('diff-ci-bar');
+            const diffMarker = document.getElementById('diff-ci-marker');
+            const diffLowLabel = document.getElementById('diff-ci-low');
+            const diffHighLabel = document.getElementById('diff-ci-high');
+
+            // Calculate relative positions
+            const maxAbsDiff = Math.max(Math.abs(lowDiff), Math.abs(highDiff), Math.abs(diffValue)) * 1.2;
+            const diffViewMin = -maxAbsDiff;
+            const diffViewMax = maxAbsDiff;
+            const toDiffViewPercent = (value) => ((value - diffViewMin) / (diffViewMax - diffViewMin)) * 100;
+
+            // Update visual elements
+            if (diffBar) {
+                diffBar.className = `absolute h-full ${CIColorMappings[resultType].bar} rounded-md`;
+                diffBar.style.left = `${toDiffViewPercent(lowDiff)}%`;
+                diffBar.style.width = `${toDiffViewPercent(highDiff) - toDiffViewPercent(lowDiff)}%`;
+            }
+
+            if (diffMarker) {
+                diffMarker.className = `absolute w-0.5 h-full ${CIColorMappings[resultType].marker} rounded-sm`;
+                diffMarker.style.left = `${toDiffViewPercent(diffValue)}%`;
+            }
+
+            // Add zero line only (no label - already exists inside bar)
+            const diffZeroLine = diffContainer.querySelector('.zero-line') || document.createElement('div');
+            diffZeroLine.className = 'absolute h-full w-px bg-gray-400';
+            diffZeroLine.style.left = `${toDiffViewPercent(0)}%`;
+            if (!diffContainer.querySelector('.zero-line')) {
+                diffContainer.appendChild(diffZeroLine);
+            }
+
+            // Update labels
+            if (diffLowLabel) {
+                diffLowLabel.className = `absolute text-xs font-medium ${CIColorMappings[resultType].text} drop-shadow-sm`;
+                diffLowLabel.textContent = formatPercent(lowDiff);
+                diffLowLabel.style.left = `${toDiffViewPercent(lowDiff)}%`;
+                diffLowLabel.style.top = '50%';
+                diffLowLabel.style.transform = 'translate(-50%, -50%)';
+            }
+
+            if (diffHighLabel) {
+                diffHighLabel.className = `absolute text-xs font-medium ${CIColorMappings[resultType].text} drop-shadow-sm`;
+                diffHighLabel.textContent = formatPercent(highDiff);
+                diffHighLabel.style.left = `${toDiffViewPercent(highDiff)}%`;
+                diffHighLabel.style.top = '50%';
+                diffHighLabel.style.transform = 'translate(-50%, -50%)';
+            }
+        }
+
+        // Update uplift CI using original logic (no scale labels)
+        const upliftContainer = document.getElementById('uplift-ci');
+        if (upliftContainer) {
+            const upliftValue = sliderChallenge.simulation.uplift;
+            const [lowUplift, highUplift] = sliderChallenge.simulation.upliftConfidenceInterval;
+
+            // Determine color based on significance
+            const colors = resultType === 'positive' ? {
+                bar: 'bg-green-200',
+                marker: 'bg-green-600',
+                text: 'text-green-900'
+            } : resultType === 'negative' ? {
+                bar: 'bg-red-200',
+                marker: 'bg-red-600',
+                text: 'text-red-900'
+            } : {
+                bar: 'bg-blue-200',
+                marker: 'bg-blue-600',
+                text: 'text-blue-900'
+            };
+
+            const upliftBar = document.getElementById('uplift-ci-bar');
+            const upliftMarker = document.getElementById('uplift-ci-marker');
+            const upliftLowLabel = document.getElementById('uplift-ci-low');
+            const upliftHighLabel = document.getElementById('uplift-ci-high');
+
+            // Calculate relative positions
+            const maxAbsUplift = Math.max(Math.abs(lowUplift), Math.abs(highUplift), Math.abs(upliftValue)) * 1.2;
+            const upliftViewMin = -maxAbsUplift;
+            const upliftViewMax = maxAbsUplift;
+            const toUpliftViewPercent = (value) => ((value - upliftViewMin) / (upliftViewMax - upliftViewMin)) * 100;
+
+            // Update visual elements
+            if (upliftBar) {
+                upliftBar.className = `absolute h-full ${colors.bar} rounded-md`;
+                upliftBar.style.left = `${toUpliftViewPercent(lowUplift)}%`;
+                upliftBar.style.width = `${toUpliftViewPercent(highUplift) - toUpliftViewPercent(lowUplift)}%`;
+            }
+
+            if (upliftMarker) {
+                upliftMarker.className = `absolute w-0.5 h-full ${colors.marker} rounded-sm`;
+                upliftMarker.style.left = `${toUpliftViewPercent(upliftValue)}%`;
+            }
+
+            // Add zero line only (no label - already exists inside bar)
+            const upliftZeroLine = upliftContainer.querySelector('.zero-line') || document.createElement('div');
+            upliftZeroLine.className = 'absolute h-full w-px bg-gray-400';
+            upliftZeroLine.style.left = `${toUpliftViewPercent(0)}%`;
+            if (!upliftContainer.querySelector('.zero-line')) {
+                upliftContainer.appendChild(upliftZeroLine);
+            }
+
+            // Update labels
+            if (upliftLowLabel) {
+                upliftLowLabel.className = `absolute text-xs font-medium ${colors.text} drop-shadow-sm`;
+                upliftLowLabel.textContent = formatPercent(lowUplift);
+                upliftLowLabel.style.left = `${toUpliftViewPercent(lowUplift)}%`;
+                upliftLowLabel.style.top = '50%';
+                upliftLowLabel.style.transform = 'translate(-50%, -50%)';
+            }
+
+            if (upliftHighLabel) {
+                upliftHighLabel.className = `absolute text-xs font-medium ${colors.text} drop-shadow-sm`;
+                upliftHighLabel.textContent = formatPercent(highUplift);
+                upliftHighLabel.style.left = `${toUpliftViewPercent(highUplift)}%`;
+                upliftHighLabel.style.top = '50%';
+                upliftHighLabel.style.transform = 'translate(-50%, -50%)';
+            }
+        }
+        
     },
 
-    addOverdueAlert() {
-        console.log('🔍 Checking for overdue alert...');
-        const analysis = window.currentAnalysis;
-        console.log('Analysis:', analysis);
-        
-        if (!analysis || !analysis.analysis || !analysis.analysis.overdue) {
-            console.log('❌ No overdue data found');
-            return;
-        }
-
-        const { isOverdue, originalRuntime, actualRuntime, extraDays } = analysis.analysis.overdue;
-        console.log('Overdue data:', { isOverdue, originalRuntime, actualRuntime, extraDays });
-        
-        if (!isOverdue) {
-            console.log('❌ Not overdue');
-            return;
-        }
-
-        const completeTextElement = document.getElementById('exp-complete-text');
-        if (!completeTextElement) {
-            console.log('❌ Complete text element not found');
-            return;
-        }
-
-        console.log('✅ Adding overdue alert');
-        
-        // Get sample size information
-        const originalExperiment = analysis.originalExperiment;
-        const originalBaseVisitors = originalExperiment?.simulation?.actualVisitorsBase || 0;
-        const originalVariantVisitors = originalExperiment?.simulation?.actualVisitorsVariant || 0;
-        const originalTotalVisitors = originalBaseVisitors + originalVariantVisitors;
-        const requiredSampleSize = originalExperiment?.experiment?.requiredSampleSizePerVariant || 0;
-        const requiredTotalSampleSize = requiredSampleSize * 2;
-        
-        const message = `Overdue Experiment: Planned for ${originalRuntime} days but ran for ${actualRuntime} days (${extraDays} extra days)\n\nSample Size:\n• Intended: ${requiredTotalSampleSize.toLocaleString()} total (${requiredSampleSize.toLocaleString()} per variant)\n• Actual: ${originalTotalVisitors.toLocaleString()} total (${originalBaseVisitors.toLocaleString()} base, ${originalVariantVisitors.toLocaleString()} variant)\n<a href="overdue-experiment.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about overdue experiments →</a>`;
-
-        // Clear the element and add warning icon
-        completeTextElement.textContent = '';
-        completeTextElement.appendChild(this.createWarningIcon(message));
-        completeTextElement.appendChild(document.createTextNode(` Complete | ${actualRuntime}d | ${analysis.originalExperiment?.simulation?.actualVisitorsBase + analysis.originalExperiment?.simulation?.actualVisitorsVariant || 'N/A'}v`));
-    },
 
     // Attach tooltip behaviour to dynamically added elements
     initializeTooltipTriggers(parent) {
@@ -955,6 +1776,12 @@ const UIController = {
         }
         progressBar.removeEventListener('mousemove', progressBar.mousemoveHandler);
 
+        // Check if this is an overdue experiment - if so, don't show tooltip (overdue alert handles this)
+        const isOverdue = window.currentAnalysis?.analysis?.overdue?.isOverdue || false;
+        if (isOverdue) {
+            return; // No tooltip for overdue experiments
+        }
+
         // Define tooltip scenarios
         const tooltipScenarios = [
             {
@@ -1026,6 +1853,9 @@ const UIController = {
         const displayChallenge = window.currentAnalysis?.originalExperiment || challenge;
         const daysElapsed = displayChallenge.simulation.timeline.currentRuntimeDays;
         const totalDays = displayChallenge.experiment.requiredRuntimeDays;
+        
+        // Initialize time slider
+        this.initializeTimeSlider(displayChallenge);
         const daysRemaining = totalDays - daysElapsed;
         const isComplete = daysElapsed >= totalDays;
 
@@ -1127,10 +1957,13 @@ const UIController = {
         // Check if we have enough sample size and if elapsed days is a multiple of 7
         const hasEnoughSampleSize = totalVisitors >= (2 * challenge.experiment.requiredSampleSizePerVariant);
         const isFullWeek = daysElapsed % 7 === 0;
+        
+        // Check if this is an overdue experiment
+        const isOverdue = window.currentAnalysis?.analysis?.overdue?.isOverdue || false;
 
         // Set progress bar color based on conditions
-        if (hasEnoughSampleSize && isFullWeek) {
-            // Bright blue for complete weeks with enough sample size
+        if (isOverdue || (hasEnoughSampleSize && isFullWeek)) {
+            // Bright blue for overdue experiments OR complete weeks with enough sample size
             progressBar.style.backgroundColor = '#3b82f6'; // Tailwind blue-500
         } else {
             // Gray for incomplete weeks or insufficient sample size
@@ -1181,17 +2014,6 @@ const UIController = {
 
     updateMetricsTable() {
         const challenge = this.state.challenge;
-        const formatDelta = (value, isPercentage = false) => {
-            const sign = value > 0 ? '+' : '';
-            return isPercentage ?
-                `${sign}${(value * 100).toFixed(2)}%` :
-                `${sign}${value}`;
-        };
-
-        const formatUplift = (value) => {
-            const sign = value > 0 ? '+' : '';
-            return `${sign}${(value * 100).toFixed(2)}%`;
-        };
 
         // Update base metrics
         document.getElementById('base-visitors').textContent = challenge.simulation.actualVisitorsBase;
@@ -1205,14 +2027,14 @@ const UIController = {
         document.getElementById('variant-rate').textContent = `${(challenge.simulation.variantConversionRate * 100).toFixed(2)}%`;
 
         // Update delta metrics
-        document.getElementById('delta-visitors').textContent = formatDelta(challenge.simulation.actualVisitorsVariant - challenge.simulation.actualVisitorsBase);
-        document.getElementById('delta-conversions').textContent = formatDelta(challenge.simulation.actualConversionsVariant - challenge.simulation.actualConversionsBase);
-        document.getElementById('delta-rate').textContent = formatDelta(challenge.simulation.variantConversionRate - challenge.simulation.baseConversionRate, true);
+        document.getElementById('delta-visitors').textContent = this.formatDelta(challenge.simulation.actualVisitorsVariant - challenge.simulation.actualVisitorsBase);
+        document.getElementById('delta-conversions').textContent = this.formatDelta(challenge.simulation.actualConversionsVariant - challenge.simulation.actualConversionsBase);
+        document.getElementById('delta-rate').textContent = this.formatDelta(challenge.simulation.variantConversionRate - challenge.simulation.baseConversionRate, true);
 
         // Update uplift metrics
-        document.getElementById('visitor-uplift').textContent = formatUplift(challenge.simulation.visitorUplift);
-        document.getElementById('conversion-uplift').textContent = formatUplift(challenge.simulation.conversionUplift);
-        document.getElementById('uplift-value').textContent = formatUplift(challenge.simulation.uplift);
+        document.getElementById('visitor-uplift').textContent = this.formatUplift(challenge.simulation.visitorUplift);
+        document.getElementById('conversion-uplift').textContent = this.formatUplift(challenge.simulation.conversionUplift);
+        document.getElementById('uplift-value').textContent = this.formatUplift(challenge.simulation.uplift);
     },
 
     updateProgress() {
@@ -1240,9 +2062,6 @@ const UIController = {
         const decisionSelected = Array.from(document.querySelectorAll('.decision-btn[name="decision"]')).some(btn => btn.classList.contains('selected'));
         const followUpSelected = Array.from(document.querySelectorAll('.decision-btn[name="follow_up"]')).some(btn => btn.classList.contains('selected'));
 
-        console.log('Trust selected:', trustSelected);
-        console.log('Decision selected:', decisionSelected);
-        console.log('Follow up selected:', followUpSelected);
 
         if (trustSelected && decisionSelected && followUpSelected) {
             submitButton.disabled = false;
@@ -1299,7 +2118,32 @@ const UIController = {
 
             // Use the global analysis
             const analysis = window.currentAnalysis;
-            const experiment = window.currentExperiment;
+            
+            // For overdue experiments, use the filtered experiment data for scoring
+            let experiment = window.currentExperiment;
+            if (analysis?.analysis?.overdue?.isOverdue) {
+                // For overdue experiments, the analysis contains the filtered data
+                // Create a proper experiment object with the filtered data for scoring
+                experiment = {
+                    experiment: window.currentExperiment.experiment,
+                    simulation: {
+                        actualVisitorsBase: analysis.simulation?.actualVisitorsBase || window.currentExperiment.simulation.actualVisitorsBase,
+                        actualVisitorsVariant: analysis.simulation?.actualVisitorsVariant || window.currentExperiment.simulation.actualVisitorsVariant,
+                        actualConversionsBase: analysis.simulation?.actualConversionsBase || window.currentExperiment.simulation.actualConversionsBase,
+                        actualConversionsVariant: analysis.simulation?.actualConversionsVariant || window.currentExperiment.simulation.actualConversionsVariant,
+                        pValue: analysis.simulation?.pValue || window.currentExperiment.simulation.pValue,
+                        confidenceIntervalDifference: analysis.simulation?.confidenceIntervalDifference || window.currentExperiment.simulation.confidenceIntervalDifference,
+                        actualEffectSize: analysis.simulation?.actualEffectSize || window.currentExperiment.simulation.actualEffectSize,
+                        baseConversionRate: analysis.simulation?.baseConversionRate || window.currentExperiment.simulation.baseConversionRate,
+                        variantConversionRate: analysis.simulation?.variantConversionRate || window.currentExperiment.simulation.variantConversionRate,
+                        // Add timeline data for competitor decisions
+                        timeline: {
+                            currentRuntimeDays: analysis.simulation?.timeline?.currentRuntimeDays || window.currentExperiment.simulation.timeline.currentRuntimeDays,
+                            timePoints: analysis.simulation?.timeline?.timePoints || window.currentExperiment.simulation.timeline.timePoints
+                        }
+                    }
+                };
+            }
 
 
             // Calculate decision comparison once for all uses
@@ -1843,20 +2687,14 @@ const UIController = {
         const accuracyElement = document.getElementById('accuracy');
         const modalAccuracyElement = document.getElementById('modal-accuracy');
 
-        console.log(`Updating accuracy display to: ${accuracy}%`);
-        console.log(`Accuracy element found:`, !!accuracyElement);
-        console.log(`Modal accuracy element found:`, !!modalAccuracyElement);
 
         if (accuracyElement) {
             accuracyElement.textContent = `${accuracy}%`;
-            console.log(`Updated accuracy element to: ${accuracy}%`);
-            console.log(`Element content after update:`, accuracyElement.textContent);
         } else {
             console.error('Accuracy element not found!');
         }
         if (modalAccuracyElement) {
             modalAccuracyElement.textContent = `${accuracy}%`;
-            console.log(`Updated modal accuracy element to: ${accuracy}%`);
         }
     },
 
@@ -1865,13 +2703,6 @@ const UIController = {
     },
 
     async handleNextChallenge() {
-        console.log('handleNextChallenge called');
-        console.log('Current state:', {
-            experimentsInCurrentRound: this.state.experimentsInCurrentRound,
-            EXPERIMENTS_PER_SESSION: this.state.EXPERIMENTS_PER_SESSION,
-            correctInCurrentRound: this.state.correctInCurrentRound,
-            currentRound: this.state.currentRound
-        });
 
         const feedbackModal = document.getElementById('feedback-modal');
         const nextChallengeBtn = document.getElementById('next-challenge-btn');
@@ -1880,9 +2711,7 @@ const UIController = {
 
         if (this.state.experimentsInCurrentRound === this.state.EXPERIMENTS_PER_SESSION) {
 
-            console.log('Round completed. Correct answers:', this.state.correctInCurrentRound, 'Required: 2');
             if (this.state.correctInCurrentRound >= 2) {
-                console.log('Advancing to next round. Current round:', this.state.currentRound);
                 // Log round_end and update session summary
                 (async () => {
                     try {
@@ -1917,7 +2746,6 @@ const UIController = {
                 this.updateExperimentDots(); // Update experiment dots for new round
                 this.updateRoundDisplay(); // Update the round display
                 // Show round splash first
-                console.log('About to show splash for round:', this.state.currentRound);
                 this.showRoundSplash();
                 // Wait for splash animation to complete before loading new challenge
                 await new Promise(resolve => setTimeout(resolve, 2000));
@@ -1934,13 +2762,9 @@ const UIController = {
     },
 
     showRoundSplash() {
-        console.log('showRoundSplash called for round:', this.state.currentRound);
         const splash = document.getElementById('round-splash');
         const overlay = document.getElementById('round-splash-overlay');
-        console.log('Splash element found:', !!splash);
-        console.log('Overlay element found:', !!overlay);
         if (!splash || !overlay) {
-            console.log('Missing splash elements!');
             return;
         }
 

@@ -822,6 +822,7 @@
                             </div>
                         </div>
                     </div>
+                    
                 </div>
             </div>
 
@@ -963,6 +964,30 @@
 
                 <!-- Tab Content -->
                 <div id="metrics-tab" class="tab-content">
+                    <!-- Time Slider -->
+                    <div class="mb-4 p-3 bg-gray-50 rounded-lg border">
+                        <div class="flex items-center space-x-4">
+                            <label for="time-slider" class="text-sm font-medium text-gray-700">Time Travel:</label>
+                            <div class="flex-1 relative">
+                                <input type="range" id="time-slider" min="1" max="1" value="1" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider">
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                <span id="current-day-display">Day 1</span>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-xs text-gray-500">
+                            <span id="time-slider-info">Drag to see experiment at different points in time</span>
+                            <span class="ml-2">
+                                <a href="#" id="jump-to-today" class="text-blue-600 hover:text-blue-800 underline">Jump to Today</a>
+                            </span>
+                            <span class="ml-2">
+                                <a href="#" id="jump-to-planned-end" class="text-blue-600 hover:text-blue-800 underline">Jump to planned end date</a>
+                            </span>
+                            <span id="planned-end-future-text" class="ml-2 text-gray-400" style="display: none;">(planned end date in the future)</span>
+                        </div>
+                    </div>
+                    
                     <div class="overflow-x-auto mt-4">
                         <table class="w-full border-collapse border metrics-table">
                             <thead>
