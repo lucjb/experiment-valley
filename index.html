@@ -822,6 +822,7 @@
                             </div>
                         </div>
                     </div>
+                    
                 </div>
             </div>
 
@@ -963,6 +964,33 @@
 
                 <!-- Tab Content -->
                 <div id="metrics-tab" class="tab-content">
+                    <!-- Time Slider -->
+                    <div class="mb-4 p-3 bg-gray-50 rounded-lg border">
+                        <div class="flex items-center space-x-4">
+                            <label for="time-slider" class="text-sm font-medium text-gray-700">Time Travel:</label>
+                            <div class="flex-1 relative">
+                                <input type="range" id="time-slider" min="1" max="1" value="1" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider">
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                <span id="current-day-display">Day 1</span>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-xs text-gray-500">
+                            <span id="time-slider-info">Drag to see experiment at different points in time</span>
+        <span class="ml-2">
+                                <a href="#" id="jump-to-today" class="text-blue-600 hover:text-blue-800 underline">Jump to Today</a>
+                            </span>
+                            <span class="ml-2">
+                                <a href="#" id="jump-to-planned-end" class="text-blue-600 hover:text-blue-800 underline">Jump to planned end date</a>
+                            </span>
+        <span class="ml-2">
+            <a href="#" id="jump-to-last-full-week" class="text-blue-600 hover:text-blue-800 underline">Jump to last full week cycle</a>
+        </span>
+                            <span id="planned-end-future-text" class="ml-2 text-gray-400" style="display: none;">(planned end date in the future)</span>
+                        </div>
+                    </div>
+                    
                     <div class="overflow-x-auto mt-4">
                         <table class="w-full border-collapse border metrics-table">
                             <thead>
@@ -1340,7 +1368,7 @@
                 style="background-color: rgba(17, 24, 39, 0.9);">
                 <div class="text-center">
                     <!-- Game Over -->
-                    <h2 class="text-6xl font-bold text-white mb-8 tracking-wider"
+                    <h2 class="text-6xl font-bold text-white mb-4 tracking-wider"
                         style="text-shadow: 0 0 10px rgba(255,255,255,0.6), 0 0 20px rgba(255,255,255,0.4);">GAME OVER
                     </h2>
 
@@ -1366,7 +1394,7 @@
                     </div>
 
                     <!-- Impact Block -->
-                    <div class="bg-gray-800 rounded-lg p-6 mb-8" style="background-color: rgba(31, 41, 55, 0.8);">
+                    <div class="bg-gray-800 rounded-lg p-6 mb-4" style="background-color: rgba(31, 41, 55, 0.8);">
                         <h3 class="text-xl font-semibold text-white mb-4">Impact</h3>
                         <div class="flex justify-center items-center space-x-16">
                             <div class="text-center">
@@ -1388,7 +1416,7 @@
                     </div>
 
                     <!-- Share Section -->
-                    <div class="mb-8">
+                    <div class="mb-4">
                         <p class="text-sm text-gray-400 mb-4">Share your achievement:</p>
                         <div class="flex justify-center space-x-4">
                             <button onclick="UIController.shareOnTwitter()"
@@ -1563,45 +1591,46 @@
             const tooltipTriggers = document.querySelectorAll('.tooltip-trigger');
 
             tooltipTriggers.forEach(trigger => {
-                trigger.addEventListener('mousemove', function (e) {
-                    const tooltip = this.querySelector('.tooltip-content');
-                    if (!tooltip) return;
+                const moveHandler = function () {
+                    const tip = trigger.querySelector('.tooltip-content');
+                    if (!tip) return;
 
-                    // Get trigger position
-                    const rect = this.getBoundingClientRect();
-                    const tooltipHeight = tooltip.offsetHeight;
-                    const tooltipWidth = tooltip.offsetWidth;
+                    const rect = trigger.getBoundingClientRect();
+                    const tooltipHeight = tip.offsetHeight;
+                    const tooltipWidth = tip.offsetWidth;
 
-                    // Calculate available space above and below
-                    const spaceAbove = rect.top;
-                    const spaceBelow = window.innerHeight - rect.bottom;
-
-                    // Position tooltip horizontally centered
                     let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
-
-                    // Ensure tooltip doesn't overflow horizontally
                     if (left < 10) left = 10;
                     if (left + tooltipWidth > window.innerWidth - 10) {
                         left = window.innerWidth - tooltipWidth - 10;
                     }
 
-                    // Position tooltip vertically - prefer above, but use below if not enough space
+                    const spaceAbove = rect.top;
+                    const spaceBelow = window.innerHeight - rect.bottom;
                     let top;
                     if (spaceAbove >= tooltipHeight + 10) {
-                        // Position above
                         top = rect.top - tooltipHeight - 10;
                     } else if (spaceBelow >= tooltipHeight + 10) {
-                        // Position below
                         top = rect.bottom + 10;
                     } else {
-                        // If neither fits, position where there's more space
-                        top = spaceAbove > spaceBelow ?
-                            rect.top - tooltipHeight - 10 :
-                            rect.bottom + 10;
+                        top = rect.bottom + 10;
                     }
 
-                    tooltip.style.left = left + 'px';
-                    tooltip.style.top = top + 'px';
+                    tip.style.left = left + 'px';
+                    tip.style.top = top + 'px';
+                    tip.style.visibility = 'visible';
+                    tip.style.opacity = '1';
+                };
+
+                trigger.addEventListener('mouseenter', moveHandler);
+                trigger.addEventListener('mousemove', moveHandler);
+                trigger.addEventListener('mouseleave', function () {
+                    const tip = trigger.querySelector('.tooltip-content');
+                    if (!tip) return;
+                    tip.style.visibility = 'hidden';
+                    tip.style.opacity = '0';
+                    tip.style.left = '-9999px';
+                    tip.style.top = '-9999px';
                 });
             });
         });
