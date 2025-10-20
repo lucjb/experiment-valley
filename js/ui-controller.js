@@ -19,7 +19,8 @@ const UIController = {
         competitorCumulativeEffect: 0,
         currentCompetitor: null,
         selectedCompetitor: null,
-        roundResults: [] // Store results for each experiment in the current round
+        roundResults: [], // Store results for each experiment in the current round
+        earnedBadges: new Set()
     },
 
     init() {
@@ -348,6 +349,7 @@ const UIController = {
         this.state.currentCompetitor = null;
         this.state.selectedCompetitor = null;
         this.state.roundResults = [];
+        this.state.earnedBadges = new Set();
 
         // Reset UI elements
         this.updateRoundDisplay();
@@ -356,6 +358,7 @@ const UIController = {
         this.resetDecisions();
         this.updateExperimentDots();
         this.updateRoundTickMarks();
+        this.updateSessionBadgeDisplay();
 
         // Reset progress bar and clear globals
         const progressBar = document.getElementById('progress-bar');
@@ -2377,6 +2380,8 @@ const UIController = {
             if (isPerfect) {
                 this.state.correctInCurrentRound++;
 
+                const badgeAward = this.awardBadgesForCurrentChallenge();
+
                 feedbackTitle.textContent = 'Score Card';
                 resultsCardTitle.textContent = resultsCardTitleText;
 
@@ -2387,6 +2392,21 @@ const UIController = {
                         <span class="text-green-700 font-semibold">Perfect! All 3 decisions correct!</span>
                     </p>
                 `;
+
+                if (badgeAward.challengeBadges.length > 0) {
+                    const badgeChips = badgeAward.challengeBadges
+                        .map(badge => `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-600 bg-opacity-20 text-purple-100 border border-purple-400 text-xs font-semibold uppercase tracking-wide">${badge}</span>`)
+                        .join('');
+                    const badgeMessage = badgeAward.newBadges.length > 0
+                        ? 'Badges earned for this challenge:'
+                        : 'Badges already collected for this challenge:';
+                    resultsDisplay.innerHTML += `
+                        <div class="mt-3 text-center">
+                            <p class="text-xs text-purple-700 font-semibold leading-tight">${badgeMessage}</p>
+                            <div class="mt-2 flex flex-wrap justify-center gap-2">${badgeChips}</div>
+                        </div>
+                    `;
+                }
 
                 ModalManager.showFeedback(true, feedbackMessage);
             } else if (isGood) {
@@ -2743,6 +2763,7 @@ const UIController = {
         // If they're still in round 1 and failed, they completed 0 rounds
         const roundsCompleted = this.state.currentRound > 1 ? this.state.currentRound - 1 : 0;
         document.getElementById('final-round').textContent = roundsCompleted;
+        this.updateSessionBadgeDisplay();
 
         // Show completion modal immediately to prevent flashing
         completionModal.classList.remove('hidden');
@@ -2835,12 +2856,14 @@ const UIController = {
         this.state.currentCompetitor = null;
         this.state.selectedCompetitor = null;
         this.state.roundResults = []; // Reset round results
+        this.state.earnedBadges = new Set();
         this.updateExperimentDots(); // Update experiment dots for new session
 
         // Update displays
         this.updateAccuracyDisplay(0);
         this.updateRoundDisplay(); // Update the round display
         this.updateImpactDisplay(); // Update impact display
+        this.updateSessionBadgeDisplay();
 
         // Reset button text
         const nextButton = document.getElementById('next-challenge-btn');
@@ -2866,9 +2889,61 @@ const UIController = {
         window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(text)}`);
     },
 
+    awardBadgesForCurrentChallenge() {
+        const challenge = this.state.challenge;
+        const challengeBadges = Array.isArray(challenge?.badges) ? challenge.badges : [];
+
+        if (!this.state.earnedBadges || !(this.state.earnedBadges instanceof Set)) {
+            this.state.earnedBadges = new Set();
+        }
+
+        const newBadges = [];
+        challengeBadges.forEach(badge => {
+            if (!this.state.earnedBadges.has(badge)) {
+                newBadges.push(badge);
+            }
+            this.state.earnedBadges.add(badge);
+        });
+
+        this.updateSessionBadgeDisplay();
+
+        return {
+            newBadges,
+            challengeBadges
+        };
+    },
+
     updateImpactDisplay() {
         document.getElementById('user-impact').textContent = `${this.state.userCumulativeEffect} cpd`;
         document.getElementById('opponent-impact').textContent = `${this.state.competitorCumulativeEffect} cpd`;
+    },
+
+    updateSessionBadgeDisplay() {
+        const container = document.getElementById('final-badges');
+        const emptyState = document.getElementById('final-badges-empty');
+        if (!container || !emptyState) {
+            return;
+        }
+
+        container.innerHTML = '';
+
+        const badges = Array.from(this.state.earnedBadges || []);
+        if (badges.length === 0) {
+            emptyState.classList.remove('hidden');
+            return;
+        }
+
+        emptyState.classList.add('hidden');
+
+        badges
+            .slice()
+            .sort((a, b) => a.localeCompare(b))
+            .forEach(badge => {
+                const badgeEl = document.createElement('span');
+                badgeEl.className = 'inline-flex items-center px-3 py-1 rounded-full bg-purple-600 bg-opacity-20 text-purple-100 border border-purple-400 text-xs font-semibold uppercase tracking-wide';
+                badgeEl.textContent = badge;
+                container.appendChild(badgeEl);
+            });
     },
 
     formatPercent(value) {

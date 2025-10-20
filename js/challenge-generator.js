@@ -553,6 +553,24 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
     };
 }
 
+const BADGES = Object.freeze({
+    SIGNIFICANCE: 'Significance',
+    SRM: 'SRM',
+    BASE_RATE_SHIFT: 'Base Rate Shift',
+    VISITOR_LOSS: 'Visitors Loss',
+    LOWER_IS_BETTER: 'Lower is Better',
+    OVERDUE: 'Overdue',
+    TWYMAN: "Twyman's Law",
+    FAST_TRACK: 'Fast Track',
+    SLOW_BURN: 'Slow Burn',
+    TRENDING_UP: 'Trending Up',
+    TRENDING_DOWN: 'Trending Down',
+    LOSS_PREVENTION: 'Loss Prevention',
+    MELTDOWN: 'Meltdown',
+    JACKPOT: 'Jackpot',
+    PATIENCE: 'Patience'
+});
+
 class ChallengeDesign {
     constructor({
         timeProgress = TIME_PROGRESS.FULL,
@@ -563,7 +581,8 @@ class ChallengeDesign {
         visitorsLoss = VISITORS_LOSS.NO,
         improvementDirection = IMPROVEMENT_DIRECTION.HIGHER,
         twymanFabrication = false,
-        overdue = false
+        overdue = false,
+        badges = []
     } = {}) {
         this.timeProgress = timeProgress;
         this.baseRateMismatch = baseRateMismatch;
@@ -574,10 +593,11 @@ class ChallengeDesign {
         this.improvementDirection = improvementDirection;
         this.twymanFabrication = twymanFabrication;
         this.overdue = overdue;
+        this.badges = new Set(Array.isArray(badges) ? badges : []);
     }
 
     generate() {
-        return generateABTestChallenge(
+        const challenge = generateABTestChallenge(
             this.timeProgress,
             this.baseRateMismatch,
             this.effectSize,
@@ -588,59 +608,80 @@ class ChallengeDesign {
             this.twymanFabrication,
             this.overdue
         );
+        return {
+            ...challenge,
+            badges: Array.from(this.badges)
+        };
     }
 
     withBaseRateMismatch() {
         this.baseRateMismatch = BASE_RATE_MISMATCH.YES;
+        this.addBadges(BADGES.BASE_RATE_SHIFT);
         return this;
     }
 
     withSampleRatioMismatch() {
         this.sampleRatioMismatch = SAMPLE_RATIO_MISMATCH.SMALL;
+        this.addBadges(BADGES.SRM);
         return this;
     }
 
     withVisitorsLoss() {
         this.visitorsLoss = VISITORS_LOSS.YES;
+        this.addBadges(BADGES.VISITOR_LOSS);
         return this;
     }
 
     withLowerIsBetter() {
         this.improvementDirection = IMPROVEMENT_DIRECTION.LOWER;
+        this.addBadges(BADGES.LOWER_IS_BETTER);
         return this;
     }
     withLarrgePositiveEffect() {
         this.effectSize = EFFECT_SIZE.LARGE_IMPROVEMENT;
+        this.addBadges(BADGES.JACKPOT);
         return this;
     }
     withLargeNegativeEffect() {
         this.effectSize = EFFECT_SIZE.LARGE_DEGRADATION;
+        this.addBadges(BADGES.MELTDOWN);
         return this;
     }
     withSmallPositiveEffect() {
         this.effectSize = EFFECT_SIZE.SMALL_IMPROVEMENT;
+        this.addBadges(BADGES.TRENDING_UP);
         return this;
     }
     withSmallNegativeEffect() {
         this.effectSize = EFFECT_SIZE.SMALL_DEGRADATION;
+        this.addBadges(BADGES.TRENDING_DOWN);
         return this;
     }
     withNoEffect() {
         this.effectSize = EFFECT_SIZE.NONE;
+        this.addBadges(BADGES.PATIENCE);
         return this;
     }
 
     withPostiveEffect() {
         this.effectSize = EFFECT_SIZE.IMPROVEMENT;
+        this.addBadges(BADGES.SIGNIFICANCE);
         return this;
     }
     withNegativeEffect() {
         this.effectSize = EFFECT_SIZE.DEGRADATION;
+        this.addBadges(BADGES.LOSS_PREVENTION);
         return this;
     }
 
     withOverdue() {
         this.overdue = true;
+        this.addBadges(BADGES.OVERDUE);
+        return this;
+    }
+
+    addBadges(...badges) {
+        badges.filter(Boolean).forEach(badge => this.badges.add(badge));
         return this;
     }
 
@@ -651,7 +692,7 @@ function winner() {
         timeProgress: TIME_PROGRESS.FULL,
         effectSize: EFFECT_SIZE.IMPROVEMENT,
         sampleProgress: SAMPLE_PROGRESS.TIME
-    });
+    }).addBadges(BADGES.SIGNIFICANCE);
 }
 
 function inconclusive() {
@@ -661,7 +702,7 @@ function inconclusive() {
         effectSize: EFFECT_SIZE.NONE,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.TIME
-    });
+    }).addBadges(BADGES.PATIENCE);
 }
 
 function loser() {
@@ -671,7 +712,7 @@ function loser() {
         effectSize: EFFECT_SIZE.SMALL_DEGRADATION,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.TIME
-    });
+    }).addBadges(BADGES.LOSS_PREVENTION);
 }
 
 function bigLoser() {
@@ -681,7 +722,7 @@ function bigLoser() {
         effectSize: EFFECT_SIZE.DEGRADATION,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.TIME
-    });
+    }).addBadges(BADGES.MELTDOWN);
 }
 
 function largeWinner() {
@@ -691,7 +732,7 @@ function largeWinner() {
         effectSize: EFFECT_SIZE.LARGE_IMPROVEMENT,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.TIME
-    });
+    }).addBadges(BADGES.SIGNIFICANCE, BADGES.JACKPOT);
 }
 
 function partialWinner() {
@@ -701,7 +742,7 @@ function partialWinner() {
         effectSize: EFFECT_SIZE.SMALL_IMPROVEMENT,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.TIME
-    });
+    }).addBadges(BADGES.TRENDING_UP);
 }
 
 function partialLoser() {
@@ -711,7 +752,7 @@ function partialLoser() {
         effectSize: EFFECT_SIZE.SMALL_DEGRADATION,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.TIME
-    });
+    }).addBadges(BADGES.TRENDING_DOWN);
 }
 
 function fastWinner() {
@@ -721,7 +762,7 @@ function fastWinner() {
         effectSize: EFFECT_SIZE.IMPROVEMENT,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.FULL
-    });
+    }).addBadges(BADGES.SIGNIFICANCE, BADGES.FAST_TRACK);
 }
 
 // achieves required sample size faster than expected, but always in full weeks
@@ -729,7 +770,7 @@ function fast() {
     return new ChallengeDesign({
         timeProgress: TIME_PROGRESS.PARTIAL_WEEKS,
         sampleProgress: SAMPLE_PROGRESS.FULL
-    });
+    }).addBadges(BADGES.FAST_TRACK);
 }
 
 function slowCompletion() {
@@ -739,7 +780,7 @@ function slowCompletion() {
         effectSize: EFFECT_SIZE.DEGRADATION,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.PARTIAL
-    });
+    }).addBadges(BADGES.SLOW_BURN, BADGES.LOSS_PREVENTION);
 }
 
 function fastLoserWithPartialWeek() {
@@ -749,7 +790,7 @@ function fastLoserWithPartialWeek() {
         effectSize: EFFECT_SIZE.SMALL_DEGRADATION,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.FULL
-    });
+    }).addBadges(BADGES.FAST_TRACK, BADGES.LOSS_PREVENTION);
 }
 
 function twymansLawTrap() {
@@ -760,7 +801,7 @@ function twymansLawTrap() {
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.FULL,
         twymanFabrication: true
-    });
+    }).addBadges(BADGES.TWYMAN, BADGES.PATIENCE);
 }
 
 
