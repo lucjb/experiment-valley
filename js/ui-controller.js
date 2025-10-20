@@ -665,41 +665,46 @@ const UIController = {
 
     // Initialize tooltip for dynamically created elements
     initializeTooltip(tooltipTrigger) {
-        tooltipTrigger.addEventListener('mousemove', function (e) {
-            const tooltip = this.querySelector('.tooltip-content');
-            if (!tooltip) return;
+        const moveHandler = function () {
+            const tip = tooltipTrigger.querySelector('.tooltip-content');
+            if (!tip) return;
 
-            // Get trigger position
-            const rect = this.getBoundingClientRect();
-            const tooltipHeight = tooltip.offsetHeight;
-            const tooltipWidth = tooltip.offsetWidth;
+            const rect = tooltipTrigger.getBoundingClientRect();
+            const tipHeight = tip.offsetHeight;
+            const tipWidth = tip.offsetWidth;
 
-            // Calculate available space above and below
-            const spaceAbove = rect.top;
-            const spaceBelow = window.innerHeight - rect.bottom;
-
-            // Position tooltip horizontally centered
-            let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
-
-            // Ensure tooltip doesn't overflow horizontally
+            let left = rect.left + (rect.width / 2) - (tipWidth / 2);
             if (left < 10) left = 10;
-            if (left + tooltipWidth > window.innerWidth - 10) {
-                left = window.innerWidth - tooltipWidth - 10;
+            if (left + tipWidth > window.innerWidth - 10) {
+                left = window.innerWidth - tipWidth - 10;
             }
 
-            // Position tooltip vertically - prefer above, but use below if not enough space
+            const spaceAbove = rect.top;
+            const spaceBelow = window.innerHeight - rect.bottom;
             let top;
-            if (spaceAbove >= tooltipHeight + 10) {
-                // Position above
-                top = rect.top - tooltipHeight - 10;
+            if (spaceAbove >= tipHeight + 10) {
+                top = rect.top - tipHeight - 10;
+            } else if (spaceBelow >= tipHeight + 10) {
+                top = rect.bottom + 10;
             } else {
-                // Position below
                 top = rect.bottom + 10;
             }
 
-            // Apply positioning
-            tooltip.style.left = left + 'px';
-            tooltip.style.top = top + 'px';
+            tip.style.left = left + 'px';
+            tip.style.top = top + 'px';
+            tip.style.visibility = 'visible';
+            tip.style.opacity = '1';
+        };
+
+        tooltipTrigger.addEventListener('mouseenter', moveHandler);
+        tooltipTrigger.addEventListener('mousemove', moveHandler);
+        tooltipTrigger.addEventListener('mouseleave', function () {
+            const tip = tooltipTrigger.querySelector('.tooltip-content');
+            if (!tip) return;
+            tip.style.visibility = 'hidden';
+            tip.style.opacity = '0';
+            tip.style.left = '-9999px';
+            tip.style.top = '-9999px';
         });
     },
 
@@ -1064,6 +1069,52 @@ const UIController = {
             }
         }
         
+        // Add click handler for jump to last full week cycle
+        const jumpToLastFullWeek = document.getElementById('jump-to-last-full-week');
+        if (jumpToLastFullWeek) {
+            console.log('Found jump-to-last-full-week element');
+            const newJumpToLastFullWeek = jumpToLastFullWeek.cloneNode(true);
+            jumpToLastFullWeek.parentNode.replaceChild(newJumpToLastFullWeek, jumpToLastFullWeek);
+
+            newJumpToLastFullWeek.addEventListener('click', (e) => {
+                console.log('Jump to last full week clicked!');
+                e.preventDefault();
+                // Prefer using timeline periods to find last full week boundary
+                const timePoints = displayChallenge?.simulation?.timeline?.timePoints || [];
+                let targetDay = 1;
+                for (const tp of timePoints) {
+                    const end = tp?.period?.endDay;
+                    if (typeof end === 'number' && end <= maxDays && end % 7 === 0) {
+                        if (end > targetDay) targetDay = end;
+                    }
+                }
+                if (targetDay < 1) {
+                    targetDay = 1;
+                }
+                // Fallback to mathematical boundary if no period matched
+                if (targetDay === 1 && maxDays > 1) {
+                    targetDay = Math.floor(maxDays / 7) * 7;
+                    if (targetDay < 1) targetDay = 1;
+                }
+
+                console.log('Target day:', targetDay, 'Max days:', maxDays);
+
+                // Update the slider value
+                newSlider.value = targetDay;
+                // Trigger the slider's input event to ensure it moves
+                const inputEvent = new Event('input', { bubbles: true });
+                newSlider.dispatchEvent(inputEvent);
+                // Update the experiment data
+                this.updateExperimentAtTime(displayChallenge, targetDay);
+                // Update the day display
+                if (currentDayDisplay) {
+                    currentDayDisplay.textContent = `Day ${targetDay}`;
+                }
+            });
+        } else {
+            console.log('jump-to-last-full-week element not found');
+        }
+        
         // Initialize with current state
         this.updateExperimentAtTime(displayChallenge, maxDays);
     },
@@ -1366,276 +1417,6 @@ const UIController = {
         if (this.debugMode()) {
             this.addDebugAlerts();
         }
-    },
-
-    updateConfidenceIntervalsWithTwymanCheck(sliderChallenge, filteredChallenge) {
-        
-        // Update CI column header
-        const ciHeader = document.getElementById('ci-header');
-        if (ciHeader) {
-            const confidenceLevel = calculateConfidenceLevel(sliderChallenge.experiment.alpha);
-            ciHeader.textContent = `${confidenceLevel}% Confidence Intervals`;
-        }
-
-        // Display p-value from slider data
-        const pValueElement = document.getElementById('p-value-display');
-        if (pValueElement) {
-            const pValue = sliderChallenge.simulation.pValue;
-            const alpha = sliderChallenge.experiment.alpha;
-            pValueElement.textContent = pValue.toFixed(4);
-            if (pValue < alpha) {
-                pValueElement.classList.add('text-green-600');
-                pValueElement.classList.remove('text-blue-600');
-            } else {
-                pValueElement.classList.add('text-blue-600');
-                pValueElement.classList.remove('text-green-600');
-            }
-            
-            // Check for Twyman's Law using FILTERED data (not slider data)
-            const filteredPValue = filteredChallenge.simulation.pValue;
-            const pValueString = filteredPValue.toFixed(10);
-            const suspiciousPValue = pValueString.includes('0.000000') || filteredPValue < 0.000001;
-            const absoluteDelta = Math.abs(filteredChallenge.simulation.variantConversionRate - filteredChallenge.simulation.baseConversionRate);
-            const largeEffect = absoluteDelta >= 2 * filteredChallenge.experiment.minimumRelevantEffect;
-            const hasTwymansLaw = suspiciousPValue && largeEffect;
-            
-            
-            // Add Twyman's Law alert if detected (using filtered data)
-            if (hasTwymansLaw) {
-                const message = `Twyman's Law detected: Suspiciously low p-value (p=${filteredPValue.toFixed(10)}) and unusually large effect (more than 2x the MRE)\n\n<a href=\"twymans-law.html\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-blue-500 hover:text-blue-700\">Learn more about Twyman's Law →</a>`;
-
-        // Store the original text content
-        const originalText = pValueElement.textContent;
-
-        // Clear the element and rebuild it with warning icon
-        pValueElement.textContent = '';
-
-        // Add the original text back
-        const textSpan = document.createElement('span');
-        textSpan.textContent = originalText;
-        pValueElement.appendChild(textSpan);
-
-        // Add warning icon
-                const warningIcon = document.createElement('span');
-                warningIcon.className = 'text-yellow-500 cursor-help tooltip-trigger text-lg font-medium ml-2';
-                warningIcon.textContent = '⚠️';
-
-                const tooltipContent = document.createElement('span');
-                tooltipContent.className = 'tooltip-content';
-                tooltipContent.innerHTML = message.replace(/\n/g, '<br>');
-                warningIcon.appendChild(tooltipContent);
-
-                // Add tooltip positioning
-                warningIcon.addEventListener('mousemove', (e) => {
-                    const tooltip = warningIcon.querySelector('.tooltip-content');
-                    if (!tooltip) return;
-
-                    const rect = warningIcon.getBoundingClientRect();
-                    tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
-                    tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
-                });
-
-        pValueElement.appendChild(warningIcon);
-            }
-        }
-
-        // Calculate the difference in conversion rate from slider data
-        const diffValue = sliderChallenge.simulation.variantConversionRate - sliderChallenge.simulation.baseConversionRate;
-
-        // Display difference in conversion rate
-        const differenceDisplay = document.getElementById('difference-display');
-        if (differenceDisplay) {
-            differenceDisplay.textContent = formatPercent(diffValue);
-        }
-
-        // Find the range for conversion rate intervals (using slider data)
-        const conversionValues = [
-            ...sliderChallenge.simulation.confidenceIntervalBase,
-            ...sliderChallenge.simulation.confidenceIntervalVariant,
-            sliderChallenge.simulation.baseConversionRate,
-            sliderChallenge.simulation.variantConversionRate
-        ];
-
-        const minConversionValue = Math.min(...conversionValues);
-        const maxConversionValue = Math.max(...conversionValues);
-        const conversionViewRange = maxConversionValue - minConversionValue;
-        const viewPadding = conversionViewRange * 0.2;
-
-        // Round to nice intervals
-        const conversionViewMin = Math.floor((minConversionValue - viewPadding) * 100) / 100;
-        const conversionViewMax = Math.ceil((maxConversionValue + viewPadding) * 100) / 100;
-
-        // Determine result type based on CI difference and improvement direction (using slider data)
-        const lowDiff = sliderChallenge.simulation.confidenceIntervalDifference[0];
-        const highDiff = sliderChallenge.simulation.confidenceIntervalDifference[1];
-        const improvementDirection = sliderChallenge.experiment.improvementDirection;
-        let resultType;
-        
-        if (improvementDirection === 'LOWER_IS_BETTER') {
-            if (highDiff < 0) {
-                resultType = 'positive';
-            } else if (lowDiff > 0) {
-                resultType = 'negative';
-            } else {
-                resultType = 'inconclusive';
-            }
-        } else {
-            if (lowDiff > 0) {
-                resultType = 'positive';
-            } else if (highDiff < 0) {
-                resultType = 'negative';
-            } else {
-                resultType = 'inconclusive';
-            }
-        }
-
-        // Update base CI (always purple)
-        updateCIVisualization(
-            'base-ci',
-            sliderChallenge.simulation.confidenceIntervalBase[0],
-            sliderChallenge.simulation.confidenceIntervalBase[1],
-            sliderChallenge.simulation.baseConversionRate,
-            CIColorMappings.base,
-            true,
-            conversionViewMin,
-            conversionViewMax
-        );
-
-        // Update variant CI with result-based colors
-        updateCIVisualization(
-            'variant-ci',
-            sliderChallenge.simulation.confidenceIntervalVariant[0],
-            sliderChallenge.simulation.confidenceIntervalVariant[1],
-            sliderChallenge.simulation.variantConversionRate,
-            CIColorMappings[resultType],
-            true,
-            conversionViewMin,
-            conversionViewMax
-        );
-
-        // Update difference CI using original logic (no scale labels)
-        const diffContainer = document.getElementById('diff-ci');
-        if (diffContainer) {
-            const [lowDiff, highDiff] = sliderChallenge.simulation.confidenceIntervalDifference;
-            const diffBar = document.getElementById('diff-ci-bar');
-            const diffMarker = document.getElementById('diff-ci-marker');
-            const diffLowLabel = document.getElementById('diff-ci-low');
-            const diffHighLabel = document.getElementById('diff-ci-high');
-
-            // Calculate relative positions
-            const maxAbsDiff = Math.max(Math.abs(lowDiff), Math.abs(highDiff), Math.abs(diffValue)) * 1.2;
-            const diffViewMin = -maxAbsDiff;
-            const diffViewMax = maxAbsDiff;
-            const toDiffViewPercent = (value) => ((value - diffViewMin) / (diffViewMax - diffViewMin)) * 100;
-
-            // Update visual elements
-            if (diffBar) {
-                diffBar.className = `absolute h-full ${CIColorMappings[resultType].bar} rounded-md`;
-                diffBar.style.left = `${toDiffViewPercent(lowDiff)}%`;
-                diffBar.style.width = `${toDiffViewPercent(highDiff) - toDiffViewPercent(lowDiff)}%`;
-            }
-
-            if (diffMarker) {
-                diffMarker.className = `absolute w-0.5 h-full ${CIColorMappings[resultType].marker} rounded-sm`;
-                diffMarker.style.left = `${toDiffViewPercent(diffValue)}%`;
-            }
-
-            // Add zero line only (no label - already exists inside bar)
-            const diffZeroLine = diffContainer.querySelector('.zero-line') || document.createElement('div');
-            diffZeroLine.className = 'absolute h-full w-px bg-gray-400';
-            diffZeroLine.style.left = `${toDiffViewPercent(0)}%`;
-            if (!diffContainer.querySelector('.zero-line')) {
-                diffContainer.appendChild(diffZeroLine);
-            }
-
-            // Update labels
-            if (diffLowLabel) {
-                diffLowLabel.className = `absolute text-xs font-medium ${CIColorMappings[resultType].text} drop-shadow-sm`;
-                diffLowLabel.textContent = formatPercent(lowDiff);
-                diffLowLabel.style.left = `${toDiffViewPercent(lowDiff)}%`;
-                diffLowLabel.style.top = '50%';
-                diffLowLabel.style.transform = 'translate(-50%, -50%)';
-            }
-
-            if (diffHighLabel) {
-                diffHighLabel.className = `absolute text-xs font-medium ${CIColorMappings[resultType].text} drop-shadow-sm`;
-                diffHighLabel.textContent = formatPercent(highDiff);
-                diffHighLabel.style.left = `${toDiffViewPercent(highDiff)}%`;
-                diffHighLabel.style.top = '50%';
-                diffHighLabel.style.transform = 'translate(-50%, -50%)';
-            }
-        }
-
-        // Update uplift CI using original logic (no scale labels)
-        const upliftContainer = document.getElementById('uplift-ci');
-        if (upliftContainer) {
-            const upliftValue = sliderChallenge.simulation.uplift;
-            const [lowUplift, highUplift] = sliderChallenge.simulation.upliftConfidenceInterval;
-
-            // Determine color based on significance
-            const colors = resultType === 'positive' ? {
-                bar: 'bg-green-200',
-                marker: 'bg-green-600',
-                text: 'text-green-900'
-            } : resultType === 'negative' ? {
-                bar: 'bg-red-200',
-                marker: 'bg-red-600',
-                text: 'text-red-900'
-            } : {
-                bar: 'bg-blue-200',
-                marker: 'bg-blue-600',
-                text: 'text-blue-900'
-            };
-
-            const upliftBar = document.getElementById('uplift-ci-bar');
-            const upliftMarker = document.getElementById('uplift-ci-marker');
-            const upliftLowLabel = document.getElementById('uplift-ci-low');
-            const upliftHighLabel = document.getElementById('uplift-ci-high');
-
-            // Calculate relative positions
-            const maxAbsUplift = Math.max(Math.abs(lowUplift), Math.abs(highUplift), Math.abs(upliftValue)) * 1.2;
-            const upliftViewMin = -maxAbsUplift;
-            const upliftViewMax = maxAbsUplift;
-            const toUpliftViewPercent = (value) => ((value - upliftViewMin) / (upliftViewMax - upliftViewMin)) * 100;
-
-            // Update visual elements
-            if (upliftBar) {
-                upliftBar.className = `absolute h-full ${colors.bar} rounded-md`;
-                upliftBar.style.left = `${toUpliftViewPercent(lowUplift)}%`;
-                upliftBar.style.width = `${toUpliftViewPercent(highUplift) - toUpliftViewPercent(lowUplift)}%`;
-            }
-
-            if (upliftMarker) {
-                upliftMarker.className = `absolute w-0.5 h-full ${colors.marker} rounded-sm`;
-                upliftMarker.style.left = `${toUpliftViewPercent(upliftValue)}%`;
-            }
-
-            // Add zero line only (no label - already exists inside bar)
-            const upliftZeroLine = upliftContainer.querySelector('.zero-line') || document.createElement('div');
-            upliftZeroLine.className = 'absolute h-full w-px bg-gray-400';
-            upliftZeroLine.style.left = `${toUpliftViewPercent(0)}%`;
-            if (!upliftContainer.querySelector('.zero-line')) {
-                upliftContainer.appendChild(upliftZeroLine);
-            }
-
-            // Update labels
-            if (upliftLowLabel) {
-                upliftLowLabel.className = `absolute text-xs font-medium ${colors.text} drop-shadow-sm`;
-                upliftLowLabel.textContent = formatPercent(lowUplift);
-                upliftLowLabel.style.left = `${toUpliftViewPercent(lowUplift)}%`;
-                upliftLowLabel.style.top = '50%';
-                upliftLowLabel.style.transform = 'translate(-50%, -50%)';
-            }
-
-            if (upliftHighLabel) {
-                upliftHighLabel.className = `absolute text-xs font-medium ${colors.text} drop-shadow-sm`;
-                upliftHighLabel.textContent = formatPercent(highUplift);
-                upliftHighLabel.style.left = `${toUpliftViewPercent(highUplift)}%`;
-                upliftHighLabel.style.top = '50%';
-                upliftHighLabel.style.transform = 'translate(-50%, -50%)';
-            }
-        }
-        
     },
 
 

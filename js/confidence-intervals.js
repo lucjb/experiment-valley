@@ -110,21 +110,15 @@ function updateCIVisualization(containerId, low, high, mean, colorSet, showBound
 
     // Update labels
     if (lowLabel) {
-        lowLabel.className = `absolute text-xs font-medium ${colorSet.text} drop-shadow-sm`;
+        lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 -translate-y-1/2 ${colorSet.text} drop-shadow-sm top-1/2`;
         lowLabel.textContent = formatPercent(low);
         lowLabel.style.left = `${lowLabelPos}%`;
-        // Always keep on the same horizontal axis (centered vertically on the bar)
-        lowLabel.style.top = '50%';
-        lowLabel.style.transform = 'translate(-50%, -50%)';
     }
 
     if (highLabel) {
-        highLabel.className = `absolute text-xs font-medium ${colorSet.text} drop-shadow-sm`;
+        highLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 -translate-y-1/2 ${colorSet.text} drop-shadow-sm top-1/2`;
         highLabel.textContent = formatPercent(high);
         highLabel.style.left = `${highLabelPos}%`;
-        // Always keep on the same horizontal axis (centered vertically on the bar)
-        highLabel.style.top = '50%';
-        highLabel.style.transform = 'translate(-50%, -50%)';
     }
 
     // Add view range bounds if needed
@@ -204,14 +198,47 @@ function updateConfidenceIntervals(challenge) {
             tooltipContent.innerHTML = message.replace(/\n/g, '<br>');
             warningIcon.appendChild(tooltipContent);
 
-            // Add tooltip positioning
-            warningIcon.addEventListener('mousemove', (e) => {
-                const tooltip = warningIcon.querySelector('.tooltip-content');
-                if (!tooltip) return;
+            // Add tooltip positioning using fixed coordinates (no portal)
+            const moveHandler = () => {
+                const tip = warningIcon.querySelector('.tooltip-content');
+                if (!tip) return;
 
                 const rect = warningIcon.getBoundingClientRect();
-                tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
-                tooltip.style.top = (rect.top - tooltip.offsetHeight - 10) + 'px';
+                const tooltipHeight = tip.offsetHeight;
+                const tooltipWidth = tip.offsetWidth;
+
+                let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+                if (left < 10) left = 10;
+                if (left + tooltipWidth > window.innerWidth - 10) {
+                    left = window.innerWidth - tooltipWidth - 10;
+                }
+
+                const spaceAbove = rect.top;
+                const spaceBelow = window.innerHeight - rect.bottom;
+                let top;
+                if (spaceAbove >= tooltipHeight + 10) {
+                    top = rect.top - tooltipHeight - 10;
+                } else if (spaceBelow >= tooltipHeight + 10) {
+                    top = rect.bottom + 10;
+                } else {
+                    top = rect.bottom + 10;
+                }
+
+                tip.style.left = left + 'px';
+                tip.style.top = top + 'px';
+                tip.style.visibility = 'visible';
+                tip.style.opacity = '1';
+            };
+
+            warningIcon.addEventListener('mouseenter', moveHandler);
+            warningIcon.addEventListener('mousemove', moveHandler);
+            warningIcon.addEventListener('mouseleave', () => {
+                const tip = warningIcon.querySelector('.tooltip-content');
+                if (!tip) return;
+                tip.style.visibility = 'hidden';
+                tip.style.opacity = '0';
+                tip.style.left = '-9999px';
+                tip.style.top = '-9999px';
             });
 
             pValueElement.appendChild(warningIcon);
@@ -342,7 +369,7 @@ function updateConfidenceIntervals(challenge) {
         }
 
         const zeroLabel = diffContainer.querySelector('.zero-label') || document.createElement('span');
-        zeroLabel.className = 'zero-label absolute text-xs font-medium transform -translate-x-1/2 text-gray-400 top-1/2 -translate-y-1/2';
+        zeroLabel.className = 'zero-label absolute text-xs font-medium transform -translate-x-1/2 -translate-y-1/2 text-gray-400 top-1/2';
         zeroLabel.style.left = `${zeroPercent}%`;
         zeroLabel.textContent = '0%';
         if (!diffContainer.querySelector('.zero-label')) {
@@ -365,8 +392,8 @@ function updateConfidenceIntervals(challenge) {
             if (Math.abs(highCenterPct - zeroPercent) < 4) highCenterPct = clampPct(highCenterPct - innerGapPct);
 
             // Apply and measure
-            lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
-            highLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
+            lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 -translate-y-1/2 ${colors.text} drop-shadow-sm top-1/2`;
+            highLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 -translate-y-1/2 ${colors.text} drop-shadow-sm top-1/2`;
             lowLabel.textContent = formatPercent(lowDiff);
             highLabel.textContent = formatPercent(highDiff);
             lowLabel.style.left = `${lowCenterPct}%`;
@@ -491,7 +518,7 @@ function updateConfidenceIntervals(challenge) {
         }
 
         const zeroLabel = container.querySelector('.zero-label') || document.createElement('span');
-        zeroLabel.className = 'zero-label absolute text-xs font-medium transform -translate-x-1/2 text-gray-400 top-1/2 -translate-y-1/2';
+        zeroLabel.className = 'zero-label absolute text-xs font-medium transform -translate-x-1/2 -translate-y-1/2 text-gray-400 top-1/2';
         zeroLabel.style.left = `${toViewPercent(0)}%`;
         zeroLabel.textContent = '0%';
         if (!container.querySelector('.zero-label')) {
@@ -517,8 +544,8 @@ function updateConfidenceIntervals(challenge) {
             if (Math.abs(highCenterPct - zeroPct) < 4) highCenterPct = clampPct(highCenterPct - innerGapPct);
 
             // Apply and measure
-            lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
-            highLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 ${colors.text} top-1/2 -translate-y-1/2 drop-shadow-sm`;
+            lowLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 -translate-y-1/2 ${colors.text} drop-shadow-sm top-1/2`;
+            highLabel.className = `absolute text-xs font-medium transform -translate-x-1/2 -translate-y-1/2 ${colors.text} drop-shadow-sm top-1/2`;
             lowLabel.textContent = formatPercent(lowUplift);
             highLabel.textContent = formatPercent(highUplift);
             lowLabel.style.left = `${lowCenterPct}%`;
