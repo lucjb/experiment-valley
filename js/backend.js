@@ -190,6 +190,7 @@ const Backend = (() => {
         init,
         isInitialized: () => initialized,
         getClient: () => supabase,
+        getProfileId: () => profileId,
         startSession,
         endSession,
         upsertSessionSummary,

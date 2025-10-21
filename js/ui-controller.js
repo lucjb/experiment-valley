@@ -19,7 +19,10 @@ const UIController = {
         competitorCumulativeEffect: 0,
         currentCompetitor: null,
         selectedCompetitor: null,
-        roundResults: [] // Store results for each experiment in the current round
+        roundResults: [], // Store results for each experiment in the current round
+        sessionStartPersonalBest: null, // Store personal best data at session start
+        sessionStartRoundsRank: null, // Store starting rounds rank
+        sessionStartImpactRank: null // Store starting impact rank
     },
 
     init() {
@@ -422,11 +425,23 @@ const UIController = {
         }
     },
 
-    startSession() {
+    async startSession() {
         // Always start from a clean slate, but keep selected opponent choice
         const preservedCompetitor = this.state.selectedCompetitor;
         this.resetGameState();
         this.state.selectedCompetitor = preservedCompetitor;
+
+        // Fetch personal best data and starting rankings at session start (before any gameplay)
+        console.log('Fetching personal best data and starting rankings at session start...');
+        this.state.sessionStartPersonalBest = await this.getUserPersonalBest();
+        const startingRanks = await this.getUserRanks();
+        this.state.sessionStartRoundsRank = startingRanks.roundsRank;
+        this.state.sessionStartImpactRank = startingRanks.impactRank;
+        console.log('Session start data:', {
+            personalBest: this.state.sessionStartPersonalBest,
+            roundsRank: this.state.sessionStartRoundsRank,
+            impactRank: this.state.sessionStartImpactRank
+        });
 
         const gameMenu = document.getElementById('game-menu');
         const tutorialSection = document.getElementById('tutorial-section');
@@ -2480,7 +2495,10 @@ const UIController = {
     },
 
     updateRoundDisplay() {
-        document.getElementById('current-round').textContent = this.state.currentRound;
+        const roundElement = document.getElementById('current-round');
+        if (roundElement) {
+            roundElement.textContent = this.state.currentRound;
+        }
     },
 
     async handleNextChallenge() {
@@ -2715,6 +2733,46 @@ const UIController = {
         }
     },
 
+    async getUserPersonalBest() {
+        try {
+            if (typeof Backend === 'undefined' || !Backend.isInitialized()) {
+                return { bestRound: 0, bestAccuracy: 0, bestImpact: 0 };
+            }
+
+            const client = Backend.getClient();
+            const { data: summaries, error } = await client
+                .from('session_summaries')
+                .select('max_round_reached, total_impact_cpd, accuracy_pct')
+                .eq('profile_id', Backend.getProfileId());
+
+            if (error) throw error;
+            if (!summaries || summaries.length === 0) {
+                return { bestRound: 0, bestAccuracy: 0, bestImpact: 0 };
+            }
+
+            let bestRound = 0;
+            let bestAccuracy = 0;
+            let bestImpact = 0;
+
+            summaries.forEach(s => {
+                const round = Number(s.max_round_reached) || 0;
+                const accuracy = Number(s.accuracy_pct) || 0;
+                const impact = Number(s.total_impact_cpd) || 0;
+
+                bestRound = Math.max(bestRound, round);
+                bestAccuracy = Math.max(bestAccuracy, accuracy);
+                bestImpact = Math.max(bestImpact, impact);
+            });
+
+            console.log('Personal best data:', { bestRound, bestAccuracy, bestImpact, summariesCount: summaries.length });
+            return { bestRound, bestAccuracy, bestImpact };
+
+        } catch (err) {
+            console.error('Failed to get personal best', err);
+            return { bestRound: 0, bestAccuracy: 0, bestImpact: 0 };
+        }
+    },
+
     async showCompletionModal() {
         const experimentContainer = document.getElementById('challenge-container');
         const completionModal = document.getElementById('completion-modal');
@@ -2736,39 +2794,82 @@ const UIController = {
         gameMenu.classList.remove('hidden');
 
         // Update the completion modal content immediately
-        document.getElementById('final-accuracy').textContent = `${Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100)}%`;
+        const accuracy = this.state.totalDecisions > 0 ? 
+            Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100) : 0;
+        document.getElementById('final-accuracy').textContent = this.state.totalDecisions > 0 ? `${accuracy}%` : '-';
         document.getElementById('final-user-impact').textContent = `${this.state.userCumulativeEffect} cpd`;
         document.getElementById('final-opponent-impact').textContent = `${this.state.competitorCumulativeEffect} cpd`;
         // Calculate rounds completed: if they failed on current round, they completed currentRound - 1
         // If they're still in round 1 and failed, they completed 0 rounds
         const roundsCompleted = this.state.currentRound > 1 ? this.state.currentRound - 1 : 0;
-        document.getElementById('final-round').textContent = roundsCompleted;
+        // Show round reached (completed rounds + 1)
+        const roundReached = roundsCompleted + 1;
+        document.getElementById('final-round').textContent = roundReached;
+        
+        // Set player name
+        const playerName = window.playerName || 'Player';
+        document.getElementById('final-player-name').textContent = playerName;
 
         // Show completion modal immediately to prevent flashing
         completionModal.classList.remove('hidden');
         setTimeout(() => {
             completionModal.classList.add('fade-in');
-            // Submit score, end session, log event, and update final session summary
+            // Use personal best data captured at session start
             (async () => {
                 try {
+                    // Use personal best data captured at session start
+                    console.log('Using personal best data from session start...');
+                    const personalBest = this.state.sessionStartPersonalBest || { bestRound: 0, bestAccuracy: 0, bestImpact: 0 };
+                    console.log('Personal best data from session start:', personalBest);
+                    
+                    const currentAccuracy = this.state.totalDecisions > 0 ? 
+                        Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100) : 0;
+                    const currentImpact = this.state.userCumulativeEffect;
+                    const currentMaxRoundReached = this.state.currentRound;
+                    
+                    console.log('Personal best comparison:', {
+                        personalBest,
+                        currentAccuracy,
+                        currentImpact,
+                        roundsCompleted,
+                        currentMaxRoundReached,
+                        isNewBest: currentMaxRoundReached > personalBest.bestRound || 
+                            (currentMaxRoundReached === personalBest.bestRound && currentAccuracy > personalBest.bestAccuracy) ||
+                            currentImpact > personalBest.bestImpact
+                    });
+                    
+                    // Determine if this is a first-time player (no previous personal best)
+                    const isFirstTimePlayer = personalBest.bestRound === 0 && personalBest.bestAccuracy === 0 && personalBest.bestImpact === 0;
+                    
+                    if (isFirstTimePlayer) {
+                        // Show general message for first-time players
+                        const generalMessageElement = document.getElementById('general-message');
+                        if (generalMessageElement) {
+                            generalMessageElement.textContent = "Keep playing to improve and climb the leaderboards!";
+                            generalMessageElement.style.display = 'block';
+                        }
+                    } else {
+                        // Show detailed messages for returning players
+                        this.updateBlockMessages(personalBest, currentMaxRoundReached, currentAccuracy, currentImpact);
+                    }
+
+                    // Now save the session data
                     if (typeof Backend !== 'undefined') {
                         await Backend.logEvent({
                             eventType: 'session_end',
                             roundNumber: this.state.currentRound,
                             payload: {
                                 total_attempts: this.state.totalAttempts,
-                                accuracy_pct: Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100),
+                                accuracy_pct: currentAccuracy,
                                 user_impact_cpd: this.state.userCumulativeEffect,
                                 competitor_impact_cpd: this.state.competitorCumulativeEffect
                             }
                         });
                         // Final session summary update
-                        const accuracy = this.state.totalDecisions > 0 ?
-                            Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100) : 0;
                         await Backend.upsertSessionSummary({
                             maxRound: this.state.currentRound,
                             impactCpd: this.state.userCumulativeEffect,
-                            accuracyPct: accuracy,
+                            accuracyPct: currentAccuracy,
                             opponentName: this.state.selectedCompetitor,
                             opponentImpactCpd: this.state.competitorCumulativeEffect
                         });
@@ -2798,6 +2899,9 @@ const UIController = {
                             impactRankElement.textContent = '#?';
                             impactRankElement.href = leaderboardUrl;
                         }
+
+                        // Calculate and display ranking improvements
+                        this.updateRankingImprovements(userRanks);
                     }
                 } catch (err) {
                     console.error('Failed to finalize session with backend', err);
@@ -2808,18 +2912,14 @@ const UIController = {
 
     startNewSession() {
         const completionModal = document.getElementById('completion-modal');
-        const experimentContainer = document.getElementById('challenge-container');
-        const tutorialSection = document.getElementById('tutorial-section');
+        const gameMenu = document.getElementById('game-menu');
 
-        // Hide modals and experiment container
+        // Hide completion modal
         completionModal.classList.add('hidden');
         completionModal.classList.remove('fade-in');
-        experimentContainer.classList.add('hidden');
-        experimentContainer.classList.remove('fade-out');
 
-        // Show tutorial section
-        tutorialSection.classList.remove('hidden');
-        experimentContainer.classList.remove('compact');
+        // Show game menu (home page)
+        gameMenu.classList.remove('hidden');
 
         // Reset state
         this.state.currentExperiment = 1;
@@ -2833,14 +2933,26 @@ const UIController = {
         this.state.userCumulativeEffect = 0;
         this.state.competitorCumulativeEffect = 0;
         this.state.currentCompetitor = null;
-        this.state.selectedCompetitor = null;
+        // Keep the selected competitor for the new session
+        // this.state.selectedCompetitor = null;
         this.state.roundResults = []; // Reset round results
         this.updateExperimentDots(); // Update experiment dots for new session
 
-        // Update displays
-        this.updateAccuracyDisplay(0);
-        this.updateRoundDisplay(); // Update the round display
-        this.updateImpactDisplay(); // Update impact display
+        // Update displays only if elements exist (they might not be visible during game over)
+        const accuracyElement = document.getElementById('accuracy');
+        if (accuracyElement) {
+            this.updateAccuracyDisplay(0);
+        }
+        
+        const roundElement = document.getElementById('current-round');
+        if (roundElement) {
+            this.updateRoundDisplay();
+        }
+        
+        const impactElements = document.getElementById('user-impact');
+        if (impactElements) {
+            this.updateImpactDisplay();
+        }
 
         // Reset button text
         const nextButton = document.getElementById('next-challenge-btn');
@@ -2849,26 +2961,167 @@ const UIController = {
         }
 
         // Reset progress bar
-        document.getElementById('progress-bar').style.width = '0%';
+        const progressBar = document.getElementById('progress-bar');
+        if (progressBar) {
+            progressBar.style.width = '0%';
+        }
 
         // Clear any existing experiment data
         window.currentExperiment = null;
         window.currentAnalysis = null;
+
+        // Start a new session automatically with the same player name and opponent
+        const playerName = window.playerName || 'Player';
+        const selectedCompetitor = this.state.selectedCompetitor || window.selectedOpponent || 'HiPPO';
+        
+        console.log('Starting new session with:', { playerName, selectedCompetitor });
+        
+        // Start the backend session and load the first challenge
+        (async () => {
+            try {
+                if (typeof Backend !== 'undefined') {
+                    await Backend.startSession({
+                        displayName: playerName,
+                        meta: { ts: Date.now(), competitor: selectedCompetitor }
+                    });
+                    await Backend.logEvent({
+                        eventType: 'session_start',
+                        roundNumber: 1,
+                        payload: { competitor: selectedCompetitor }
+                    });
+                }
+            } catch (err) {
+                console.error('Failed to start backend session', err);
+            }
+
+            // Set the selected competitor in the state
+            this.state.selectedCompetitor = selectedCompetitor;
+            
+            // Start the session and show round splash
+            await this.startSession();
+            this.showRoundSplash();
+        })();
+    },
+
+    updateBlockMessages(personalBest, currentMaxRoundReached, currentAccuracy, currentImpact) {
+        // Update rounds block message
+        const roundsMessageElement = document.getElementById('rounds-block-message');
+        if (roundsMessageElement) {
+            let roundsMessage = '';
+            if (currentMaxRoundReached > personalBest.bestRound) {
+                roundsMessage = `New personal best! Previous: ${personalBest.bestRound} rounds, ${personalBest.bestAccuracy}% accuracy.`;
+            } else if (currentMaxRoundReached === personalBest.bestRound && currentAccuracy > personalBest.bestAccuracy) {
+                roundsMessage = `New personal best! Previous: ${personalBest.bestRound} rounds, ${personalBest.bestAccuracy}% accuracy.`;
+            } else {
+                roundsMessage = `Previous best: ${personalBest.bestRound} rounds, ${personalBest.bestAccuracy}% accuracy.`;
+            }
+            roundsMessageElement.textContent = roundsMessage;
+            roundsMessageElement.style.display = 'block';
+        }
+
+        // Update impact block message
+        const impactMessageElement = document.getElementById('impact-block-message');
+        if (impactMessageElement) {
+            let impactMessage = '';
+            if (currentImpact > personalBest.bestImpact) {
+                impactMessage = `New personal best! Previous: ${personalBest.bestImpact} cpd.`;
+            } else {
+                impactMessage = `Previous best: ${personalBest.bestImpact} cpd.`;
+            }
+            impactMessageElement.textContent = impactMessage;
+            impactMessageElement.style.display = 'block';
+        }
+    },
+
+    updateRankingImprovements(finalRanks) {
+        console.log('Updating ranking improvements:', {
+            startingRoundsRank: this.state.sessionStartRoundsRank,
+            finalRoundsRank: finalRanks.roundsRank,
+            startingImpactRank: this.state.sessionStartImpactRank,
+            finalImpactRank: finalRanks.impactRank
+        });
+
+        // Only show rank changes for players who had rankings before this session started
+        // Check if they had any previous sessions (not just if they have current rankings)
+        const isFirstTimePlayer = this.state.sessionStartPersonalBest.bestRound === 0 && 
+                                  this.state.sessionStartPersonalBest.bestAccuracy === 0 && 
+                                  this.state.sessionStartPersonalBest.bestImpact === 0;
+        
+        if (isFirstTimePlayer) {
+            // Hide all rank improvement indicators for first-time players
+            const roundsImprovementElement = document.getElementById('rounds-rank-improvement');
+            const impactImprovementElement = document.getElementById('impact-rank-improvement');
+            
+            if (roundsImprovementElement) {
+                roundsImprovementElement.style.display = 'none';
+            }
+            if (impactImprovementElement) {
+                impactImprovementElement.style.display = 'none';
+            }
+            return;
+        }
+
+        // Update rounds rank improvement
+        if (this.state.sessionStartRoundsRank && finalRanks.roundsRank) {
+            const roundsImprovement = this.state.sessionStartRoundsRank - finalRanks.roundsRank;
+            const roundsImprovementElement = document.getElementById('rounds-rank-improvement');
+            
+            if (roundsImprovement > 0) {
+                roundsImprovementElement.textContent = `↑${roundsImprovement}`;
+                roundsImprovementElement.style.color = '#10b981'; // green
+                roundsImprovementElement.style.display = 'block';
+            } else if (roundsImprovement < 0) {
+                roundsImprovementElement.textContent = `↓${Math.abs(roundsImprovement)}`;
+                roundsImprovementElement.style.color = '#ef4444'; // red
+                roundsImprovementElement.style.display = 'block';
+            } else {
+                roundsImprovementElement.style.display = 'none';
+            }
+        }
+
+        // Update impact rank improvement
+        if (this.state.sessionStartImpactRank && finalRanks.impactRank) {
+            const impactImprovement = this.state.sessionStartImpactRank - finalRanks.impactRank;
+            const impactImprovementElement = document.getElementById('impact-rank-improvement');
+            
+            if (impactImprovement > 0) {
+                impactImprovementElement.textContent = `↑${impactImprovement}`;
+                impactImprovementElement.style.color = '#10b981'; // green
+                impactImprovementElement.style.display = 'block';
+            } else if (impactImprovement < 0) {
+                impactImprovementElement.textContent = `↓${Math.abs(impactImprovement)}`;
+                impactImprovementElement.style.color = '#ef4444'; // red
+                impactImprovementElement.style.display = 'block';
+            } else {
+                impactImprovementElement.style.display = 'none';
+            }
+        }
     },
 
     shareOnTwitter() {
-        const text = `I just completed the A/B Testing Gym challenge with ${Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100)}% accuracy! Try it yourself!`;
+        const accuracy = this.state.totalDecisions > 0 ? 
+            Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100) : 0;
+        const text = `I just completed the A/B Testing Gym challenge with ${accuracy}% accuracy! Try it yourself!`;
         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`);
     },
 
     shareOnLinkedIn() {
-        const text = `I just completed the A/B Testing Gym challenge with ${Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100)}% accuracy! Try it yourself!`;
+        const accuracy = this.state.totalDecisions > 0 ? 
+            Math.round((this.state.correctDecisions / this.state.totalDecisions) * 100) : 0;
+        const text = `I just completed the A/B Testing Gym challenge with ${accuracy}% accuracy! Try it yourself!`;
         window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(text)}`);
     },
 
     updateImpactDisplay() {
-        document.getElementById('user-impact').textContent = `${this.state.userCumulativeEffect} cpd`;
-        document.getElementById('opponent-impact').textContent = `${this.state.competitorCumulativeEffect} cpd`;
+        const userImpactElement = document.getElementById('user-impact');
+        const opponentImpactElement = document.getElementById('opponent-impact');
+        
+        if (userImpactElement) {
+            userImpactElement.textContent = `${this.state.userCumulativeEffect} cpd`;
+        }
+        if (opponentImpactElement) {
+            opponentImpactElement.textContent = `${this.state.competitorCumulativeEffect} cpd`;
+        }
     },
 
     formatPercent(value) {
