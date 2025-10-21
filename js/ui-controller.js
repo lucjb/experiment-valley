@@ -3030,7 +3030,7 @@ const UIController = {
             } else if (currentMaxRoundReached === personalBest.bestRound && currentAccuracy > personalBest.bestAccuracy) {
                 roundsMessage = `New personal best! Previous: ${personalBest.bestRound} rounds, ${personalBest.bestAccuracy}% accuracy.`;
             } else {
-                roundsMessage = `Previous best: ${personalBest.bestRound} rounds, ${personalBest.bestAccuracy}% accuracy.`;
+                roundsMessage = `Personal best: ${personalBest.bestRound} rounds, ${personalBest.bestAccuracy}% accuracy.`;
             }
             roundsMessageElement.textContent = roundsMessage;
             roundsMessageElement.style.display = 'block';
@@ -3043,7 +3043,7 @@ const UIController = {
             if (currentImpact > personalBest.bestImpact) {
                 impactMessage = `New personal best! Previous: ${personalBest.bestImpact} cpd.`;
             } else {
-                impactMessage = `Previous best: ${personalBest.bestImpact} cpd.`;
+                impactMessage = `Personal best: ${personalBest.bestImpact} cpd.`;
             }
             impactMessageElement.textContent = impactMessage;
             impactMessageElement.style.display = 'block';
