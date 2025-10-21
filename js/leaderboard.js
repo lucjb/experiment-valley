@@ -28,6 +28,15 @@
             const count = nameCounts.get(p.display_name);
             const displayName = count > 1 ? `${p.display_name} #${p.id.slice(-4)}` : p.display_name;
             
+            // Debug Alex profile creation
+            if (displayName === 'Alex') {
+                console.log('Creating Alex profile:', {
+                    displayName: displayName,
+                    originalName: p.display_name,
+                    profileId: p.id
+                });
+            }
+            
             byProfile.set(p.id, {
                 displayName: displayName,
                 originalName: p.display_name,
@@ -53,6 +62,31 @@
             const impact = Number(s.total_impact_cpd) || 0;
             const opponentImpact = Number(s.opponent_impact_cpd) || 0;
             
+            // Debug sessions with missing opponent data - FOCUS ON ALEX
+            if (agg.displayName === 'Alex' && (s.opponent_name === null || s.opponent_name === undefined || s.opponent_name === '')) {
+                console.log('Alex session with missing opponent data:', {
+                    playerName: agg.displayName,
+                    profileId: s.profile_id,
+                    impact: impact,
+                    opponentName: s.opponent_name,
+                    opponentImpact: s.opponent_impact_cpd
+                });
+            }
+            
+            // Debug all Alex sessions
+            if (agg.displayName === 'Alex') {
+                console.log('Alex session:', {
+                    playerName: agg.displayName,
+                    impact: impact,
+                    opponentName: s.opponent_name,
+                    isNewMax: impact > agg.maxImpact,
+                    currentMaxImpact: agg.maxImpact,
+                    rawOpponentName: s.opponent_name,
+                    typeofOpponentName: typeof s.opponent_name
+                });
+            }
+            
+            
             // Best accuracy across all sessions
             agg.bestAccuracy = Math.max(agg.bestAccuracy, accuracy);
             
@@ -64,21 +98,57 @@
             
             // Max impact across all sessions - also track opponent info from this session
             if (impact > agg.maxImpact) {
+                if (agg.displayName === 'Alex') {
+                    console.log('Alex NEW max impact session:', {
+                        playerName: agg.displayName,
+                        impact: impact,
+                        opponentName: s.opponent_name,
+                        currentMaxImpact: agg.maxImpact
+                    });
+                }
                 agg.maxImpact = impact;
                 agg.opponentName = s.opponent_name || 'Unknown';
                 agg.opponentImpact = opponentImpact;
+                if (agg.displayName === 'Alex') {
+                    console.log('Alex AFTER setting opponent:', {
+                        playerName: agg.displayName,
+                        aggOpponentName: agg.opponentName,
+                        aggOpponentImpact: agg.opponentImpact
+                    });
+                }
+            }
+            
+            // Also store opponent data if this is the first session (maxImpact is still 0)
+            if (agg.maxImpact === 0 && impact >= 0) {
+                if (agg.displayName === 'Alex') {
+                    console.log('Alex FIRST session - storing opponent:', {
+                        playerName: agg.displayName,
+                        impact: impact,
+                        opponentName: s.opponent_name
+                    });
+                }
+                agg.opponentName = s.opponent_name || 'Unknown';
+                agg.opponentImpact = opponentImpact;
+                if (agg.displayName === 'Alex') {
+                    console.log('Alex AFTER setting first session opponent:', {
+                        playerName: agg.displayName,
+                        aggOpponentName: agg.opponentName,
+                        aggOpponentImpact: agg.opponentImpact
+                    });
+                }
             }
         });
 
         const rows = Array.from(byProfile.values());
         
         const roundBoard = rows
+            .filter(r => r.opponentName !== null) // Filter out players with no sessions
             .map(r => ({ 
                 name: r.displayName,
                 originalName: r.originalName,
                 profileId: r.profileId,
                 maxRound: r.maxRound, 
-                accuracy: r.maxRoundSession ? r.maxRoundSession.accuracy : 0 
+                accuracy: r.maxRoundSession ? r.maxRoundSession.accuracy : 0
             }))
             .sort((a, b) => {
                 // Primary sort by max round, secondary by accuracy for ties
@@ -97,7 +167,22 @@
             }))
             .sort((a, b) => b.impact - a.impact);
 
-        return { roundBoard, impactBoard };
+        // Debug Alex specifically in final results
+        const alexEntry = impactBoard.find(r => r.name === 'Alex');
+        if (alexEntry) {
+            console.log('Alex final entry:', {
+                name: alexEntry.name,
+                impact: alexEntry.impact,
+                opponentName: alexEntry.opponentName,
+                opponentImpact: alexEntry.opponentImpact
+            });
+        }
+        
+        // Filter out players with no sessions
+        const filteredImpactBoard = impactBoard.filter(entry => entry.opponentName !== null);
+
+
+        return { roundBoard, impactBoard: filteredImpactBoard };
     }
 
     function renderList(containerId, items, formatter, highlightUser = null) {

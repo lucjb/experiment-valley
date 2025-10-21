@@ -99,6 +99,14 @@ const Backend = (() => {
 
     async function checkNameCollision(displayName) {
         try {
+            // First check if current user already has a profile with this name
+            const key = 'abgym_profile';
+            const cached = JSON.parse(localStorage.getItem(key) || 'null');
+            if (cached && cached.display_name === displayName && cached.id) {
+                // Current user already has this name, no collision
+                return false;
+            }
+            
             const { data: existingProfiles } = await supabase
                 .from('profiles')
                 .select('id, display_name, created_at')

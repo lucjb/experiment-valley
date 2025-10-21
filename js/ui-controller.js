@@ -2683,12 +2683,19 @@ const UIController = {
                     agg.opponentName = s.opponent_name || 'Unknown';
                     agg.opponentImpact = opponentImpact;
                 }
+                
+                // Also store opponent data if this is the first session (maxImpact is still 0)
+                if (agg.maxImpact === 0 && impact >= 0) {
+                    agg.opponentName = s.opponent_name || 'Unknown';
+                    agg.opponentImpact = opponentImpact;
+                }
             });
 
             const rows = Array.from(byProfile.values());
 
-            // Create rounds leaderboard
+            // Create rounds leaderboard - filter out players with no sessions
             const roundsBoard = rows
+                .filter(r => r.opponentName !== null) // Filter out players with no sessions
                 .map(r => ({
                     name: r.displayName,
                     originalName: r.originalName,
@@ -2702,8 +2709,9 @@ const UIController = {
                     return b.accuracy - a.accuracy;
                 });
 
-            // Create impact leaderboard
+            // Create impact leaderboard - filter out players with no sessions
             const impactBoard = rows
+                .filter(r => r.opponentName !== null) // Filter out players with no sessions
                 .map(r => ({
                     name: r.displayName,
                     originalName: r.originalName,
@@ -2753,16 +2761,25 @@ const UIController = {
             let bestRound = 0;
             let bestAccuracy = 0;
             let bestImpact = 0;
+            let bestRoundSession = null;
 
             summaries.forEach(s => {
                 const round = Number(s.max_round_reached) || 0;
                 const accuracy = Number(s.accuracy_pct) || 0;
                 const impact = Number(s.total_impact_cpd) || 0;
 
-                bestRound = Math.max(bestRound, round);
-                bestAccuracy = Math.max(bestAccuracy, accuracy);
+                // Track best round and accuracy from that session (like leaderboard)
+                if (round > bestRound) {
+                    bestRound = round;
+                    bestRoundSession = { round, accuracy };
+                }
+                
+                // Track best impact across all sessions
                 bestImpact = Math.max(bestImpact, impact);
             });
+            
+            // Set accuracy from the session with highest round (like leaderboard)
+            bestAccuracy = bestRoundSession ? bestRoundSession.accuracy : 0;
 
             console.log('Personal best data:', { bestRound, bestAccuracy, bestImpact, summariesCount: summaries.length });
             return { bestRound, bestAccuracy, bestImpact };

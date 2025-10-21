@@ -76,6 +76,11 @@
                     const lastOpponent = localStorage.getItem('abgym_last_opponent') || 'HiPPO';
                     const opponentRadio = document.querySelector(`input[name="opponent"][value="${lastOpponent}"]`);
                     if (opponentRadio) {
+                        // First, uncheck all radio buttons
+                        document.querySelectorAll('input[name="opponent"]').forEach(radio => {
+                            radio.checked = false;
+                        });
+                        // Then check the selected one
                         opponentRadio.checked = true;
                         // Update visual selection
                         document.querySelectorAll('.opponent-option').forEach(opt => {
@@ -160,6 +165,14 @@
             function updateStartButtonState() {
                 const hasName = playerNameInput.value.trim().length > 0;
                 const hasOpponent = document.querySelector('input[name="opponent"]:checked');
+                
+                // Debug logging
+                console.log('updateStartButtonState:', {
+                    hasName,
+                    hasOpponent: !!hasOpponent,
+                    selectedOpponent: hasOpponent ? hasOpponent.value : null,
+                    allRadios: Array.from(document.querySelectorAll('input[name="opponent"]')).map(r => ({ value: r.value, checked: r.checked }))
+                });
 
                 if (startGameBtn) {
                     startGameBtn.disabled = !(hasName && hasOpponent);
@@ -225,7 +238,16 @@
             if (startGameBtn) {
                 startGameBtn.addEventListener('click', async function () {
                     const playerName = playerNameInput.value.trim();
-                    const selectedOpponent = document.querySelector('input[name="opponent"]:checked').value;
+                    const selectedOpponentRadio = document.querySelector('input[name="opponent"]:checked');
+                    const selectedOpponent = selectedOpponentRadio ? selectedOpponentRadio.value : null;
+                    
+                    // Debug logging
+                    console.log('Start game clicked:', {
+                        playerName,
+                        selectedOpponent,
+                        selectedOpponentRadio,
+                        allRadios: Array.from(document.querySelectorAll('input[name="opponent"]')).map(r => ({ value: r.value, checked: r.checked }))
+                    });
 
                     if (playerName && selectedOpponent) {
                         // Save to localStorage for future use
@@ -439,11 +461,10 @@
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-gray-300 mb-3">Choose Your Opponent</label>
                     <div class="space-y-3">
-                        <div class="opponent-option p-3 border border-gray-600 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors ring-2 ring-orange-500 bg-gray-800"
+                        <div class="opponent-option p-3 border border-gray-600 rounded-lg cursor-pointer hover:bg-gray-700 transition-colors"
                             data-opponent="HiPPO">
                             <div class="flex items-center">
-                                <input type="radio" name="opponent" value="HiPPO" class="mr-3" id="opponent-hippo"
-                                    checked>
+                                <input type="radio" name="opponent" value="HiPPO" class="mr-3" id="opponent-hippo">
                                 <div>
                                     <label for="opponent-hippo"
                                         class="font-medium text-white cursor-pointer">HiPPO</label>
