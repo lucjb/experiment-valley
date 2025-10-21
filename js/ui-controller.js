@@ -29,11 +29,20 @@ const UIController = {
         this.initializeEventListeners();
         //this.initializeCheatSheet();
         this.initializeTabs();
+        this.initializeGlobalTooltips();
         // Leaderboard moved to separate page; no refresh here
     },
 
     debugMode() {
         return document.getElementById('debug-mode').checked;
+    },
+
+    // Initialize all tooltips globally with consistent clickable behavior
+    initializeGlobalTooltips() {
+        const tooltipTriggers = document.querySelectorAll('.tooltip-trigger');
+        tooltipTriggers.forEach(trigger => {
+            this.initializeTooltip(trigger);
+        });
     },
 
     // Protect against accidental refresh/close while a session is active
@@ -532,7 +541,8 @@ const UIController = {
                 6: [twymansLawTrap(), inconclusive(), fastLoserWithPartialWeek()],
                 7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()],
                 8: [partialLoser().withSampleRatioMismatch(), winner(), loser().withLowerIsBetter()],
-                9: [inconclusive().withOverdue(), winner(), inconclusive()]
+                9: [inconclusive().withOverdue(), winner(), inconclusive()],
+                10: [underpoweredTrap(), winner(), inconclusive()]
             };
 
             // Reset visitors header
@@ -680,6 +690,9 @@ const UIController = {
 
     // Initialize tooltip for dynamically created elements
     initializeTooltip(tooltipTrigger) {
+        let isTooltipVisible = false;
+        let hideTimeout;
+        
         const moveHandler = function () {
             const tip = tooltipTrigger.querySelector('.tooltip-content');
             if (!tip) return;
@@ -707,20 +720,58 @@ const UIController = {
 
             tip.style.left = left + 'px';
             tip.style.top = top + 'px';
-            tip.style.visibility = 'visible';
-            tip.style.opacity = '1';
         };
 
-        tooltipTrigger.addEventListener('mouseenter', moveHandler);
-        tooltipTrigger.addEventListener('mousemove', moveHandler);
-        tooltipTrigger.addEventListener('mouseleave', function () {
+        const showTooltip = function() {
+            clearTimeout(hideTimeout);
             const tip = tooltipTrigger.querySelector('.tooltip-content');
             if (!tip) return;
-            tip.style.visibility = 'hidden';
-            tip.style.opacity = '0';
-            tip.style.left = '-9999px';
-            tip.style.top = '-9999px';
-        });
+            
+            moveHandler();
+            tip.style.visibility = 'visible';
+            tip.style.opacity = '1';
+            isTooltipVisible = true;
+        };
+
+        const hideTooltip = function() {
+            if (isTooltipVisible) {
+                hideTimeout = setTimeout(() => {
+                    const tip = tooltipTrigger.querySelector('.tooltip-content');
+                    if (!tip) return;
+                    tip.style.visibility = 'hidden';
+                    tip.style.opacity = '0';
+                    tip.style.left = '-9999px';
+                    tip.style.top = '-9999px';
+                    isTooltipVisible = false;
+                }, 200); // Much shorter delay
+            }
+        };
+
+        const cancelHide = function() {
+            clearTimeout(hideTimeout);
+        };
+
+        // Trigger events
+        tooltipTrigger.addEventListener('mouseenter', showTooltip);
+        tooltipTrigger.addEventListener('mousemove', moveHandler);
+        tooltipTrigger.addEventListener('mouseleave', hideTooltip);
+        
+        // Tooltip content events - this is the key improvement
+        const tip = tooltipTrigger.querySelector('.tooltip-content');
+        if (tip) {
+            tip.addEventListener('mouseenter', cancelHide);
+            tip.addEventListener('mouseleave', hideTooltip);
+            tip.addEventListener('mousemove', cancelHide);
+            
+            // Make links focusable and handle focus events
+            const links = tip.querySelectorAll('a');
+            links.forEach(link => {
+                link.addEventListener('focus', cancelHide);
+                link.addEventListener('blur', hideTooltip);
+                link.addEventListener('mouseenter', cancelHide);
+                link.addEventListener('mouseleave', hideTooltip);
+            });
+        }
     },
 
     // Helper function to add warning to a cell
@@ -789,6 +840,7 @@ const UIController = {
         this.addSampleRatioMismatchAlert();
         this.addTwymansLawAlert();
         this.addOverdueAlert();
+        this.addUnderpoweredDesignAlert();
     },
 
     addBaseConversionRateMissmatchAlert() {
@@ -959,6 +1011,71 @@ const UIController = {
             const newWarningIcon = warningIcon.cloneNode(true);
             completeTextElement.replaceChild(newWarningIcon, warningIcon);
         }
+    },
+
+    addUnderpoweredDesignAlert() {
+        console.log('🔍 Checking underpowered design alert...');
+        console.log('Debug mode:', this.debugMode());
+        
+        if (!this.debugMode()) {
+            console.log('❌ Debug mode is disabled');
+            return;
+        }
+
+        // Use time-filtered analysis if available, otherwise fall back to original analysis
+        const analysis = window.currentTimeFilteredAnalysis || window.currentAnalysis;
+        console.log('Analysis object:', analysis);
+        
+        if (!analysis || !analysis.analysis) {
+            console.log('❌ No analysis object found');
+            return;
+        }
+
+        const hasUnderpoweredDesign = analysis.analysis.hasUnderpoweredDesign;
+        console.log('Has underpowered design:', hasUnderpoweredDesign);
+        
+        if (!hasUnderpoweredDesign) {
+            console.log('❌ No underpowered design detected');
+            return;
+        }
+
+        const underpoweredData = analysis.analysis.underpoweredDesign;
+        console.log('Underpowered data:', underpoweredData);
+        
+        if (!underpoweredData) {
+            console.log('❌ No underpowered data found');
+            return;
+        }
+
+        // Find the sample size cell in the experiment design section
+        const sampleSizeElement = document.getElementById('exp-required-sample');
+        console.log('Sample size element:', sampleSizeElement);
+        
+        if (!sampleSizeElement) {
+            console.log('❌ Sample size element not found');
+            return;
+        }
+
+        console.log('✅ Adding underpowered design alert!');
+        
+        const message = `This sample size is not enough to reach the desired power of ${(underpoweredData.desiredPower * 100).toFixed(0)}% (power at this sample size is ${(underpoweredData.actualPower * 100).toFixed(0)}%)\n\nCorrect sample size to achieve ${(underpoweredData.desiredPower * 100).toFixed(0)}% power is  ${underpoweredData.correctSampleSize.toLocaleString()} per variant)\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about sample size calculations →</a>`;
+
+        // Clear the element and rebuild it with warning icon
+        sampleSizeElement.textContent = '';
+        
+        // Add the original text back
+        const textSpan = document.createElement('span');
+        textSpan.textContent = underpoweredData.requiredSampleSize.toLocaleString();
+        sampleSizeElement.appendChild(textSpan);
+        
+        // Add warning icon
+        const warningIcon = this.createWarningIcon(message);
+        sampleSizeElement.appendChild(warningIcon);
+        
+        // Initialize tooltip for the newly created warning icon
+        this.initializeTooltip(warningIcon);
+        
+        console.log('✅ Underpowered design alert added successfully!');
     },
 
     initializeTimeSlider(displayChallenge) {
@@ -1440,36 +1557,7 @@ const UIController = {
         if (!parent) return;
         const triggers = parent.querySelectorAll('.tooltip-trigger');
         triggers.forEach(trigger => {
-            trigger.addEventListener('mousemove', function (e) {
-                const tooltip = this.querySelector('.tooltip-content');
-                if (!tooltip) return;
-
-                const rect = this.getBoundingClientRect();
-                const tooltipHeight = tooltip.offsetHeight;
-                const tooltipWidth = tooltip.offsetWidth;
-                const spaceAbove = rect.top;
-                const spaceBelow = window.innerHeight - rect.bottom;
-
-                let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
-                if (left < 10) left = 10;
-                if (left + tooltipWidth > window.innerWidth - 10) {
-                    left = window.innerWidth - tooltipWidth - 10;
-                }
-
-                let top;
-                if (spaceAbove >= tooltipHeight + 10) {
-                    top = rect.top - tooltipHeight - 10;
-                } else if (spaceBelow >= tooltipHeight + 10) {
-                    top = rect.bottom + 10;
-                } else {
-                    top = spaceAbove > spaceBelow ?
-                        rect.top - tooltipHeight - 10 :
-                        rect.bottom + 10;
-                }
-
-                tooltip.style.left = left + 'px';
-                tooltip.style.top = top + 'px';
-            });
+            this.initializeTooltip(trigger);
         });
     },
 

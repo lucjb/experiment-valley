@@ -83,6 +83,24 @@ function solveSampleSizeTTest(effectSize, power, varianceA, varianceB, alpha) {
     );
 }
 
+function calculateActualPower(effectSize, sampleSize, varianceA, varianceB, alpha) {
+    var zAlpha = jStat.normal.inv(1 - alpha / 2, 0, 1);
+    var se = Math.sqrt((varianceA + varianceB) / sampleSize);
+    var zBeta = (effectSize / se) - zAlpha;
+    return jStat.normal.cdf(zBeta, 0, 1);
+}
+
+// INCORRECT sample size calculation - missing the 2 in the denominator
+function solveSampleSizeTTestIncorrect(effectSize, power, varianceA, varianceB, alpha) {
+    var zAlpha = jStat.normal.inv(1 - alpha / 2, 0, 1);
+    var zBeta = jStat.normal.inv(power, 0, 1);
+    // This is wrong - should be effectSize * effectSize, but using just effectSize
+    // This will result in sample sizes that are too small (underpowered)
+    return Math.ceil(
+        ((zAlpha + zBeta) * (zAlpha + zBeta) * (varianceA + varianceB)) / (effectSize)
+    );
+}
+
 function computeUpliftConfidenceInterval(baseRate, variantRate, baseVisitors, variantVisitors, alpha = 0.05) {
     // Calculate standard errors
     const seBase = Math.sqrt((baseRate * (1 - baseRate)) / baseVisitors);
@@ -563,7 +581,8 @@ class ChallengeDesign {
         visitorsLoss = VISITORS_LOSS.NO,
         improvementDirection = IMPROVEMENT_DIRECTION.HIGHER,
         twymanFabrication = false,
-        overdue = false
+        overdue = false,
+        underpoweredDesign = false
     } = {}) {
         this.timeProgress = timeProgress;
         this.baseRateMismatch = baseRateMismatch;
@@ -574,6 +593,7 @@ class ChallengeDesign {
         this.improvementDirection = improvementDirection;
         this.twymanFabrication = twymanFabrication;
         this.overdue = overdue;
+        this.underpoweredDesign = underpoweredDesign;
     }
 
     generate() {
@@ -586,7 +606,8 @@ class ChallengeDesign {
             this.visitorsLoss,
             this.improvementDirection,
             this.twymanFabrication,
-            this.overdue
+            this.overdue,
+            this.underpoweredDesign
         );
     }
 
@@ -641,6 +662,11 @@ class ChallengeDesign {
 
     withOverdue() {
         this.overdue = true;
+        return this;
+    }
+
+    withUnderpoweredDesign() {
+        this.underpoweredDesign = true;
         return this;
     }
 
@@ -763,6 +789,17 @@ function twymansLawTrap() {
     });
 }
 
+function underpoweredTrap() {
+    return new ChallengeDesign({
+        timeProgress: TIME_PROGRESS.FULL,
+        baseRateMismatch: BASE_RATE_MISMATCH.NO,
+        effectSize: EFFECT_SIZE.SMALL_IMPROVEMENT,
+        sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
+        sampleProgress: SAMPLE_PROGRESS.FULL,
+        underpoweredDesign: true
+    });
+}
+
 
 
 const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY", PARTIAL_WEEKS: "PARTIAL_WEEKS" };
@@ -782,7 +819,8 @@ function generateABTestChallenge(
     visitorsLoss = VISITORS_LOSS.NO,
     improvementDirection = IMPROVEMENT_DIRECTION.HIGHER,
     twymanFabrication = false,
-    overdue = false) {
+    overdue = false,
+    underpoweredDesign = false) {
 
     // Predefined options for each parameter ,
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
@@ -803,7 +841,9 @@ function generateABTestChallenge(
     // Calculate required sample size
     var varianceA = BASE_CONVERSION_RATE * (1 - BASE_CONVERSION_RATE);
     var varianceB = (BASE_CONVERSION_RATE + MRE) * (1 - (BASE_CONVERSION_RATE + MRE));
-    var requiredSampleSizePerVariant = solveSampleSizeTTest(MRE, 1 - BETA, varianceA, varianceB, ALPHA);
+    var requiredSampleSizePerVariant = underpoweredDesign 
+        ? solveSampleSizeTTestIncorrect(MRE, 1 - BETA, varianceA, varianceB, ALPHA)
+        : solveSampleSizeTTest(MRE, 1 - BETA, varianceA, varianceB, ALPHA);
     var requiredRuntimeDays = Math.ceil((requiredSampleSizePerVariant * 2) / VISITORS_PER_DAY);
     // Ensure runtime is at least 7 days full weeks
     requiredRuntimeDays = Math.max(7, requiredRuntimeDays);
@@ -1131,6 +1171,7 @@ function analyzeExperiment(experiment) {
         },
         experiment: {
             alpha,
+            beta,
             businessCycleDays,
             baseConversionRate,
             visitorsPerDay,
@@ -1222,16 +1263,40 @@ function analyzeExperiment(experiment) {
     const largeEffect = absoluteDelta >= 10 * minimumRelevantEffect;
     const hasTwymansLaw = suspiciousPValue && largeEffect;
 
+    // Check for underpowered design trap: sample size calculation error
+    // Compute the correct sample size and compare with the design's required sample size
+    const varianceA = baseConversionRate * (1 - baseConversionRate);
+    const varianceB = (baseConversionRate + minimumRelevantEffect) * (1 - (baseConversionRate + minimumRelevantEffect));
+    const correctSampleSize = solveSampleSizeTTest(minimumRelevantEffect, 1 - beta, varianceA, varianceB, alpha);
+    const sampleSizeDifference = requiredSampleSizePerVariant - correctSampleSize;
+    const hasUnderpoweredDesign = Math.abs(sampleSizeDifference) > correctSampleSize * 0.1; // More than 10% difference
+    
+    // Calculate actual power achieved with the incorrect sample size
+    const desiredPower = 1 - beta;
+    const actualPower = calculateActualPower(minimumRelevantEffect, requiredSampleSizePerVariant, varianceA, varianceB, alpha);
+    const powerDifference = desiredPower - actualPower;
+    
+    console.log('🔍 Underpowered design detection:');
+    console.log('Required sample size:', requiredSampleSizePerVariant);
+    console.log('Correct sample size:', correctSampleSize);
+    console.log('Sample size difference:', sampleSizeDifference);
+    console.log('Desired power:', desiredPower);
+    console.log('Actual power:', actualPower);
+    console.log('Power difference:', powerDifference);
+    console.log('Has underpowered design:', hasUnderpoweredDesign);
+
     const issues = [];
     if (hasSampleRatioMismatch) issues.push('sample ratio mismatch');
     if (hasBaseRateMismatch) issues.push('base rate mismatch');
     if (hasTrafficMismatch) issues.push('traffic mismatch');
     if (hasDataLoss) issues.push('data loss');
+    if (hasUnderpoweredDesign) issues.push('underpowered design');
 
     const mismatch = hasSampleRatioMismatch ||
         hasBaseRateMismatch ||
         hasTrafficMismatch ||
-        hasDataLoss;
+        hasDataLoss ||
+        hasUnderpoweredDesign;
 
     if (mismatch) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
@@ -1240,6 +1305,10 @@ function analyzeExperiment(experiment) {
         if (hasBaseRateMismatch) issueBits.push(`base rate mismatch (z-test p=${baseRateTestpValue.toFixed(5)})`);
         if (hasTrafficMismatch) issueBits.push('traffic mismatch');
         if (hasDataLoss) issueBits.push(`data loss at day ${dataLossIndex + 1}`);
+        if (hasUnderpoweredDesign) {
+            const direction = sampleSizeDifference > 0 ? 'overpowered' : 'underpowered';
+            issueBits.push(`${direction} design (required: ${requiredSampleSizePerVariant.toLocaleString()}, correct: ${correctSampleSize.toLocaleString()}, actual power: ${(actualPower * 100).toFixed(1)}% vs desired: ${(desiredPower * 100).toFixed(1)}%)`);
+        }
         trustworthyReason = `Data quality issues detected: ${issueBits.join('; ')}. When data quality is compromised, inference is unreliable.`;
         decision = EXPERIMENT_DECISION.KEEP_BASE;
         decisionReason = 'Results are unreliable due to data quality issues; picking a winner could lock in a false signal.';
@@ -1315,6 +1384,16 @@ function analyzeExperiment(experiment) {
             hasDataLoss: hasDataLoss,
             dataLossIndex: dataLossIndex,
             hasTwymansLaw: hasTwymansLaw,
+            hasUnderpoweredDesign: hasUnderpoweredDesign,
+            underpoweredDesign: {
+                requiredSampleSize: requiredSampleSizePerVariant,
+                correctSampleSize: correctSampleSize,
+                sampleSizeDifference: sampleSizeDifference,
+                percentageUnderpowered: Math.round((Math.abs(sampleSizeDifference) / correctSampleSize) * 100),
+                desiredPower: desiredPower,
+                actualPower: actualPower,
+                powerDifference: powerDifference
+            },
             ratioMismatch: {
                 pValue: ratioPValue
             },
