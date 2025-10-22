@@ -542,7 +542,7 @@ const UIController = {
                 7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()],
                 8: [partialLoser().withSampleRatioMismatch(), winner(), loser().withLowerIsBetter()],
                 9: [inconclusive().withOverdue(), winner(), inconclusive()],
-                10: [underpoweredTrap(), winner(), inconclusive()]
+                10: [winner().withUnderpoweredDesign(), winner(), twymansLawTrap().withBaseRateMismatch().withUnderpoweredDesign().withOverdue()]
             };
 
             // Reset visitors header

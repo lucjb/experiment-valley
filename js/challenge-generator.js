@@ -90,17 +90,6 @@ function calculateActualPower(effectSize, sampleSize, varianceA, varianceB, alph
     return jStat.normal.cdf(zBeta, 0, 1);
 }
 
-// INCORRECT sample size calculation - missing the 2 in the denominator
-function solveSampleSizeTTestIncorrect(effectSize, power, varianceA, varianceB, alpha) {
-    var zAlpha = jStat.normal.inv(1 - alpha / 2, 0, 1);
-    var zBeta = jStat.normal.inv(power, 0, 1);
-    // This is wrong - should be effectSize * effectSize, but using just effectSize
-    // This will result in sample sizes that are too small (underpowered)
-    return Math.ceil(
-        ((zAlpha + zBeta) * (zAlpha + zBeta) * (varianceA + varianceB)) / (effectSize)
-    );
-}
-
 function computeUpliftConfidenceInterval(baseRate, variantRate, baseVisitors, variantVisitors, alpha = 0.05) {
     // Calculate standard errors
     const seBase = Math.sqrt((baseRate * (1 - baseRate)) / baseVisitors);
@@ -841,8 +830,8 @@ function generateABTestChallenge(
     // Calculate required sample size
     var varianceA = BASE_CONVERSION_RATE * (1 - BASE_CONVERSION_RATE);
     var varianceB = (BASE_CONVERSION_RATE + MRE) * (1 - (BASE_CONVERSION_RATE + MRE));
-    var requiredSampleSizePerVariant = underpoweredDesign 
-        ? solveSampleSizeTTestIncorrect(MRE, 1 - BETA, varianceA, varianceB, ALPHA)
+    var requiredSampleSizePerVariant = underpoweredDesign
+        ? solveSampleSizeTTest(MRE, 2*ALPHA, varianceA, varianceB, ALPHA)
         : solveSampleSizeTTest(MRE, 1 - BETA, varianceA, varianceB, ALPHA);
     var requiredRuntimeDays = Math.ceil((requiredSampleSizePerVariant * 2) / VISITORS_PER_DAY);
     // Ensure runtime is at least 7 days full weeks
@@ -864,7 +853,7 @@ function generateABTestChallenge(
             currentRuntimeDays = requiredRuntimeDays;
         }
     }
-    
+
     // Apply overdue if specified (orthogonal to timeProgress)
     extraDays = 0;
     if (overdue) {
@@ -1082,6 +1071,123 @@ function isExperimentOverdue(experiment) {
     return currentRuntimeDays > requiredRuntimeDays && sampleSizeMetAtFullWeek;
 }
 
+function findFirstValidCheckpoint(experiment, correctSampleSize) {
+    const {
+        simulation: {
+            timeline: { timePoints }
+        }
+    } = experiment;
+    
+    // Find first checkpoint where both variants have sufficient sample size AND it's a full week
+    for (let i = 0; i < timePoints.length; i++) {
+        const point = timePoints[i];
+        const { base, variant } = point;
+        
+        // Check if both variants have sufficient sample size
+        const hasSufficientSample = base.cumulativeVisitors >= correctSampleSize && 
+                                   variant.cumulativeVisitors >= correctSampleSize;
+        
+        // Check if it's a full week boundary (endDay is divisible by 7)
+        const isFullWeek = point.period.endDay % 7 === 0;
+        
+        if (hasSufficientSample && isFullWeek) {
+            return point.period.endDay;
+        }
+    }
+    
+    return null; // No valid checkpoint found
+}
+
+function filterUnderpoweredDesignData(experiment, correctSampleSize) {
+    const {
+        simulation: {
+            timeline: { currentRuntimeDays, timePoints }
+        },
+        experiment: { alpha }
+    } = experiment;
+
+    console.log('🔍 UNDERPOWERED DESIGN WITH SUFFICIENT DATA - Filtering to first valid checkpoint...');
+    console.log('📊 Correct sample size needed:', correctSampleSize);
+    
+    // Find first checkpoint where both variants have sufficient sample size AND it's a full week
+    let firstValidCheckpoint = null;
+    
+    for (let i = 0; i < timePoints.length; i++) {
+        const point = timePoints[i];
+        const { base, variant } = point;
+        
+        // Check if both variants have sufficient sample size
+        const hasSufficientSample = base.cumulativeVisitors >= correctSampleSize && 
+                                   variant.cumulativeVisitors >= correctSampleSize;
+        
+        // Check if it's a full week boundary (endDay is divisible by 7)
+        const isFullWeek = point.period.endDay % 7 === 0;
+        
+        if (hasSufficientSample && isFullWeek) {
+            firstValidCheckpoint = point.period.endDay;
+            console.log('✅ Found first valid checkpoint at day:', firstValidCheckpoint);
+            console.log('📊 Sample sizes at checkpoint:', {
+                base: base.cumulativeVisitors,
+                variant: variant.cumulativeVisitors
+            });
+            break;
+        }
+    }
+    
+    if (!firstValidCheckpoint) {
+        console.log('❌ No valid checkpoint found - experiment needs more data');
+        return null;
+    }
+    
+    // Filter timeline to only include data up to first valid checkpoint
+    const filteredTimePoints = timePoints.filter(tp => tp.period.endDay <= firstValidCheckpoint);
+    
+    // Get final data at the checkpoint
+    const finalPoint = filteredTimePoints[filteredTimePoints.length - 1];
+    const { base, variant } = finalPoint;
+    
+    // Recompute p-value and CI for filtered data
+    const { pValue: filteredP } = computeTTest(
+        base.cumulativeConversions, base.cumulativeVisitors,
+        variant.cumulativeConversions, variant.cumulativeVisitors
+    );
+    const filteredDiffCI = computeDifferenceConfidenceInterval(
+        base.cumulativeVisitors === 0 ? 0 : base.cumulativeConversions / base.cumulativeVisitors,
+        variant.cumulativeVisitors === 0 ? 0 : variant.cumulativeConversions / variant.cumulativeVisitors,
+        base.cumulativeVisitors,
+        variant.cumulativeVisitors,
+        alpha
+    );
+    
+    // Create filtered experiment object
+    const filteredExperiment = {
+        ...experiment,
+        simulation: {
+            ...experiment.simulation,
+            actualVisitorsBase: base.cumulativeVisitors,
+            actualVisitorsVariant: variant.cumulativeVisitors,
+            actualConversionsBase: base.cumulativeConversions,
+            actualConversionsVariant: variant.cumulativeConversions,
+            pValue: filteredP,
+            confidenceIntervalDifference: filteredDiffCI,
+            timeline: {
+                ...experiment.simulation.timeline,
+                timePoints: filteredTimePoints,
+                currentRuntimeDays: firstValidCheckpoint
+            }
+        }
+    };
+    
+    console.log('📊 Filtered experiment data:', {
+        runtime: firstValidCheckpoint,
+        baseVisitors: base.cumulativeVisitors,
+        variantVisitors: variant.cumulativeVisitors,
+        pValue: filteredP
+    });
+    
+    return filteredExperiment;
+}
+
 function filterOverdueExperimentData(experiment) {
     const {
         simulation: {
@@ -1094,7 +1200,7 @@ function filterOverdueExperimentData(experiment) {
     // Overdue handling: start at planned end, then add weeks until sample size is met or timeline ends
     let filteredRuntimeDays = Math.ceil(requiredRuntimeDays / 7) * 7; // full-week boundary at/after planned end
     if (filteredRuntimeDays > currentRuntimeDays) filteredRuntimeDays = currentRuntimeDays;
-    
+
     console.log('📅 Starting filtered runtime:', filteredRuntimeDays, 'days');
 
     const getCumulativesAt = (dayLimit) => {
@@ -1113,7 +1219,7 @@ function filterOverdueExperimentData(experiment) {
     let { bV, vV, bC, vC } = getCumulativesAt(filteredRuntimeDays);
     console.log('📊 Initial filtered data:', { bV, vV, bC, vC });
     console.log('📊 Required sample size per variant:', requiredSampleSizePerVariant);
-    
+
     while ((bV < requiredSampleSizePerVariant || vV < requiredSampleSizePerVariant) && filteredRuntimeDays + 7 <= currentRuntimeDays) {
         filteredRuntimeDays += 7;
         ({ bV, vV, bC, vC } = getCumulativesAt(filteredRuntimeDays));
@@ -1191,10 +1297,24 @@ function analyzeExperiment(experiment) {
     let decisionReason = '';
     let followUpReason = '';
 
+    // Calculate underpowered design data FIRST (needed for overdue check)
+    const varianceA = baseConversionRate * (1 - baseConversionRate);
+    const varianceB = (baseConversionRate + minimumRelevantEffect) * (1 - (baseConversionRate + minimumRelevantEffect));
+    const correctSampleSize = solveSampleSizeTTest(minimumRelevantEffect, 1 - beta, varianceA, varianceB, alpha);
+    const sampleSizeDifference = requiredSampleSizePerVariant - correctSampleSize;
+    const hasUnderpoweredDesign = requiredSampleSizePerVariant < correctSampleSize;
+    
+    // Calculate actual power achieved with the incorrect sample size
+    const desiredPower = 1 - beta;
+    const actualPower = calculateActualPower(minimumRelevantEffect, requiredSampleSizePerVariant, varianceA, varianceB, alpha);
+    const powerDifference = desiredPower - actualPower;
+    const actualDataSufficient = actualVisitorsBase >= correctSampleSize && actualVisitorsVariant >= correctSampleSize;
+
     // FIRST: Check if experiment is overdue and handle it immediately
+    // BUT ONLY if it's NOT an underpowered design (overdue logic doesn't apply to underpowered designs)
     const isOverdue = isExperimentOverdue(experiment);
 
-    if (isOverdue) {
+    if (isOverdue && !hasUnderpoweredDesign) {
         const filteredExperiment = filterOverdueExperimentData(experiment);
         const filteredAnalysis = analyzeExperiment(filteredExperiment);
         
@@ -1263,40 +1383,18 @@ function analyzeExperiment(experiment) {
     const largeEffect = absoluteDelta >= 10 * minimumRelevantEffect;
     const hasTwymansLaw = suspiciousPValue && largeEffect;
 
-    // Check for underpowered design trap: sample size calculation error
-    // Compute the correct sample size and compare with the design's required sample size
-    const varianceA = baseConversionRate * (1 - baseConversionRate);
-    const varianceB = (baseConversionRate + minimumRelevantEffect) * (1 - (baseConversionRate + minimumRelevantEffect));
-    const correctSampleSize = solveSampleSizeTTest(minimumRelevantEffect, 1 - beta, varianceA, varianceB, alpha);
-    const sampleSizeDifference = requiredSampleSizePerVariant - correctSampleSize;
-    const hasUnderpoweredDesign = Math.abs(sampleSizeDifference) > correctSampleSize * 0.1; // More than 10% difference
-    
-    // Calculate actual power achieved with the incorrect sample size
-    const desiredPower = 1 - beta;
-    const actualPower = calculateActualPower(minimumRelevantEffect, requiredSampleSizePerVariant, varianceA, varianceB, alpha);
-    const powerDifference = desiredPower - actualPower;
-    
-    console.log('🔍 Underpowered design detection:');
-    console.log('Required sample size:', requiredSampleSizePerVariant);
-    console.log('Correct sample size:', correctSampleSize);
-    console.log('Sample size difference:', sampleSizeDifference);
-    console.log('Desired power:', desiredPower);
-    console.log('Actual power:', actualPower);
-    console.log('Power difference:', powerDifference);
-    console.log('Has underpowered design:', hasUnderpoweredDesign);
+    // Underpowered design data already calculated above
 
     const issues = [];
     if (hasSampleRatioMismatch) issues.push('sample ratio mismatch');
     if (hasBaseRateMismatch) issues.push('base rate mismatch');
     if (hasTrafficMismatch) issues.push('traffic mismatch');
     if (hasDataLoss) issues.push('data loss');
-    if (hasUnderpoweredDesign) issues.push('underpowered design');
 
     const mismatch = hasSampleRatioMismatch ||
         hasBaseRateMismatch ||
         hasTrafficMismatch ||
-        hasDataLoss ||
-        hasUnderpoweredDesign;
+        hasDataLoss;
 
     if (mismatch) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
@@ -1305,10 +1403,7 @@ function analyzeExperiment(experiment) {
         if (hasBaseRateMismatch) issueBits.push(`base rate mismatch (z-test p=${baseRateTestpValue.toFixed(5)})`);
         if (hasTrafficMismatch) issueBits.push('traffic mismatch');
         if (hasDataLoss) issueBits.push(`data loss at day ${dataLossIndex + 1}`);
-        if (hasUnderpoweredDesign) {
-            const direction = sampleSizeDifference > 0 ? 'overpowered' : 'underpowered';
-            issueBits.push(`${direction} design (required: ${requiredSampleSizePerVariant.toLocaleString()}, correct: ${correctSampleSize.toLocaleString()}, actual power: ${(actualPower * 100).toFixed(1)}% vs desired: ${(desiredPower * 100).toFixed(1)}%)`);
-        }
+
         trustworthyReason = `Data quality issues detected: ${issueBits.join('; ')}. When data quality is compromised, inference is unreliable.`;
         decision = EXPERIMENT_DECISION.KEEP_BASE;
         decisionReason = 'Results are unreliable due to data quality issues; picking a winner could lock in a false signal.';
@@ -1364,6 +1459,73 @@ function analyzeExperiment(experiment) {
             }
             followUp = EXPERIMENT_FOLLOW_UP.CELEBRATE;
             followUpReason = 'Roll out the variant and monitor post-launch performance to confirm lift generalizes.';
+        }
+    }
+
+    // UNDERPOWERED DESIGN CHECK - MUST BE LAST (highest precedence)
+    // This check overrides decisions based on current decision state only
+    if (hasUnderpoweredDesign) {
+        console.log('🔍 Underpowered design detected - applying precedence logic:');
+        console.log('Current decision before underpowered check:', decision);
+        console.log('Actual data sufficient:', actualDataSufficient);
+        console.log('Is this already a filtered experiment?', !!experiment.originalExperiment);
+        
+        // Scenario 1: Design underpowered + Actual data insufficient
+        if (!actualDataSufficient) {
+            if (followUp !== EXPERIMENT_FOLLOW_UP.RERUN) {
+                trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
+                trustworthyReason = `Data is insufficient to reach the desired power of ${(desiredPower * 100).toFixed(0)}% (power at this sample size is ${(actualPower * 100).toFixed(0)}%). Design error: required ${requiredSampleSizePerVariant.toLocaleString()} but need ${correctSampleSize.toLocaleString()} per variant.`;
+                decision = EXPERIMENT_DECISION.KEEP_RUNNING;
+                decisionReason = `Let the test run more day(s) to reach required power. Current sample size (${actualVisitorsBase.toLocaleString()}/${actualVisitorsVariant.toLocaleString()}) is insufficient for reliable decisions.`;
+                followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
+                followUpReason = 'Continue collecting data; avoid peeking-driven decisions before reaching required sample and full cycles.';
+                console.log('✅ Applied underpowered logic: Need more data');
+            } else {
+                console.log('⚠️ RERUN follow-up takes precedence over underpowered design');
+            }
+        }
+        // Scenario 2: Design underpowered + Actual data sufficient
+        else if (actualDataSufficient) {
+            // Find the first valid checkpoint
+            const firstValidCheckpoint = findFirstValidCheckpoint(experiment, correctSampleSize);
+            
+            if (firstValidCheckpoint === null) {
+                // No valid checkpoint found - need more data
+                trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
+                trustworthyReason = `Design was underpowered but no valid checkpoint found. Need more data to reach ${correctSampleSize.toLocaleString()} per variant at a full week boundary.`;
+                decision = EXPERIMENT_DECISION.KEEP_RUNNING;
+                decisionReason = `Continue collecting data until reaching sufficient sample size (${correctSampleSize.toLocaleString()} per variant) at a full week boundary.`;
+                followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
+                followUpReason = 'Continue collecting data; avoid peeking-driven decisions before reaching required sample and full cycles.';
+                console.log('❌ No valid checkpoint found - need more data');
+            } else if (firstValidCheckpoint === currentRuntimeDays) {
+                // First valid checkpoint is current date - we're already at the right point
+                console.log('✅ Already at first valid checkpoint - no filtering needed');
+                // Just add a note about the design error being overcome
+                if (trustworthyReason === 'Data quality checks passed.') {
+                    trustworthyReason = 'Data quality checks passed. Note: Original design was underpowered but sufficient data was collected.';
+                }
+            } else {
+                // First valid checkpoint is in the past - filter data and reanalyze
+                console.log(`🔍 First valid checkpoint is at day ${firstValidCheckpoint} (current: ${currentRuntimeDays}) - filtering data`);
+                const filteredExperiment = filterUnderpoweredDesignData(experiment, correctSampleSize);
+                const filteredAnalysis = analyzeExperiment(filteredExperiment);
+                
+                // Preserve original experiment data for UI display
+                return {
+                    ...filteredAnalysis,
+                    originalExperiment: experiment,
+                    analysis: {
+                        ...filteredAnalysis.analysis,
+                        underpoweredDesignFiltered: {
+                            originalRuntime: currentRuntimeDays,
+                            filteredRuntime: filteredExperiment.simulation.timeline.currentRuntimeDays,
+                            extraDays: Math.max(0, currentRuntimeDays - filteredExperiment.simulation.timeline.currentRuntimeDays),
+                            designErrorOvercome: true
+                        }
+                    }
+                };
+            }
         }
     }
 
