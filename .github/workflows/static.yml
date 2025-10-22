@@ -26,7 +26,7 @@ jobs:
   deploy:
     environment:
       name: test
-      url: ${{ steps.deployment.outputs.page_url }}/m
+      url: https://lucjb.github.io/experiment-valley/m
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
