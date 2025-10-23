@@ -25,6 +25,8 @@ const UIController = {
         sessionStartImpactRank: null // Store starting impact rank
     },
 
+    tooltipCounter: 0,
+
     init() {
         this.initializeEventListeners();
         //this.initializeCheatSheet();
@@ -690,22 +692,55 @@ const UIController = {
 
     // Initialize tooltip for dynamically created elements
     initializeTooltip(tooltipTrigger) {
+        if (!tooltipTrigger || tooltipTrigger.dataset.tooltipInitialized === 'true') {
+            return;
+        }
+
+        const initialTip = tooltipTrigger.querySelector('.tooltip-content');
+        if (!initialTip) {
+            return;
+        }
+
+        tooltipTrigger.dataset.tooltipInitialized = 'true';
+
+        this.tooltipCounter = (this.tooltipCounter || 0) + 1;
+        const tooltipId = initialTip.id || `ui-tooltip-${this.tooltipCounter}`;
+        initialTip.id = tooltipId;
+        initialTip.setAttribute('role', 'tooltip');
+        initialTip.setAttribute('aria-hidden', 'true');
+
+        const describedBy = tooltipTrigger.getAttribute('aria-describedby');
+        if (!describedBy) {
+            tooltipTrigger.setAttribute('aria-describedby', tooltipId);
+        } else if (!describedBy.split(' ').includes(tooltipId)) {
+            tooltipTrigger.setAttribute('aria-describedby', `${describedBy} ${tooltipId}`.trim());
+        }
+
+        const interactiveTags = ['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA'];
+        if (!interactiveTags.includes(tooltipTrigger.tagName) && tooltipTrigger.tabIndex < 0) {
+            tooltipTrigger.setAttribute('tabindex', '0');
+        }
+
+        initialTip.style.left = '-9999px';
+        initialTip.style.top = '-9999px';
+        initialTip.style.pointerEvents = 'none';
+
         let isTooltipVisible = false;
         let hideTimeout;
-        
-        const moveHandler = function () {
-            const tip = tooltipTrigger.querySelector('.tooltip-content');
+        let touchActive = false;
+
+        const getTip = () => tooltipTrigger.querySelector('.tooltip-content');
+
+        const repositionTooltip = () => {
+            const tip = getTip();
             if (!tip) return;
 
             const rect = tooltipTrigger.getBoundingClientRect();
             const tipHeight = tip.offsetHeight;
             const tipWidth = tip.offsetWidth;
 
-            let left = rect.left + (rect.width / 2) - (tipWidth / 2);
-            if (left < 10) left = 10;
-            if (left + tipWidth > window.innerWidth - 10) {
-                left = window.innerWidth - tipWidth - 10;
-            }
+            let left = rect.left + rect.width / 2 - tipWidth / 2;
+            left = Math.max(10, Math.min(left, window.innerWidth - tipWidth - 10));
 
             const spaceAbove = rect.top;
             const spaceBelow = window.innerHeight - rect.bottom;
@@ -715,63 +750,136 @@ const UIController = {
             } else if (spaceBelow >= tipHeight + 10) {
                 top = rect.bottom + 10;
             } else {
-                top = rect.bottom + 10;
+                top = Math.max(10, rect.bottom + 10);
             }
 
-            tip.style.left = left + 'px';
-            tip.style.top = top + 'px';
+            tip.style.left = `${left}px`;
+            tip.style.top = `${top}px`;
         };
 
-        const showTooltip = function() {
+        const cancelHide = () => {
             clearTimeout(hideTimeout);
-            const tip = tooltipTrigger.querySelector('.tooltip-content');
+        };
+
+        const handleOutsideInteraction = (event) => {
+            if (!tooltipTrigger.contains(event.target)) {
+                hideTooltip({ immediate: true });
+            }
+        };
+
+        const showTooltip = () => {
+            cancelHide();
+            const tip = getTip();
             if (!tip) return;
-            
-            moveHandler();
+
+            repositionTooltip();
             tip.style.visibility = 'visible';
             tip.style.opacity = '1';
+            tip.style.pointerEvents = 'auto';
+            tip.setAttribute('aria-hidden', 'false');
+            tooltipTrigger.classList.add('tooltip-open');
             isTooltipVisible = true;
+
+            window.addEventListener('resize', repositionTooltip);
+            window.addEventListener('scroll', repositionTooltip, true);
+
+            setTimeout(() => {
+                document.addEventListener('click', handleOutsideInteraction);
+                document.addEventListener('touchstart', handleOutsideInteraction);
+            }, 0);
         };
 
-        const hideTooltip = function() {
+        const hideTooltip = ({ immediate = false } = {}) => {
+            const performHide = () => {
+                const tip = getTip();
+                if (!tip) return;
+
+                tip.style.visibility = 'hidden';
+                tip.style.opacity = '0';
+                tip.style.left = '-9999px';
+                tip.style.top = '-9999px';
+                tip.style.pointerEvents = 'none';
+                tip.setAttribute('aria-hidden', 'true');
+                tooltipTrigger.classList.remove('tooltip-open');
+                isTooltipVisible = false;
+
+                document.removeEventListener('click', handleOutsideInteraction);
+                document.removeEventListener('touchstart', handleOutsideInteraction);
+                window.removeEventListener('resize', repositionTooltip);
+                window.removeEventListener('scroll', repositionTooltip, true);
+            };
+
+            if (immediate) {
+                cancelHide();
+                performHide();
+                return;
+            }
+
             if (isTooltipVisible) {
-                hideTimeout = setTimeout(() => {
-                    const tip = tooltipTrigger.querySelector('.tooltip-content');
-                    if (!tip) return;
-                    tip.style.visibility = 'hidden';
-                    tip.style.opacity = '0';
-                    tip.style.left = '-9999px';
-                    tip.style.top = '-9999px';
-                    isTooltipVisible = false;
-                }, 200); // Much shorter delay
+                hideTimeout = setTimeout(performHide, 200);
             }
         };
 
-        const cancelHide = function() {
-            clearTimeout(hideTimeout);
+        const toggleTooltip = (event) => {
+            if (event && event.target.closest('.tooltip-content')) {
+                return;
+            }
+
+            if (event) {
+                if (tooltipTrigger.tagName !== 'A') {
+                    event.preventDefault();
+                }
+                event.stopPropagation();
+            }
+
+            if (isTooltipVisible) {
+                hideTooltip({ immediate: true });
+            } else {
+                showTooltip();
+            }
         };
 
-        // Trigger events
         tooltipTrigger.addEventListener('mouseenter', showTooltip);
-        tooltipTrigger.addEventListener('mousemove', moveHandler);
-        tooltipTrigger.addEventListener('mouseleave', hideTooltip);
-        
-        // Tooltip content events - this is the key improvement
-        const tip = tooltipTrigger.querySelector('.tooltip-content');
-        if (tip) {
-            tip.addEventListener('mouseenter', cancelHide);
-            tip.addEventListener('mouseleave', hideTooltip);
-            tip.addEventListener('mousemove', cancelHide);
-            
-            // Make links focusable and handle focus events
-            const links = tip.querySelectorAll('a');
-            links.forEach(link => {
-                link.addEventListener('focus', cancelHide);
-                link.addEventListener('blur', hideTooltip);
-                link.addEventListener('mouseenter', cancelHide);
-                link.addEventListener('mouseleave', hideTooltip);
-            });
-        }
+        tooltipTrigger.addEventListener('mousemove', () => {
+            if (isTooltipVisible) {
+                repositionTooltip();
+            }
+        });
+        tooltipTrigger.addEventListener('mouseleave', () => hideTooltip());
+        tooltipTrigger.addEventListener('focus', showTooltip);
+        tooltipTrigger.addEventListener('blur', () => hideTooltip({ immediate: true }));
+        tooltipTrigger.addEventListener('click', (event) => {
+            if (touchActive) {
+                return;
+            }
+            toggleTooltip(event);
+        });
+        tooltipTrigger.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleTooltip(event);
+            }
+        });
+        tooltipTrigger.addEventListener('touchstart', (event) => {
+            touchActive = true;
+            setTimeout(() => {
+                touchActive = false;
+            }, 400);
+            toggleTooltip(event);
+        }, { passive: false });
+
+        initialTip.addEventListener('mouseenter', cancelHide);
+        initialTip.addEventListener('mouseleave', () => hideTooltip());
+        initialTip.addEventListener('mousemove', cancelHide);
+        initialTip.addEventListener('click', (event) => event.stopPropagation());
+
+        const links = initialTip.querySelectorAll('a');
+        links.forEach(link => {
+            link.addEventListener('focus', cancelHide);
+            link.addEventListener('blur', () => hideTooltip());
+            link.addEventListener('mouseenter', cancelHide);
+            link.addEventListener('mouseleave', () => hideTooltip());
+        });
     },
 
     // Helper function to add warning to a cell
