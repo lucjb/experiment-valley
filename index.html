@@ -622,29 +622,29 @@
 
         <div id="challenge-container" class="hidden">
             <!-- Progress Header -->
-            <header class="flex flex-col bg-gray-900 rounded-lg shadow-lg p-3 md:p-4 mb-2">
-                <div class="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
-                    <div class="flex flex-wrap gap-4 md:gap-8">
-                        <div>
+            <header class="progress-header flex flex-col bg-gray-900 rounded-lg shadow-lg p-3 md:p-4 mb-2">
+                <div class="progress-header__top flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0 w-full">
+                    <div class="progress-header__stats flex flex-wrap gap-4 md:gap-8 w-full md:w-auto">
+                        <div class="progress-header__stat">
                             <span class="font-medium text-white"><span class="tooltip-trigger">Round<span
                                         class="tooltip-content">The current round number. Each round consists of 3
                                         experiments.</span></span>: </span>
                             <span id="current-round" class="text-xl md:text-2xl font-bold score-value">1</span>
                         </div>
-                        <div>
+                        <div class="progress-header__stat">
                             <span class="font-medium text-white"><span class="tooltip-trigger">Accuracy<span
                                         class="tooltip-content">The percentage of correct decisions you've made across
                                         all experiments.</span></span>: </span>
                             <span id="accuracy" class="text-xl md:text-2xl font-bold score-value">0%</span>
                         </div>
-                        <div>
+                        <div class="progress-header__stat">
                             <span class="font-medium text-white">Your <span class="tooltip-trigger">Impact<span
                                         class="tooltip-content">The incremental number of conversions per day as a
                                         result of your decisions</span></span>: </span>
                             <span id="user-impact" class="text-xl md:text-2xl font-bold score-value text-green-500">0
                                 cpd</span>
                         </div>
-                        <div>
+                        <div class="progress-header__stat">
                             <span class="font-medium text-white"><span id="competitor-name">Opponent</span> <span
                                     class="tooltip-trigger">Impact<span class="tooltip-content">The incremental number
                                         of conversions per day as a result of your opponent's decisions</span></span>:
@@ -653,8 +653,8 @@
                                 cpd</span>
                         </div>
                     </div>
-                    <div class="flex items-center space-x-2">
-                        <div class="flex space-x-1">
+                    <div class="progress-header__controls flex items-center gap-3 flex-wrap md:flex-nowrap justify-center md:justify-end w-full md:w-auto">
+                        <div class="progress-indicators flex space-x-1">
                             <div id="exp-dot-1"
                                 class="w-3 h-3 rounded-full bg-gray-400 transition-colors duration-300 tooltip-trigger">
                                 <span class="tooltip-content">Experiment 1: Not started</span>
@@ -669,7 +669,7 @@
                             </div>
                         </div>
                         <button id="exit-game-btn"
-                            class="ml-4 p-2 text-gray-400 hover:text-red-400 hover:bg-red-900 hover:bg-opacity-20 rounded-lg transition-all duration-200 flex items-center justify-center">
+                            class="exit-button p-2 text-gray-400 hover:text-red-400 hover:bg-red-900 hover:bg-opacity-20 rounded-lg transition-all duration-200 flex items-center justify-center">
                             <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -989,28 +989,28 @@
                 <div id="metrics-tab" class="tab-content">
                     <!-- Time Slider -->
                     <div class="mb-4 p-3 bg-gray-50 rounded-lg border">
-                        <div class="flex items-center space-x-4">
+                        <div class="time-slider-row flex items-center space-x-4 flex-wrap md:flex-nowrap gap-3">
                             <label for="time-slider" class="text-sm font-medium text-gray-700">Time Travel:</label>
                             <div class="flex-1 relative">
                                 <input type="range" id="time-slider" min="1" max="1" value="1" 
                                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider">
                             </div>
-                            <div class="text-sm text-gray-600">
+                            <div class="time-slider-day text-sm text-gray-600">
                                 <span id="current-day-display">Day 1</span>
                             </div>
                         </div>
-                        <div class="mt-2 text-xs text-gray-500">
+                        <div class="time-slider-links mt-2 text-xs text-gray-500">
                             <span id="time-slider-info">Drag to see experiment at different points in time</span>
-        <span class="ml-2">
-                                <a href="#" id="jump-to-today" class="text-blue-600 hover:text-blue-800 underline">Jump to Today</a>
+                            <span>
+                                <a href="#" id="jump-to-today" class="time-slider-link text-blue-600 hover:text-blue-800 underline">Jump to Today</a>
                             </span>
-                            <span class="ml-2">
-                                <a href="#" id="jump-to-planned-end" class="text-blue-600 hover:text-blue-800 underline">Jump to planned end date</a>
+                            <span>
+                                <a href="#" id="jump-to-planned-end" class="time-slider-link text-blue-600 hover:text-blue-800 underline">Jump to planned end date</a>
                             </span>
-        <span class="ml-2">
-            <a href="#" id="jump-to-last-full-week" class="text-blue-600 hover:text-blue-800 underline">Jump to last full week cycle</a>
-        </span>
-                            <span id="planned-end-future-text" class="ml-2 text-gray-400" style="display: none;">(planned end date in the future)</span>
+                            <span>
+                                <a href="#" id="jump-to-last-full-week" class="time-slider-link text-blue-600 hover:text-blue-800 underline">Jump to last full week cycle</a>
+                            </span>
+                            <span id="planned-end-future-text" class="time-slider-link text-gray-400" style="display: none;">(planned end date in the future)</span>
                         </div>
                     </div>
                     

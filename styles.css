@@ -471,6 +471,95 @@ select:focus {
     margin-left: 1rem;
 }
 
+/* Progress header layout */
+.progress-header {
+    gap: 0.75rem;
+}
+
+.progress-header__top {
+    width: 100%;
+}
+
+.progress-header__stats {
+    align-items: stretch;
+}
+
+.progress-header__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 150px;
+}
+
+.progress-header__controls {
+    min-width: 0;
+}
+
+.progress-header__controls .exit-button {
+    flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+    .progress-header__stats {
+        gap: 1rem;
+    }
+
+    .progress-header__stat {
+        min-width: 130px;
+    }
+}
+
+@media (max-width: 768px) {
+    .progress-header__stats {
+        justify-content: space-between;
+    }
+
+    .progress-header__stat {
+        flex: 1 1 calc(50% - 0.75rem);
+    }
+
+    .progress-header__controls {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .progress-indicators {
+        justify-content: center;
+        width: 100%;
+    }
+}
+
+@media (max-width: 640px) {
+    .progress-header__stat {
+        min-width: 45%;
+    }
+
+    .progress-header__controls {
+        gap: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .progress-header__stats {
+        gap: 0.5rem;
+    }
+
+    .progress-header__stat {
+        flex: 1 1 100%;
+        min-width: 100%;
+    }
+
+    .progress-header__controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .progress-header__controls .exit-button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
 /* Decision Container Styles */
 .decision-container {
     display: flex;
@@ -602,21 +691,63 @@ select:focus {
 @media (max-width: 768px) {
     .decision-container {
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.75rem;
     }
-    
+
     .decision-section {
         width: 100%;
+        align-items: stretch;
     }
-    
+
     .decision-btn-group {
         flex-wrap: wrap;
+        justify-content: flex-start;
     }
-    
+
     .decision-btn {
-        width: calc(50% - var(--button-gap));
+        width: 100%;
+        max-width: none;
+        flex: 1 1 calc(50% - var(--button-gap));
     }
-} 
+
+    .decision-section.follow-up .decision-btn {
+        flex: 1 1 calc(50% - var(--button-gap));
+        max-width: none;
+        min-width: 45%;
+    }
+
+    .decision-section.submit-btn {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .decision-section.submit-btn .decision-btn-group {
+        width: 100%;
+        justify-content: center;
+    }
+
+    #submit-decision {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .decision-btn {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .decision-section.follow-up .decision-btn {
+        flex: 1 1 100%;
+        min-width: 100%;
+    }
+
+    .decision-section.submit-btn .decision-btn-group {
+        gap: 0.5rem;
+    }
+}
 
 /* Make decision box more compact */
 #challenge-container .bg-gray-900.rounded-lg.shadow-lg {
@@ -825,6 +956,80 @@ select:focus {
 
 .time-slider-container:hover::before {
     opacity: 1;
+}
+
+.time-slider-row > * {
+    margin-left: 0 !important;
+}
+
+.time-slider-row label {
+    font-weight: 500;
+}
+
+.time-slider-day {
+    white-space: nowrap;
+}
+
+.time-slider-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: center;
+}
+
+.time-slider-links > * {
+    margin-left: 0 !important;
+}
+
+.time-slider-link {
+    display: inline-flex;
+    align-items: center;
+}
+
+@media (max-width: 768px) {
+    .time-slider-row {
+        gap: 0.5rem;
+    }
+
+    .time-slider-links {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 640px) {
+    .time-slider-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .time-slider-row label,
+    .time-slider-row .flex-1,
+    .time-slider-day {
+        width: 100%;
+    }
+
+    .time-slider-day {
+        text-align: left;
+    }
+
+    .time-slider-links {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .time-slider-links > * {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .time-slider-container {
+        padding: 16px;
+    }
+
+    .time-slider-link {
+        justify-content: flex-start;
+    }
 }
 
 /* Planned End Anchor - Caliper-style Markers */
