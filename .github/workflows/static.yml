@@ -3,10 +3,14 @@ on:
   pull_request:
     types: [opened, reopened, synchronize, closed]
 
+# Cancel older runs for the same PR ref
 concurrency: preview-${{ github.ref }}
 
+# Needs to push preview files and post a comment
 permissions:
   contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
   preview:
@@ -14,22 +18,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # If you build:
+      # If you build, uncomment and set source-dir to your build output
       # - if: github.event.action != 'closed'
-      #   run: npm ci && npm run build
+      #   run: |
+      #     npm ci
+      #     npm run build
 
       - name: Deploy preview
         if: github.event.action != 'closed'
         uses: rossjrw/pr-preview-action@v1
         with:
-          source-dir: .          # change to 'dist' if you build
-          preview-branch: gh-pages
-          umbrella-dir: pr-preview
+          source-dir: .              # change to 'dist' (or your build dir) if you build
+          preview-branch: main       # <<< you deploy from main
+          umbrella-dir: pr-preview   # results in /pr-preview/pr-<n>/
 
       - name: Remove preview on PR close
         if: github.event.action == 'closed'
         uses: rossjrw/pr-preview-action@v1
         with:
           action: remove
-          preview-branch: gh-pages
+          preview-branch: main       # <<< keep in sync
           umbrella-dir: pr-preview
