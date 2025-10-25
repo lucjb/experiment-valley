@@ -395,44 +395,41 @@
     <div id="round-splash-overlay" class="round-splash-overlay"></div>
     <div class="max-w-6xl mx-auto p-2 md:p-4">
         <!-- Game Menu Section -->
-        <div id="game-menu" class=" flex items-center justify-center p-4">
+        <div id="game-menu" class="flex items-center justify-center p-4">
             <div class="max-w-4xl w-full">
-                <!-- Game Title -->
-                <div class="text-center mb-12 mt-36">
-                    <h1 class="text-8xl font-bold text-white mb-4 tracking-wider"
+                <!-- Game Title & Navigation -->
+                <header class="site-hero text-center">
+                    <h1 class="site-hero-title text-white font-bold tracking-wider"
                         style="text-shadow: 0 0 20px rgba(255,255,255,0.5);">
                         EXPERIMENT VALLEY
                     </h1>
-                </div>
 
+                    <nav class="site-nav" aria-label="Main navigation">
+                        <!-- Play Button -->
+                        <button id="play-btn"
+                            class="text-white hover:text-yellow-300 transition-colors duration-200 cursor-pointer">
+                            Play
+                        </button>
 
+                        <!-- Leaderboards Button -->
+                        <a href="leaderboard.html" class="text-white hover:text-yellow-300 transition-colors duration-200">
+                            Leaderboards
+                        </a>
 
-                <!-- Navigation Menu -->
-                <div class="flex justify-center space-x-8 text-2xl mt-40">
-                    <!-- Play Button -->
-                    <button id="play-btn"
-                        class="text-white hover:text-yellow-300 transition-colors duration-200 cursor-pointer">
-                        Play
-                    </button>
+                        <!-- How to Play Button -->
+                        <a href="how-to-play.html" class="text-white hover:text-yellow-300 transition-colors duration-200">
+                            How to
+                        </a>
 
-                    <!-- Leaderboards Button -->
-                    <a href="leaderboard.html" class="text-white hover:text-yellow-300 transition-colors duration-200">
-                        Leaderboards
-                    </a>
-
-                    <!-- How to Play Button -->
-                    <a href="how-to-play.html" class="text-white hover:text-yellow-300 transition-colors duration-200">
-                        How to
-                    </a>
-
-                    <!-- About Button -->
-                    <a href="about.html" class="text-white hover:text-yellow-300 transition-colors duration-200">
-                        About
-                    </a>
-                </div>
+                        <!-- About Button -->
+                        <a href="about.html" class="text-white hover:text-yellow-300 transition-colors duration-200">
+                            About
+                        </a>
+                    </nav>
+                </header>
 
                 <!-- Game Description -->
-                <div class="text-center mt-40">
+                <div class="hero-description text-center">
                     <p class="text-white text-lg max-w-2xl mx-auto"
                         style="text-shadow: 0 0 10px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.6);">
                         Enter the valley of statistical wisdom. Test, practice and learn decision-making skills.
@@ -622,9 +619,9 @@
 
         <div id="challenge-container" class="hidden">
             <!-- Progress Header -->
-            <header class="flex flex-col bg-gray-900 rounded-lg shadow-lg p-3 md:p-4 mb-2">
+            <header class="flex flex-col bg-gray-900 rounded-lg shadow-lg p-3 md:p-4 mb-2 round-header">
                 <div class="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0">
-                    <div class="flex flex-wrap gap-4 md:gap-8">
+                    <div class="flex flex-wrap gap-4 md:gap-8 round-metrics">
                         <div>
                             <span class="font-medium text-white"><span class="tooltip-trigger">Round<span
                                         class="tooltip-content">The current round number. Each round consists of 3
@@ -653,7 +650,7 @@
                                 cpd</span>
                         </div>
                     </div>
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center space-x-2 round-controls">
                         <div class="flex space-x-1">
                             <div id="exp-dot-1"
                                 class="w-3 h-3 rounded-full bg-gray-400 transition-colors duration-300 tooltip-trigger">
@@ -989,7 +986,7 @@
                 <div id="metrics-tab" class="tab-content">
                     <!-- Time Slider -->
                     <div class="mb-4 p-3 bg-gray-50 rounded-lg border">
-                        <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-4 time-slider-row">
                             <label for="time-slider" class="text-sm font-medium text-gray-700">Time Travel:</label>
                             <div class="flex-1 relative">
                                 <input type="range" id="time-slider" min="1" max="1" value="1" 
@@ -1119,9 +1116,9 @@
                 <div id="conversion-tab" class="tab-content hidden">
                     <div class="mt-4">
                         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
-                            <div class="flex items-center space-x-2 mb-2 md:mb-0">
-                                <label class="text-sm text-gray-600">View:</label>
-                                <select id="chart-view-toggle"
+                        <div class="flex items-center space-x-2 mb-2 md:mb-0 chart-toolbar">
+                            <label class="text-sm text-gray-600">View:</label>
+                            <select id="chart-view-toggle"
                                     class="form-select text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                                     <option value="daily">Daily View</option>
                                     <option value="cumulative">Cumulative View</option>
@@ -1143,9 +1140,9 @@
                 <div id="visitors-tab" class="tab-content hidden">
                     <div class="mt-4">
                         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2">
-                            <div class="flex items-center space-x-2 mb-2 md:mb-0">
-                                <label class="text-sm text-gray-600">View:</label>
-                                <select id="visitors-view-toggle"
+                        <div class="flex items-center space-x-2 mb-2 md:mb-0 chart-toolbar">
+                            <label class="text-sm text-gray-600">View:</label>
+                            <select id="visitors-view-toggle"
                                     class="form-select text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                                     <option value="daily">Daily View</option>
                                     <option value="cumulative">Cumulative View</option>
@@ -1161,7 +1158,7 @@
                 <div id="difference-tab" class="tab-content hidden">
                     <div class="flex flex-col space-y-4">
                         <div class="flex justify-between items-center">
-                            <div class="flex space-x-4">
+                            <div class="flex space-x-4 chart-toolbar">
                                 <select id="difference-view-toggle" class="px-3 py-1 border rounded-md text-sm">
                                     <option value="daily">Daily View</option>
                                     <option value="cumulative">Cumulative View</option>
