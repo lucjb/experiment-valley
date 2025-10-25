@@ -690,13 +690,18 @@ const UIController = {
 
     // Initialize tooltip for dynamically created elements
     initializeTooltip(tooltipTrigger) {
+        const tip = tooltipTrigger.querySelector('.tooltip-content');
+        if (!tip) return;
+
         let isTooltipVisible = false;
         let hideTimeout;
-        
-        const moveHandler = function () {
-            const tip = tooltipTrigger.querySelector('.tooltip-content');
-            if (!tip) return;
+        const supportsHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
+        // Ensure the tooltip starts off-screen until positioned
+        tip.style.left = '-9999px';
+        tip.style.top = '-9999px';
+
+        const moveHandler = () => {
             const rect = tooltipTrigger.getBoundingClientRect();
             const tipHeight = tip.offsetHeight;
             const tipWidth = tip.offsetWidth;
@@ -718,60 +723,105 @@ const UIController = {
                 top = rect.bottom + 10;
             }
 
-            tip.style.left = left + 'px';
-            tip.style.top = top + 'px';
+            tip.style.left = `${left}px`;
+            tip.style.top = `${top}px`;
         };
 
-        const showTooltip = function() {
+        const reposition = () => {
+            if (isTooltipVisible) {
+                moveHandler();
+            }
+        };
+
+        const cleanupGlobalListeners = () => {
+            document.removeEventListener('click', onDocumentClick);
+            window.removeEventListener('resize', reposition);
+            window.removeEventListener('scroll', reposition, true);
+        };
+
+        const hideTooltipImmediate = () => {
             clearTimeout(hideTimeout);
-            const tip = tooltipTrigger.querySelector('.tooltip-content');
-            if (!tip) return;
-            
+            tip.style.visibility = 'hidden';
+            tip.style.opacity = '0';
+            tip.style.left = '-9999px';
+            tip.style.top = '-9999px';
+            isTooltipVisible = false;
+            cleanupGlobalListeners();
+        };
+
+        const hideTooltip = () => {
+            if (!isTooltipVisible) return;
+            const delay = supportsHover ? 200 : 0;
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(() => {
+                hideTooltipImmediate();
+            }, delay);
+        };
+
+        const cancelHide = () => {
+            clearTimeout(hideTimeout);
+        };
+
+        const onDocumentClick = (event) => {
+            if (tooltipTrigger.contains(event.target) || tip.contains(event.target)) {
+                return;
+            }
+            hideTooltipImmediate();
+        };
+
+        const showTooltip = () => {
+            clearTimeout(hideTimeout);
             moveHandler();
             tip.style.visibility = 'visible';
             tip.style.opacity = '1';
             isTooltipVisible = true;
-        };
-
-        const hideTooltip = function() {
-            if (isTooltipVisible) {
-                hideTimeout = setTimeout(() => {
-                    const tip = tooltipTrigger.querySelector('.tooltip-content');
-                    if (!tip) return;
-                    tip.style.visibility = 'hidden';
-                    tip.style.opacity = '0';
-                    tip.style.left = '-9999px';
-                    tip.style.top = '-9999px';
-                    isTooltipVisible = false;
-                }, 200); // Much shorter delay
+            window.addEventListener('resize', reposition);
+            window.addEventListener('scroll', reposition, true);
+            if (!supportsHover) {
+                document.addEventListener('click', onDocumentClick);
             }
         };
 
-        const cancelHide = function() {
-            clearTimeout(hideTimeout);
-        };
+        if (supportsHover) {
+            tooltipTrigger.addEventListener('mouseenter', showTooltip);
+            tooltipTrigger.addEventListener('mousemove', moveHandler);
+            tooltipTrigger.addEventListener('mouseleave', hideTooltip);
 
-        // Trigger events
-        tooltipTrigger.addEventListener('mouseenter', showTooltip);
-        tooltipTrigger.addEventListener('mousemove', moveHandler);
-        tooltipTrigger.addEventListener('mouseleave', hideTooltip);
-        
-        // Tooltip content events - this is the key improvement
-        const tip = tooltipTrigger.querySelector('.tooltip-content');
-        if (tip) {
             tip.addEventListener('mouseenter', cancelHide);
             tip.addEventListener('mouseleave', hideTooltip);
             tip.addEventListener('mousemove', cancelHide);
-            
-            // Make links focusable and handle focus events
-            const links = tip.querySelectorAll('a');
-            links.forEach(link => {
-                link.addEventListener('focus', cancelHide);
-                link.addEventListener('blur', hideTooltip);
-                link.addEventListener('mouseenter', cancelHide);
-                link.addEventListener('mouseleave', hideTooltip);
-            });
+        } else {
+            const toggleTooltip = (event) => {
+                if (event.type === 'touchstart') {
+                    event.preventDefault();
+                }
+                event.stopPropagation();
+                if (isTooltipVisible) {
+                    hideTooltipImmediate();
+                } else {
+                    showTooltip();
+                }
+            };
+
+            tooltipTrigger.addEventListener('click', toggleTooltip);
+            tooltipTrigger.addEventListener('touchstart', toggleTooltip, { passive: false });
+            tip.addEventListener('click', (event) => event.stopPropagation());
+            tip.addEventListener('touchstart', (event) => event.stopPropagation(), { passive: true });
         }
+
+        // Keyboard accessibility
+        tooltipTrigger.addEventListener('focus', () => {
+            showTooltip();
+        });
+        tooltipTrigger.addEventListener('blur', () => {
+            hideTooltip();
+        });
+
+        const links = tip.querySelectorAll('a');
+        links.forEach(link => {
+            link.addEventListener('focus', cancelHide);
+            link.addEventListener('blur', hideTooltip);
+        });
     },
 
     // Helper function to add warning to a cell
