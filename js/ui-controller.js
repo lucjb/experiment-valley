@@ -690,11 +690,28 @@ const UIController = {
 
     // Initialize tooltip for dynamically created elements
     initializeTooltip(tooltipTrigger) {
+        if (!tooltipTrigger || tooltipTrigger.dataset.tooltipInitialized === 'true') {
+            return;
+        }
+
+        tooltipTrigger.dataset.tooltipInitialized = 'true';
+
         let isTooltipVisible = false;
         let hideTimeout;
-        
+
+        if (typeof tooltipTrigger.tabIndex === 'number' && tooltipTrigger.tabIndex < 0 && !tooltipTrigger.hasAttribute('tabindex')) {
+            tooltipTrigger.setAttribute('tabindex', '0');
+        }
+
+        const tip = tooltipTrigger.querySelector('.tooltip-content');
+        if (!tip) {
+            return;
+        }
+
+        tip.style.left = '-9999px';
+        tip.style.top = '-9999px';
+
         const moveHandler = function () {
-            const tip = tooltipTrigger.querySelector('.tooltip-content');
             if (!tip) return;
 
             const rect = tooltipTrigger.getBoundingClientRect();
@@ -722,32 +739,53 @@ const UIController = {
             tip.style.top = top + 'px';
         };
 
-        const showTooltip = function() {
+        const onDocumentClick = (event) => {
+            if (tooltipTrigger.contains(event.target) || tip.contains(event.target)) {
+                return;
+            }
+            hideTooltip(true);
+        };
+
+        const showTooltip = function () {
             clearTimeout(hideTimeout);
-            const tip = tooltipTrigger.querySelector('.tooltip-content');
-            if (!tip) return;
-            
+
             moveHandler();
             tip.style.visibility = 'visible';
             tip.style.opacity = '1';
+
+            if (!isTooltipVisible) {
+                document.addEventListener('click', onDocumentClick);
+            }
+
             isTooltipVisible = true;
         };
 
-        const hideTooltip = function() {
-            if (isTooltipVisible) {
-                hideTimeout = setTimeout(() => {
-                    const tip = tooltipTrigger.querySelector('.tooltip-content');
-                    if (!tip) return;
-                    tip.style.visibility = 'hidden';
-                    tip.style.opacity = '0';
-                    tip.style.left = '-9999px';
-                    tip.style.top = '-9999px';
-                    isTooltipVisible = false;
-                }, 200); // Much shorter delay
+        const hideTooltip = function (eventOrImmediate) {
+            const immediate = typeof eventOrImmediate === 'boolean' ? eventOrImmediate : false;
+
+            if (!isTooltipVisible) {
+                return;
+            }
+
+            const performHide = () => {
+                tip.style.visibility = 'hidden';
+                tip.style.opacity = '0';
+                tip.style.left = '-9999px';
+                tip.style.top = '-9999px';
+                isTooltipVisible = false;
+                document.removeEventListener('click', onDocumentClick);
+            };
+
+            if (immediate) {
+                clearTimeout(hideTimeout);
+                performHide();
+            } else {
+                clearTimeout(hideTimeout);
+                hideTimeout = setTimeout(performHide, 200);
             }
         };
 
-        const cancelHide = function() {
+        const cancelHide = function () {
             clearTimeout(hideTimeout);
         };
 
@@ -755,23 +793,59 @@ const UIController = {
         tooltipTrigger.addEventListener('mouseenter', showTooltip);
         tooltipTrigger.addEventListener('mousemove', moveHandler);
         tooltipTrigger.addEventListener('mouseleave', hideTooltip);
-        
-        // Tooltip content events - this is the key improvement
-        const tip = tooltipTrigger.querySelector('.tooltip-content');
-        if (tip) {
-            tip.addEventListener('mouseenter', cancelHide);
-            tip.addEventListener('mouseleave', hideTooltip);
-            tip.addEventListener('mousemove', cancelHide);
-            
-            // Make links focusable and handle focus events
-            const links = tip.querySelectorAll('a');
-            links.forEach(link => {
-                link.addEventListener('focus', cancelHide);
-                link.addEventListener('blur', hideTooltip);
-                link.addEventListener('mouseenter', cancelHide);
-                link.addEventListener('mouseleave', hideTooltip);
+
+        if (window.PointerEvent) {
+            tooltipTrigger.addEventListener('pointerdown', (event) => {
+                if (event.pointerType === 'mouse') return;
+                event.preventDefault();
+                event.stopPropagation();
+                if (isTooltipVisible) {
+                    hideTooltip(true);
+                } else {
+                    showTooltip();
+                }
             });
+        } else {
+            tooltipTrigger.addEventListener('touchstart', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (isTooltipVisible) {
+                    hideTooltip(true);
+                } else {
+                    showTooltip();
+                }
+            }, { passive: false });
         }
+
+        tooltipTrigger.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                if (isTooltipVisible) {
+                    hideTooltip(true);
+                } else {
+                    showTooltip();
+                }
+            } else if (event.key === 'Escape') {
+                hideTooltip(true);
+            }
+        });
+
+        // Tooltip content events - this is the key improvement
+        tip.addEventListener('mouseenter', cancelHide);
+        tip.addEventListener('mouseleave', hideTooltip);
+        tip.addEventListener('mousemove', cancelHide);
+        tip.addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
+
+        // Make links focusable and handle focus events
+        const links = tip.querySelectorAll('a');
+        links.forEach(link => {
+            link.addEventListener('focus', cancelHide);
+            link.addEventListener('blur', hideTooltip);
+            link.addEventListener('mouseenter', cancelHide);
+            link.addEventListener('mouseleave', hideTooltip);
+        });
     },
 
     // Helper function to add warning to a cell
