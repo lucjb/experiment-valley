@@ -831,7 +831,7 @@ function generateABTestChallenge(
     var varianceA = BASE_CONVERSION_RATE * (1 - BASE_CONVERSION_RATE);
     var varianceB = (BASE_CONVERSION_RATE + MRE) * (1 - (BASE_CONVERSION_RATE + MRE));
     var requiredSampleSizePerVariant = underpoweredDesign
-        ? solveSampleSizeTTest(MRE, 2*ALPHA, varianceA, varianceB, ALPHA)
+        ? solveSampleSizeTTest(MRE, 2 * ALPHA, varianceA, varianceB, ALPHA)
         : solveSampleSizeTTest(MRE, 1 - BETA, varianceA, varianceB, ALPHA);
     var requiredRuntimeDays = Math.ceil((requiredSampleSizePerVariant * 2) / VISITORS_PER_DAY);
     // Ensure runtime is at least 7 days full weeks
@@ -1077,24 +1077,24 @@ function findFirstValidCheckpoint(experiment, correctSampleSize) {
             timeline: { timePoints }
         }
     } = experiment;
-    
+
     // Find first checkpoint where both variants have sufficient sample size AND it's a full week
     for (let i = 0; i < timePoints.length; i++) {
         const point = timePoints[i];
         const { base, variant } = point;
-        
+
         // Check if both variants have sufficient sample size
-        const hasSufficientSample = base.cumulativeVisitors >= correctSampleSize && 
-                                   variant.cumulativeVisitors >= correctSampleSize;
-        
+        const hasSufficientSample = base.cumulativeVisitors >= correctSampleSize &&
+            variant.cumulativeVisitors >= correctSampleSize;
+
         // Check if it's a full week boundary (endDay is divisible by 7)
         const isFullWeek = point.period.endDay % 7 === 0;
-        
+
         if (hasSufficientSample && isFullWeek) {
             return point.period.endDay;
         }
     }
-    
+
     return null; // No valid checkpoint found
 }
 
@@ -1108,21 +1108,21 @@ function filterUnderpoweredDesignData(experiment, correctSampleSize) {
 
     console.log('🔍 UNDERPOWERED DESIGN WITH SUFFICIENT DATA - Filtering to first valid checkpoint...');
     console.log('📊 Correct sample size needed:', correctSampleSize);
-    
+
     // Find first checkpoint where both variants have sufficient sample size AND it's a full week
     let firstValidCheckpoint = null;
-    
+
     for (let i = 0; i < timePoints.length; i++) {
         const point = timePoints[i];
         const { base, variant } = point;
-        
+
         // Check if both variants have sufficient sample size
-        const hasSufficientSample = base.cumulativeVisitors >= correctSampleSize && 
-                                   variant.cumulativeVisitors >= correctSampleSize;
-        
+        const hasSufficientSample = base.cumulativeVisitors >= correctSampleSize &&
+            variant.cumulativeVisitors >= correctSampleSize;
+
         // Check if it's a full week boundary (endDay is divisible by 7)
         const isFullWeek = point.period.endDay % 7 === 0;
-        
+
         if (hasSufficientSample && isFullWeek) {
             firstValidCheckpoint = point.period.endDay;
             console.log('✅ Found first valid checkpoint at day:', firstValidCheckpoint);
@@ -1133,19 +1133,19 @@ function filterUnderpoweredDesignData(experiment, correctSampleSize) {
             break;
         }
     }
-    
+
     if (!firstValidCheckpoint) {
         console.log('❌ No valid checkpoint found - experiment needs more data');
         return null;
     }
-    
+
     // Filter timeline to only include data up to first valid checkpoint
     const filteredTimePoints = timePoints.filter(tp => tp.period.endDay <= firstValidCheckpoint);
-    
+
     // Get final data at the checkpoint
     const finalPoint = filteredTimePoints[filteredTimePoints.length - 1];
     const { base, variant } = finalPoint;
-    
+
     // Recompute p-value and CI for filtered data
     const { pValue: filteredP } = computeTTest(
         base.cumulativeConversions, base.cumulativeVisitors,
@@ -1158,7 +1158,7 @@ function filterUnderpoweredDesignData(experiment, correctSampleSize) {
         variant.cumulativeVisitors,
         alpha
     );
-    
+
     // Create filtered experiment object
     const filteredExperiment = {
         ...experiment,
@@ -1177,14 +1177,14 @@ function filterUnderpoweredDesignData(experiment, correctSampleSize) {
             }
         }
     };
-    
+
     console.log('📊 Filtered experiment data:', {
         runtime: firstValidCheckpoint,
         baseVisitors: base.cumulativeVisitors,
         variantVisitors: variant.cumulativeVisitors,
         pValue: filteredP
     });
-    
+
     return filteredExperiment;
 }
 
@@ -1303,7 +1303,7 @@ function analyzeExperiment(experiment) {
     const correctSampleSize = solveSampleSizeTTest(minimumRelevantEffect, 1 - beta, varianceA, varianceB, alpha);
     const sampleSizeDifference = requiredSampleSizePerVariant - correctSampleSize;
     const hasUnderpoweredDesign = requiredSampleSizePerVariant < correctSampleSize;
-    
+
     // Calculate actual power achieved with the incorrect sample size
     const desiredPower = 1 - beta;
     const actualPower = calculateActualPower(minimumRelevantEffect, requiredSampleSizePerVariant, varianceA, varianceB, alpha);
@@ -1317,7 +1317,7 @@ function analyzeExperiment(experiment) {
     if (isOverdue && !hasUnderpoweredDesign) {
         const filteredExperiment = filterOverdueExperimentData(experiment);
         const filteredAnalysis = analyzeExperiment(filteredExperiment);
-        
+
         // Preserve original experiment data for UI display and overdue information
         return {
             ...filteredAnalysis,
@@ -1361,7 +1361,6 @@ function analyzeExperiment(experiment) {
 
     const actualDailyTraffic = (actualVisitorsBase + actualVisitorsVariant) / currentRuntimeDays;
     const trafficDifference = (actualDailyTraffic - visitorsPerDay) / visitorsPerDay;
-    const hasTrafficMismatch = false;
     const lowSampleSize = actualVisitorsBase < requiredSampleSizePerVariant || actualVisitorsVariant < requiredSampleSizePerVariant;
 
     // Check for data loss (periods with zero visitors)
@@ -1388,55 +1387,88 @@ function analyzeExperiment(experiment) {
     const issues = [];
     if (hasSampleRatioMismatch) issues.push('sample ratio mismatch');
     if (hasBaseRateMismatch) issues.push('base rate mismatch');
-    if (hasTrafficMismatch) issues.push('traffic mismatch');
     if (hasDataLoss) issues.push('data loss');
 
     const mismatch = hasSampleRatioMismatch ||
         hasBaseRateMismatch ||
-        hasTrafficMismatch ||
         hasDataLoss;
 
+    var summary = ''
     if (mismatch) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
-        const issueBits = [];
-        if (hasSampleRatioMismatch) issueBits.push(`sample ratio mismatch (χ² p=${ratioPValue.toFixed(5)})`);
-        if (hasBaseRateMismatch) issueBits.push(`base rate mismatch (z-test p=${baseRateTestpValue.toFixed(5)})`);
-        if (hasTrafficMismatch) issueBits.push('traffic mismatch');
-        if (hasDataLoss) issueBits.push(`data loss at day ${dataLossIndex + 1}`);
-
-        trustworthyReason = `Data quality issues detected: ${issueBits.join('; ')}. When data quality is compromised, inference is unreliable.`;
         decision = EXPERIMENT_DECISION.KEEP_BASE;
-        decisionReason = 'Results are unreliable due to data quality issues; picking a winner could lock in a false signal.';
         followUp = EXPERIMENT_FOLLOW_UP.RERUN;
-        followUpReason = 'Resolve data issues (fix allocation, restore tracking, ensure stable traffic), then rerun to collect clean data.';
+
+        if (hasSampleRatioMismatch) {
+            trustworthyReason = `Sample ratio mismatch detected. When user to variant allocation is compromised, inference is unreliable.`;
+            decisionReason = 'Results are unreliable due to SRM, stick to base.';
+            followUpReason = 'Identify the source of SRM, fix and rerun.';
+            summary = 'This experiment is unreliable due to Sample Ratio Mismatch. Stick to base. Identify the source of SRM, fix and rerun.';
+        }
+
+        if (hasBaseRateMismatch) {
+            trustworthyReason = `Observed Base Conversion Rate is very different from the one used to design the experiment, inference is unreliable.`;
+            decisionReason = 'Results are unreliable due to Base Conversion Rate Mismatch, stick to base.';
+            followUpReason = 'Identify the source of Base Conversion Rate Missmatch, fix and rerun.';
+            summary = 'This experiment is unreliable due to Base Conversion Rate Mismatch. Stick to base. Identify the source of Base Conversion Rate Missmatch, fix and rerun.';
+        }
+
+        if (hasDataLoss) {
+            trustworthyReason = `Data loss detected. When data quality is compromised, inference is unreliable.`;
+            decisionReason = 'Results are unreliable due to Data Loss, stick to base.';
+            followUpReason = 'Identify the source of Data Loss, fix and rerun.';
+            summary = 'This experiment is unreliable due to Data Loss. Stick to base. Identify the source of Data Loss, fix and rerun.';
+        }
     } else if (!finished && (lowSampleSize || !fullWeek)) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
-        const remainingDays = Math.max(0, requiredRuntimeDays - currentRuntimeDays);
-        const needSample = lowSampleSize ? `sample size is insufficient (have base=${actualVisitorsBase.toLocaleString()}, variant=${actualVisitorsVariant.toLocaleString()}, need ≥ ${requiredSampleSizePerVariant.toLocaleString()} each)` : 'sample size is on track';
-        const needCycle = !fullWeek ? 'not a full number of business cycles yet' : 'covers full-week cycles';
-        trustworthyReason = `Cannot make trustworthy decisions before achieving full sample size: ${needSample}; ${needCycle}.`;
-        decision = EXPERIMENT_DECISION.KEEP_RUNNING;
-        decisionReason = `Evidence is still forming (p=${pValue.toFixed(4)} vs α=${alpha}). Let the test run approximately ${remainingDays} more day(s) to reach required power.`;
         followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
-        followUpReason = 'Continue collecting data; avoid peeking-driven decisions before reaching required sample and full cycles.';
+        decision = EXPERIMENT_DECISION.KEEP_RUNNING;
+        followUpReason = 'None, experiment is not completed yet.';
+
+        if (lowSampleSize) {
+            trustworthyReason = `Cannot make trustworthy decisions before achieving the planned sample size (have base=${actualVisitorsBase.toLocaleString()}, variant=${actualVisitorsVariant.toLocaleString()}, need ≥ ${requiredSampleSizePerVariant.toLocaleString()} each).`;
+            decisionReason = `Insufficient sample size: current data (${actualVisitorsBase.toLocaleString()}/${actualVisitorsVariant.toLocaleString()}) below required threshold (${requiredSampleSizePerVariant.toLocaleString()} each). Keep running to reach planned sample size.`;
+            summary = 'This experiment is not completed yet. Keep the experiment running to reach the planned sample size.';
+        } else if (!fullWeek) {
+            trustworthyReason = `Experiment reached the planned sample size but we cannot make trustworthy decisions before achieving full-week coverage.`;
+            decisionReason = `Insufficient time coverage: reached sample size early but need full-week coverage for reliable inference. Keep running to complete full business cycles.`;
+            summary = 'This experiment reached the planned sample size eariler than expecetd, but we cannot make trustworthy decisions before achieving full-week coverage. Keep the experiment running to reach full-week coverage.';
+        }
     } else if (finished && (lowSampleSize || !fullWeek)) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
-        trustworthyReason = `Runtime finished without enough data or full-week coverage (have base=${actualVisitorsBase.toLocaleString()}, variant=${actualVisitorsVariant.toLocaleString()}, need ≥ ${requiredSampleSizePerVariant.toLocaleString()} each; fullWeek=${fullWeek}).`;
         decision = EXPERIMENT_DECISION.KEEP_RUNNING;
-        decisionReason = 'Insufficient data at planned stop makes any winner declaration unstable; extend to reach sample and full cycles.';
         followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
-        followUpReason = 'Extend the test window or increase traffic until the minimum sample and full cycles are met.';
-    } else if (!significant || !isEffectPositive) {
+        if (lowSampleSize) {
+            trustworthyReason = `Runtime finished but sample size is lower than planned. Cannot make trustworthy decisions before achieving the planned sample size (have base=${actualVisitorsBase.toLocaleString()}, variant=${actualVisitorsVariant.toLocaleString()}, need ≥ ${requiredSampleSizePerVariant.toLocaleString()} each).`;
+            decisionReason = `Runtime completed but insufficient data: current sample (${actualVisitorsBase.toLocaleString()}/${actualVisitorsVariant.toLocaleString()}) below required threshold (${requiredSampleSizePerVariant.toLocaleString()} each). Keep running to reach planned sample size.`;
+            summary = 'This experiment runtime finished but sample size is lower than planned. Cannot make trustworthy decisions before achieving the planned sample size. Keep the experiment running to reach the planned sample size.';
+        } else if (!fullWeek) {
+            trustworthyReason = `Runtime finished and planned sample size is achieved, but we cannot make trustworthy decisions before achieving full-week coverage.`;
+            decisionReason = `Runtime completed but insufficient time coverage: reached sample size early but need full-week coverage for reliable inference. Keep running to complete full business cycles.`;
+            summary = 'This experiment is progressing faster than expected. It already reached the planned sample size but we cannot make trustworthy decisions before achieving full-week coverage. Keep the experiment running to reach full-week coverage.';
+        }
+    } else if (!significant || !isEffectPositive) { //finished or not, sample size is sufficient AND full-week coverage is achieved
         trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
-        trustworthyReason = 'Data quality checks passed.';
         decision = EXPERIMENT_DECISION.KEEP_BASE;
+        followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
+        trustworthyReason = 'No issues. Design is correct and execution is consistent with design, inference is reliable.';
+
         const [ciLow, ciHigh] = confidenceIntervalDifference;
         const delta = (variantRate - baseRate);
         const directionNote = improvementDirection === IMPROVEMENT_DIRECTION.LOWER ? 'lower is better' : 'higher is better';
         const aligns = isEffectPositive ? 'aligns' : 'does not align';
-        decisionReason = `No winning evidence: p=${pValue.toFixed(4)} (α=${alpha}), effect ${aligns} with goal (${directionNote}), Δ=${(delta * 100).toFixed(2)}pp, CI[Δ]=[${(ciLow * 100).toFixed(2)}pp, ${(ciHigh * 100).toFixed(2)}pp].`;
-        followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
-        followUpReason = 'Explore new hypotheses: larger expected lift, improved UX, or reduced variance; rerun with adequate power.';
+        
+        if (!significant) {
+            // Inconclusive: not statistically significant
+            decisionReason = `Inconclusive result: p=${pValue.toFixed(4)} (α=${alpha}), no significant difference detected, Δ=${(delta * 100).toFixed(2)}pp, CI[Δ]=[${(ciLow * 100).toFixed(2)}pp, ${(ciHigh * 100).toFixed(2)}pp].`;
+            followUpReason = 'Explore new hypotheses: larger expected lift, improved UX, or reduced variance; rerun with adequate power.';
+            summary = 'This experiment shows inconclusive results (not statistically significant). Stick to base. Explore new hypotheses and rerun with adequate power.';
+        } else {
+            // Conclusive negative: significant but wrong direction
+            decisionReason = `Conclusive negative result: p=${pValue.toFixed(4)} (α=${alpha}), variant is significantly worse (${directionNote}), Δ=${(delta * 100).toFixed(2)}pp, CI[Δ]=[${(ciLow * 100).toFixed(2)}pp, ${(ciHigh * 100).toFixed(2)}pp].`;
+            followUpReason = 'Variant performs worse than base. Investigate why and iterate on the hypothesis.';
+            summary = 'This experiment shows a conclusive negative result (variant is significantly worse). Stick to base and investigate why the variant performed worse.';
+        }
     } else {
         // Check for Twyman's Law trap: suspiciously low p-value with positive effect
         if (hasTwymansLaw && isEffectPositive) {
@@ -1446,6 +1478,7 @@ function analyzeExperiment(experiment) {
             decisionReason = 'Despite the suspicious p-value, the effect direction aligns with business goals. Proceed with caution and validate thoroughly.';
             followUp = EXPERIMENT_FOLLOW_UP.VALIDATE;
             followUpReason = 'Validate the results through additional testing, data quality checks, and monitoring. The suspiciously low p-value suggests potential issues that need investigation.';
+            summary = "This experiment shows an extremely low p-value and very large effect (Twyman's Law). Proceed with variant cautiously and validate thoroughly before rollout.";
         } else {
             trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
             trustworthyReason = 'Data quality checks passed.';
@@ -1454,8 +1487,10 @@ function analyzeExperiment(experiment) {
             const delta = (variantRate - baseRate);
             if (improvementDirection === IMPROVEMENT_DIRECTION.LOWER) {
                 decisionReason = `Variant is significantly lower as desired: p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta * 100).toFixed(2)}pp, CI[Δ]=[${(ciLow * 100).toFixed(2)}pp, ${(ciHigh * 100).toFixed(2)}pp].`;
+                summary = 'This experiment shows a statistically significant decrease (lower is better). Ship the variant and monitor post-launch.';
             } else {
                 decisionReason = `Variant is significantly better: p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta * 100).toFixed(2)}pp, CI[Δ]=[${(ciLow * 100).toFixed(2)}pp, ${(ciHigh * 100).toFixed(2)}pp].`;
+                summary = 'This experiment shows a statistically significant improvement. Ship the variant and monitor post-launch.';
             }
             followUp = EXPERIMENT_FOLLOW_UP.CELEBRATE;
             followUpReason = 'Roll out the variant and monitor post-launch performance to confirm lift generalizes.';
@@ -1469,17 +1504,18 @@ function analyzeExperiment(experiment) {
         console.log('Current decision before underpowered check:', decision);
         console.log('Actual data sufficient:', actualDataSufficient);
         console.log('Is this already a filtered experiment?', !!experiment.originalExperiment);
-        
+
         // Scenario 1: Design underpowered + Actual data insufficient
         if (!actualDataSufficient) {
             if (followUp !== EXPERIMENT_FOLLOW_UP.RERUN) {
                 trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
                 trustworthyReason = `Data is insufficient to reach the desired power of ${(desiredPower * 100).toFixed(0)}% (power at this sample size is ${(actualPower * 100).toFixed(0)}%). Design error: required ${requiredSampleSizePerVariant.toLocaleString()} but need ${correctSampleSize.toLocaleString()} per variant.`;
                 decision = EXPERIMENT_DECISION.KEEP_RUNNING;
-                decisionReason = `Let the test run more day(s) to reach required power. Current sample size (${actualVisitorsBase.toLocaleString()}/${actualVisitorsVariant.toLocaleString()}) is insufficient for reliable decisions.`;
+                decisionReason = `Underpowered design: current sample (${actualVisitorsBase.toLocaleString()}/${actualVisitorsVariant.toLocaleString()}) insufficient for ${(desiredPower * 100).toFixed(0)}% power (only ${(actualPower * 100).toFixed(0)}% power). Keep running to reach correct sample size (${correctSampleSize.toLocaleString()} each) at full-week boundaries.`;
                 followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
                 followUpReason = 'Continue collecting data; avoid peeking-driven decisions before reaching required sample and full cycles.';
                 console.log('✅ Applied underpowered logic: Need more data');
+                summary = 'This experiment was designed underpowered and current data is insufficient. Keep running until reaching the correct sample size at full-week boundaries.';
             } else {
                 console.log('⚠️ RERUN follow-up takes precedence over underpowered design');
             }
@@ -1488,16 +1524,17 @@ function analyzeExperiment(experiment) {
         else if (actualDataSufficient) {
             // Find the first valid checkpoint
             const firstValidCheckpoint = findFirstValidCheckpoint(experiment, correctSampleSize);
-            
+
             if (firstValidCheckpoint === null) {
                 // No valid checkpoint found - need more data
                 trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
                 trustworthyReason = `Design was underpowered but no valid checkpoint found. Need more data to reach ${correctSampleSize.toLocaleString()} per variant at a full week boundary.`;
                 decision = EXPERIMENT_DECISION.KEEP_RUNNING;
-                decisionReason = `Continue collecting data until reaching sufficient sample size (${correctSampleSize.toLocaleString()} per variant) at a full week boundary.`;
+                decisionReason = `Underpowered design with no valid checkpoint: need ${correctSampleSize.toLocaleString()} per variant at full-week boundary but none found. Keep running to reach sufficient sample size at a full-week boundary.`;
                 followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
                 followUpReason = 'Continue collecting data; avoid peeking-driven decisions before reaching required sample and full cycles.';
                 console.log('❌ No valid checkpoint found - need more data');
+                summary = 'This experiment was designed underpowered and lacks a valid full-week checkpoint at sufficient sample. Keep running to reach the correct sample size at a full-week boundary.';
             } else if (firstValidCheckpoint === currentRuntimeDays) {
                 // First valid checkpoint is current date - we're already at the right point
                 console.log('✅ Already at first valid checkpoint - no filtering needed');
@@ -1505,12 +1542,13 @@ function analyzeExperiment(experiment) {
                 if (trustworthyReason === 'Data quality checks passed.') {
                     trustworthyReason = 'Data quality checks passed. Note: Original design was underpowered but sufficient data was collected.';
                 }
+                // Keep the existing branch summary if already set by earlier logic
             } else {
                 // First valid checkpoint is in the past - filter data and reanalyze
                 console.log(`🔍 First valid checkpoint is at day ${firstValidCheckpoint} (current: ${currentRuntimeDays}) - filtering data`);
                 const filteredExperiment = filterUnderpoweredDesignData(experiment, correctSampleSize);
                 const filteredAnalysis = analyzeExperiment(filteredExperiment);
-                
+
                 // Preserve original experiment data for UI display
                 return {
                     ...filteredAnalysis,
@@ -1536,12 +1574,13 @@ function analyzeExperiment(experiment) {
             decision: decision,
             decisionReason: decisionReason,
             followUp: followUp,
-            followUpReason: followUpReason
+            followUpReason: followUpReason,
+            summary: summary
         },
         analysis: {
             hasSignificantRatioMismatch: hasSampleRatioMismatch,
             hasBaseRateMismatch: hasBaseRateMismatch,
-            hasTrafficMismatch: hasTrafficMismatch,
+            hasTrafficMismatch: false,
             hasInsufficientSampleSize: lowSampleSize,
             hasDataLoss: hasDataLoss,
             dataLossIndex: dataLossIndex,

@@ -2445,6 +2445,10 @@ const UIController = {
                         </tbody>
                     </table>
                 </div>
+                <div class="mt-3 p-3 rounded bg-gray-50 text-sm text-gray-800 border border-gray-100">
+                    <div class="font-medium text-gray-700 mb-1">Summary</div>
+                    <div>${analysis.decision.summary || ''}</div>
+                </div>
             `;
 
             // Calculate performance
