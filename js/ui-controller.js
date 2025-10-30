@@ -2445,10 +2445,6 @@ const UIController = {
                         </tbody>
                     </table>
                 </div>
-                <div class="mt-3 p-3 rounded bg-gray-50 text-sm text-gray-800 border border-gray-100">
-                    <div class="font-medium text-gray-700 mb-1">Summary</div>
-                    <div>${analysis.decision.summary || ''}</div>
-                </div>
             `;
 
             // Calculate performance
@@ -2474,9 +2470,17 @@ const UIController = {
             const feedbackTitle = document.getElementById('feedback-title');
             const resultsCardTitle = document.getElementById('results-card-title');
             const resultsDisplay = document.getElementById('results-display');
+            const summaryDisplay = document.getElementById('summary-display');
 
             // Create the results card title with round and experiment info
             const resultsCardTitleText = `Round ${this.state.currentRound}, Experiment ${this.state.experimentsInCurrentRound}`;
+
+            // Populate summary block (compact, plain text aligned with content)
+            if (summaryDisplay) {
+                summaryDisplay.innerHTML = `
+                    <div class="px-2 text-gray-800 text-sm leading-tight">${analysis.decision.summary || ''}</div>
+                `;
+            }
 
             // Update tick marks based on round progress
             this.updateRoundTickMarks();

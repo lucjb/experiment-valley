@@ -1191,13 +1191,13 @@
             class="hidden fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
             <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
                 <!-- Header -->
-                <div class="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4">
+                <div class="bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <h3 class="text-lg font-semibold text-white" id="feedback-title">Results</h3>
+                        <div class="flex items-center space-x-2">
+                            <h3 class="text-base font-semibold text-white" id="feedback-title">Results</h3>
                         </div>
-                        <button id="close-feedback" class="text-white hover:text-gray-200 transition-colors p-1">
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button id="close-feedback" class="text-white hover:text-gray-200 transition-colors p-0.5">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
@@ -1206,12 +1206,17 @@
                 </div>
 
                 <!-- Content -->
-                <div class="px-6 py-4">
+                <div class="px-6 py-1">
                     <!-- Current Experiment Results -->
                     <div
-                        class="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-3 mb-4">
+                        class="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-3 mb-2">
                         <h3 class="text-lg font-bold text-blue-900 mb-3 text-center" id="results-card-title">Round 1,
                             Experiment 1</h3>
+
+                        <!-- Summary (compact) -->
+                        <div class="bg-white rounded-lg p-2 mb-2 border border-blue-100">
+                            <div id="summary-display" class="text-sm"></div>
+                        </div>
 
                         <!-- Decision Analysis -->
                         <div class="bg-white rounded-lg p-2 mb-3 border border-blue-100">
@@ -1222,7 +1227,7 @@
                                         d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
                                     </path>
                                 </svg>
-                                DECISIONS
+                                YOUR DECISIONS
                             </h4>
                             <div class="space-y-2">
                                 <p class="text-gray-700 leading-relaxed text-sm" id="feedback-message"></p>
@@ -1244,7 +1249,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                                 </svg>
-                                IMPACT
+                                YOUR IMPACT
                             </h4>
                             <div class="space-y-2 text-sm">
                                 <div class="overflow-x-auto">
@@ -1303,9 +1308,9 @@
                     </div>
 
                     <!-- Round Progress -->
-                    <div class="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4">
-                        <h3 class="text-lg font-bold text-purple-900 mb-3 text-center">Round Progress</h3>
-                        <div class="flex items-center justify-center space-x-3 mb-3">
+                    <div class="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-3">
+                        <h3 class="text-lg font-bold text-purple-900 mb-2 text-center">Round Progress</h3>
+                        <div class="flex items-center justify-center space-x-3 mb-2">
                             <div id="feedback-icon-1"
                                 class="flex items-center justify-center h-10 w-10 rounded-full bg-gray-200 shadow-md">
                                 <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
@@ -1335,9 +1340,9 @@
                 </div>
 
                 <!-- Footer -->
-                <div class="bg-gray-50 px-6 py-4">
+                <div class="bg-gray-50 px-6 py-2">
                     <button id="next-challenge-btn"
-                        class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105">
+                        class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-2 px-6 rounded-lg shadow-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105">
                         Next!
                     </button>
                 </div>

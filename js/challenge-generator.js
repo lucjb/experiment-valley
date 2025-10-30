@@ -130,7 +130,7 @@ function distributeDailyVisitors(totalVisitors, numDays) {
 
     // Add remainder to first day
     const remainder = totalVisitors - (baseVisitorsPerDay * numDays);
-    dailyVisitors[0] += remainder;
+    dailyVisitors[-1] += remainder;
 
     return dailyVisitors;
 }
@@ -725,7 +725,7 @@ function partialLoser() {
         baseRateMismatch: BASE_RATE_MISMATCH.NO,
         effectSize: EFFECT_SIZE.SMALL_DEGRADATION,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
-        sampleProgress: SAMPLE_PROGRESS.TIME
+        sampleProgress: SAMPLE_PROGRESS.PARTIAL
     });
 }
 
@@ -885,6 +885,11 @@ function generateABTestChallenge(
     if (sampleProgress === SAMPLE_PROGRESS.PARTIAL && timeProgress === TIME_PROGRESS.FULL) {
         observedVisitorsTotal = Math.floor(requiredSampleSizePerVariant * 1.95);
     }
+
+    if (sampleProgress == SAMPLE_PROGRESS.PARTIAL && timeProgress == TIME_PROGRESS.PARTIAL) {
+        observedVisitorsTotal = Math.min(observedVisitorsTotal, Math.floor(requiredSampleSizePerVariant * 1.95));
+    }
+
     observedVisitorsTotal = Math.ceil(observedVisitorsTotal / (2 * sampleRatioMismatch));
 
     var observedVisitorsBase = sampleBinomial(observedVisitorsTotal, sampleRatioMismatch);
@@ -1394,30 +1399,30 @@ function analyzeExperiment(experiment) {
         hasDataLoss;
 
     var summary = ''
+    var trustworthyYesReason = 'No issues. Design is correct and execution is consistent with design, data is reliable.';
+
     if (mismatch) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
         decision = EXPERIMENT_DECISION.KEEP_BASE;
         followUp = EXPERIMENT_FOLLOW_UP.RERUN;
+        decisionReason = 'Unreliable data is no evidence aginst the null hypothesis.';
 
         if (hasSampleRatioMismatch) {
-            trustworthyReason = `Sample ratio mismatch detected. When user to variant allocation is compromised, inference is unreliable.`;
-            decisionReason = 'Results are unreliable due to SRM, stick to base.';
-            followUpReason = 'Identify the source of SRM, fix and rerun.';
-            summary = 'This experiment is unreliable due to Sample Ratio Mismatch. Stick to base. Identify the source of SRM, fix and rerun.';
+            trustworthyReason = `Sample Ratio Mismatch (SRM) detected. Data is unreliable.`;
+            followUpReason = 'Identify the source(s) of the SRM and remediate.';
+            summary = 'Experiment with Sample Ratio Mismatch (SRM). Unreliable data is no evidence against the null hypothesis. SRM must be fixed and the experiment rerun.';
         }
 
         if (hasBaseRateMismatch) {
-            trustworthyReason = `Observed Base Conversion Rate is very different from the one used to design the experiment, inference is unreliable.`;
-            decisionReason = 'Results are unreliable due to Base Conversion Rate Mismatch, stick to base.';
-            followUpReason = 'Identify the source of Base Conversion Rate Missmatch, fix and rerun.';
-            summary = 'This experiment is unreliable due to Base Conversion Rate Mismatch. Stick to base. Identify the source of Base Conversion Rate Missmatch, fix and rerun.';
+            trustworthyReason = `Observed Base Conversion Rate is very different from the one used to design the experiment. Data is unreliable.`;
+            followUpReason = 'Identify the source of Base Conversion Rate Missmatch and remediate.';
+            summary = 'Conversion rate in Base is very different from the one used to design the experiment which means there are data collection issues. Conversion rate mismatch must be addressed and the experiment rerun.';
         }
 
         if (hasDataLoss) {
-            trustworthyReason = `Data loss detected. When data quality is compromised, inference is unreliable.`;
-            decisionReason = 'Results are unreliable due to Data Loss, stick to base.';
-            followUpReason = 'Identify the source of Data Loss, fix and rerun.';
-            summary = 'This experiment is unreliable due to Data Loss. Stick to base. Identify the source of Data Loss, fix and rerun.';
+            trustworthyReason = `Data loss detected. Data is unreliable`;
+            followUpReason = 'Identify the source of Data Loss and remediate.';
+            summary = 'Experiment with Data Loss. Unreliable data is no evidence against the null hypothesis. Data Loss must be fixed and the experiment rerun.';
         }
     } else if (!finished && (lowSampleSize || !fullWeek)) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
@@ -1438,6 +1443,8 @@ function analyzeExperiment(experiment) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
         decision = EXPERIMENT_DECISION.KEEP_RUNNING;
         followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
+        followUpReason = 'None, experiment is not completed yet.';
+
         if (lowSampleSize) {
             trustworthyReason = `Runtime finished but sample size is lower than planned. Cannot make trustworthy decisions before achieving the planned sample size (have base=${actualVisitorsBase.toLocaleString()}, variant=${actualVisitorsVariant.toLocaleString()}, need ≥ ${requiredSampleSizePerVariant.toLocaleString()} each).`;
             decisionReason = `Runtime completed but insufficient data: current sample (${actualVisitorsBase.toLocaleString()}/${actualVisitorsVariant.toLocaleString()}) below required threshold (${requiredSampleSizePerVariant.toLocaleString()} each). Keep running to reach planned sample size.`;
@@ -1449,9 +1456,9 @@ function analyzeExperiment(experiment) {
         }
     } else if (!significant || !isEffectPositive) { //finished or not, sample size is sufficient AND full-week coverage is achieved
         trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
+        trustworthyReason = trustworthyYesReason;
         decision = EXPERIMENT_DECISION.KEEP_BASE;
         followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
-        trustworthyReason = 'No issues. Design is correct and execution is consistent with design, inference is reliable.';
 
         const [ciLow, ciHigh] = confidenceIntervalDifference;
         const delta = (variantRate - baseRate);
@@ -1461,13 +1468,13 @@ function analyzeExperiment(experiment) {
         if (!significant) {
             // Inconclusive: not statistically significant
             decisionReason = `Inconclusive result: p=${pValue.toFixed(4)} (α=${alpha}), no significant difference detected, Δ=${(delta * 100).toFixed(2)}pp, CI[Δ]=[${(ciLow * 100).toFixed(2)}pp, ${(ciHigh * 100).toFixed(2)}pp].`;
-            followUpReason = 'Explore new hypotheses: larger expected lift, improved UX, or reduced variance; rerun with adequate power.';
-            summary = 'This experiment shows inconclusive results (not statistically significant). Stick to base. Explore new hypotheses and rerun with adequate power.';
+            followUpReason = 'Iterate by refining the hypothesis, the treatment and/or the experiment design.';
+            summary = 'This experiment is trustworthy and not statistically significant. Iterate by refining the hypothesis, the treatment and/or the experiment design.';
         } else {
             // Conclusive negative: significant but wrong direction
             decisionReason = `Conclusive negative result: p=${pValue.toFixed(4)} (α=${alpha}), variant is significantly worse (${directionNote}), Δ=${(delta * 100).toFixed(2)}pp, CI[Δ]=[${(ciLow * 100).toFixed(2)}pp, ${(ciHigh * 100).toFixed(2)}pp].`;
             followUpReason = 'Variant performs worse than base. Investigate why and iterate on the hypothesis.';
-            summary = 'This experiment shows a conclusive negative result (variant is significantly worse). Stick to base and investigate why the variant performed worse.';
+            summary = 'This Experiment is trustworthy and statistically significant in favor of Base.  Iterate by refining the hypothesis, the treatment and/or the experiment design.';
         }
     } else {
         // Check for Twyman's Law trap: suspiciously low p-value with positive effect
@@ -1481,19 +1488,20 @@ function analyzeExperiment(experiment) {
             summary = "This experiment shows an extremely low p-value and very large effect (Twyman's Law). Proceed with variant cautiously and validate thoroughly before rollout.";
         } else {
             trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
-            trustworthyReason = 'Data quality checks passed.';
             decision = EXPERIMENT_DECISION.KEEP_VARIANT;
+            followUp = EXPERIMENT_FOLLOW_UP.CELEBRATE;
+
+            trustworthyReason = trustworthyYesReason;
+            followUpReason = 'Success! Celebrate by planning a new experiment!';
+            summary = 'This Experiment is trustworthy and statistically significant in favor of Variant. Ship it and celebrate by planning a new experiment!';
+
             const [ciLow, ciHigh] = confidenceIntervalDifference;
             const delta = (variantRate - baseRate);
             if (improvementDirection === IMPROVEMENT_DIRECTION.LOWER) {
-                decisionReason = `Variant is significantly lower as desired: p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta * 100).toFixed(2)}pp, CI[Δ]=[${(ciLow * 100).toFixed(2)}pp, ${(ciHigh * 100).toFixed(2)}pp].`;
-                summary = 'This experiment shows a statistically significant decrease (lower is better). Ship the variant and monitor post-launch.';
+                decisionReason = `Variant is significantly lower (lower is better): p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta * 100).toFixed(2)}pp, CI[Δ]=[${(ciLow * 100).toFixed(2)}pp, ${(ciHigh * 100).toFixed(2)}pp].`;
             } else {
-                decisionReason = `Variant is significantly better: p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta * 100).toFixed(2)}pp, CI[Δ]=[${(ciLow * 100).toFixed(2)}pp, ${(ciHigh * 100).toFixed(2)}pp].`;
-                summary = 'This experiment shows a statistically significant improvement. Ship the variant and monitor post-launch.';
+                decisionReason = `Variant is significantly higher: p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta * 100).toFixed(2)}pp, CI[Δ]=[${(ciLow * 100).toFixed(2)}pp, ${(ciHigh * 100).toFixed(2)}pp].`;
             }
-            followUp = EXPERIMENT_FOLLOW_UP.CELEBRATE;
-            followUpReason = 'Roll out the variant and monitor post-launch performance to confirm lift generalizes.';
         }
     }
 
