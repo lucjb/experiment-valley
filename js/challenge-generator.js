@@ -23,6 +23,49 @@ function sampleBinomial(n, p) {
     return successes;
 }
 
+function sampleMultinomial(n, probs) {
+    // Sample multinomial distribution: allocate n items across categories with probabilities probs
+    // Returns an array of counts, one per category
+    const k = probs.length;
+    if (k === 0 || n === 0) return new Array(k).fill(0);
+    
+    // Normalize probabilities to sum to 1
+    const sumP = probs.reduce((a, b) => a + b, 0);
+    if (sumP === 0) {
+        // If all probabilities are zero, distribute evenly
+        const evenShare = Math.floor(n / k);
+        const remainder = n % k;
+        const counts = new Array(k).fill(evenShare);
+        for (let i = 0; i < remainder; i++) {
+            counts[i]++;
+        }
+        return counts;
+    }
+    
+    // Normalize probabilities once at the start
+    const normProbs = probs.map(p => p / sumP);
+    const counts = new Array(k).fill(0);
+    
+    let remaining = n;
+    // Sequential binomial sampling approach
+    for (let i = 0; i < k - 1 && remaining > 0; i++) {
+        // Compute conditional probability: P(i | not selected 0..i-1)
+        // This is the probability of category i given remaining items
+        const remainingSum = normProbs.slice(i).reduce((a, b) => a + b, 0);
+        if (remainingSum <= 0) break;
+        
+        const conditionalP = normProbs[i] / remainingSum;
+        const p = Math.max(0, Math.min(1, conditionalP));
+        const count = sampleBinomial(remaining, p);
+        counts[i] = count;
+        remaining -= count;
+    }
+    // Last category gets the remainder
+    counts[k - 1] = remaining;
+    
+    return counts;
+}
+
 function computeTTest(conversionsA, visitorsA, conversionsB, visitorsB) {
     if (visitorsA === 0 || visitorsB === 0) {
         return { tStatistic: NaN, pValue: NaN };
@@ -130,7 +173,7 @@ function distributeDailyVisitors(totalVisitors, numDays) {
 
     // Add remainder to first day
     const remainder = totalVisitors - (baseVisitorsPerDay * numDays);
-    dailyVisitors[-1] += remainder;
+    dailyVisitors[0] += remainder;
 
     return dailyVisitors;
 }
@@ -421,21 +464,32 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
     const { period, numPeriods } = determineTimePeriod(numDays);
     const daysPerPeriod = period === 'day' ? 1 : period === 'week' ? 7 : 28;
 
-    // First distribute visitors evenly
-    let baseVisitorsPerPeriod = distributeDailyVisitors(baseVisitors, numPeriods);
-    let variantVisitorsPerPeriod = distributeDailyVisitors(variantVisitors, numPeriods);
+    // Build a single total-traffic pattern for the timeline
+    // This ensures both variants share the same underlying traffic pattern,
+    // eliminating structural per-day SRM while preserving natural randomness
+    const totalVisitors = baseVisitors + variantVisitors;
+    let totalVisitorsPerPeriod = distributeDailyVisitors(totalVisitors, numPeriods);
 
     // Add appropriate pattern based on the period
     if (period === 'day') {
-        baseVisitorsPerPeriod = addWeeklyPattern(baseVisitorsPerPeriod);
-        variantVisitorsPerPeriod = addWeeklyPattern(variantVisitorsPerPeriod);
+        totalVisitorsPerPeriod = addWeeklyPattern(totalVisitorsPerPeriod);
     } else if (period === 'week') {
-        baseVisitorsPerPeriod = addMonthlyPattern(baseVisitorsPerPeriod);
-        variantVisitorsPerPeriod = addMonthlyPattern(variantVisitorsPerPeriod);
+        totalVisitorsPerPeriod = addMonthlyPattern(totalVisitorsPerPeriod);
     } else { // month
-        baseVisitorsPerPeriod = addYearlyPattern(baseVisitorsPerPeriod);
-        variantVisitorsPerPeriod = addYearlyPattern(variantVisitorsPerPeriod);
+        totalVisitorsPerPeriod = addYearlyPattern(totalVisitorsPerPeriod);
     }
+
+    // Allocate base visitors across periods using a multinomial draw
+    // This preserves exact global totals while introducing natural per-period randomness
+    // When SRM is not intended (global ratio ≈ 0.5), this avoids structural per-day SRM
+    // When SRM is intended, the global ratio carries through to all periods
+    const baseVisitorsPerPeriod = sampleMultinomial(
+        baseVisitors,
+        totalVisitorsPerPeriod.map(v => Math.max(0, v))
+    );
+
+    // Variant is the remainder per period (use let so it can be modified by data loss)
+    let variantVisitorsPerPeriod = totalVisitorsPerPeriod.map((v, i) => Math.max(0, v - baseVisitorsPerPeriod[i]));
 
     // Distribute conversions
     var baseConversionsPerPeriod = distributeConversions(baseConversions, baseVisitorsPerPeriod);
