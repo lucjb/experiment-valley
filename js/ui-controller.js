@@ -533,7 +533,7 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [winner(), inconclusive(), partialLoser()],
+                1: [luckyDayTrap(), winner(), inconclusive()],
                 2: [partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch(), partialLoser().withBaseRateMismatch()],
                 3: [slowCompletion(), fastWinner(), fastLoserWithPartialWeek()],
                 4: [slowCompletion().withBaseRateMismatch(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
