@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Loss Alert - Experiment Valley</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Understanding Data Loss Alerts</h1>
+        
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <p class="text-yellow-800"><strong>What is Data Loss?</strong></p>
+            <p class="text-yellow-700">Data loss occurs when your experiment has periods with zero visitors or conversions, indicating missing or corrupted data.</p>
+        </div>
+
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Why This Matters</h2>
+        
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <h3 class="text-lg font-semibold text-red-800 mb-2">Data Loss Compromises Your Experiment:</h3>
+            <ul class="text-red-700 space-y-2">
+                <li>• <strong>Reduced statistical power</strong> - Less data means less reliable results</li>
+                <li>• <strong>Biased estimates</strong> - Missing data can skew your conversion rate calculations</li>
+                <li>• <strong>Invalid statistical tests</strong> - Assumptions about data continuity are violated</li>
+                <li>• <strong>Questionable validity</strong> - Results may not represent true user behavior</li>
+            </ul>
+        </div>
+
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Common Causes</h2>
+        
+        <div class="grid md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <h3 class="text-lg font-semibold text-orange-800 mb-2">Technical Issues</h3>
+                <ul class="text-orange-700 space-y-2">
+                    <li>• Server downtime or outages</li>
+                    <li>• Tracking code failures</li>
+                    <li>• Database connection problems</li>
+                    <li>• CDN or hosting issues</li>
+                    <li>• Analytics platform problems</li>
+                </ul>
+            </div>
+            
+            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h3 class="text-lg font-semibold text-purple-800 mb-2">Data Processing Issues</h3>
+                <ul class="text-purple-700 space-y-2">
+                    <li>• Data pipeline failures</li>
+                    <li>• ETL process errors</li>
+                    <li>• Data corruption during transfer</li>
+                    <li>• Incorrect data filtering</li>
+                    <li>• Time zone conversion errors</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Impact on Results</h2>
+        
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p class="text-blue-800 font-semibold mb-2">How data loss affects your experiment:</p>
+            <ul class="text-blue-700 space-y-1">
+                <li>• <strong>Reduced sample size</strong> - Lower statistical power to detect effects</li>
+                <li>• <strong>Biased conversion rates</strong> - Missing data points can skew calculations</li>
+                <li>• <strong>Invalid confidence intervals</strong> - Statistical assumptions are violated</li>
+                <li>• <strong>Unreliable p-values</strong> - Test results may not be trustworthy</li>
+            </ul>
+        </div>
+
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">What To Do</h2>
+        
+        <div class="space-y-4">
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-800 mb-2">1. Investigate the Root Cause</h3>
+                <p class="text-gray-700">Check your analytics platform, server logs, and data pipelines to identify what caused the data loss.</p>
+            </div>
+            
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-800 mb-2">2. Fix the Technical Issue</h3>
+                <p class="text-gray-700">Resolve the underlying problem to prevent future data loss and ensure reliable data collection.</p>
+            </div>
+            
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-800 mb-2">3. Consider Extending the Experiment</h3>
+                <p class="text-gray-700">If the data loss is significant, consider running the experiment longer to compensate for lost data.</p>
+            </div>
+            
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-800 mb-2">4. Document the Issue</h3>
+                <p class="text-gray-700">Record what caused the data loss and implement monitoring to prevent similar issues in future experiments.</p>
+            </div>
+            
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-800 mb-2">5. Assess Data Quality</h3>
+                <p class="text-gray-700">If data loss is extensive, consider whether the remaining data is still reliable for decision-making.</p>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center">
+            <button onclick="window.close()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                Close Window
+            </button>
+        </div>
+    </div>
+</body>
+</html>
