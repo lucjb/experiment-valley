@@ -459,10 +459,206 @@ function addDataLoss(visitors, conversions) {
     };
 }
 
-function generateTimelineData(baseVisitors, variantVisitors, baseConversions, variantConversions, numDays, alpha, currentRuntimeDays, businessCycleDays, dataLoss) {
+function findLuckyPeriodIndex(visitorsPerPeriod) {
+    let luckyIndex = -1;
+    let maxVisitors = -Infinity;
+
+    visitorsPerPeriod.forEach((value, index) => {
+        if (value > maxVisitors) {
+            maxVisitors = value;
+            luckyIndex = index;
+        }
+    });
+
+    return maxVisitors > 0 ? luckyIndex : -1;
+}
+
+const LUCKY_DAY_EFFECT_SHARE = 0.5;
+const MIN_LUCKY_DAY_SHARE_FOR_DETECTION = 0.45;
+
+function applyLuckyDayTrapToVariantConversions({
+    baseVisitorsPerPeriod,
+    baseConversionsPerPeriod,
+    variantVisitorsPerPeriod,
+    variantConversionsPerPeriod,
+    totalVariantConversions,
+    totalBaseConversions
+}) {
+    const luckyIndex = findLuckyPeriodIndex(variantVisitorsPerPeriod);
+    if (luckyIndex === -1) {
+        return variantConversionsPerPeriod;
+    }
+
+    const totalVariantVisitors = variantVisitorsPerPeriod.reduce((sum, value) => sum + value, 0);
+    const totalBaseVisitors = baseVisitorsPerPeriod.reduce((sum, value) => sum + value, 0);
+
+    if (totalVariantVisitors <= 0 || totalBaseVisitors <= 0 || totalVariantConversions <= 0) {
+        return variantConversionsPerPeriod;
+    }
+
+    const overallBaseRate = totalBaseConversions / totalBaseVisitors;
+    const updatedVariantConversions = variantVisitorsPerPeriod.map((visitors, index) => {
+        if (visitors <= 0) {
+            return 0;
+        }
+
+        const baseVisitorsForDay = baseVisitorsPerPeriod[index];
+        const baseConversionsForDay = baseConversionsPerPeriod[index];
+        const baseRateForDay = baseVisitorsForDay > 0
+            ? baseConversionsForDay / baseVisitorsForDay
+            : overallBaseRate;
+
+        return Math.min(
+            visitors,
+            Math.round(visitors * baseRateForDay)
+        );
+    });
+
+    let baselineTotal = updatedVariantConversions.reduce((sum, value) => sum + value, 0);
+
+    if (baselineTotal > totalVariantConversions) {
+        let excess = baselineTotal - totalVariantConversions;
+        const adjustmentOrder = updatedVariantConversions
+            .map((_, index) => index)
+            .sort((a, b) => updatedVariantConversions[b] - updatedVariantConversions[a]);
+
+        let guard = 0;
+        while (excess > 0 && guard < 1000) {
+            for (const index of adjustmentOrder) {
+                if (excess <= 0) break;
+                if (updatedVariantConversions[index] <= 0) continue;
+                updatedVariantConversions[index]--;
+                excess--;
+            }
+            guard++;
+        }
+
+        baselineTotal = updatedVariantConversions.reduce((sum, value) => sum + value, 0);
+    }
+
+    let totalAssigned = baselineTotal;
+    if (totalAssigned >= totalVariantConversions) {
+        return updatedVariantConversions;
+    }
+
+    const nonLuckyIndices = updatedVariantConversions
+        .map((_, index) => index)
+        .filter(index => index !== luckyIndex);
+
+    const totalEffect = totalVariantConversions - totalAssigned;
+    const luckyRemainingCapacity = Math.max(0, variantVisitorsPerPeriod[luckyIndex] - updatedVariantConversions[luckyIndex]);
+    const desiredLuckyEffect = Math.max(0, Math.round(totalEffect * LUCKY_DAY_EFFECT_SHARE));
+    const luckyEffect = Math.min(luckyRemainingCapacity, Math.min(totalEffect, desiredLuckyEffect));
+    updatedVariantConversions[luckyIndex] += luckyEffect;
+    totalAssigned += luckyEffect;
+
+    let remainingEffect = totalVariantConversions - totalAssigned;
+
+    if (remainingEffect > 0) {
+        const capacities = nonLuckyIndices.map(index => Math.max(0, variantVisitorsPerPeriod[index] - updatedVariantConversions[index]));
+        let totalCapacity = capacities.reduce((sum, value) => sum + value, 0);
+
+        if (totalCapacity > 0) {
+            nonLuckyIndices.forEach((index, idx) => {
+                if (remainingEffect <= 0) return;
+                const capacity = capacities[idx];
+                if (capacity <= 0) return;
+                const proportionalShare = Math.floor((remainingEffect * capacity) / totalCapacity);
+                const addition = Math.min(capacity, proportionalShare);
+                if (addition > 0) {
+                    updatedVariantConversions[index] += addition;
+                    remainingEffect -= addition;
+                }
+            });
+
+            if (remainingEffect > 0) {
+                const adjustmentOrder = nonLuckyIndices
+                    .slice()
+                    .sort((a, b) => (variantVisitorsPerPeriod[b] - updatedVariantConversions[b]) - (variantVisitorsPerPeriod[a] - updatedVariantConversions[a]));
+
+                let guard = 0;
+                while (remainingEffect > 0 && guard < 1000) {
+                    let progress = false;
+                    for (const index of adjustmentOrder) {
+                        if (remainingEffect <= 0) break;
+                        const capacity = variantVisitorsPerPeriod[index] - updatedVariantConversions[index];
+                        if (capacity <= 0) continue;
+                        updatedVariantConversions[index]++;
+                        remainingEffect--;
+                        progress = true;
+                        if (remainingEffect <= 0) break;
+                    }
+                    if (!progress) break;
+                    guard++;
+                }
+            }
+        }
+
+        if (remainingEffect > 0 && luckyRemainingCapacity > luckyEffect) {
+            const extraLuckyCapacity = variantVisitorsPerPeriod[luckyIndex] - updatedVariantConversions[luckyIndex];
+            const luckyTopUp = Math.min(extraLuckyCapacity, remainingEffect);
+            updatedVariantConversions[luckyIndex] += luckyTopUp;
+            remainingEffect -= luckyTopUp;
+        }
+    }
+
+    if (remainingEffect > 0) {
+        const adjustmentOrder = [luckyIndex, ...nonLuckyIndices];
+        let guard = 0;
+        while (remainingEffect > 0 && guard < 1000) {
+            let progress = false;
+            for (const index of adjustmentOrder) {
+                if (remainingEffect <= 0) break;
+                const capacity = variantVisitorsPerPeriod[index] - updatedVariantConversions[index];
+                if (capacity <= 0) continue;
+                const addition = Math.min(capacity, remainingEffect);
+                updatedVariantConversions[index] += addition;
+                remainingEffect -= addition;
+                progress = true;
+            }
+            if (!progress) break;
+            guard++;
+        }
+    }
+
+    let diff = totalVariantConversions - updatedVariantConversions.reduce((sum, value) => sum + value, 0);
+    if (diff !== 0) {
+        const adjustmentOrder = diff > 0
+            ? [luckyIndex, ...nonLuckyIndices]
+            : [...nonLuckyIndices, luckyIndex];
+
+        let guard = 0;
+        while (diff !== 0 && guard < 1000) {
+            for (const index of adjustmentOrder) {
+                if (diff === 0) break;
+                const visitors = variantVisitorsPerPeriod[index];
+                if (visitors <= 0) continue;
+
+                const current = updatedVariantConversions[index];
+                const available = diff > 0
+                    ? visitors - current
+                    : current;
+
+                if (available <= 0) continue;
+
+                const addConversions = diff > 0;
+                const delta = Math.min(Math.abs(diff), available);
+                updatedVariantConversions[index] += addConversions ? delta : -delta;
+                diff += addConversions ? -delta : delta;
+            }
+            guard++;
+        }
+    }
+
+    return updatedVariantConversions;
+}
+
+function generateTimelineData(baseVisitors, variantVisitors, baseConversions, variantConversions, numDays, alpha, currentRuntimeDays, businessCycleDays, dataLoss, options = {}) {
     // Determine appropriate time period
     const { period, numPeriods } = determineTimePeriod(numDays);
     const daysPerPeriod = period === 'day' ? 1 : period === 'week' ? 7 : 28;
+
+    const { luckyDayTrap: enforceLuckyDayTrap = false } = options;
 
     // Build a single total-traffic pattern for the timeline
     // This ensures both variants share the same underlying traffic pattern,
@@ -494,6 +690,17 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
     // Distribute conversions
     var baseConversionsPerPeriod = distributeConversions(baseConversions, baseVisitorsPerPeriod);
     var variantConversionsPerPeriod = distributeConversions(variantConversions, variantVisitorsPerPeriod);
+
+    if (enforceLuckyDayTrap) {
+        variantConversionsPerPeriod = applyLuckyDayTrapToVariantConversions({
+            baseVisitorsPerPeriod,
+            baseConversionsPerPeriod,
+            variantVisitorsPerPeriod,
+            variantConversionsPerPeriod,
+            totalVariantConversions: variantConversions,
+            totalBaseConversions: baseConversions
+        });
+    }
 
     if (dataLoss) {
         const { visitors: newVisitors, conversions: newConversions } = addDataLoss(variantVisitorsPerPeriod, variantConversionsPerPeriod);
@@ -625,7 +832,8 @@ class ChallengeDesign {
         improvementDirection = IMPROVEMENT_DIRECTION.HIGHER,
         twymanFabrication = false,
         overdue = false,
-        underpoweredDesign = false
+        underpoweredDesign = false,
+        luckyDayTrap = false
     } = {}) {
         this.timeProgress = timeProgress;
         this.baseRateMismatch = baseRateMismatch;
@@ -637,6 +845,7 @@ class ChallengeDesign {
         this.twymanFabrication = twymanFabrication;
         this.overdue = overdue;
         this.underpoweredDesign = underpoweredDesign;
+        this.luckyDayTrap = luckyDayTrap;
     }
 
     generate() {
@@ -650,7 +859,8 @@ class ChallengeDesign {
             this.improvementDirection,
             this.twymanFabrication,
             this.overdue,
-            this.underpoweredDesign
+            this.underpoweredDesign,
+            this.luckyDayTrap
         );
     }
 
@@ -710,6 +920,11 @@ class ChallengeDesign {
 
     withUnderpoweredDesign() {
         this.underpoweredDesign = true;
+        return this;
+    }
+
+    withLuckyDayTrap() {
+        this.luckyDayTrap = true;
         return this;
     }
 
@@ -821,6 +1036,17 @@ function fastLoserWithPartialWeek() {
     });
 }
 
+function luckyDayTrap() {
+    return new ChallengeDesign({
+        timeProgress: TIME_PROGRESS.FULL,
+        baseRateMismatch: BASE_RATE_MISMATCH.NO,
+        effectSize: EFFECT_SIZE.IMPROVEMENT,
+        sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
+        sampleProgress: SAMPLE_PROGRESS.TIME,
+        luckyDayTrap: true
+    });
+}
+
 function twymansLawTrap() {
     return new ChallengeDesign({
         timeProgress: TIME_PROGRESS.FULL,
@@ -863,7 +1089,8 @@ function generateABTestChallenge(
     improvementDirection = IMPROVEMENT_DIRECTION.HIGHER,
     twymanFabrication = false,
     overdue = false,
-    underpoweredDesign = false) {
+    underpoweredDesign = false,
+    luckyDayTrap = false) {
 
     // Predefined options for each parameter ,
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
@@ -995,7 +1222,8 @@ function generateABTestChallenge(
         ALPHA,
         currentRuntimeDays,
         BUSINESS_CYCLE_DAYS,
-        visitorsLoss
+        visitorsLoss,
+        { luckyDayTrap }
     );
 
     // Calculate uplift as relative percentage change
@@ -1053,7 +1281,8 @@ function generateABTestChallenge(
             uplift: observedConversionRateUplift,
             upliftConfidenceInterval: upliftCI,
             visitorUplift: visitorUplift,
-            conversionUplift: conversionUplift
+            conversionUplift: conversionUplift,
+            luckyDayTrap: luckyDayTrap
         }
     };
 }
@@ -1099,6 +1328,101 @@ const EXPERIMENT_FOLLOW_UP = {
     RERUN: "RERUN",
     DO_NOTHING: "DO_NOTHING",
 };
+
+function detectLuckyDayTrap(experiment, directionFactor, alpha) {
+    if (!experiment || !experiment.simulation || !experiment.simulation.timeline) {
+        return null;
+    }
+
+    const {
+        simulation: {
+            actualConversionsBase,
+            actualConversionsVariant,
+            actualVisitorsBase,
+            actualVisitorsVariant,
+            timeline: { timePoints }
+        }
+    } = experiment;
+
+    if (!timePoints || timePoints.length === 0) {
+        return null;
+    }
+
+    const totalDiff = directionFactor * (actualConversionsVariant - actualConversionsBase);
+    if (totalDiff <= 0) {
+        return null;
+    }
+
+    let luckyPeriod = null;
+    let luckyDiff = 0;
+
+    timePoints.forEach((point, index) => {
+        const periodDiff = directionFactor * (point.variant.conversions - point.base.conversions);
+        if (periodDiff > 0 && periodDiff > luckyDiff) {
+            luckyDiff = periodDiff;
+            luckyPeriod = { point, index };
+        }
+    });
+
+    if (!luckyPeriod) {
+        return null;
+    }
+
+    const luckyDiffRaw = luckyPeriod.point.variant.conversions - luckyPeriod.point.base.conversions;
+    const share = luckyDiff / totalDiff;
+
+    if (!isFinite(share) || share < MIN_LUCKY_DAY_SHARE_FOR_DETECTION) {
+        return null;
+    }
+
+    const adjustedBaseConversions = actualConversionsBase - luckyPeriod.point.base.conversions;
+    const adjustedVariantConversions = actualConversionsVariant - luckyPeriod.point.variant.conversions;
+    const adjustedBaseVisitors = actualVisitorsBase - luckyPeriod.point.base.visitors;
+    const adjustedVariantVisitors = actualVisitorsVariant - luckyPeriod.point.variant.visitors;
+
+    if (adjustedBaseVisitors <= 0 || adjustedVariantVisitors <= 0) {
+        return null;
+    }
+
+    const { pValue: adjustedPValue } = computeTTest(
+        adjustedBaseConversions,
+        adjustedBaseVisitors,
+        adjustedVariantConversions,
+        adjustedVariantVisitors
+    );
+
+    const adjustedVariantRate = adjustedVariantVisitors === 0 ? 0 : adjustedVariantConversions / adjustedVariantVisitors;
+    const adjustedBaseRate = adjustedBaseVisitors === 0 ? 0 : adjustedBaseConversions / adjustedBaseVisitors;
+    const adjustedPositive = directionFactor * (adjustedVariantRate - adjustedBaseRate) > 0;
+    const adjustedSignificant = adjustedPValue < alpha;
+
+    if (adjustedPositive && adjustedSignificant) {
+        return null;
+    }
+
+    const { startDay, endDay } = luckyPeriod.point.period;
+    const periodLabel = startDay === endDay
+        ? `day ${startDay}`
+        : `days ${startDay}-${endDay}`;
+    const sharePercentage = share * 100;
+
+    return {
+        periodIndex: luckyPeriod.index,
+        startDay,
+        endDay,
+        share,
+        sharePercentage,
+        periodLabel,
+        conversionsBase: luckyPeriod.point.base.conversions,
+        conversionsVariant: luckyPeriod.point.variant.conversions,
+        visitorsBase: luckyPeriod.point.base.visitors,
+        visitorsVariant: luckyPeriod.point.variant.visitors,
+        adjustedPValue,
+        adjustedPositive,
+        adjustedSignificant,
+        conversionsDifference: luckyDiffRaw
+    };
+}
 
 function isExperimentOverdue(experiment) {
     const {
@@ -1433,6 +1757,7 @@ function analyzeExperiment(experiment) {
     const baseRate = actualConversionsBase / actualVisitorsBase;
     const directionFactor = improvementDirection === IMPROVEMENT_DIRECTION.LOWER ? -1 : 1;
     const isEffectPositive = directionFactor * (variantRate - baseRate) > 0;
+    const luckyDayInfo = detectLuckyDayTrap(experiment, directionFactor, alpha);
 
     // Check for Twyman's Law trap: extremely low p-value AND unusually large effect size
     const pValueString = pValue.toFixed(10);
@@ -1532,7 +1857,22 @@ function analyzeExperiment(experiment) {
         }
     } else {
         // Check for Twyman's Law trap: suspiciously low p-value with positive effect
-        if (hasTwymansLaw && isEffectPositive) {
+        if (luckyDayInfo && isEffectPositive) {
+            trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
+            decision = EXPERIMENT_DECISION.KEEP_VARIANT;
+            followUp = EXPERIMENT_FOLLOW_UP.VALIDATE;
+
+            const dayLabel = luckyDayInfo.periodLabel || (
+                luckyDayInfo.startDay === luckyDayInfo.endDay
+                    ? `day ${luckyDayInfo.startDay}`
+                    : `days ${luckyDayInfo.startDay}-${luckyDayInfo.endDay}`
+            );
+            const sharePct = (luckyDayInfo.sharePercentage || (luckyDayInfo.share * 100)).toFixed(1);
+            trustworthyReason = `${dayLabel} delivers ${sharePct}% of the observed lift. Removing that period makes the result ${luckyDayInfo.adjustedSignificant ? 'ambiguous' : 'non-significant'}, so the spike could be a one-off (Twyman\'s Law: outliers need extra scrutiny).`;
+            decisionReason = `Overall result is significant (p=${pValue.toFixed(4)} < α=${alpha}), but excluding ${dayLabel} yields p=${luckyDayInfo.adjustedPValue.toFixed(4)}. Keep the variant while treating the uplift as provisional.`;
+            followUpReason = `Validate with a follow-up run or close monitoring to confirm the lift persists beyond the standout day—Twyman's Law reminds us that "too good to be true" results demand verification.`;
+            summary = 'One standout day drives this win. Keep the variant, but validate—the spike might be a fluke (Twyman\'s Law).';
+        } else if (hasTwymansLaw && isEffectPositive) {
             trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
             trustworthyReason = `Twyman's Law detected: p-value is suspiciously low (p=${pValue.toFixed(10)}). Results that are "too good to be true" often indicate data quality issues, p-hacking, or other problems that make the experiment unreliable.`;
             decision = EXPERIMENT_DECISION.KEEP_VARIANT;
@@ -1647,6 +1987,7 @@ function analyzeExperiment(experiment) {
             hasDataLoss: hasDataLoss,
             dataLossIndex: dataLossIndex,
             hasTwymansLaw: hasTwymansLaw,
+            hasLuckyDayTrap: !!luckyDayInfo,
             hasUnderpoweredDesign: hasUnderpoweredDesign,
             underpoweredDesign: {
                 requiredSampleSize: requiredSampleSizePerVariant,
@@ -1689,7 +2030,21 @@ function analyzeExperiment(experiment) {
                 originalRuntime: requiredRuntimeDays,
                 actualRuntime: currentRuntimeDays,
                 extraDays: Math.max(0, currentRuntimeDays - requiredRuntimeDays)
-            }
+            },
+            luckyDayTrap: luckyDayInfo ? {
+                periodIndex: luckyDayInfo.periodIndex,
+                startDay: luckyDayInfo.startDay,
+                endDay: luckyDayInfo.endDay,
+                share: luckyDayInfo.share,
+                sharePercentage: luckyDayInfo.sharePercentage,
+                periodLabel: luckyDayInfo.periodLabel,
+                adjustedPValue: luckyDayInfo.adjustedPValue,
+                adjustedSignificant: luckyDayInfo.adjustedSignificant,
+                adjustedPositive: luckyDayInfo.adjustedPositive,
+                conversionsDifference: luckyDayInfo.conversionsDifference,
+                conversionsBase: luckyDayInfo.conversionsBase,
+                conversionsVariant: luckyDayInfo.conversionsVariant
+            } : null
         }
     };
 }

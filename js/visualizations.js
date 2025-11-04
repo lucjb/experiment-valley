@@ -587,11 +587,20 @@ const ChartManager = {
                 label = `[${label}]`;
             }
             
-            // Add warning for data loss in debug mode
-            if (UIController.debugMode() && window.currentAnalysis?.analysis?.dataLossIndex === index) {
-                label = `${label} ⚠️`;
+            if (UIController.debugMode()) {
+                // Add warning for data loss in debug mode
+                if (window.currentAnalysis?.analysis?.dataLossIndex === index) {
+                    label = `${label} ⚠️`;
+                }
+
+                const luckyDayIndex = window.currentAnalysis?.analysis?.luckyDayTrap?.periodIndex;
+                if (luckyDayIndex === index) {
+                    if (!label.includes('⚠️')) {
+                        label = `${label} ⚠️`;
+                    }
+                }
             }
-            
+
             return label;
         });
     },
@@ -651,10 +660,34 @@ const ChartManager = {
             ...options.plugins?.tooltip?.callbacks,
             afterBody: (tooltipItems) => {
                 const index = tooltipItems[0]?.dataIndex;
-                if (UIController.debugMode() && window.currentAnalysis?.analysis?.dataLossIndex === index) {
-                    return ['\n⚠️ Data Loss Detected'];
+                const messages = [];
+
+                if (UIController.debugMode()) {
+                    if (window.currentAnalysis?.analysis?.dataLossIndex === index) {
+                        messages.push('\n⚠️ Data Loss Detected');
+                    }
+
+                    const luckyDayData = window.currentAnalysis?.analysis?.luckyDayTrap;
+                    if (luckyDayData && luckyDayData.periodIndex === index) {
+                        const dayLabel = luckyDayData.periodLabel || (
+                            luckyDayData.startDay === luckyDayData.endDay
+                                ? `day ${luckyDayData.startDay}`
+                                : `days ${luckyDayData.startDay}-${luckyDayData.endDay}`
+                        );
+                        const shareValue = typeof luckyDayData.sharePercentage === 'number'
+                            ? luckyDayData.sharePercentage
+                            : luckyDayData.share * 100;
+                        const sharePct = shareValue.toFixed(1);
+                        const adjustedPValue = typeof luckyDayData.adjustedPValue === 'number'
+                            ? luckyDayData.adjustedPValue.toFixed(4)
+                            : 'n/a';
+                        const significanceLabel = luckyDayData.adjustedSignificant ? 'still significant' : 'no longer significant';
+
+                        messages.push(`\n⚠️ Suspicious spike: ${dayLabel} drives ${sharePct}% of the observed uplift (${significanceLabel} without it, p=${adjustedPValue}). Twyman's Law says spikes deserve a double-check.`);
+                    }
                 }
-                return [];
+
+                return messages;
             }
         };
 
