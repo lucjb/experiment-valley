@@ -473,8 +473,8 @@ function findLuckyPeriodIndex(visitorsPerPeriod) {
     return maxVisitors > 0 ? luckyIndex : -1;
 }
 
-const LUCKY_DAY_EFFECT_SHARE = 0.5;
-const MIN_LUCKY_DAY_SHARE_FOR_DETECTION = 0.45;
+const LUCKY_DAY_EFFECT_SHARE = 0.7;
+const MIN_LUCKY_DAY_SHARE_FOR_DETECTION = 0.65; // Increased from 0.5 to reduce false positives
 
 function applyLuckyDayTrapToVariantConversions({
     baseVisitorsPerPeriod,
@@ -1329,8 +1329,8 @@ const EXPERIMENT_FOLLOW_UP = {
     DO_NOTHING: "DO_NOTHING",
 };
 
-function detectLuckyDayTrap(experiment, directionFactor, alpha) {
-    if (!experiment || !experiment.simulation || !experiment.simulation.timeline) {
+function detectLuckyDayTrap(experiment, directionFactor, alpha, significant) {
+    if (!experiment || !experiment.simulation || !experiment.simulation.timeline ) {
         return null;
     }
 
@@ -1348,28 +1348,106 @@ function detectLuckyDayTrap(experiment, directionFactor, alpha) {
         return null;
     }
 
-    const totalDiff = directionFactor * (actualConversionsVariant - actualConversionsBase);
-    if (totalDiff <= 0) {
+    // Calculate total incremental conversions for the entire experiment using CI lower bound
+    const baseRate = actualVisitorsBase === 0 ? 0 : actualConversionsBase / actualVisitorsBase;
+    const variantRate = actualVisitorsVariant === 0 ? 0 : actualConversionsVariant / actualVisitorsVariant;
+    const totalDiffCI = computeDifferenceConfidenceInterval(
+        baseRate,
+        variantRate,
+        actualVisitorsBase,
+        actualVisitorsVariant,
+        alpha
+    );
+    // Use the lower bound of the CI (most conservative estimate)
+    // For directionFactor = -1, we want the upper bound (less negative) multiplied by -1
+    const ciBound = directionFactor === 1 ? totalDiffCI[0] : directionFactor * totalDiffCI[1];
+    const totalVisitors = actualVisitorsBase + actualVisitorsVariant;
+    const totalIncrementalConversions = ciBound * totalVisitors;
+    
+    if (totalIncrementalConversions <= 0) {
         return null;
     }
 
-    let luckyPeriod = null;
-    let luckyDiff = 0;
-
+    // Calculate incremental conversions for all periods
+    const periodIncrementalConversions = [];
+    
     timePoints.forEach((point, index) => {
-        const periodDiff = directionFactor * (point.variant.conversions - point.base.conversions);
-        if (periodDiff > 0 && periodDiff > luckyDiff) {
-            luckyDiff = periodDiff;
-            luckyPeriod = { point, index };
+        if (point.base.visitors === 0 || point.variant.visitors === 0) {
+            periodIncrementalConversions.push({ index, value: 0, point: null });
+            return;
         }
+        
+        const periodBaseRate = point.base.conversions / point.base.visitors;
+        const periodVariantRate = point.variant.conversions / point.variant.visitors;
+        const periodDiffCI = computeDifferenceConfidenceInterval(
+            periodBaseRate,
+            periodVariantRate,
+            point.base.visitors,
+            point.variant.visitors,
+            alpha
+        );
+        // Use the lower bound of the CI (most conservative estimate)
+        // For directionFactor = -1, we want the upper bound (less negative) multiplied by -1
+        const periodCIBound = directionFactor === 1 ? periodDiffCI[0] : directionFactor * periodDiffCI[1];
+        const periodTotalVisitors = point.base.visitors + point.variant.visitors;
+        const incrementalConversions = periodCIBound * periodTotalVisitors;
+        
+        periodIncrementalConversions.push({ index, value: incrementalConversions, point });
     });
 
-    if (!luckyPeriod) {
+    // Extract all incremental conversion values for outlier detection
+    const allIncrementalValues = periodIncrementalConversions.map(p => p.value);
+    
+    // Use IQR (Interquartile Range) method for outlier detection
+    // This is a well-known, robust method that doesn't require normal distribution assumptions
+    const sortedValues = [...allIncrementalValues].sort((a, b) => a - b);
+    
+    if (sortedValues.length < 4) {
+        // Need at least 4 data points for IQR method to be meaningful
         return null;
     }
-
+    
+    // Calculate quartiles using linear interpolation for better accuracy
+    // For Q1: 25th percentile, for Q3: 75th percentile
+    const getPercentile = (arr, percentile) => {
+        const index = (arr.length - 1) * percentile;
+        const lower = Math.floor(index);
+        const upper = Math.ceil(index);
+        const weight = index - lower;
+        return arr[lower] * (1 - weight) + arr[upper] * weight;
+    };
+    
+    const q1 = getPercentile(sortedValues, 0.25);
+    const q3 = getPercentile(sortedValues, 0.75);
+    const iqr = q3 - q1;
+    
+    if (iqr <= 0) {
+        // If IQR is 0 or negative, all values are the same, no outliers
+        return null;
+    }
+    
+    // Upper bound for outliers: Q3 + 2.0 * IQR (stricter threshold to reduce false positives)
+    // Using 2.0 instead of standard 1.5 makes outlier detection more conservative
+    // We only care about high outliers (lucky days), so we use upper bound
+    const outlierThreshold = q3 + 2.0 * iqr;
+    
+    // Find periods that are outliers (above the threshold)
+    const outlierPeriods = periodIncrementalConversions
+        .filter(p => p.value > outlierThreshold && p.value > 0 && p.point !== null)
+        .sort((a, b) => b.value - a.value);
+    
+    if (outlierPeriods.length === 0) {
+        return null;
+    }
+    
+    // Use the period with the highest incremental conversions among outliers
+    const luckyPeriodData = outlierPeriods[0];
+    const luckyIncrementalConversions = luckyPeriodData.value;
+    const luckyPeriod = { point: luckyPeriodData.point, index: luckyPeriodData.index };
     const luckyDiffRaw = luckyPeriod.point.variant.conversions - luckyPeriod.point.base.conversions;
-    const share = luckyDiff / totalDiff;
+    
+    // Calculate share of total incremental conversions
+    const share = luckyIncrementalConversions / totalIncrementalConversions;
 
     if (!isFinite(share) || share < MIN_LUCKY_DAY_SHARE_FOR_DETECTION) {
         return null;
@@ -1396,7 +1474,9 @@ function detectLuckyDayTrap(experiment, directionFactor, alpha) {
     const adjustedPositive = directionFactor * (adjustedVariantRate - adjustedBaseRate) > 0;
     const adjustedSignificant = adjustedPValue < alpha;
 
-    if (adjustedPositive && adjustedSignificant) {
+    // Required: The result must NOT be significant after removing the lucky day's data
+    // If it's still significant, then it's not a lucky day trap
+    if (adjustedSignificant) {
         return null;
     }
 
@@ -1489,8 +1569,6 @@ function filterUnderpoweredDesignData(experiment, correctSampleSize) {
         experiment: { alpha }
     } = experiment;
 
-    console.log('🔍 UNDERPOWERED DESIGN WITH SUFFICIENT DATA - Filtering to first valid checkpoint...');
-    console.log('📊 Correct sample size needed:', correctSampleSize);
 
     // Find first checkpoint where both variants have sufficient sample size AND it's a full week
     let firstValidCheckpoint = null;
@@ -1672,7 +1750,6 @@ function analyzeExperiment(experiment) {
         }
     } = experiment;
 
-    let analysisDone = false;
     let trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
     let decision = EXPERIMENT_DECISION.KEEP_RUNNING;
     let followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
@@ -1757,7 +1834,7 @@ function analyzeExperiment(experiment) {
     const baseRate = actualConversionsBase / actualVisitorsBase;
     const directionFactor = improvementDirection === IMPROVEMENT_DIRECTION.LOWER ? -1 : 1;
     const isEffectPositive = directionFactor * (variantRate - baseRate) > 0;
-    const luckyDayInfo = detectLuckyDayTrap(experiment, directionFactor, alpha);
+    const luckyDayInfo = detectLuckyDayTrap(experiment, directionFactor, alpha, significant);
 
     // Check for Twyman's Law trap: extremely low p-value AND unusually large effect size
     const pValueString = pValue.toFixed(10);
@@ -1784,7 +1861,7 @@ function analyzeExperiment(experiment) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
         decision = EXPERIMENT_DECISION.KEEP_BASE;
         followUp = EXPERIMENT_FOLLOW_UP.RERUN;
-        decisionReason = 'Unreliable data is no evidence aginst the null hypothesis.';
+        decisionReason = 'Unreliable data cannot be interpreted as evidence aginst the null hypothesis.';
 
         if (hasSampleRatioMismatch) {
             trustworthyReason = `Sample Ratio Mismatch (SRM) detected. Data is unreliable.`;
@@ -1868,11 +1945,11 @@ function analyzeExperiment(experiment) {
                     : `days ${luckyDayInfo.startDay}-${luckyDayInfo.endDay}`
             );
             const sharePct = (luckyDayInfo.sharePercentage || (luckyDayInfo.share * 100)).toFixed(1);
-            trustworthyReason = `${dayLabel} delivers ${sharePct}% of the observed lift. Removing that period makes the result ${luckyDayInfo.adjustedSignificant ? 'ambiguous' : 'non-significant'}, so the spike could be a one-off (Twyman\'s Law: outliers need extra scrutiny).`;
+            trustworthyReason = `${dayLabel} delivers ${sharePct}% of the observed lift. Removing that period makes the result ${luckyDayInfo.adjustedSignificant ? 'ambiguous' : 'non-significant'}. The effect could be either due to the treatment (randomly concentreated in one day) or due to external factors occurring that day`;
             decisionReason = `Overall result is significant (p=${pValue.toFixed(4)} < α=${alpha}), but excluding ${dayLabel} yields p=${luckyDayInfo.adjustedPValue.toFixed(4)}. Keep the variant while treating the uplift as provisional.`;
-            followUpReason = `Validate with a follow-up run or close monitoring to confirm the lift persists beyond the standout day—Twyman's Law reminds us that "too good to be true" results demand verification.`;
-            summary = 'One standout day drives this win. Keep the variant, but validate—the spike might be a fluke (Twyman\'s Law).';
-        } else if (hasTwymansLaw && isEffectPositive) {
+            followUpReason = `Validate with a follow-up run or close monitoring to confirm the lift persists beyond the standout day.`;
+            summary = 'This Experiment shows evidence in favor of Variant but a large part of the effect is concentrated in one day. This could be random or due to external factors occurring that day. Validate with a follow-up run.';
+        } else if (hasTwymansLaw && isEffectPositive && significant) {
             trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
             trustworthyReason = `Twyman's Law detected: p-value is suspiciously low (p=${pValue.toFixed(10)}). Results that are "too good to be true" often indicate data quality issues, p-hacking, or other problems that make the experiment unreliable.`;
             decision = EXPERIMENT_DECISION.KEEP_VARIANT;
