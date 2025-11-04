@@ -2,6 +2,7 @@ name: Deploy PR previews
 on:
   pull_request:
     types: [opened, reopened, synchronize, closed]
+  workflow_dispatch: # allows manual triggering from Actions tab
 
 # Cancel older runs for the same PR ref
 concurrency: preview-${{ github.ref }}
