@@ -999,7 +999,7 @@ const UIController = {
             : 'n/a';
         const significanceLabel = luckyDayData.adjustedSignificant ? 'still significant' : 'no longer significant';
 
-        const message = `Lucky Day trap detected: ${dayLabel} contributes ${sharePct}% of the observed uplift.\nWithout that period the result is ${significanceLabel} (p=${adjustedPValue}).\nValidate this win with a follow-up run before relying on it.`;
+        const message = `${dayLabel} shows a suspicious spike (${sharePct}% of the observed uplift).\nWithout it the result is ${significanceLabel} (p=${adjustedPValue}).\nTwyman's Law: if it looks too good to be true, double-check with a follow-up run.`;
 
         comparisonTab.appendChild(document.createTextNode(' '));
         const warningIcon = this.createWarningIcon(message, { type: 'lucky-day' });
