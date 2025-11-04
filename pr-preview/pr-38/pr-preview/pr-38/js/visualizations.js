@@ -683,7 +683,7 @@ const ChartManager = {
                             : 'n/a';
                         const significanceLabel = luckyDayData.adjustedSignificant ? 'still significant' : 'no longer significant';
 
-                        messages.push(`\n⚠️ Lucky Day Trap: ${dayLabel} drives ${sharePct}% of the observed uplift (${significanceLabel} without it, p=${adjustedPValue}).`);
+                        messages.push(`\n⚠️ Suspicious spike: ${dayLabel} drives ${sharePct}% of the observed uplift (${significanceLabel} without it, p=${adjustedPValue}). Twyman's Law says spikes deserve a double-check.`);
                     }
                 }
 
