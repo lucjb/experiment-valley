@@ -959,7 +959,7 @@ function luckyDayTrap() {
     return new ChallengeDesign({
         timeProgress: TIME_PROGRESS.FULL,
         baseRateMismatch: BASE_RATE_MISMATCH.NO,
-        effectSize: EFFECT_SIZE.IMPROVEMENT,
+        effectSize: EFFECT_SIZE.SMALL_IMPROVEMENT,
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.TIME,
         luckyDayTrap: true
@@ -1787,10 +1787,10 @@ function analyzeExperiment(experiment) {
                     : `days ${luckyDayInfo.startDay}-${luckyDayInfo.endDay}`
             );
             const sharePct = (luckyDayInfo.sharePercentage || (luckyDayInfo.share * 100)).toFixed(1);
-            trustworthyReason = `Variant win is concentrated on ${dayLabel} (${sharePct}% of the lift). Removing that period makes the result ${luckyDayInfo.adjustedSignificant ? 'ambiguous' : 'non-significant'}, so the outcome could be driven by a one-off event.`;
-            decisionReason = `Overall result is significant (p=${pValue.toFixed(4)} < α=${alpha}), but excluding ${dayLabel} yields p=${luckyDayInfo.adjustedPValue.toFixed(4)}, so we can't be certain the lift generalizes. Keep the variant but treat the finding as unconfirmed.`;
-            followUpReason = 'Validate by replicating or monitoring to confirm the lift persists beyond the standout day.';
-            summary = 'Lucky Day trap: the experiment win hinges on a single day. Keep the variant, but validate with a follow-up run to ensure the lift repeats.';
+            trustworthyReason = `${dayLabel} delivers ${sharePct}% of the observed lift. Removing that period makes the result ${luckyDayInfo.adjustedSignificant ? 'ambiguous' : 'non-significant'}, so the spike could be a one-off (Twyman\'s Law: outliers need extra scrutiny).`;
+            decisionReason = `Overall result is significant (p=${pValue.toFixed(4)} < α=${alpha}), but excluding ${dayLabel} yields p=${luckyDayInfo.adjustedPValue.toFixed(4)}. Keep the variant while treating the uplift as provisional.`;
+            followUpReason = `Validate with a follow-up run or close monitoring to confirm the lift persists beyond the standout day—Twyman's Law reminds us that "too good to be true" results demand verification.`;
+            summary = 'One standout day drives this win. Keep the variant, but validate—the spike might be a fluke (Twyman\'s Law).';
         } else if (hasTwymansLaw && isEffectPositive) {
             trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
             trustworthyReason = `Twyman's Law detected: p-value is suspiciously low (p=${pValue.toFixed(10)}). Results that are "too good to be true" often indicate data quality issues, p-hacking, or other problems that make the experiment unreliable.`;
