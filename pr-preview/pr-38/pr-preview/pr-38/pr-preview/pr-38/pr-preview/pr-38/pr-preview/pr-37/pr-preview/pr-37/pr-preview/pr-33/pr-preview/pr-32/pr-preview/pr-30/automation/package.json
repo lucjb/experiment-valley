@@ -1,0 +1,15 @@
+{
+  "name": "ab-testing-gym",
+  "version": "1.0.0",
+  "description": "An interactive educational platform for learning A/B testing concepts through hands-on practice. This web application helps you understand statistical analysis and experimental design through practical exercises.",
+  "main": "automated-player.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^24.22.3"
+  }
+}
