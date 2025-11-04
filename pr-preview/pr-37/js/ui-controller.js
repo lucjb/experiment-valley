@@ -675,10 +675,14 @@ const UIController = {
     },
 
     // Helper function to create a warning icon with tooltip
-    createWarningIcon(message) {
+    createWarningIcon(message, options = {}) {
         const warningIcon = document.createElement('span');
         warningIcon.className = 'text-yellow-500 cursor-help tooltip-trigger text-sm';
         warningIcon.textContent = '⚠️';
+
+        if (options.type) {
+            warningIcon.dataset.alertType = options.type;
+        }
 
         const tooltipContent = document.createElement('span');
         tooltipContent.className = 'tooltip-content';
@@ -819,7 +823,13 @@ const UIController = {
             const warningIcons = pValueElement.querySelectorAll('.tooltip-trigger');
             warningIcons.forEach(icon => icon.remove());
         }
-        
+
+        const conversionUpliftCell = document.getElementById('conversion-uplift');
+        if (conversionUpliftCell) {
+            const luckyDayIcons = conversionUpliftCell.querySelectorAll('[data-alert-type="lucky-day"]');
+            luckyDayIcons.forEach(icon => icon.remove());
+        }
+
         // Clear overdue alert
         const completeTextElement = document.getElementById('exp-complete-text');
         if (completeTextElement) {
@@ -839,6 +849,7 @@ const UIController = {
         this.addSampleSizeWarning();
         this.addSampleRatioMismatchAlert();
         this.addTwymansLawAlert();
+        this.addLuckyDayTrapAlert();
         this.addOverdueAlert();
         this.addUnderpoweredDesignAlert();
     },
@@ -937,7 +948,7 @@ const UIController = {
         }
 
         const hasTwymansLaw = analysis.analysis.hasTwymansLaw;
-        
+
         if (!hasTwymansLaw) {
             return;
         }
@@ -954,15 +965,50 @@ const UIController = {
         }
 
         const pValue = dataSource.simulation.pValue;
-        
+
         const message = `Twyman's Law detected: Suspiciously low p-value (p=${pValue.toFixed(10)}) and unusually large effect (more than 10 x the MRE)\n\n<a href="twymans-law.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about Twyman's Law →</a>`;
         // Use the proper warning cell helper function
         this.addWarningToCell(pValueElement, message);
     },
 
+    addLuckyDayTrapAlert() {
+        const analysis = window.currentTimeFilteredAnalysis || window.currentAnalysis;
+        if (!analysis || !analysis.analysis || !analysis.analysis.luckyDayTrap) {
+            return;
+        }
+
+        const conversionUpliftElement = document.getElementById('conversion-uplift');
+        if (!conversionUpliftElement) {
+            return;
+        }
+
+        // Remove any existing Lucky Day icons before adding a new one
+        const existingIcons = conversionUpliftElement.querySelectorAll('[data-alert-type="lucky-day"]');
+        existingIcons.forEach(icon => icon.remove());
+
+        const luckyDayData = analysis.analysis.luckyDayTrap;
+        const dayLabel = luckyDayData.periodLabel || (
+            luckyDayData.startDay === luckyDayData.endDay
+                ? `day ${luckyDayData.startDay}`
+                : `days ${luckyDayData.startDay}-${luckyDayData.endDay}`
+        );
+        const shareValue = typeof luckyDayData.sharePercentage === 'number'
+            ? luckyDayData.sharePercentage
+            : luckyDayData.share * 100;
+        const sharePct = shareValue.toFixed(1);
+        const adjustedPValue = luckyDayData.adjustedPValue.toFixed(4);
+        const significanceLabel = luckyDayData.adjustedSignificant ? 'still significant' : 'no longer significant';
+
+        const message = `Lucky Day trap detected: ${dayLabel} contributes ${sharePct}% of the observed uplift.\nWithout that period the result is ${significanceLabel} (p=${adjustedPValue}).\nValidate this win with a follow-up run before relying on it.`;
+
+        const warningIcon = this.createWarningIcon(message, { type: 'lucky-day' });
+        conversionUpliftElement.appendChild(warningIcon);
+        this.initializeTooltip(warningIcon);
+    },
+
     addOverdueAlert() {
         const analysis = window.currentAnalysis;
-        
+
         if (!analysis || !analysis.analysis || !analysis.analysis.overdue) {
             return;
         }
