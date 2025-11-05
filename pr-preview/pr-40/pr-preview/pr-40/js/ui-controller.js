@@ -564,6 +564,7 @@ const UIController = {
                 const allScenarios = Object.values(challengeSequences).flat();
                 challengeDesign = allScenarios[Math.floor(Math.random() * allScenarios.length)];
             }
+            // challengeDesign = luckyDayTrap();
 
             // Generate the challenge from the design
             window.currentExperiment = challengeDesign.generate();

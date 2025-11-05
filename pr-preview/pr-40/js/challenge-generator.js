@@ -311,8 +311,8 @@ function addYearlyPattern(monthlyVisitors) {
 
 function addNoiseToConversions(conversions, visitors) {
     const numPeriods = conversions.length;
-    // Number of swaps to perform - about 20% of the periods
-    const numSwaps = Math.max(1, Math.floor(numPeriods * 0.5));
+    // Number of swaps to perform - reduced to minimize false positives in lucky day detection
+    const numSwaps = Math.max(1, Math.floor(numPeriods * 0.2));
 
     for (let swap = 0; swap < numSwaps; swap++) {
         // Pick first random period
@@ -329,11 +329,11 @@ function addNoiseToConversions(conversions, visitors) {
         const maxToPeriod2 = visitors[period2] - conversions[period2]; // Can't exceed visitors
 
         if (maxFromPeriod1 > 0 && maxToPeriod2 > 0) {
-            // Move a random amount up to the maximum possible
+            // Move a smaller random amount to reduce noise magnitude
             const amount = Math.min(
                 maxFromPeriod1,
                 maxToPeriod2,
-                Math.max(Math.ceil(maxFromPeriod1 / 2), Math.floor(Math.random() * maxFromPeriod1))
+                Math.max(1, Math.floor(Math.random() * Math.min(maxFromPeriod1 / 3, maxToPeriod2)))
             );
 
             conversions[period1] -= amount;
@@ -399,6 +399,143 @@ function distributeConversions(totalConversions, dailyVisitors) {
     return dailyConversions;
 }
 
+// Constraint: prevent one variant's conversion rate from being more than 2x the other's on any day
+// This ensures realistic day-to-day variation without extreme outliers
+function enforceConversionRateConstraint(
+    baseConversionsPerPeriod,
+    baseVisitorsPerPeriod,
+    variantConversionsPerPeriod,
+    variantVisitorsPerPeriod,
+    totalBaseConversions,
+    totalVariantConversions
+) {
+    const numPeriods = baseConversionsPerPeriod.length;
+    
+    // Create copies to avoid mutating originals
+    let adjustedBaseConversions = [...baseConversionsPerPeriod];
+    let adjustedVariantConversions = [...variantConversionsPerPeriod];
+    
+    // Iteratively enforce constraint until no violations remain (or max iterations)
+    let maxIterations = 10;
+    let iteration = 0;
+    let hasViolation = true;
+    
+    while (hasViolation && iteration < maxIterations) {
+        hasViolation = false;
+        iteration++;
+        
+        // Check each period for violations
+        for (let i = 0; i < numPeriods; i++) {
+            const baseVisitors = baseVisitorsPerPeriod[i];
+            const variantVisitors = variantVisitorsPerPeriod[i];
+            
+            if (baseVisitors <= 0 || variantVisitors <= 0) {
+                continue; // Skip periods with no visitors
+            }
+            
+            const baseConvs = adjustedBaseConversions[i];
+            const variantConvs = adjustedVariantConversions[i];
+            
+            if (baseConvs <= 0 || variantConvs <= 0) {
+                continue; // Skip periods with no conversions
+            }
+            
+            const baseRate = baseConvs / baseVisitors;
+            const variantRate = variantConvs / variantVisitors;
+            
+            // Check if constraint is violated
+            const ratio1 = variantRate / baseRate;
+            const ratio2 = baseRate / variantRate;
+            
+            if (ratio1 > MAX_RATE_RATIO) {
+                // Variant rate is too high - reduce variant conversions
+                const maxVariantRate = baseRate * MAX_RATE_RATIO;
+                const maxVariantConvs = Math.floor(variantVisitors * maxVariantRate);
+                const reduction = variantConvs - maxVariantConvs;
+                
+                if (reduction > 0) {
+                    adjustedVariantConversions[i] = maxVariantConvs;
+                    hasViolation = true;
+                    // Redistribute the reduction to other periods
+                    redistributeConversions(
+                        adjustedVariantConversions, 
+                        variantVisitorsPerPeriod, 
+                        reduction, 
+                        i, 
+                        totalVariantConversions
+                    );
+                }
+            } else if (ratio2 > MAX_RATE_RATIO) {
+                // Base rate is too high - reduce base conversions
+                const maxBaseRate = variantRate * MAX_RATE_RATIO;
+                const maxBaseConvs = Math.floor(baseVisitors * maxBaseRate);
+                const reduction = baseConvs - maxBaseConvs;
+                
+                if (reduction > 0) {
+                    adjustedBaseConversions[i] = maxBaseConvs;
+                    hasViolation = true;
+                    // Redistribute the reduction to other periods
+                    redistributeConversions(
+                        adjustedBaseConversions, 
+                        baseVisitorsPerPeriod, 
+                        reduction, 
+                        i, 
+                        totalBaseConversions
+                    );
+                }
+            }
+        }
+    }
+    
+    return {
+        baseConversionsPerPeriod: adjustedBaseConversions,
+        variantConversionsPerPeriod: adjustedVariantConversions
+    };
+}
+
+// Helper: Redistribute conversions that were removed due to constraint violation
+function redistributeConversions(conversions, visitorsPerPeriod, amountToRedistribute, excludeIndex, targetTotal) {
+    if (amountToRedistribute <= 0) return;
+    
+    const numPeriods = conversions.length;
+    const currentTotal = conversions.reduce((sum, val) => sum + val, 0);
+    const target = targetTotal;
+    
+    // Find periods that can accept more conversions (excluding the period we're adjusting)
+    const eligiblePeriods = [];
+    for (let i = 0; i < numPeriods; i++) {
+        if (i !== excludeIndex && visitorsPerPeriod[i] > 0) {
+            const capacity = visitorsPerPeriod[i] - conversions[i];
+            if (capacity > 0) {
+                eligiblePeriods.push({ index: i, capacity });
+            }
+        }
+    }
+    
+    if (eligiblePeriods.length === 0) return;
+    
+    // Distribute proportionally to capacity
+    const totalCapacity = eligiblePeriods.reduce((sum, p) => sum + p.capacity, 0);
+    let remaining = amountToRedistribute;
+    
+    for (const period of eligiblePeriods) {
+        if (remaining <= 0) break;
+        const share = Math.floor((amountToRedistribute * period.capacity) / totalCapacity);
+        const addition = Math.min(period.capacity, share, remaining);
+        conversions[period.index] += addition;
+        remaining -= addition;
+    }
+    
+    // Distribute any remainder one at a time
+    for (const period of eligiblePeriods) {
+        if (remaining <= 0) break;
+        if (conversions[period.index] < visitorsPerPeriod[period.index]) {
+            conversions[period.index]++;
+            remaining--;
+        }
+    }
+}
+
 function determineTimePeriod(numDays) {
     if (numDays <= 56) {
         return { period: 'day', numPeriods: numDays };
@@ -460,21 +597,24 @@ function addDataLoss(visitors, conversions) {
 }
 
 function findLuckyPeriodIndex(visitorsPerPeriod) {
-    let luckyIndex = -1;
-    let maxVisitors = -Infinity;
+    // Find all periods that have visitors
+    const periodsWithVisitors = [];
 
-    visitorsPerPeriod.forEach((value, index) => {
-        if (value > maxVisitors) {
-            maxVisitors = value;
-            luckyIndex = index;
+    for (let index = 0; index < visitorsPerPeriod.length; index++) {
+        if (visitorsPerPeriod[index] > 0) {
+            periodsWithVisitors.push(index);
         }
-    });
+    }
 
-    return maxVisitors > 0 ? luckyIndex : -1;
+    // If no periods have visitors, return -1
+    if (periodsWithVisitors.length === 0) {
+        return -1;
+    }
+
+    // Pick a random period from those with visitors
+    const randomIndex = Math.floor(Math.random() * periodsWithVisitors.length);
+    return periodsWithVisitors[randomIndex];
 }
-
-const LUCKY_DAY_EFFECT_SHARE = 0.7;
-const MIN_LUCKY_DAY_SHARE_FOR_DETECTION = 0.65; // Increased from 0.5 to reduce false positives
 
 function applyLuckyDayTrapToVariantConversions({
     baseVisitorsPerPeriod,
@@ -482,175 +622,192 @@ function applyLuckyDayTrapToVariantConversions({
     variantVisitorsPerPeriod,
     variantConversionsPerPeriod,
     totalVariantConversions,
-    totalBaseConversions
+    totalBaseConversions,
+    improvementDirection
 }) {
+    // Pick a random day that has visitors
     const luckyIndex = findLuckyPeriodIndex(variantVisitorsPerPeriod);
     if (luckyIndex === -1) {
         return variantConversionsPerPeriod;
     }
 
-    const totalVariantVisitors = variantVisitorsPerPeriod.reduce((sum, value) => sum + value, 0);
-    const totalBaseVisitors = baseVisitorsPerPeriod.reduce((sum, value) => sum + value, 0);
+    const luckyDayBaseVisitors = baseVisitorsPerPeriod[luckyIndex];
+    const luckyDayVariantVisitors = variantVisitorsPerPeriod[luckyIndex];
+    const luckyDayBaseConversions = baseConversionsPerPeriod[luckyIndex];
+    const currentVariantConversions = variantConversionsPerPeriod[luckyIndex];
 
-    if (totalVariantVisitors <= 0 || totalBaseVisitors <= 0 || totalVariantConversions <= 0) {
+    if (luckyDayBaseVisitors <= 0 || luckyDayVariantVisitors <= 0) {
         return variantConversionsPerPeriod;
     }
 
-    const overallBaseRate = totalBaseConversions / totalBaseVisitors;
-    const updatedVariantConversions = variantVisitorsPerPeriod.map((visitors, index) => {
-        if (visitors <= 0) {
-            return 0;
-        }
+    // Calculate base rate for the lucky day
+    const baseRate = luckyDayBaseConversions / luckyDayBaseVisitors;
 
-        const baseVisitorsForDay = baseVisitorsPerPeriod[index];
-        const baseConversionsForDay = baseConversionsPerPeriod[index];
-        const baseRateForDay = baseVisitorsForDay > 0
-            ? baseConversionsForDay / baseVisitorsForDay
-            : overallBaseRate;
-
-        return Math.min(
-            visitors,
-            Math.round(visitors * baseRateForDay)
-        );
-    });
-
-    let baselineTotal = updatedVariantConversions.reduce((sum, value) => sum + value, 0);
-
-    if (baselineTotal > totalVariantConversions) {
-        let excess = baselineTotal - totalVariantConversions;
-        const adjustmentOrder = updatedVariantConversions
-            .map((_, index) => index)
-            .sort((a, b) => updatedVariantConversions[b] - updatedVariantConversions[a]);
-
-        let guard = 0;
-        while (excess > 0 && guard < 1000) {
-            for (const index of adjustmentOrder) {
-                if (excess <= 0) break;
-                if (updatedVariantConversions[index] <= 0) continue;
-                updatedVariantConversions[index]--;
-                excess--;
-            }
-            guard++;
-        }
-
-        baselineTotal = updatedVariantConversions.reduce((sum, value) => sum + value, 0);
+    // Determine improvement direction
+    const isHigherBetter = improvementDirection === IMPROVEMENT_DIRECTION.HIGHER || improvementDirection === 'HIGHER';
+    
+    // Calculate minimum variant conversions needed to meet the 2x ratio requirement
+    let minVariantConversions;
+    if (isHigherBetter) {
+        // Higher is better: variant rate >= 2 * base rate
+        // variantRate = variantConvs / variantVisitors >= 2 * baseRate
+        // variantConvs >= 2 * baseRate * variantVisitors
+        minVariantConversions = Math.ceil(MAX_RATE_RATIO * baseRate * luckyDayVariantVisitors);
+    } else {
+        // Lower is better: base rate >= 2 * variant rate
+        // baseRate >= 2 * variantRate
+        // variantRate <= baseRate / 2
+        // variantConvs <= (baseRate / 2) * variantVisitors
+        minVariantConversions = Math.floor((baseRate / MAX_RATE_RATIO) * luckyDayVariantVisitors);
     }
 
-    let totalAssigned = baselineTotal;
-    if (totalAssigned >= totalVariantConversions) {
+    // Ensure we don't exceed visitors
+    minVariantConversions = Math.min(minVariantConversions, luckyDayVariantVisitors);
+    minVariantConversions = Math.max(0, minVariantConversions);
+
+    // Calculate how many conversions we need to add (or remove)
+    const conversionsNeeded = minVariantConversions - currentVariantConversions;
+
+    // Create a copy of conversions
+    const updatedVariantConversions = [...variantConversionsPerPeriod];
+
+    if (conversionsNeeded > 0) {
+        // Need to add conversions to lucky day
+        // Check if we have remaining capacity from total
+        const currentTotal = variantConversionsPerPeriod.reduce((sum, val) => sum + val, 0);
+        const remainingFromTotal = totalVariantConversions - currentTotal;
+        
+        // Add conversions to lucky day (up to its capacity)
+        const availableCapacity = luckyDayVariantVisitors - currentVariantConversions;
+        const conversionsToAdd = Math.min(conversionsNeeded, availableCapacity, remainingFromTotal);
+        
+        updatedVariantConversions[luckyIndex] += conversionsToAdd;
+        
+        // If we still need more and don't have remaining from total, redistribute from other days
+        if (conversionsToAdd < conversionsNeeded && remainingFromTotal <= 0) {
+            const stillNeeded = conversionsNeeded - conversionsToAdd;
+            redistributeFromOtherDays(updatedVariantConversions, variantVisitorsPerPeriod, stillNeeded, luckyIndex);
+        }
+    } else if (conversionsNeeded < 0) {
+        // Need to remove conversions from lucky day (shouldn't happen often, but possible)
+        const excess = Math.abs(conversionsNeeded);
+        updatedVariantConversions[luckyIndex] = minVariantConversions;
+        redistributeToOtherDays(updatedVariantConversions, variantVisitorsPerPeriod, excess, luckyIndex);
+    }
+
+    // Ensure total matches (handle any rounding differences)
+    const finalTotal = updatedVariantConversions.reduce((sum, val) => sum + val, 0);
+    const diff = totalVariantConversions - finalTotal;
+    
+    if (diff !== 0) {
+        adjustToMatchTotal(updatedVariantConversions, variantVisitorsPerPeriod, diff);
+    }
+
         return updatedVariantConversions;
     }
 
-    const nonLuckyIndices = updatedVariantConversions
+// Helper: Redistribute conversions from other days to lucky day
+function redistributeFromOtherDays(conversions, visitorsPerPeriod, amountNeeded, luckyIndex) {
+    if (amountNeeded <= 0) return;
+    
+    const nonLuckyIndices = conversions
         .map((_, index) => index)
         .filter(index => index !== luckyIndex);
 
-    const totalEffect = totalVariantConversions - totalAssigned;
-    const luckyRemainingCapacity = Math.max(0, variantVisitorsPerPeriod[luckyIndex] - updatedVariantConversions[luckyIndex]);
-    const desiredLuckyEffect = Math.max(0, Math.round(totalEffect * LUCKY_DAY_EFFECT_SHARE));
-    const luckyEffect = Math.min(luckyRemainingCapacity, Math.min(totalEffect, desiredLuckyEffect));
-    updatedVariantConversions[luckyIndex] += luckyEffect;
-    totalAssigned += luckyEffect;
+    // Find days with conversions to remove (prioritize days with more conversions)
+    const eligibleDays = nonLuckyIndices
+        .map(index => ({
+            index,
+            conversions: conversions[index]
+        }))
+        .filter(day => day.conversions > 0)
+        .sort((a, b) => b.conversions - a.conversions); // Remove from highest first
+    
+    let remaining = amountNeeded;
+    for (const day of eligibleDays) {
+        if (remaining <= 0) break;
+        const toRemove = Math.min(remaining, day.conversions);
+        conversions[day.index] -= toRemove;
+        remaining -= toRemove;
+    }
+    
+    // Add to lucky day
+    const availableCapacity = visitorsPerPeriod[luckyIndex] - conversions[luckyIndex];
+    const toAdd = Math.min(amountNeeded - remaining, availableCapacity);
+    conversions[luckyIndex] += toAdd;
+}
 
-    let remainingEffect = totalVariantConversions - totalAssigned;
-
-    if (remainingEffect > 0) {
-        const capacities = nonLuckyIndices.map(index => Math.max(0, variantVisitorsPerPeriod[index] - updatedVariantConversions[index]));
-        let totalCapacity = capacities.reduce((sum, value) => sum + value, 0);
-
-        if (totalCapacity > 0) {
-            nonLuckyIndices.forEach((index, idx) => {
-                if (remainingEffect <= 0) return;
-                const capacity = capacities[idx];
-                if (capacity <= 0) return;
-                const proportionalShare = Math.floor((remainingEffect * capacity) / totalCapacity);
-                const addition = Math.min(capacity, proportionalShare);
-                if (addition > 0) {
-                    updatedVariantConversions[index] += addition;
-                    remainingEffect -= addition;
-                }
-            });
-
-            if (remainingEffect > 0) {
-                const adjustmentOrder = nonLuckyIndices
-                    .slice()
-                    .sort((a, b) => (variantVisitorsPerPeriod[b] - updatedVariantConversions[b]) - (variantVisitorsPerPeriod[a] - updatedVariantConversions[a]));
-
-                let guard = 0;
-                while (remainingEffect > 0 && guard < 1000) {
-                    let progress = false;
-                    for (const index of adjustmentOrder) {
-                        if (remainingEffect <= 0) break;
-                        const capacity = variantVisitorsPerPeriod[index] - updatedVariantConversions[index];
-                        if (capacity <= 0) continue;
-                        updatedVariantConversions[index]++;
-                        remainingEffect--;
-                        progress = true;
-                        if (remainingEffect <= 0) break;
-                    }
-                    if (!progress) break;
-                    guard++;
-                }
-            }
-        }
-
-        if (remainingEffect > 0 && luckyRemainingCapacity > luckyEffect) {
-            const extraLuckyCapacity = variantVisitorsPerPeriod[luckyIndex] - updatedVariantConversions[luckyIndex];
-            const luckyTopUp = Math.min(extraLuckyCapacity, remainingEffect);
-            updatedVariantConversions[luckyIndex] += luckyTopUp;
-            remainingEffect -= luckyTopUp;
+// Helper: Redistribute conversions from lucky day to other days
+function redistributeToOtherDays(conversions, visitorsPerPeriod, amountToRedistribute, luckyIndex) {
+    if (amountToRedistribute <= 0) return;
+    
+    const nonLuckyIndices = conversions
+        .map((_, index) => index)
+        .filter(index => index !== luckyIndex);
+    
+    // Find days with capacity
+    const eligibleDays = nonLuckyIndices
+        .map(index => ({
+            index,
+            capacity: visitorsPerPeriod[index] - conversions[index]
+        }))
+        .filter(day => day.capacity > 0);
+    
+    if (eligibleDays.length === 0) return;
+    
+    // Distribute proportionally to capacity
+    const totalCapacity = eligibleDays.reduce((sum, day) => sum + day.capacity, 0);
+    let remaining = amountToRedistribute;
+    
+    for (const day of eligibleDays) {
+        if (remaining <= 0) break;
+        const share = Math.floor((amountToRedistribute * day.capacity) / totalCapacity);
+        const addition = Math.min(day.capacity, share, remaining);
+        conversions[day.index] += addition;
+        remaining -= addition;
+    }
+    
+    // Distribute remainder one at a time
+    for (const day of eligibleDays) {
+        if (remaining <= 0) break;
+        if (conversions[day.index] < visitorsPerPeriod[day.index]) {
+            conversions[day.index]++;
+            remaining--;
         }
     }
+}
 
-    if (remainingEffect > 0) {
-        const adjustmentOrder = [luckyIndex, ...nonLuckyIndices];
-        let guard = 0;
-        while (remainingEffect > 0 && guard < 1000) {
-            let progress = false;
-            for (const index of adjustmentOrder) {
-                if (remainingEffect <= 0) break;
-                const capacity = variantVisitorsPerPeriod[index] - updatedVariantConversions[index];
-                if (capacity <= 0) continue;
-                const addition = Math.min(capacity, remainingEffect);
-                updatedVariantConversions[index] += addition;
-                remainingEffect -= addition;
-                progress = true;
-            }
-            if (!progress) break;
-            guard++;
-        }
-    }
-
-    let diff = totalVariantConversions - updatedVariantConversions.reduce((sum, value) => sum + value, 0);
-    if (diff !== 0) {
+// Helper: Adjust conversions to match target total
+function adjustToMatchTotal(conversions, visitorsPerPeriod, diff) {
+    if (diff === 0) return;
+    
+    const numPeriods = conversions.length;
         const adjustmentOrder = diff > 0
-            ? [luckyIndex, ...nonLuckyIndices]
-            : [...nonLuckyIndices, luckyIndex];
-
-        let guard = 0;
-        while (diff !== 0 && guard < 1000) {
+        ? Array.from({ length: numPeriods }, (_, i) => i)
+            .sort((a, b) => (visitorsPerPeriod[b] - conversions[b]) - (visitorsPerPeriod[a] - conversions[a])) // Highest capacity first
+        : Array.from({ length: numPeriods }, (_, i) => i)
+            .sort((a, b) => conversions[b] - conversions[a]); // Highest conversions first
+    
+    let remaining = Math.abs(diff);
             for (const index of adjustmentOrder) {
-                if (diff === 0) break;
-                const visitors = variantVisitorsPerPeriod[index];
-                if (visitors <= 0) continue;
-
-                const current = updatedVariantConversions[index];
-                const available = diff > 0
-                    ? visitors - current
-                    : current;
-
-                if (available <= 0) continue;
-
-                const addConversions = diff > 0;
-                const delta = Math.min(Math.abs(diff), available);
-                updatedVariantConversions[index] += addConversions ? delta : -delta;
-                diff += addConversions ? -delta : delta;
+        if (remaining <= 0) break;
+        
+        if (diff > 0) {
+            // Need to add conversions
+            const capacity = visitorsPerPeriod[index] - conversions[index];
+            if (capacity > 0) {
+                const addition = Math.min(capacity, remaining);
+                conversions[index] += addition;
+                remaining -= addition;
             }
-            guard++;
+        } else {
+            // Need to remove conversions
+            if (conversions[index] > 0) {
+                conversions[index]--;
+                remaining--;
+            }
         }
     }
-
-    return updatedVariantConversions;
 }
 
 function generateTimelineData(baseVisitors, variantVisitors, baseConversions, variantConversions, numDays, alpha, currentRuntimeDays, businessCycleDays, dataLoss, options = {}) {
@@ -658,7 +815,7 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
     const { period, numPeriods } = determineTimePeriod(numDays);
     const daysPerPeriod = period === 'day' ? 1 : period === 'week' ? 7 : 28;
 
-    const { luckyDayTrap: enforceLuckyDayTrap = false } = options;
+    const { luckyDayTrap: enforceLuckyDayTrap = false, improvementDirection } = options;
 
     // Build a single total-traffic pattern for the timeline
     // This ensures both variants share the same underlying traffic pattern,
@@ -691,6 +848,18 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
     var baseConversionsPerPeriod = distributeConversions(baseConversions, baseVisitorsPerPeriod);
     var variantConversionsPerPeriod = distributeConversions(variantConversions, variantVisitorsPerPeriod);
 
+    // Enforce constraint: prevent one variant's conversion rate from being more than 2x the other's on any day
+    const constrainedConversions = enforceConversionRateConstraint(
+        baseConversionsPerPeriod,
+        baseVisitorsPerPeriod,
+        variantConversionsPerPeriod,
+        variantVisitorsPerPeriod,
+        baseConversions,
+        variantConversions
+    );
+    baseConversionsPerPeriod = constrainedConversions.baseConversionsPerPeriod;
+    variantConversionsPerPeriod = constrainedConversions.variantConversionsPerPeriod;
+
     if (enforceLuckyDayTrap) {
         variantConversionsPerPeriod = applyLuckyDayTrapToVariantConversions({
             baseVisitorsPerPeriod,
@@ -698,7 +867,8 @@ function generateTimelineData(baseVisitors, variantVisitors, baseConversions, va
             variantVisitorsPerPeriod,
             variantConversionsPerPeriod,
             totalVariantConversions: variantConversions,
-            totalBaseConversions: baseConversions
+            totalBaseConversions: baseConversions,
+            improvementDirection
         });
     }
 
@@ -1078,6 +1248,7 @@ const EFFECT_SIZE = { NONE: 0, SMALL_IMPROVEMENT: 0.05, IMPROVEMENT: 0.85, LARGE
 const SAMPLE_RATIO_MISMATCH = { NO: 0.5, LARGE: 0.4, SMALL: 0.47 };
 const VISITORS_LOSS = { NO: false, YES: true };
 const IMPROVEMENT_DIRECTION = { HIGHER: 'HIGHER_IS_BETTER', LOWER: 'LOWER_IS_BETTER' };
+const MAX_RATE_RATIO = 2.5;
 
 function generateABTestChallenge(
     timeProgress = TIME_PROGRESS.FULL,
@@ -1223,7 +1394,7 @@ function generateABTestChallenge(
         currentRuntimeDays,
         BUSINESS_CYCLE_DAYS,
         visitorsLoss,
-        { luckyDayTrap }
+        { luckyDayTrap, improvementDirection }
     );
 
     // Calculate uplift as relative percentage change
@@ -1329,130 +1500,133 @@ const EXPERIMENT_FOLLOW_UP = {
     DO_NOTHING: "DO_NOTHING",
 };
 
-function detectLuckyDayTrap(experiment, directionFactor, alpha, significant) {
-    if (!experiment || !experiment.simulation || !experiment.simulation.timeline ) {
-        return null;
-    }
+// Helper: Calculate period rate differences from time points
+function calculatePeriodRateDiffs(timePoints, directionFactor) {
+    const periodRateDiffs = [];
+    
+    timePoints.forEach((point, index) => {
+        if (point.base.visitors === 0 || point.variant.visitors === 0) {
+            return; // Skip periods with no data
+        }
+        
+        const periodBaseRate = point.base.conversions / point.base.visitors;
+        const periodVariantRate = point.variant.conversions / point.variant.visitors;
+        const rawDiff = periodVariantRate - periodBaseRate;
+        const directionalDiff = directionFactor * rawDiff;
+        
+        periodRateDiffs.push({
+            index,
+            value: directionalDiff,
+            point,
+            visitors: point.base.visitors + point.variant.visitors,
+            conversionsDiff: point.variant.conversions - point.base.conversions
+        });
+    });
+    
+    return periodRateDiffs;
+}
 
+// Helper: Calculate median of an array
+function calculateMedian(values) {
+    if (values.length === 0) return 0;
+    const sorted = [...values].sort((a, b) => a - b);
+    return sorted.length % 2 === 0
+        ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+        : sorted[Math.floor(sorted.length / 2)];
+}
+
+// Helper: Calculate Median Absolute Deviation (MAD)
+function calculateMAD(values, median) {
+    const deviations = values.map(v => Math.abs(v - median));
+    return calculateMedian(deviations);
+}
+
+// Helper: Calculate modified Z-scores using MAD
+function calculateModifiedZScores(periodRateDiffs, median, mad) {
+    const MODIFIED_Z_SCORE_CONSTANT = 0.6745; // Makes MAD comparable to standard deviation
+    const MODIFIED_Z_SCORE_THRESHOLD = 3.2;
+    
+    const periodsWithZScore = periodRateDiffs.map(p => ({
+        ...p,
+        modifiedZScore: mad > 0 ? (MODIFIED_Z_SCORE_CONSTANT * (p.value - median)) / mad : 0
+    }));
+    
+    const outlierPeriods = periodsWithZScore
+        .filter(p => p.modifiedZScore > MODIFIED_Z_SCORE_THRESHOLD && p.value > 0)
+        .sort((a, b) => b.value - a.value);
+    
+    return { periodsWithZScore, outlierPeriods, threshold: MODIFIED_Z_SCORE_THRESHOLD };
+}
+
+// Helper: Simple peak detection - find obvious single peaks
+// A peak is an outlier if:
+// 1. It's the maximum value
+// 2. It's at least 3x larger than the second-highest value
+// 3. It's positive
+function detectOutliersUsingMAD(periodRateDiffs) {
+    const diffValues = periodRateDiffs.map(p => p.value);
+    
+    if (diffValues.length < 3) {
+        return { isValid: false, reason: 'Too few periods (< 3)' };
+    }
+    
+    // Find the period with the maximum value
+    const sortedByValue = [...periodRateDiffs].sort((a, b) => b.value - a.value);
+    const maxPeriod = sortedByValue[0];
+    const secondMaxPeriod = sortedByValue[1];
+    
+    const maxValue = maxPeriod.value;
+    const secondMaxValue = secondMaxPeriod.value;
+    
+    // Only consider positive values
+    if (maxValue <= 0) {
+        return { isValid: false, reason: 'No positive outliers found' };
+    }
+    
+    // Simple check: max must be at least 3x larger than second-max
+    const PEAK_MULTIPLIER = 3.0;
+    const isObviousPeak = maxValue >= PEAK_MULTIPLIER * Math.max(secondMaxValue, 0);
+    
+    console.log('📊 Simple peak detection:', {
+        maxPeriod: maxPeriod.index,
+        maxValue: maxValue.toFixed(6),
+        secondMaxPeriod: secondMaxPeriod.index,
+        secondMaxValue: secondMaxValue.toFixed(6),
+        ratio: (maxValue / Math.max(secondMaxValue, 0.0001)).toFixed(2),
+        isObviousPeak
+    });
+    
+    if (!isObviousPeak) {
+        return { isValid: false, reason: 'No obvious single peak found' };
+    }
+    
+    // Simple peak detection doesn't need z-scores or MAD
+    const outlierPeriod = maxPeriod;
+    
+    console.log('✅ Single obvious peak found:', {
+        period: outlierPeriod.index,
+        value: maxValue.toFixed(6),
+        secondMax: secondMaxValue.toFixed(6),
+        ratio: (maxValue / Math.max(secondMaxValue, 0.0001)).toFixed(2)
+    });
+    
+    return { 
+        isValid: true, 
+        outlierPeriods: [outlierPeriod]
+    };
+}
+
+// Helper: Calculate adjusted experiment statistics after removing lucky day
+function calculateAdjustedExperiment(experiment, luckyPeriod) {
     const {
         simulation: {
             actualConversionsBase,
             actualConversionsVariant,
             actualVisitorsBase,
-            actualVisitorsVariant,
-            timeline: { timePoints }
+            actualVisitorsVariant
         }
     } = experiment;
-
-    if (!timePoints || timePoints.length === 0) {
-        return null;
-    }
-
-    // Calculate total incremental conversions for the entire experiment using CI lower bound
-    const baseRate = actualVisitorsBase === 0 ? 0 : actualConversionsBase / actualVisitorsBase;
-    const variantRate = actualVisitorsVariant === 0 ? 0 : actualConversionsVariant / actualVisitorsVariant;
-    const totalDiffCI = computeDifferenceConfidenceInterval(
-        baseRate,
-        variantRate,
-        actualVisitorsBase,
-        actualVisitorsVariant,
-        alpha
-    );
-    // Use the lower bound of the CI (most conservative estimate)
-    // For directionFactor = -1, we want the upper bound (less negative) multiplied by -1
-    const ciBound = directionFactor === 1 ? totalDiffCI[0] : directionFactor * totalDiffCI[1];
-    const totalVisitors = actualVisitorsBase + actualVisitorsVariant;
-    const totalIncrementalConversions = ciBound * totalVisitors;
     
-    if (totalIncrementalConversions <= 0) {
-        return null;
-    }
-
-    // Calculate incremental conversions for all periods
-    const periodIncrementalConversions = [];
-    
-    timePoints.forEach((point, index) => {
-        if (point.base.visitors === 0 || point.variant.visitors === 0) {
-            periodIncrementalConversions.push({ index, value: 0, point: null });
-            return;
-        }
-        
-        const periodBaseRate = point.base.conversions / point.base.visitors;
-        const periodVariantRate = point.variant.conversions / point.variant.visitors;
-        const periodDiffCI = computeDifferenceConfidenceInterval(
-            periodBaseRate,
-            periodVariantRate,
-            point.base.visitors,
-            point.variant.visitors,
-            alpha
-        );
-        // Use the lower bound of the CI (most conservative estimate)
-        // For directionFactor = -1, we want the upper bound (less negative) multiplied by -1
-        const periodCIBound = directionFactor === 1 ? periodDiffCI[0] : directionFactor * periodDiffCI[1];
-        const periodTotalVisitors = point.base.visitors + point.variant.visitors;
-        const incrementalConversions = periodCIBound * periodTotalVisitors;
-        
-        periodIncrementalConversions.push({ index, value: incrementalConversions, point });
-    });
-
-    // Extract all incremental conversion values for outlier detection
-    const allIncrementalValues = periodIncrementalConversions.map(p => p.value);
-    
-    // Use IQR (Interquartile Range) method for outlier detection
-    // This is a well-known, robust method that doesn't require normal distribution assumptions
-    const sortedValues = [...allIncrementalValues].sort((a, b) => a - b);
-    
-    if (sortedValues.length < 4) {
-        // Need at least 4 data points for IQR method to be meaningful
-        return null;
-    }
-    
-    // Calculate quartiles using linear interpolation for better accuracy
-    // For Q1: 25th percentile, for Q3: 75th percentile
-    const getPercentile = (arr, percentile) => {
-        const index = (arr.length - 1) * percentile;
-        const lower = Math.floor(index);
-        const upper = Math.ceil(index);
-        const weight = index - lower;
-        return arr[lower] * (1 - weight) + arr[upper] * weight;
-    };
-    
-    const q1 = getPercentile(sortedValues, 0.25);
-    const q3 = getPercentile(sortedValues, 0.75);
-    const iqr = q3 - q1;
-    
-    if (iqr <= 0) {
-        // If IQR is 0 or negative, all values are the same, no outliers
-        return null;
-    }
-    
-    // Upper bound for outliers: Q3 + 2.0 * IQR (stricter threshold to reduce false positives)
-    // Using 2.0 instead of standard 1.5 makes outlier detection more conservative
-    // We only care about high outliers (lucky days), so we use upper bound
-    const outlierThreshold = q3 + 2.0 * iqr;
-    
-    // Find periods that are outliers (above the threshold)
-    const outlierPeriods = periodIncrementalConversions
-        .filter(p => p.value > outlierThreshold && p.value > 0 && p.point !== null)
-        .sort((a, b) => b.value - a.value);
-    
-    if (outlierPeriods.length === 0) {
-        return null;
-    }
-    
-    // Use the period with the highest incremental conversions among outliers
-    const luckyPeriodData = outlierPeriods[0];
-    const luckyIncrementalConversions = luckyPeriodData.value;
-    const luckyPeriod = { point: luckyPeriodData.point, index: luckyPeriodData.index };
-    const luckyDiffRaw = luckyPeriod.point.variant.conversions - luckyPeriod.point.base.conversions;
-    
-    // Calculate share of total incremental conversions
-    const share = luckyIncrementalConversions / totalIncrementalConversions;
-
-    if (!isFinite(share) || share < MIN_LUCKY_DAY_SHARE_FOR_DETECTION) {
-        return null;
-    }
-
     const adjustedBaseConversions = actualConversionsBase - luckyPeriod.point.base.conversions;
     const adjustedVariantConversions = actualConversionsVariant - luckyPeriod.point.variant.conversions;
     const adjustedBaseVisitors = actualVisitorsBase - luckyPeriod.point.base.visitors;
@@ -1471,37 +1645,227 @@ function detectLuckyDayTrap(experiment, directionFactor, alpha, significant) {
 
     const adjustedVariantRate = adjustedVariantVisitors === 0 ? 0 : adjustedVariantConversions / adjustedVariantVisitors;
     const adjustedBaseRate = adjustedBaseVisitors === 0 ? 0 : adjustedBaseConversions / adjustedBaseVisitors;
-    const adjustedPositive = directionFactor * (adjustedVariantRate - adjustedBaseRate) > 0;
-    const adjustedSignificant = adjustedPValue < alpha;
+    
+    return {
+        adjustedBaseConversions,
+        adjustedVariantConversions,
+        adjustedBaseVisitors,
+        adjustedVariantVisitors,
+        adjustedVariantRate,
+        adjustedBaseRate,
+        adjustedPValue
+    };
+}
 
-    // Required: The result must NOT be significant after removing the lucky day's data
-    // If it's still significant, then it's not a lucky day trap
-    if (adjustedSignificant) {
+// Helper: Calculate effect rates for original and adjusted experiments
+function calculateEffectRates(experiment, adjustedStats, directionFactor) {
+    const {
+        simulation: {
+            actualConversionsBase,
+            actualConversionsVariant,
+            actualVisitorsBase,
+            actualVisitorsVariant
+        }
+    } = experiment;
+    
+    const originalVariantRate = actualVisitorsVariant === 0 ? 0 : actualConversionsVariant / actualVisitorsVariant;
+    const originalBaseRate = actualVisitorsBase === 0 ? 0 : actualConversionsBase / actualVisitorsBase;
+    const originalPositive = directionFactor * (originalVariantRate - originalBaseRate) > 0;
+    
+    const adjustedPositive = directionFactor * (adjustedStats.adjustedVariantRate - adjustedStats.adjustedBaseRate) > 0;
+    
+    const effectWithLuckyDay = directionFactor * (originalVariantRate - originalBaseRate);
+    const effectWithoutLuckyDay = directionFactor * (adjustedStats.adjustedVariantRate - adjustedStats.adjustedBaseRate);
+    
+    return {
+        originalVariantRate,
+        originalBaseRate,
+        originalPositive,
+        adjustedPositive,
+        effectWithLuckyDay,
+        effectWithoutLuckyDay
+    };
+}
+
+// Helper: Calculate share of effect attributable to lucky day
+function calculateEffectShare(effectWithLuckyDay, effectWithoutLuckyDay) {
+    const MIN_SHARE_THRESHOLD = 0.5;
+    
+    if (Math.abs(effectWithLuckyDay) === 0) {
+        return { share: 0, meetsThreshold: false };
+    }
+    
+    const effectAttributableToLuckyDay = effectWithLuckyDay - effectWithoutLuckyDay;
+    const share = Math.abs(effectAttributableToLuckyDay) / Math.abs(effectWithLuckyDay);
+    const meetsThreshold = share >= MIN_SHARE_THRESHOLD;
+    
+    return { share, meetsThreshold, threshold: MIN_SHARE_THRESHOLD };
+}
+
+// Helper: Validate if lucky day meets trap criteria
+function validateLuckyDayTrap(significant, adjustedSignificant, originalPositive, adjustedPositive) {
+    if (significant) {
+        // Original was significant: must become non-significant OR significant in opposite direction
+        return !adjustedSignificant || (adjustedSignificant && adjustedPositive !== originalPositive);
+    } else {
+        // Original was NOT significant: must become significant
+        return adjustedSignificant;
+    }
+}
+
+// Helper: Format period label from lucky period
+function formatPeriodLabel(luckyPeriod) {
+    const { startDay, endDay } = luckyPeriod.point.period;
+    return startDay === endDay ? `day ${startDay}` : `days ${startDay}-${endDay}`;
+}
+
+// Main function: Detect lucky day trap
+// Simply looks for one period where variant's conversion rate is > 2x base's rate (when higher is better)
+// or base's conversion rate is > 2x variant's rate (when lower is better)
+function detectLuckyDayTrap(experiment, directionFactor, alpha, significant) {
+    // Validate input
+    if (!experiment || !experiment.simulation || !experiment.simulation.timeline) {
         return null;
     }
 
-    const { startDay, endDay } = luckyPeriod.point.period;
-    const periodLabel = startDay === endDay
-        ? `day ${startDay}`
-        : `days ${startDay}-${endDay}`;
-    const sharePercentage = share * 100;
+    const { timeline: { timePoints } } = experiment.simulation;
+    if (!timePoints || timePoints.length === 0) {
+        return null;
+    }
+
+    // Determine if higher is better (directionFactor = 1) or lower is better (directionFactor = -1)
+    const isHigherBetter = directionFactor > 0;
+
+    // Check each period for the 2x ratio requirement
+    for (let i = 0; i < timePoints.length; i++) {
+        const point = timePoints[i];
+        const baseVisitors = point.base.visitors;
+        const variantVisitors = point.variant.visitors;
+        const baseConversions = point.base.conversions;
+        const variantConversions = point.variant.conversions;
+
+        // Skip periods with no visitors
+        if (baseVisitors <= 0 || variantVisitors <= 0) {
+            continue;
+        }
+
+        const baseRate = baseConversions / baseVisitors;
+        const variantRate = variantConversions / variantVisitors;
+
+        // Skip periods with no conversions (can't calculate meaningful ratio)
+        if (baseRate === 0 && variantRate === 0) {
+            continue;
+        }
+
+        // Check for 2x ratio requirement
+        let isLuckyPeriod = false;
+        if (isHigherBetter) {
+            // Higher is better: variant rate > 2 * base rate
+            if (baseRate > 0 && variantRate >= MAX_RATE_RATIO * baseRate) {
+                isLuckyPeriod = true;
+            }
+        } else {
+            // Lower is better: base rate > 2 * variant rate (i.e., variant rate < base rate / 2)
+            if (variantRate > 0 && baseRate >= MAX_RATE_RATIO * variantRate) {
+                isLuckyPeriod = true;
+            }
+        }
+
+        if (isLuckyPeriod) {
+            // Found a lucky period - calculate additional info for display
+            const luckyPeriod = { point, index: i };
+            
+            // Calculate adjusted experiment statistics (for info only, not used as requirement)
+            const adjustedStats = calculateAdjustedExperiment(experiment, luckyPeriod);
+            const adjustedSignificant = adjustedStats ? adjustedStats.adjustedPValue < alpha : null;
+            
+            // Always calculate adjusted rates directly from experiment data
+            const {
+                simulation: {
+                    actualConversionsBase,
+                    actualConversionsVariant,
+                    actualVisitorsBase,
+                    actualVisitorsVariant
+                }
+            } = experiment;
+            
+            const adjustedBaseConversions = actualConversionsBase - luckyPeriod.point.base.conversions;
+            const adjustedVariantConversions = actualConversionsVariant - luckyPeriod.point.variant.conversions;
+            const adjustedBaseVisitors = actualVisitorsBase - luckyPeriod.point.base.visitors;
+            const adjustedVariantVisitors = actualVisitorsVariant - luckyPeriod.point.variant.visitors;
+            
+            const adjustedBaseRate = adjustedBaseVisitors > 0 ? adjustedBaseConversions / adjustedBaseVisitors : 0;
+            const adjustedVariantRate = adjustedVariantVisitors > 0 ? adjustedVariantConversions / adjustedVariantVisitors : 0;
+            
+            // Calculate effect rates and share (for info only, not used as requirement)
+            let share = null;
+            let adjustedPValue = null;
+            let adjustedPositive = null;
+            
+            if (adjustedStats) {
+                adjustedPValue = adjustedStats.adjustedPValue;
+                const effectRates = calculateEffectRates(experiment, adjustedStats, directionFactor);
+                adjustedPositive = effectRates.adjustedPositive;
+                const shareResult = calculateEffectShare(
+                    effectRates.effectWithLuckyDay,
+                    effectRates.effectWithoutLuckyDay
+                );
+                share = shareResult.share;
+            }
+            
+            // Calculate effect percentage (uplift) after excluding lucky day
+            let adjustedEffectPercentage = 0; // Default to 0 instead of null
+            if (isHigherBetter) {
+                // Higher is better: calculate uplift as (variantRate - baseRate) / baseRate * 100
+                if (adjustedBaseRate > 0) {
+                    adjustedEffectPercentage = ((adjustedVariantRate / adjustedBaseRate) - 1) * 100;
+                } else if (adjustedVariantRate > 0) {
+                    // If base rate is 0 but variant rate is positive, it's infinite improvement
+                    adjustedEffectPercentage = Infinity;
+                }
+                // else: Both rates are 0, keep default of 0
+            } else {
+                // Lower is better: calculate uplift as (baseRate - variantRate) / variantRate * 100
+                if (adjustedVariantRate > 0) {
+                    adjustedEffectPercentage = ((adjustedBaseRate / adjustedVariantRate) - 1) * 100;
+                } else if (adjustedBaseRate > 0) {
+                    // If variant rate is 0 but base rate is positive, it's infinite improvement
+                    adjustedEffectPercentage = Infinity;
+                }
+                // else: Both rates are 0, keep default of 0
+            }
+            
+
+            const periodLabel = formatPeriodLabel(luckyPeriod);
 
     return {
-        periodIndex: luckyPeriod.index,
-        startDay,
-        endDay,
+                periodIndex: i,
+                startDay: point.period.startDay,
+                endDay: point.period.endDay,
         share,
-        sharePercentage,
+                sharePercentage: share ? share * 100 : null,
         periodLabel,
-        conversionsBase: luckyPeriod.point.base.conversions,
-        conversionsVariant: luckyPeriod.point.variant.conversions,
-        visitorsBase: luckyPeriod.point.base.visitors,
-        visitorsVariant: luckyPeriod.point.variant.visitors,
+                conversionsBase: baseConversions,
+                conversionsVariant: variantConversions,
+                visitorsBase: baseVisitors,
+                visitorsVariant: variantVisitors,
         adjustedPValue,
         adjustedPositive,
         adjustedSignificant,
-        conversionsDifference: luckyDiffRaw
-    };
+                adjustedBaseRate,
+                adjustedVariantRate,
+                adjustedEffectPercentage,
+                baseRate,
+                variantRate,
+                rateRatio: isHigherBetter 
+                    ? (baseRate > 0 ? variantRate / baseRate : null)
+                    : (variantRate > 0 ? baseRate / variantRate : null)
+            };
+        }
+    }
+
+    // No lucky period found
+    return null;
 }
 
 function isExperimentOverdue(experiment) {
@@ -1596,7 +1960,6 @@ function filterUnderpoweredDesignData(experiment, correctSampleSize) {
     }
 
     if (!firstValidCheckpoint) {
-        console.log('❌ No valid checkpoint found - experiment needs more data');
         return null;
     }
 
@@ -1834,7 +2197,9 @@ function analyzeExperiment(experiment) {
     const baseRate = actualConversionsBase / actualVisitorsBase;
     const directionFactor = improvementDirection === IMPROVEMENT_DIRECTION.LOWER ? -1 : 1;
     const isEffectPositive = directionFactor * (variantRate - baseRate) > 0;
-    const luckyDayInfo = detectLuckyDayTrap(experiment, directionFactor, alpha, significant);
+
+    var hasLuckyDay = false;
+    const luckyDayInfo =  detectLuckyDayTrap(experiment, directionFactor, alpha, significant)
 
     // Check for Twyman's Law trap: extremely low p-value AND unusually large effect size
     const pValueString = pValue.toFixed(10);
@@ -1910,7 +2275,7 @@ function analyzeExperiment(experiment) {
             decisionReason = `Runtime completed but insufficient time coverage: reached sample size early but need full-week coverage for reliable inference. Keep running to complete full business cycles.`;
             summary = 'This experiment is progressing faster than expected. It already reached the planned sample size but we cannot make trustworthy decisions before achieving full-week coverage. Keep the experiment running to reach full-week coverage.';
         }
-    } else if (!significant || !isEffectPositive) { //finished or not, sample size is sufficient AND full-week coverage is achieved
+    } else if (!luckyDayInfo && (!significant || !isEffectPositive)) { //finished or not, sample size is sufficient AND full-week coverage is achieved
         trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
         trustworthyReason = trustworthyYesReason;
         decision = EXPERIMENT_DECISION.KEEP_BASE;
@@ -1932,24 +2297,10 @@ function analyzeExperiment(experiment) {
             followUpReason = 'Variant performs worse than base. Investigate why and iterate on the hypothesis.';
             summary = 'This Experiment is trustworthy and statistically significant in favor of Base.  Iterate by refining the hypothesis, the treatment and/or the experiment design.';
         }
-    } else {
-        // Check for Twyman's Law trap: suspiciously low p-value with positive effect
-        if (luckyDayInfo && isEffectPositive) {
-            trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
-            decision = EXPERIMENT_DECISION.KEEP_VARIANT;
-            followUp = EXPERIMENT_FOLLOW_UP.VALIDATE;
-
-            const dayLabel = luckyDayInfo.periodLabel || (
-                luckyDayInfo.startDay === luckyDayInfo.endDay
-                    ? `day ${luckyDayInfo.startDay}`
-                    : `days ${luckyDayInfo.startDay}-${luckyDayInfo.endDay}`
-            );
-            const sharePct = (luckyDayInfo.sharePercentage || (luckyDayInfo.share * 100)).toFixed(1);
-            trustworthyReason = `${dayLabel} delivers ${sharePct}% of the observed lift. Removing that period makes the result ${luckyDayInfo.adjustedSignificant ? 'ambiguous' : 'non-significant'}. The effect could be either due to the treatment (randomly concentreated in one day) or due to external factors occurring that day`;
-            decisionReason = `Overall result is significant (p=${pValue.toFixed(4)} < α=${alpha}), but excluding ${dayLabel} yields p=${luckyDayInfo.adjustedPValue.toFixed(4)}. Keep the variant while treating the uplift as provisional.`;
-            followUpReason = `Validate with a follow-up run or close monitoring to confirm the lift persists beyond the standout day.`;
-            summary = 'This Experiment shows evidence in favor of Variant but a large part of the effect is concentrated in one day. This could be random or due to external factors occurring that day. Validate with a follow-up run.';
-        } else if (hasTwymansLaw && isEffectPositive && significant) {
+    } else if (!luckyDayInfo) {
+        // No lucky day, significant and positive
+        // Check for Twyman's Law trap: extremely low p-value AND unusually large effect size
+        if (hasTwymansLaw) {
             trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
             trustworthyReason = `Twyman's Law detected: p-value is suspiciously low (p=${pValue.toFixed(10)}). Results that are "too good to be true" often indicate data quality issues, p-hacking, or other problems that make the experiment unreliable.`;
             decision = EXPERIMENT_DECISION.KEEP_VARIANT;
@@ -1973,6 +2324,36 @@ function analyzeExperiment(experiment) {
             } else {
                 decisionReason = `Variant is significantly higher: p=${pValue.toFixed(4)} (α=${alpha}), Δ=${(delta * 100).toFixed(2)}pp, CI[Δ]=[${(ciLow * 100).toFixed(2)}pp, ${(ciHigh * 100).toFixed(2)}pp].`;
             }
+        }
+    } else {
+        hasLuckyDay = true
+        // Lucky day detected: Generalized lucky-day concentration: experiment becomes untrustworthy
+        trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
+
+        const dayLabel = luckyDayInfo.periodLabel || (
+            luckyDayInfo.startDay === luckyDayInfo.endDay
+                ? `day ${luckyDayInfo.startDay}`
+                : `days ${luckyDayInfo.startDay}-${luckyDayInfo.endDay}`
+        );
+        const sharePct = (luckyDayInfo.sharePercentage || (luckyDayInfo.share * 100)).toFixed(1);
+        const adjustedPVal = typeof luckyDayInfo.adjustedPValue === 'number' ? luckyDayInfo.adjustedPValue.toFixed(4) : 'n/a';
+
+        if (significant && isEffectPositive) {
+            // Conclusive positive in the right direction: proceed but require validation
+            decision = EXPERIMENT_DECISION.KEEP_VARIANT;
+            followUp = EXPERIMENT_FOLLOW_UP.VALIDATE;
+            trustworthyReason = `${dayLabel} is a lucky day. Most of the total effect comes from ${dayLabel}. Total effect after excluding it: ${luckyDayInfo.adjustedEffectPercentage !== null && luckyDayInfo.adjustedEffectPercentage !== undefined ? luckyDayInfo.adjustedEffectPercentage.toFixed(2) + '%' : 'n/a'}, p-value: ${adjustedPVal} (${luckyDayInfo.adjustedSignificant ? 'significant' : 'not significant'}).`;
+            decisionReason = `Overall result is significant (p=${pValue.toFixed(4)} < α=${alpha}), but excluding ${dayLabel} yields p=${adjustedPVal}. Keep the variant while treating the uplift as provisional.`;
+            followUpReason = 'Validate with a follow-up run or close monitoring to confirm the lift persists beyond the lucky day.';
+            summary = 'This experiment shows evidence in favor of Variant but most of the total effect comes from a lucky day. Validate with a follow-up run.';
+        } else {
+            // Any other case (inconclusive or negative): rerun to confirm, do not ship
+            decision = EXPERIMENT_DECISION.KEEP_BASE;
+            followUp = EXPERIMENT_FOLLOW_UP.RERUN;
+            trustworthyReason = `${dayLabel} is a lucky day. Most of the total effect comes from ${dayLabel}. Total effect after excluding it: ${luckyDayInfo.adjustedEffectPercentage !== null && luckyDayInfo.adjustedEffectPercentage !== undefined ? luckyDayInfo.adjustedEffectPercentage.toFixed(2) + '%' : 'n/a'}, p-value: ${adjustedPVal} (${luckyDayInfo.adjustedSignificant ? 'significant' : 'not significant'}).`;
+            decisionReason = `Most of the total effect comes from ${dayLabel}; excluding it yields p=${adjustedPVal}. Results are not trustworthy. Rerun the experiment to validate.`;
+            followUpReason = 'Rerun the experiment to ensure the effect is not driven by a lucky day.';
+            summary = 'Most of the total effect comes from a lucky day. Results are not trustworthy; rerun the experiment.';
         }
     }
 
@@ -2108,7 +2489,7 @@ function analyzeExperiment(experiment) {
                 actualRuntime: currentRuntimeDays,
                 extraDays: Math.max(0, currentRuntimeDays - requiredRuntimeDays)
             },
-            luckyDayTrap: luckyDayInfo ? {
+            luckyDayTrap: hasLuckyDay ? {
                 periodIndex: luckyDayInfo.periodIndex,
                 startDay: luckyDayInfo.startDay,
                 endDay: luckyDayInfo.endDay,
@@ -2118,6 +2499,7 @@ function analyzeExperiment(experiment) {
                 adjustedPValue: luckyDayInfo.adjustedPValue,
                 adjustedSignificant: luckyDayInfo.adjustedSignificant,
                 adjustedPositive: luckyDayInfo.adjustedPositive,
+                adjustedEffectPercentage: luckyDayInfo.adjustedEffectPercentage,
                 conversionsDifference: luckyDayInfo.conversionsDifference,
                 conversionsBase: luckyDayInfo.conversionsBase,
                 conversionsVariant: luckyDayInfo.conversionsVariant

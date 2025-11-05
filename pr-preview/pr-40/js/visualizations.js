@@ -656,34 +656,23 @@ const ChartManager = {
         this.destroyChart(canvasId);
 
         // Add data loss message to tooltip if in debug mode and there's data loss
+        // Add lucky day tooltip message in normal mode
         const tooltipCallbacks = {
             ...options.plugins?.tooltip?.callbacks,
             afterBody: (tooltipItems) => {
                 const index = tooltipItems[0]?.dataIndex;
                 const messages = [];
 
+                // Lucky day tooltip - show in normal mode
+                const luckyDayData = window.currentAnalysis?.analysis?.luckyDayTrap;
+                if (luckyDayData && luckyDayData.periodIndex === index) {
+                    messages.push(`\n⚠️ Lucky day`);
+                }
+
+                // Data loss tooltip - only show in debug mode
                 if (UIController.debugMode()) {
                     if (window.currentAnalysis?.analysis?.dataLossIndex === index) {
                         messages.push('\n⚠️ Data Loss Detected');
-                    }
-
-                    const luckyDayData = window.currentAnalysis?.analysis?.luckyDayTrap;
-                    if (luckyDayData && luckyDayData.periodIndex === index) {
-                        const dayLabel = luckyDayData.periodLabel || (
-                            luckyDayData.startDay === luckyDayData.endDay
-                                ? `day ${luckyDayData.startDay}`
-                                : `days ${luckyDayData.startDay}-${luckyDayData.endDay}`
-                        );
-                        const shareValue = typeof luckyDayData.sharePercentage === 'number'
-                            ? luckyDayData.sharePercentage
-                            : luckyDayData.share * 100;
-                        const sharePct = shareValue.toFixed(1);
-                        const adjustedPValue = typeof luckyDayData.adjustedPValue === 'number'
-                            ? luckyDayData.adjustedPValue.toFixed(4)
-                            : 'n/a';
-                        const significanceLabel = luckyDayData.adjustedSignificant ? 'still significant' : 'no longer significant';
-
-                        messages.push(`\n⚠️ Suspicious spike: ${dayLabel} drives ${sharePct}% of the observed uplift (${significanceLabel} without it, p=${adjustedPValue}). Twyman's Law says spikes deserve a double-check.`);
                     }
                 }
 
