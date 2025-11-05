@@ -2349,11 +2349,11 @@ function analyzeExperiment(experiment) {
         } else {
             // Any other case (inconclusive or negative): rerun to confirm, do not ship
             decision = EXPERIMENT_DECISION.KEEP_BASE;
-            followUp = EXPERIMENT_FOLLOW_UP.RERUN;
-            trustworthyReason = `${dayLabel} is a lucky day. Most of the total effect comes from ${dayLabel}. Total effect after excluding it: ${luckyDayInfo.adjustedEffectPercentage !== null && luckyDayInfo.adjustedEffectPercentage !== undefined ? luckyDayInfo.adjustedEffectPercentage.toFixed(2) + '%' : 'n/a'}, p-value: ${adjustedPVal} (${luckyDayInfo.adjustedSignificant ? 'significant' : 'not significant'}).`;
-            decisionReason = `Most of the total effect comes from ${dayLabel}; excluding it yields p=${adjustedPVal}. Results are not trustworthy. Rerun the experiment to validate.`;
-            followUpReason = 'Rerun the experiment to ensure the effect is not driven by a lucky day.';
-            summary = 'Most of the total effect comes from a lucky day. Results are not trustworthy; rerun the experiment.';
+            followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
+            trustworthyReason = `Total effect largely influenced by ${dayLabel}. Total effect after excluding it: ${luckyDayInfo.adjustedEffectPercentage !== null && luckyDayInfo.adjustedEffectPercentage !== undefined ? luckyDayInfo.adjustedEffectPercentage.toFixed(2) + '%' : 'n/a'}, p-value: ${adjustedPVal} (${luckyDayInfo.adjustedSignificant ? 'significant' : 'not significant'}).`;
+            decisionReason = `Even with a lucky day, the data shows no evidence in favor of Variant.`;
+            followUpReason = 'Iterate by refining the hypothesis, the treatment and/or the experiment design.';
+            summary = 'This experiment shows no evidence in favor of Variant, even with a lucky day. Investigate the cause of the lucky day and iterate by refining the hypothesis, the treatment and/or the experiment design.';
         }
     }
 

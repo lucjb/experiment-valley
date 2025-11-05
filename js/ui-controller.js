@@ -533,15 +533,15 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [winner(), inconclusive(), partialLoser()],
-                2: [partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch(), partialLoser().withBaseRateMismatch()],
-                3: [slowCompletion(), fastWinner(), fastLoserWithPartialWeek()],
+                1: [inconclusive().withLuckyDayTrap(), inconclusive(), partialLoser()],
+                2: [partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch(), fastLoserWithPartialWeek()],
+                3: [slowCompletion(), fastWinner(), partialLoser().withBaseRateMismatch()],
                 4: [luckyDayTrap(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
                 5: [partialWinner(), winner().withLowerIsBetter(), inconclusive()],
-                6: [twymansLawTrap(), inconclusive(), fastLoserWithPartialWeek()],
+                6: [twymansLawTrap(), inconclusive(), bigLoser().withLowerIsBetter().withLuckyDayTrap()],
                 7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()],
                 8: [partialLoser().withSampleRatioMismatch(), winner(), loser().withLowerIsBetter()],
-                9: [inconclusive().withOverdue(), winner(), inconclusive()],
+                9: [inconclusive().withOverdue(), winner(), inconclusive().withLuckyDayTrap()],
                 10: [winner().withUnderpoweredDesign(), winner(), twymansLawTrap().withBaseRateMismatch().withUnderpoweredDesign().withOverdue()]
             };
 
