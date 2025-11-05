@@ -533,10 +533,10 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [luckyDayTrap(), winner(), inconclusive()],
+                1: [luckyDayTrap(), inconclusive(), partialLoser()],
                 2: [partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch(), partialLoser().withBaseRateMismatch()],
                 3: [slowCompletion(), fastWinner(), fastLoserWithPartialWeek()],
-                4: [slowCompletion().withBaseRateMismatch(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
+                4: [luckyDayTrap(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
                 5: [partialWinner(), winner().withLowerIsBetter(), inconclusive()],
                 6: [twymansLawTrap(), inconclusive(), fastLoserWithPartialWeek()],
                 7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()],
@@ -991,16 +991,30 @@ const UIController = {
                 ? `day ${luckyDayData.startDay}`
                 : `days ${luckyDayData.startDay}-${luckyDayData.endDay}`
         );
-        const shareValue = typeof luckyDayData.sharePercentage === 'number'
-            ? luckyDayData.sharePercentage
-            : luckyDayData.share * 100;
-        const sharePct = shareValue.toFixed(1);
-        const adjustedPValue = typeof luckyDayData.adjustedPValue === 'number'
+
+        // Format effect percentage
+        let effectPercentage = 'n/a';
+        if (luckyDayData.adjustedEffectPercentage !== null && luckyDayData.adjustedEffectPercentage !== undefined) {
+            if (luckyDayData.adjustedEffectPercentage === Infinity || luckyDayData.adjustedEffectPercentage === -Infinity) {
+                effectPercentage = '∞';
+            } else if (typeof luckyDayData.adjustedEffectPercentage === 'number' && !isNaN(luckyDayData.adjustedEffectPercentage) && isFinite(luckyDayData.adjustedEffectPercentage)) {
+                effectPercentage = luckyDayData.adjustedEffectPercentage.toFixed(2);
+            }
+        }
+        
+        // Format p-value
+        const pValueText = luckyDayData.adjustedPValue !== null && luckyDayData.adjustedPValue !== undefined
             ? luckyDayData.adjustedPValue.toFixed(4)
             : 'n/a';
-        const significanceLabel = luckyDayData.adjustedSignificant ? 'still significant' : 'no longer significant';
+        
+        // Determine significance
+        const significanceText = luckyDayData.adjustedSignificant === true
+            ? 'significant'
+            : luckyDayData.adjustedSignificant === false
+            ? 'not significant'
+            : 'n/a';
 
-        const message = `${dayLabel} shows a suspicious spike (${sharePct}% of the observed uplift).\nWithout it the result is ${significanceLabel} (p=${adjustedPValue}).\nTwyman's Law: if it looks too good to be true, double-check with a follow-up run.`;
+        const message = `Lucky Day: Most of the total effect comes from ${dayLabel}.\nTotal effect after excluding it: ${effectPercentage}%, p-value: ${pValueText} (${significanceText})`;
 
         comparisonTab.appendChild(document.createTextNode(' '));
         const warningIcon = this.createWarningIcon(message, { type: 'lucky-day' });
