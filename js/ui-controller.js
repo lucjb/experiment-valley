@@ -533,7 +533,7 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [luckyDayTrap(), inconclusive(), partialLoser()],
+                1: [winner(), inconclusive(), partialLoser()],
                 2: [partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch(), partialLoser().withBaseRateMismatch()],
                 3: [slowCompletion(), fastWinner(), fastLoserWithPartialWeek()],
                 4: [luckyDayTrap(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
@@ -1014,7 +1014,7 @@ const UIController = {
             ? 'not significant'
             : 'n/a';
 
-        const message = `Lucky Day: Most of the total effect comes from ${dayLabel}.\nTotal effect after excluding it: ${effectPercentage}%, p-value: ${pValueText} (${significanceText})`;
+        const message = `Lucky Day: Most of the total effect comes from ${dayLabel}.\nTotal effect after excluding it: ${effectPercentage}%, p-value: ${pValueText} (${significanceText})\n\n<a href="lucky-day-trap.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about lucky day traps →</a>`;
 
         comparisonTab.appendChild(document.createTextNode(' '));
         const warningIcon = this.createWarningIcon(message, { type: 'lucky-day' });
