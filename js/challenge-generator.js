@@ -1003,7 +1003,8 @@ class ChallengeDesign {
         twymanFabrication = false,
         overdue = false,
         underpoweredDesign = false,
-        luckyDayTrap = false
+        luckyDayTrap = false,
+        timeLimitSeconds = null
     } = {}) {
         this.timeProgress = timeProgress;
         this.baseRateMismatch = baseRateMismatch;
@@ -1016,10 +1017,11 @@ class ChallengeDesign {
         this.overdue = overdue;
         this.underpoweredDesign = underpoweredDesign;
         this.luckyDayTrap = luckyDayTrap;
+        this.timeLimitSeconds = timeLimitSeconds;
     }
 
     generate() {
-        return generateABTestChallenge(
+        const challenge = generateABTestChallenge(
             this.timeProgress,
             this.baseRateMismatch,
             this.effectSize,
@@ -1032,6 +1034,12 @@ class ChallengeDesign {
             this.underpoweredDesign,
             this.luckyDayTrap
         );
+
+        if (this.timeLimitSeconds !== null && !Number.isNaN(this.timeLimitSeconds)) {
+            challenge.timeLimitSeconds = this.timeLimitSeconds;
+        }
+
+        return challenge;
     }
 
     withBaseRateMismatch() {
@@ -1095,6 +1103,13 @@ class ChallengeDesign {
 
     withLuckyDayTrap() {
         this.luckyDayTrap = true;
+        return this;
+    }
+
+    withTimeLimit(seconds = 30) {
+        const numericSeconds = Number(seconds);
+        const parsedSeconds = Number.isFinite(numericSeconds) ? numericSeconds : 30;
+        this.timeLimitSeconds = Math.max(0, Math.round(parsedSeconds));
         return this;
     }
 
