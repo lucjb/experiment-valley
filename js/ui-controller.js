@@ -22,7 +22,15 @@ const UIController = {
         roundResults: [], // Store results for each experiment in the current round
         sessionStartPersonalBest: null, // Store personal best data at session start
         sessionStartRoundsRank: null, // Store starting rounds rank
-        sessionStartImpactRank: null // Store starting impact rank
+        sessionStartImpactRank: null, // Store starting impact rank
+        decisionTimer: {
+            enabled: false,
+            duration: 0,
+            remaining: 0,
+            intervalId: null,
+            hasExpired: false
+        },
+        lastSubmissionTriggeredByTimeout: false
     },
 
     init() {
@@ -35,6 +43,156 @@ const UIController = {
 
     debugMode() {
         return document.getElementById('debug-mode').checked;
+    },
+
+    formatCountdown(seconds) {
+        const safeSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
+        const minutes = Math.floor(safeSeconds / 60);
+        const secs = safeSeconds % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    },
+
+    getDecisionTimerElements() {
+        return {
+            container: document.getElementById('decision-timer'),
+            label: document.getElementById('decision-timer-label'),
+            value: document.getElementById('decision-timer-value')
+        };
+    },
+
+    updateDecisionTimerDisplay(remainingSeconds) {
+        const { container, label, value } = this.getDecisionTimerElements();
+        if (!container || !label || !value) return;
+
+        const remaining = Math.max(0, Math.floor(Number(remainingSeconds) || 0));
+        value.textContent = this.formatCountdown(remaining);
+
+        if (remaining <= 0) {
+            label.textContent = "Time's up!";
+            container.classList.remove('urgent');
+            container.classList.add('expired');
+        } else {
+            label.textContent = 'Time Remaining';
+            if (remaining <= 10) {
+                container.classList.add('urgent');
+            } else {
+                container.classList.remove('urgent');
+            }
+            container.classList.remove('expired');
+        }
+    },
+
+    hideDecisionTimer() {
+        const { container, label } = this.getDecisionTimerElements();
+        if (!container) return;
+        container.classList.add('hidden');
+        container.classList.remove('urgent', 'expired');
+        if (label) {
+            label.textContent = 'Time Remaining';
+        }
+    },
+
+    showDecisionTimer() {
+        const { container } = this.getDecisionTimerElements();
+        if (!container) return;
+        container.classList.remove('hidden');
+    },
+
+    stopDecisionTimer({ hide = false, reset = false } = {}) {
+        const timer = this.state.decisionTimer;
+        if (timer.intervalId) {
+            clearInterval(timer.intervalId);
+            timer.intervalId = null;
+        }
+        timer.enabled = false;
+        if (reset) {
+            timer.duration = 0;
+            timer.remaining = 0;
+            timer.hasExpired = false;
+        }
+        if (hide) {
+            this.hideDecisionTimer();
+        }
+    },
+
+    initializeDecisionTimer(challenge) {
+        this.stopDecisionTimer({ hide: true, reset: true });
+        this.state.lastSubmissionTriggeredByTimeout = false;
+
+        const config = challenge?.gameplay?.decisionTimer;
+        const { container } = this.getDecisionTimerElements();
+        if (!container || !config || !config.enabled) {
+            return;
+        }
+
+        const seconds = Math.max(1, Math.floor(Number(config.seconds) || 30));
+
+        this.state.decisionTimer.enabled = true;
+        this.state.decisionTimer.duration = seconds;
+        this.state.decisionTimer.remaining = seconds;
+        this.state.decisionTimer.hasExpired = false;
+
+        this.showDecisionTimer();
+        this.updateDecisionTimerDisplay(seconds);
+
+        this.state.decisionTimer.intervalId = setInterval(() => {
+            this.tickDecisionTimer();
+        }, 1000);
+    },
+
+    tickDecisionTimer() {
+        const timer = this.state.decisionTimer;
+        if (!timer.enabled) return;
+
+        timer.remaining = Math.max(0, timer.remaining - 1);
+        this.updateDecisionTimerDisplay(timer.remaining);
+
+        if (timer.remaining <= 0 && !timer.hasExpired) {
+            this.handleDecisionTimeout();
+        }
+    },
+
+    handleDecisionTimeout() {
+        if (this.state.hasSubmitted) return;
+        const timer = this.state.decisionTimer;
+        if (timer.hasExpired) return;
+
+        timer.hasExpired = true;
+        this.state.lastSubmissionTriggeredByTimeout = true;
+
+        this.stopDecisionTimer();
+        timer.remaining = 0;
+        this.updateDecisionTimerDisplay(0);
+        this.showDecisionTimer();
+
+        this.ensureDecisionsSelected();
+
+        const submitButton = document.getElementById('submit-decision');
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        this.evaluateDecision();
+    },
+
+    ensureDecisionsSelected() {
+        const ensureSelection = (name, stateKey) => {
+            if (this.state[stateKey]) {
+                return;
+            }
+            const buttons = Array.from(document.querySelectorAll(`.decision-btn[name="${name}"]`))
+                .filter(button => !button.disabled);
+            if (!buttons.length) {
+                return;
+            }
+            const randomButton = buttons[Math.floor(Math.random() * buttons.length)];
+            randomButton.click();
+        };
+
+        ensureSelection('trust', 'trustDecision');
+        ensureSelection('decision', 'implementDecision');
+        ensureSelection('follow_up', 'followUpDecision');
     },
 
     // Initialize all tooltips globally with consistent clickable behavior
@@ -341,6 +499,8 @@ const UIController = {
     },
 
     resetGameState() {
+        this.stopDecisionTimer({ hide: true, reset: true });
+        this.state.lastSubmissionTriggeredByTimeout = false;
         // Reset all state variables
         this.state.totalAttempts = 0;
         this.state.totalDecisions = 0;
@@ -360,6 +520,13 @@ const UIController = {
         this.state.currentCompetitor = null;
         this.state.selectedCompetitor = null;
         this.state.roundResults = [];
+        this.state.decisionTimer = {
+            enabled: false,
+            duration: 0,
+            remaining: 0,
+            intervalId: null,
+            hasExpired: false
+        };
 
         // Reset UI elements
         this.updateRoundDisplay();
@@ -533,16 +700,16 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [winner(), inconclusive(), partialLoser()],
-                2: [partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch(), fastLoserWithPartialWeek()],
-                3: [slowCompletion(), fastWinner(), partialLoser().withBaseRateMismatch()],
-                4: [luckyDayTrap(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
-                5: [partialWinner(), winner().withLowerIsBetter(), inconclusive()],
-                6: [twymansLawTrap(), inconclusive(), bigLoser().withLowerIsBetter().withLuckyDayTrap()],
-                7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()],
-                8: [partialLoser().withSampleRatioMismatch(), winner(), loser().withLowerIsBetter()],
-                9: [inconclusive().withOverdue(), winner(), inconclusive().withLuckyDayTrap()],
-                10: [winner().withUnderpoweredDesign(), winner(), twymansLawTrap().withBaseRateMismatch().withUnderpoweredDesign().withOverdue()]
+                1: [winner().withTimeout(), inconclusive(), partialLoser()],
+                2: [partialLoser().withVisitorsLoss().withTimeout(), partialLoser().withSampleRatioMismatch(), fastLoserWithPartialWeek()],
+                3: [slowCompletion().withTimeout(), fastWinner(), partialLoser().withBaseRateMismatch()],
+                4: [luckyDayTrap().withTimeout(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
+                5: [partialWinner().withTimeout(), winner().withLowerIsBetter(), inconclusive()],
+                6: [twymansLawTrap().withTimeout(), inconclusive(), bigLoser().withLowerIsBetter().withLuckyDayTrap()],
+                7: [partialWinner().withLowerIsBetter().withTimeout(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()],
+                8: [partialLoser().withSampleRatioMismatch().withTimeout(), winner(), loser().withLowerIsBetter()],
+                9: [inconclusive().withOverdue().withTimeout(), winner(), inconclusive().withLuckyDayTrap()],
+                10: [winner().withUnderpoweredDesign().withTimeout(), winner(), twymansLawTrap().withBaseRateMismatch().withUnderpoweredDesign().withOverdue()]
             };
 
             // Reset visitors header
@@ -590,6 +757,7 @@ const UIController = {
 
             // Reset decisions
             this.resetDecisions();
+            this.initializeDecisionTimer(this.state.challenge);
             if (this.debugMode()) {
                 this.addDebugAlerts();
             }
@@ -2022,6 +2190,8 @@ const UIController = {
     },
 
     resetDecisions() {
+        this.stopDecisionTimer({ hide: true, reset: true });
+        this.state.lastSubmissionTriggeredByTimeout = false;
         // Reset all decision buttons
         document.querySelectorAll('.decision-btn').forEach(button => {
             button.style.opacity = '0.7';
@@ -2054,6 +2224,16 @@ const UIController = {
                 ModalManager.show('feedback-modal');
                 return;
             }
+
+            const timerState = this.state.decisionTimer || {};
+            const timerSnapshot = {
+                enabled: !!timerState.enabled,
+                duration: timerState.duration || 0,
+                remaining: timerState.remaining || 0
+            };
+            const triggeredByTimeout = !!this.state.lastSubmissionTriggeredByTimeout;
+
+            this.stopDecisionTimer();
 
             // Mark that we've submitted
             this.state.hasSubmitted = true;
@@ -2232,6 +2412,12 @@ const UIController = {
                                 userImpact,
                                 competitorImpact,
                                 actualEffectCpd: Math.round(experiment.simulation.actualEffectSize * experiment.experiment.visitorsPerDay)
+                            },
+                            timing: {
+                                enabled: timerSnapshot.enabled,
+                                limitSeconds: timerSnapshot.duration,
+                                secondsRemaining: Math.max(0, Math.floor(timerSnapshot.remaining)),
+                                triggeredByTimeout
                             }
                         }
                     });
@@ -2636,6 +2822,8 @@ const UIController = {
         } catch (error) {
             console.error('Error evaluating decision:', error);
             ModalManager.showFeedback(false, 'Error evaluating decision. Please try again.');
+        } finally {
+            this.state.lastSubmissionTriggeredByTimeout = false;
         }
     },
 
