@@ -1003,7 +1003,9 @@ class ChallengeDesign {
         twymanFabrication = false,
         overdue = false,
         underpoweredDesign = false,
-        luckyDayTrap = false
+        luckyDayTrap = false,
+        timeOutMode = false,
+        timeLimitSeconds = 30
     } = {}) {
         this.timeProgress = timeProgress;
         this.baseRateMismatch = baseRateMismatch;
@@ -1016,6 +1018,8 @@ class ChallengeDesign {
         this.overdue = overdue;
         this.underpoweredDesign = underpoweredDesign;
         this.luckyDayTrap = luckyDayTrap;
+        this.timeOutMode = timeOutMode;
+        this.timeLimitSeconds = timeLimitSeconds;
     }
 
     generate() {
@@ -1030,7 +1034,9 @@ class ChallengeDesign {
             this.twymanFabrication,
             this.overdue,
             this.underpoweredDesign,
-            this.luckyDayTrap
+            this.luckyDayTrap,
+            this.timeOutMode,
+            this.timeLimitSeconds
         );
     }
 
@@ -1095,6 +1101,12 @@ class ChallengeDesign {
 
     withLuckyDayTrap() {
         this.luckyDayTrap = true;
+        return this;
+    }
+
+    withTimeLimit(seconds = 30) {
+        this.timeOutMode = true;
+        this.timeLimitSeconds = Math.max(5, seconds);
         return this;
     }
 
@@ -1250,6 +1262,8 @@ const VISITORS_LOSS = { NO: false, YES: true };
 const IMPROVEMENT_DIRECTION = { HIGHER: 'HIGHER_IS_BETTER', LOWER: 'LOWER_IS_BETTER' };
 const MAX_RATE_RATIO = 2.5;
 
+const DEFAULT_TIME_LIMIT_SECONDS = 30;
+
 function generateABTestChallenge(
     timeProgress = TIME_PROGRESS.FULL,
     baseRateMismatch = BASE_RATE_MISMATCH.NO,
@@ -1261,7 +1275,9 @@ function generateABTestChallenge(
     twymanFabrication = false,
     overdue = false,
     underpoweredDesign = false,
-    luckyDayTrap = false) {
+    luckyDayTrap = false,
+    timeOutMode = false,
+    timeLimitSeconds = DEFAULT_TIME_LIMIT_SECONDS) {
 
     // Predefined options for each parameter ,
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
@@ -1454,6 +1470,10 @@ function generateABTestChallenge(
             visitorUplift: visitorUplift,
             conversionUplift: conversionUplift,
             luckyDayTrap: luckyDayTrap
+        },
+        gameplay: {
+            timeOutMode: !!timeOutMode,
+            timeLimitSeconds: timeOutMode ? (Number.isFinite(timeLimitSeconds) ? timeLimitSeconds : DEFAULT_TIME_LIMIT_SECONDS) : null
         }
     };
 }

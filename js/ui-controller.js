@@ -1,4 +1,6 @@
 // UI Controller
+const DECISION_TIMER_DEFAULT_SECONDS = 30;
+
 const UIController = {
     state: {
         totalAttempts: 0,
@@ -22,7 +24,12 @@ const UIController = {
         roundResults: [], // Store results for each experiment in the current round
         sessionStartPersonalBest: null, // Store personal best data at session start
         sessionStartRoundsRank: null, // Store starting rounds rank
-        sessionStartImpactRank: null // Store starting impact rank
+        sessionStartImpactRank: null, // Store starting impact rank
+        timerIntervalId: null,
+        timeRemaining: null,
+        timeLimitSeconds: null,
+        timeOutModeActive: false,
+        timerExpired: false
     },
 
     init() {
@@ -136,20 +143,9 @@ const UIController = {
         // Decision buttons
         document.querySelectorAll('.decision-btn').forEach(button => {
             button.addEventListener('click', () => {
-                // Remove active state from all buttons in the same group
                 const name = button.getAttribute('name');
-                document.querySelectorAll(`.decision-btn[name="${name}"]`).forEach(btn => {
-                    btn.style.opacity = '0.7';
-                    btn.style.transform = 'scale(1)';
-                    btn.classList.remove('selected');
-                });
-
-                // Add active state to clicked button
-                button.style.opacity = '1';
-                button.style.transform = 'scale(1.05)';
-                button.classList.add('selected');
-
-                this.handleDecision(name, button.getAttribute('value'));
+                const value = button.getAttribute('value');
+                this.selectDecisionButton(name, value);
             });
 
             // Add hover effects
@@ -167,7 +163,7 @@ const UIController = {
 
             // Add touch event listeners alongside click events
             button.addEventListener('touchstart', () => {
-                this.handleDecision(button.getAttribute('name'), button.getAttribute('value'));
+                this.selectDecisionButton(button.getAttribute('name'), button.getAttribute('value'));
             });
         });
 
@@ -536,13 +532,13 @@ const UIController = {
                 1: [winner(), inconclusive(), partialLoser()],
                 2: [partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch(), fastLoserWithPartialWeek()],
                 3: [slowCompletion(), fastWinner(), partialLoser().withBaseRateMismatch()],
-                4: [luckyDayTrap(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
-                5: [partialWinner(), winner().withLowerIsBetter(), inconclusive()],
-                6: [twymansLawTrap(), inconclusive(), bigLoser().withLowerIsBetter().withLuckyDayTrap()],
-                7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()],
-                8: [partialLoser().withSampleRatioMismatch(), winner(), loser().withLowerIsBetter()],
-                9: [inconclusive().withOverdue(), winner(), inconclusive().withLuckyDayTrap()],
-                10: [winner().withUnderpoweredDesign(), winner(), twymansLawTrap().withBaseRateMismatch().withUnderpoweredDesign().withOverdue()]
+                4: [luckyDayTrap(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser().withTimeLimit()],
+                5: [partialWinner(), winner().withLowerIsBetter(), inconclusive().withTimeLimit()],
+                6: [twymansLawTrap(), inconclusive(), bigLoser().withLowerIsBetter().withLuckyDayTrap().withTimeLimit()],
+                7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter().withTimeLimit()],
+                8: [partialLoser().withSampleRatioMismatch(), winner(), loser().withLowerIsBetter().withTimeLimit()],
+                9: [inconclusive().withOverdue(), winner(), inconclusive().withLuckyDayTrap().withTimeLimit()],
+                10: [winner().withUnderpoweredDesign(), winner(), twymansLawTrap().withBaseRateMismatch().withUnderpoweredDesign().withOverdue().withTimeLimit()]
             };
 
             // Reset visitors header
@@ -596,6 +592,9 @@ const UIController = {
 
             // Hide loading state
             this.hideLoadingState();
+
+            // Start countdown timer if the challenge uses time out mode
+            this.initializeTimerForChallenge();
 
             // Ensure the execution bar always animates from 0 after content is visible
             setTimeout(() => {
@@ -1991,6 +1990,27 @@ const UIController = {
         this.updateExperimentDots();
     },
 
+    selectDecisionButton(decisionType, value) {
+        const buttons = Array.from(document.querySelectorAll(`.decision-btn[name="${decisionType}"]`));
+        if (buttons.length === 0) {
+            return;
+        }
+
+        buttons.forEach(btn => {
+            if (btn.getAttribute('value') === value) {
+                btn.style.opacity = '1';
+                btn.style.transform = 'scale(1.05)';
+                btn.classList.add('selected');
+            } else {
+                btn.style.opacity = '0.7';
+                btn.style.transform = 'scale(1)';
+                btn.classList.remove('selected');
+            }
+        });
+
+        this.handleDecision(decisionType, value);
+    },
+
     handleDecision(decisionType, value) {
         if (decisionType === 'trust') {
             this.state.trustDecision = value;
@@ -2022,6 +2042,8 @@ const UIController = {
     },
 
     resetDecisions() {
+        this.stopTimer();
+
         // Reset all decision buttons
         document.querySelectorAll('.decision-btn').forEach(button => {
             button.style.opacity = '0.7';
@@ -2036,11 +2058,158 @@ const UIController = {
         this.state.implementDecision = null;
         this.state.followUpDecision = null;
         this.state.hasSubmitted = false;
+        this.state.timerExpired = false;
 
         // Reset submit button
         const submitButton = document.getElementById('submit-decision');
         submitButton.disabled = true;
         submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+    },
+
+    initializeTimerForChallenge() {
+        const challenge = this.state.challenge;
+        this.stopTimer();
+
+        const timeOutMode = challenge?.gameplay?.timeOutMode;
+        if (!timeOutMode) {
+            return;
+        }
+
+        const configuredLimit = Number.isFinite(challenge.gameplay.timeLimitSeconds)
+            ? challenge.gameplay.timeLimitSeconds
+            : DECISION_TIMER_DEFAULT_SECONDS;
+
+        this.state.timeOutModeActive = true;
+        this.state.timeLimitSeconds = Math.max(5, configuredLimit);
+        this.state.timeRemaining = this.state.timeLimitSeconds;
+        this.state.timerExpired = false;
+
+        this.updateTimerDisplay(this.state.timeRemaining);
+
+        this.state.timerIntervalId = setInterval(() => {
+            this.tickTimer();
+        }, 1000);
+    },
+
+    tickTimer() {
+        if (!this.state.timeOutModeActive) {
+            return;
+        }
+
+        if (this.state.hasSubmitted) {
+            this.stopTimer();
+            return;
+        }
+
+        const nextValue = (typeof this.state.timeRemaining === 'number'
+            ? this.state.timeRemaining - 1
+            : this.state.timeLimitSeconds ?? DECISION_TIMER_DEFAULT_SECONDS);
+
+        this.state.timeRemaining = Math.max(0, nextValue);
+
+        if (this.state.timeRemaining <= 0) {
+            this.updateTimerDisplay(0, { expired: true });
+            this.stopTimer({ hideDisplay: false });
+            this.handleTimeOut();
+        } else {
+            this.updateTimerDisplay(this.state.timeRemaining);
+        }
+    },
+
+    updateTimerDisplay(remainingSeconds, { expired = false } = {}) {
+        const container = document.getElementById('decision-timer-container');
+        const label = document.getElementById('decision-timer-label');
+        const timerValue = document.getElementById('decision-timer');
+
+        if (!container || !label || !timerValue) {
+            return;
+        }
+
+        container.classList.remove('timer-expired', 'timer-warning');
+
+        if (remainingSeconds == null) {
+            container.classList.add('hidden');
+            label.textContent = 'Time Remaining';
+            timerValue.textContent = '';
+            return;
+        }
+
+        container.classList.remove('hidden');
+
+        if (expired) {
+            label.textContent = "Time's Up!";
+            timerValue.textContent = this.formatTime(0);
+            container.classList.add('timer-expired');
+            return;
+        }
+
+        label.textContent = 'Time Remaining';
+        timerValue.textContent = this.formatTime(remainingSeconds);
+
+        if (remainingSeconds <= 10) {
+            container.classList.add('timer-warning');
+        }
+    },
+
+    stopTimer({ hideDisplay = true } = {}) {
+        if (this.state.timerIntervalId) {
+            clearInterval(this.state.timerIntervalId);
+        }
+        this.state.timerIntervalId = null;
+        this.state.timeRemaining = null;
+        this.state.timeLimitSeconds = null;
+        this.state.timeOutModeActive = false;
+
+        if (hideDisplay) {
+            this.updateTimerDisplay(null);
+            this.state.timerExpired = false;
+        }
+    },
+
+    handleTimeOut() {
+        if (this.state.hasSubmitted || this.state.timerExpired) {
+            return;
+        }
+
+        this.state.timerExpired = true;
+
+        if (!this.state.trustDecision) {
+            this.chooseRandomDecision('trust');
+        }
+        if (!this.state.implementDecision) {
+            this.chooseRandomDecision('decision');
+        }
+        if (!this.state.followUpDecision) {
+            this.chooseRandomDecision('follow_up');
+        }
+
+        this.checkDecisions();
+        this.evaluateDecision();
+    },
+
+    chooseRandomDecision(decisionType) {
+        const buttons = Array.from(document.querySelectorAll(`.decision-btn[name="${decisionType}"]`));
+        if (buttons.length === 0) {
+            return null;
+        }
+
+        const enabledButtons = buttons.filter(btn => !btn.disabled);
+        const pool = enabledButtons.length > 0 ? enabledButtons : buttons;
+        const randomButton = pool[Math.floor(Math.random() * pool.length)];
+        if (!randomButton) {
+            return null;
+        }
+
+        const value = randomButton.getAttribute('value');
+        this.selectDecisionButton(decisionType, value);
+        return value;
+    },
+
+    formatTime(totalSeconds) {
+        const clamped = Math.max(0, Math.floor(totalSeconds));
+        const minutes = Math.floor(clamped / 60).toString().padStart(2, '0');
+        const seconds = (clamped % 60).toString().padStart(2, '0');
+        return `${minutes}:${seconds}`;
     },
 
     async evaluateDecision() {
@@ -2057,6 +2226,8 @@ const UIController = {
 
             // Mark that we've submitted
             this.state.hasSubmitted = true;
+
+            this.stopTimer({ hideDisplay: !this.state.timerExpired });
 
             this.state.totalAttempts++;
 
@@ -3091,6 +3262,8 @@ const UIController = {
     startNewSession() {
         const completionModal = document.getElementById('completion-modal');
         const gameMenu = document.getElementById('game-menu');
+
+        this.stopTimer();
 
         // Hide completion modal
         completionModal.classList.add('hidden');
