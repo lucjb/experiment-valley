@@ -481,6 +481,60 @@ select:focus {
     --button-gap: 0.125rem; /* very small button gap */
     gap: 0; /* use explicit margins on children for precise edges */
     justify-content: flex-start; /* distribute by flex-grow ratios */
+    flex-wrap: wrap;
+}
+
+.decision-timer-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: #d1d5db;
+    transition: color 0.3s ease, transform 0.3s ease;
+    flex: 0 0 100%;
+}
+
+.decision-timer-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.decision-timer-value {
+    font-family: 'Inter', 'Roboto Mono', monospace;
+    font-weight: 600;
+    font-size: 1.2rem;
+    background: rgba(31, 41, 55, 0.92);
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    min-width: 4.5rem;
+    text-align: center;
+    color: #f9fafb;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.25);
+}
+
+#decision-timer-container.timer-warning .decision-timer-value {
+    background: #b45309;
+    border-color: #f97316;
+    box-shadow: 0 0 14px rgba(249, 115, 22, 0.35);
+}
+
+#decision-timer-container.timer-expired .decision-timer-value {
+    background: #991b1b;
+    border-color: #f87171;
+    box-shadow: 0 0 16px rgba(248, 113, 113, 0.45);
+    animation: timerPulse 1s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
 }
 
 .decision-section {

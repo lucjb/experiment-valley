@@ -22,7 +22,11 @@ const UIController = {
         roundResults: [], // Store results for each experiment in the current round
         sessionStartPersonalBest: null, // Store personal best data at session start
         sessionStartRoundsRank: null, // Store starting rounds rank
-        sessionStartImpactRank: null // Store starting impact rank
+        sessionStartImpactRank: null, // Store starting impact rank
+        decisionTimerId: null,
+        decisionTimeRemaining: null,
+        decisionTimeLimit: null,
+        decisionTimedOut: false
     },
 
     init() {
@@ -566,6 +570,13 @@ const UIController = {
             }
             // challengeDesign = luckyDayTrap();
 
+            const shouldEnableTimeout = this.state.currentRound >= 3;
+            const hasExplicitTimeLimit = typeof challengeDesign.timeLimitSeconds === 'number' && challengeDesign.timeLimitSeconds > 0;
+            const timeLimitOptedOut = challengeDesign.timeLimitDisabled === true;
+            if (shouldEnableTimeout && !hasExplicitTimeLimit && !timeLimitOptedOut) {
+                challengeDesign = challengeDesign.withTimeLimit(30);
+            }
+
             // Generate the challenge from the design
             window.currentExperiment = challengeDesign.generate();
             this.state.challenge = window.currentExperiment;
@@ -590,6 +601,7 @@ const UIController = {
 
             // Reset decisions
             this.resetDecisions();
+            this.initializeDecisionTimer();
             if (this.debugMode()) {
                 this.addDebugAlerts();
             }
@@ -2021,7 +2033,167 @@ const UIController = {
         }
     },
 
+    initializeDecisionTimer() {
+        const challenge = this.state.challenge;
+        if (!challenge || !challenge.meta || !challenge.meta.timeOutMode) {
+            this.clearDecisionTimer();
+            return;
+        }
+
+        const timeLimit = challenge.meta.timeLimitSeconds;
+        if (typeof timeLimit !== 'number' || timeLimit <= 0) {
+            this.clearDecisionTimer();
+            return;
+        }
+
+        this.startDecisionTimer(timeLimit);
+    },
+
+    startDecisionTimer(timeLimit) {
+        const timerContainer = document.getElementById('decision-timer-container');
+        const timerDisplay = document.getElementById('decision-timer');
+        if (!timerContainer || !timerDisplay) {
+            return;
+        }
+
+        this.clearDecisionTimer();
+
+        this.state.decisionTimeLimit = timeLimit;
+        this.state.decisionTimeRemaining = timeLimit;
+        this.state.decisionTimedOut = false;
+
+        timerContainer.classList.remove('hidden', 'timer-warning', 'timer-expired');
+        timerDisplay.textContent = this.formatCountdownTime(timeLimit);
+
+        this.state.decisionTimerId = window.setInterval(() => {
+            if (typeof this.state.decisionTimeRemaining !== 'number') {
+                return;
+            }
+
+            this.state.decisionTimeRemaining = Math.max(0, this.state.decisionTimeRemaining - 1);
+            this.updateDecisionTimerDisplay();
+
+            if (this.state.decisionTimeRemaining === 0) {
+                this.handleDecisionTimeout();
+            }
+        }, 1000);
+
+        this.updateDecisionTimerDisplay();
+    },
+
+    updateDecisionTimerDisplay() {
+        const timerContainer = document.getElementById('decision-timer-container');
+        const timerDisplay = document.getElementById('decision-timer');
+        if (!timerContainer || !timerDisplay) {
+            return;
+        }
+
+        if (typeof this.state.decisionTimeRemaining !== 'number') {
+            return;
+        }
+
+        timerDisplay.textContent = this.formatCountdownTime(this.state.decisionTimeRemaining);
+
+        if (this.state.decisionTimedOut) {
+            timerContainer.classList.add('timer-expired');
+            timerContainer.classList.remove('timer-warning');
+            return;
+        }
+
+        if (this.state.decisionTimeRemaining <= 10) {
+            timerContainer.classList.add('timer-warning');
+        } else {
+            timerContainer.classList.remove('timer-warning');
+        }
+    },
+
+    formatCountdownTime(totalSeconds) {
+        const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+        const minutes = Math.floor(safeSeconds / 60);
+        const seconds = safeSeconds % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    },
+
+    clearDecisionTimer({ keepDisplay = false } = {}) {
+        if (this.state.decisionTimerId) {
+            clearInterval(this.state.decisionTimerId);
+        }
+        this.state.decisionTimerId = null;
+        this.state.decisionTimeRemaining = null;
+        this.state.decisionTimeLimit = null;
+
+        const timerContainer = document.getElementById('decision-timer-container');
+        if (!keepDisplay) {
+            this.state.decisionTimedOut = false;
+        }
+
+        if (!timerContainer) {
+            return;
+        }
+
+        if (keepDisplay) {
+            timerContainer.classList.remove('timer-warning');
+        } else {
+            timerContainer.classList.add('hidden');
+            timerContainer.classList.remove('timer-warning', 'timer-expired');
+        }
+    },
+
+    stopDecisionTimer() {
+        const keepDisplay = this.state.decisionTimedOut;
+        this.clearDecisionTimer({ keepDisplay });
+    },
+
+    handleDecisionTimeout() {
+        if (this.state.decisionTimedOut || this.state.hasSubmitted) {
+            return;
+        }
+
+        this.state.decisionTimedOut = true;
+
+        this.clearDecisionTimer({ keepDisplay: true });
+
+        const timerContainer = document.getElementById('decision-timer-container');
+        const timerDisplay = document.getElementById('decision-timer');
+
+        if (timerContainer) {
+            timerContainer.classList.remove('hidden', 'timer-warning');
+            timerContainer.classList.add('timer-expired');
+        }
+        if (timerDisplay) {
+            timerDisplay.textContent = '00:00';
+        }
+
+        this.autoFillDecisions();
+        this.evaluateDecision();
+    },
+
+    autoFillDecisions() {
+        const decisionGroups = [
+            { name: 'trust', stateKey: 'trustDecision' },
+            { name: 'decision', stateKey: 'implementDecision' },
+            { name: 'follow_up', stateKey: 'followUpDecision' }
+        ];
+
+        decisionGroups.forEach(({ name, stateKey }) => {
+            if (this.state[stateKey]) {
+                return;
+            }
+
+            const buttons = Array.from(document.querySelectorAll(`.decision-btn[name="${name}"]`)).filter(btn => !btn.disabled);
+            if (buttons.length === 0) {
+                return;
+            }
+
+            const randomButton = buttons[Math.floor(Math.random() * buttons.length)];
+            if (randomButton) {
+                randomButton.click();
+            }
+        });
+    },
+
     resetDecisions() {
+        this.clearDecisionTimer();
         // Reset all decision buttons
         document.querySelectorAll('.decision-btn').forEach(button => {
             button.style.opacity = '0.7';
@@ -2047,6 +2219,8 @@ const UIController = {
         if (!this.state.trustDecision || !this.state.implementDecision) {
             return;
         }
+
+        this.stopDecisionTimer();
 
         try {
             // If this is a subsequent click, just show the feedback dialog
