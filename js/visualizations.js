@@ -587,11 +587,20 @@ const ChartManager = {
                 label = `[${label}]`;
             }
             
-            // Add warning for data loss in debug mode
-            if (UIController.debugMode() && window.currentAnalysis?.analysis?.dataLossIndex === index) {
-                label = `${label} ⚠️`;
+            if (UIController.debugMode()) {
+                // Add warning for data loss in debug mode
+                if (window.currentAnalysis?.analysis?.dataLossIndex === index) {
+                    label = `${label} ⚠️`;
+                }
+
+                const luckyDayIndex = window.currentAnalysis?.analysis?.luckyDayTrap?.periodIndex;
+                if (luckyDayIndex === index) {
+                    if (!label.includes('⚠️')) {
+                        label = `${label} ⚠️`;
+                    }
+                }
             }
-            
+
             return label;
         });
     },
@@ -647,14 +656,27 @@ const ChartManager = {
         this.destroyChart(canvasId);
 
         // Add data loss message to tooltip if in debug mode and there's data loss
+        // Add lucky day tooltip message in normal mode
         const tooltipCallbacks = {
             ...options.plugins?.tooltip?.callbacks,
             afterBody: (tooltipItems) => {
                 const index = tooltipItems[0]?.dataIndex;
-                if (UIController.debugMode() && window.currentAnalysis?.analysis?.dataLossIndex === index) {
-                    return ['\n⚠️ Data Loss Detected'];
+                const messages = [];
+
+                // Lucky day tooltip - show in normal mode
+                const luckyDayData = window.currentAnalysis?.analysis?.luckyDayTrap;
+                if (luckyDayData && luckyDayData.periodIndex === index) {
+                    messages.push(`\n⚠️ Lucky day`);
                 }
-                return [];
+
+                // Data loss tooltip - only show in debug mode
+                if (UIController.debugMode()) {
+                    if (window.currentAnalysis?.analysis?.dataLossIndex === index) {
+                        messages.push('\n⚠️ Data Loss Detected');
+                    }
+                }
+
+                return messages;
             }
         };
 

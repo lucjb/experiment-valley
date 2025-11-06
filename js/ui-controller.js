@@ -533,15 +533,15 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [winner(), inconclusive(), partialLoser()],
-                2: [partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch(), partialLoser().withBaseRateMismatch()],
-                3: [slowCompletion(), fastWinner(), fastLoserWithPartialWeek()],
-                4: [slowCompletion().withBaseRateMismatch(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
+                1: [inconclusive().withLuckyDayTrap(), inconclusive(), partialLoser()],
+                2: [partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch(), fastLoserWithPartialWeek()],
+                3: [slowCompletion(), fastWinner(), partialLoser().withBaseRateMismatch()],
+                4: [luckyDayTrap(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
                 5: [partialWinner(), winner().withLowerIsBetter(), inconclusive()],
-                6: [twymansLawTrap(), inconclusive(), fastLoserWithPartialWeek()],
+                6: [twymansLawTrap(), inconclusive(), bigLoser().withLowerIsBetter().withLuckyDayTrap()],
                 7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()],
                 8: [partialLoser().withSampleRatioMismatch(), winner(), loser().withLowerIsBetter()],
-                9: [inconclusive().withOverdue(), winner(), inconclusive()],
+                9: [inconclusive().withOverdue(), winner(), inconclusive().withLuckyDayTrap()],
                 10: [winner().withUnderpoweredDesign(), winner(), twymansLawTrap().withBaseRateMismatch().withUnderpoweredDesign().withOverdue()]
             };
 
@@ -564,6 +564,7 @@ const UIController = {
                 const allScenarios = Object.values(challengeSequences).flat();
                 challengeDesign = allScenarios[Math.floor(Math.random() * allScenarios.length)];
             }
+            // challengeDesign = luckyDayTrap();
 
             // Generate the challenge from the design
             window.currentExperiment = challengeDesign.generate();
@@ -675,10 +676,14 @@ const UIController = {
     },
 
     // Helper function to create a warning icon with tooltip
-    createWarningIcon(message) {
+    createWarningIcon(message, options = {}) {
         const warningIcon = document.createElement('span');
         warningIcon.className = 'text-yellow-500 cursor-help tooltip-trigger text-sm';
         warningIcon.textContent = '⚠️';
+
+        if (options.type) {
+            warningIcon.dataset.alertType = options.type;
+        }
 
         const tooltipContent = document.createElement('span');
         tooltipContent.className = 'tooltip-content';
@@ -819,7 +824,12 @@ const UIController = {
             const warningIcons = pValueElement.querySelectorAll('.tooltip-trigger');
             warningIcons.forEach(icon => icon.remove());
         }
-        
+
+        const comparisonTab = document.querySelector('[data-tab="difference"]');
+        if (comparisonTab) {
+            comparisonTab.textContent = 'Comparison';
+        }
+
         // Clear overdue alert
         const completeTextElement = document.getElementById('exp-complete-text');
         if (completeTextElement) {
@@ -839,6 +849,7 @@ const UIController = {
         this.addSampleSizeWarning();
         this.addSampleRatioMismatchAlert();
         this.addTwymansLawAlert();
+        this.addLuckyDayTrapAlert();
         this.addOverdueAlert();
         this.addUnderpoweredDesignAlert();
     },
@@ -937,7 +948,7 @@ const UIController = {
         }
 
         const hasTwymansLaw = analysis.analysis.hasTwymansLaw;
-        
+
         if (!hasTwymansLaw) {
             return;
         }
@@ -954,15 +965,69 @@ const UIController = {
         }
 
         const pValue = dataSource.simulation.pValue;
-        
+
         const message = `Twyman's Law detected: Suspiciously low p-value (p=${pValue.toFixed(10)}) and unusually large effect (more than 10 x the MRE)\n\n<a href="twymans-law.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about Twyman's Law →</a>`;
         // Use the proper warning cell helper function
         this.addWarningToCell(pValueElement, message);
     },
 
+    addLuckyDayTrapAlert() {
+        const analysis = window.currentTimeFilteredAnalysis || window.currentAnalysis;
+        if (!analysis || !analysis.analysis || !analysis.analysis.luckyDayTrap) {
+            return;
+        }
+
+        const comparisonTab = document.querySelector('[data-tab="difference"]');
+        if (!comparisonTab) {
+            return;
+        }
+
+        // Reset tab content before adding new alert
+        comparisonTab.textContent = 'Comparison';
+
+        const luckyDayData = analysis.analysis.luckyDayTrap;
+        const dayLabel = luckyDayData.periodLabel || (
+            luckyDayData.startDay === luckyDayData.endDay
+                ? `day ${luckyDayData.startDay}`
+                : `days ${luckyDayData.startDay}-${luckyDayData.endDay}`
+        );
+
+        // Format effect percentage
+        let effectPercentage = 'n/a';
+        if (luckyDayData.adjustedEffectPercentage !== null && luckyDayData.adjustedEffectPercentage !== undefined) {
+            if (luckyDayData.adjustedEffectPercentage === Infinity || luckyDayData.adjustedEffectPercentage === -Infinity) {
+                effectPercentage = '∞';
+            } else if (typeof luckyDayData.adjustedEffectPercentage === 'number' && !isNaN(luckyDayData.adjustedEffectPercentage) && isFinite(luckyDayData.adjustedEffectPercentage)) {
+                effectPercentage = luckyDayData.adjustedEffectPercentage.toFixed(2);
+            }
+        }
+        
+        // Format p-value
+        const pValueText = luckyDayData.adjustedPValue !== null && luckyDayData.adjustedPValue !== undefined
+            ? luckyDayData.adjustedPValue.toFixed(4)
+            : 'n/a';
+        
+        // Determine significance
+        const significanceText = luckyDayData.adjustedSignificant === true
+            ? 'significant'
+            : luckyDayData.adjustedSignificant === false
+            ? 'not significant'
+            : 'n/a';
+
+        const message = `Lucky Day: Most of the total effect comes from ${dayLabel}.\nTotal effect after excluding it: ${effectPercentage}%, p-value: ${pValueText} (${significanceText})\n\n<a href="lucky-day-trap.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about lucky day traps →</a>`;
+
+        comparisonTab.appendChild(document.createTextNode(' '));
+        const warningIcon = this.createWarningIcon(message, { type: 'lucky-day' });
+        warningIcon.style.display = 'inline-flex';
+        warningIcon.style.alignItems = 'center';
+        warningIcon.style.marginLeft = '0.25rem';
+        comparisonTab.appendChild(warningIcon);
+        this.initializeTooltip(warningIcon);
+    },
+
     addOverdueAlert() {
         const analysis = window.currentAnalysis;
-        
+
         if (!analysis || !analysis.analysis || !analysis.analysis.overdue) {
             return;
         }
