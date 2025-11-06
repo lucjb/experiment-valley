@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sample Ratio Mismatch - Experiment Valley</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Understanding Sample Ratio Mismatches</h1>
+        
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+            <p class="text-yellow-800"><strong>What is a Sample Ratio Mismatch?</strong></p>
+            <p class="text-yellow-700">A sample ratio mismatch occurs when the actual traffic split between variants differs significantly from the intended 50/50 split.</p>
+        </div>
+
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Why This Matters</h2>
+        
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <h3 class="text-lg font-semibold text-red-800 mb-2">Sample Ratio Mismatches Indicate:</h3>
+            <ul class="text-red-700 space-y-2">
+                <li>• <strong>Allocation problems</strong> - Traffic routing issues in your experiment platform</li>
+                <li>• <strong>Technical failures</strong> - Bugs in the experiment assignment logic</li>
+                <li>• <strong>Biased assignment</strong> - Non-random distribution of users</li>
+                <li>• <strong>Data integrity issues</strong> - Compromised experiment validity</li>
+            </ul>
+        </div>
+
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Common Causes</h2>
+        
+        <div class="grid md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <h3 class="text-lg font-semibold text-orange-800 mb-2">Technical Issues</h3>
+                <ul class="text-orange-700 space-y-2">
+                    <li>• Experiment platform bugs</li>
+                    <li>• Incorrect traffic allocation settings</li>
+                    <li>• Caching issues</li>
+                    <li>• CDN or load balancer problems</li>
+                </ul>
+            </div>
+            
+            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h3 class="text-lg font-semibold text-purple-800 mb-2">Design Issues</h3>
+                <ul class="text-purple-700 space-y-2">
+                    <li>• Non-random user assignment</li>
+                    <li>• Geographic or demographic bias</li>
+                    <li>• Time-based allocation problems</li>
+                    <li>• User behavior differences</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Statistical Impact</h2>
+        
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p class="text-blue-800 font-semibold mb-2">How it affects your results:</p>
+            <ul class="text-blue-700 space-y-1">
+                <li>• <strong>Biased estimates</strong> - Results may not represent true population effects</li>
+                <li>• <strong>Invalid statistical tests</strong> - Assumptions of equal allocation are violated</li>
+                <li>• <strong>Reduced power</strong> - Less efficient use of your sample size</li>
+                <li>• <strong>Questionable validity</strong> - Results may not be generalizable</li>
+            </ul>
+        </div>
+
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">What To Do</h2>
+        
+        <div class="space-y-4">
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-800 mb-2">1. Investigate the Cause</h3>
+                <p class="text-gray-700">Check your experiment platform settings, traffic allocation logic, and any recent changes to the system.</p>
+            </div>
+            
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-800 mb-2">2. Fix the Allocation</h3>
+                <p class="text-gray-700">Correct the traffic allocation settings to ensure proper 50/50 split going forward.</p>
+            </div>
+            
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-800 mb-2">3. Consider Restarting</h3>
+                <p class="text-gray-700">If the mismatch is severe, consider stopping the current experiment and restarting with proper allocation.</p>
+            </div>
+            
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 class="font-semibold text-gray-800 mb-2">4. Document the Issue</h3>
+                <p class="text-gray-700">Record what caused the mismatch to prevent similar issues in future experiments.</p>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center">
+            <button onclick="window.close()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                Close Window
+            </button>
+        </div>
+    </div>
+</body>
+</html>
