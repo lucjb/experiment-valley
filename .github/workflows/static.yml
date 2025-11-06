@@ -1,13 +1,14 @@
 name: Deploy PR previews
+
 on:
   pull_request:
     types: [opened, reopened, synchronize, closed]
+  pull_request_target:
+    types: [opened, reopened, synchronize, closed]
   workflow_dispatch:
 
-# Cancel older runs for the same PR ref
-concurrency: preview-${{ github.ref }}
+concurrency: preview-${{ github.event.pull_request.number }}
 
-# Needs to push preview files and post a comment
 permissions:
   contents: write
   pull-requests: write
@@ -17,26 +18,53 @@ jobs:
   preview:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout PR HEAD
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
 
-      # If you build, uncomment and set source-dir to your build output
-      # - if: github.event.action != 'closed'
+      # If you have a build step, put it here and set OUTPUT_DIR to your build folder (e.g., dist)
+      # - name: Build
       #   run: |
       #     npm ci
       #     npm run build
+      #   env:
+      #     OUTPUT_DIR: dist
 
-      - name: Deploy preview
+      - name: Prepare minimal site payload
+        run: |
+          OUTPUT_DIR="${OUTPUT_DIR:-.}"   # set to dist if you build
+          mkdir -p site
+          # Copy ONLY what the site needs. Exclude heavy stuff and recursive previews.
+          rsync -a "$OUTPUT_DIR"/ site/ \
+            --delete \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude 'node_modules' \
+            --exclude 'pr-preview' \
+            --exclude '*.zip' \
+            --exclude '*.tar' \
+            --exclude '*.tar.gz' \
+            --exclude '*.mp4' \
+            --exclude '*.mov' \
+            --exclude '*.psd' \
+            --exclude 'tests' \
+            --exclude 'data' \
+            --exclude 'scripts'
+
+      - name: Deploy preview (create/update)
         if: github.event.action != 'closed'
         uses: rossjrw/pr-preview-action@v1
         with:
-          source-dir: .              # change to 'dist' (or your build dir) if you build
-          preview-branch: main       # <<< you deploy from main
-          umbrella-dir: pr-preview   # results in /pr-preview/pr-<n>/
+          source-dir: site            # <<< deploy the small curated folder
+          preview-branch: main
+          umbrella-dir: pr-preview
 
       - name: Remove preview on PR close
         if: github.event.action == 'closed'
         uses: rossjrw/pr-preview-action@v1
         with:
           action: remove
-          preview-branch: main       # <<< keep in sync
+          preview-branch: main
           umbrella-dir: pr-preview
