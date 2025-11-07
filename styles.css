@@ -159,6 +159,23 @@ button:disabled {
     border: 4px solid #f97316;
 }
 
+.round-splash.timer-intro-splash {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: clamp(4rem, 12vw, 8rem);
+    line-height: 1;
+    padding: clamp(2rem, 6vw, 4rem);
+}
+
+.round-splash.timer-intro-splash .timer-intro-splash-content {
+    display: block;
+    font-size: inherit;
+    font-weight: 700;
+    line-height: 1;
+}
+
 .round-splash.show {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);

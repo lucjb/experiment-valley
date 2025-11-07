@@ -2106,9 +2106,125 @@ const UIController = {
             return;
         }
 
+        const cleanupButtonCatch = () => {
+            submitButton.classList.remove('timer-intro-catch');
+        };
+
+        const removeRevealClass = () => {
+            timerDisplay.classList.remove('timer-intro-reveal');
+        };
+
         timerDisplay.classList.add('timer-intro-hidden');
         submitButton.classList.add('timer-intro-catch');
 
+        timerDisplay.addEventListener('animationend', removeRevealClass, { once: true });
+        submitButton.addEventListener('animationend', cleanupButtonCatch, { once: true });
+
+        if (this.runRoundStyleTimerIntro(countdownValue, submitButton, timerDisplay, cleanupButtonCatch)) {
+            return;
+        }
+
+        this.runFallbackTimerIntro(countdownValue, submitButton, timerDisplay, cleanupButtonCatch);
+    },
+
+    runRoundStyleTimerIntro(countdownValue, submitButton, timerDisplay, cleanupButtonCatch) {
+        const splash = document.getElementById('round-splash');
+        const overlay = document.getElementById('round-splash-overlay');
+        if (!splash || !overlay || typeof splash.animate !== 'function' || overlay.classList.contains('active') || splash.classList.contains('show')) {
+            return false;
+        }
+
+        const originalContent = splash.innerHTML;
+
+        const revealTimer = () => {
+            timerDisplay.classList.remove('timer-intro-hidden');
+            timerDisplay.classList.add('timer-intro-reveal');
+        };
+
+        splash.classList.remove('show');
+        splash.classList.add('timer-intro-splash');
+        splash.innerHTML = `<div class="timer-intro-splash-content">${countdownValue}</div>`;
+        splash.style.display = 'block';
+
+        void splash.offsetWidth;
+
+        overlay.classList.add('active');
+        splash.classList.add('show');
+
+        const buttonRect = submitButton.getBoundingClientRect();
+        const viewportCenterX = window.innerWidth / 2;
+        const viewportCenterY = window.innerHeight / 2;
+        const targetX = buttonRect.left + buttonRect.width / 2 - viewportCenterX;
+        const targetY = buttonRect.top + buttonRect.height / 2 - viewportCenterY;
+
+        const shrinkDuration = 650;
+        const holdDuration = 900;
+
+        let finalized = false;
+
+        const finalizeIntro = () => {
+            if (finalized) {
+                return;
+            }
+            finalized = true;
+
+            splash.classList.remove('show', 'timer-intro-splash');
+            splash.innerHTML = originalContent;
+            splash.style.display = 'none';
+
+            overlay.classList.remove('active');
+            overlay.style.opacity = '';
+
+            window.setTimeout(cleanupButtonCatch, 650);
+            revealTimer();
+        };
+
+        const startCollapse = () => {
+            const collapse = splash.animate([
+                { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+                {
+                    transform: `translate(calc(-50% + ${targetX}px), calc(-50% + ${targetY}px)) scale(0.12)`,
+                    opacity: 0
+                }
+            ], {
+                duration: shrinkDuration,
+                easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                fill: 'forwards'
+            });
+
+            collapse.addEventListener('finish', finalizeIntro, { once: true });
+            collapse.addEventListener('cancel', finalizeIntro, { once: true });
+
+            if (typeof overlay.animate === 'function') {
+                const fade = overlay.animate([
+                    { opacity: 1 },
+                    { opacity: 0 }
+                ], {
+                    duration: shrinkDuration,
+                    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                    fill: 'forwards'
+                });
+
+                const resetOverlayOpacity = () => {
+                    overlay.style.opacity = '';
+                };
+
+                fade.addEventListener('finish', resetOverlayOpacity, { once: true });
+                fade.addEventListener('cancel', resetOverlayOpacity, { once: true });
+            } else {
+                window.setTimeout(() => {
+                    overlay.style.opacity = '';
+                }, shrinkDuration);
+            }
+        };
+
+        window.setTimeout(startCollapse, holdDuration);
+        window.setTimeout(finalizeIntro, holdDuration + shrinkDuration + 100);
+
+        return true;
+    },
+
+    runFallbackTimerIntro(countdownValue, submitButton, timerDisplay, cleanupButtonCatch) {
         const overlay = document.createElement('div');
         overlay.className = 'timer-intro-overlay';
 
@@ -2132,19 +2248,8 @@ const UIController = {
             window.setTimeout(cleanupButtonCatch, 650);
         };
 
-        const cleanupButtonCatch = () => {
-            submitButton.classList.remove('timer-intro-catch');
-        };
-
-        timerDisplay.addEventListener('animationend', () => {
-            timerDisplay.classList.remove('timer-intro-reveal');
-        }, { once: true });
-
-        submitButton.addEventListener('animationend', cleanupButtonCatch, { once: true });
-
         if (typeof ghost.animate !== 'function') {
             finalizeIntro();
-            cleanupButtonCatch();
             return;
         }
 
