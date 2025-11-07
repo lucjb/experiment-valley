@@ -139,30 +139,17 @@ const UIController = {
                 // Remove active state from all buttons in the same group
                 const name = button.getAttribute('name');
                 document.querySelectorAll(`.decision-btn[name="${name}"]`).forEach(btn => {
-                    btn.style.opacity = '0.7';
-                    btn.style.transform = 'scale(1)';
+                    btn.style.opacity = '';
+                    btn.style.transform = '';
                     btn.classList.remove('selected');
                 });
 
                 // Add active state to clicked button
-                button.style.opacity = '1';
-                button.style.transform = 'scale(1.05)';
+                button.style.opacity = '';
+                button.style.transform = '';
                 button.classList.add('selected');
 
                 this.handleDecision(name, button.getAttribute('value'));
-            });
-
-            // Add hover effects
-            button.addEventListener('mouseenter', () => {
-                if (!button.classList.contains('selected')) {
-                    button.style.opacity = '1';
-                }
-            });
-
-            button.addEventListener('mouseleave', () => {
-                if (!button.classList.contains('selected')) {
-                    button.style.opacity = '0.7';
-                }
             });
 
             // Add touch event listeners alongside click events
@@ -2024,8 +2011,8 @@ const UIController = {
     resetDecisions() {
         // Reset all decision buttons
         document.querySelectorAll('.decision-btn').forEach(button => {
-            button.style.opacity = '0.7';
-            button.style.transform = 'scale(1)';
+            button.style.opacity = '';
+            button.style.transform = '';
             button.classList.remove('selected');
             button.disabled = false; // Enable the buttons
             button.style.cursor = 'pointer'; // Reset cursor
