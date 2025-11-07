@@ -3150,7 +3150,7 @@ const UIController = {
 
         // Start a new session automatically with the same player name and opponent
         const playerName = window.playerName || 'Player';
-        const selectedCompetitor = this.state.selectedCompetitor || window.selectedOpponent || 'HiPPO';
+        const selectedCompetitor = this.state.selectedCompetitor || window.selectedOpponent || 'Random';
         
         console.log('Starting new session with:', { playerName, selectedCompetitor });
         
