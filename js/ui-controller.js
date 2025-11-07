@@ -864,7 +864,7 @@ const UIController = {
         const baseRateCell = document.getElementById('base-rate');
         const { expected, actual, difference, pValue } = analysis.analysis.baseRate;
 
-        const message = `Design Base Rate: ${formatPercent(expected)}\nActual Base Rate: ${formatPercent(actual)}\nDifference: ${formatPercent(difference)}\np-value: ${pValue.toFixed(4)}\n\n<a href="base-rate-mismatch.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about base rate mismatches →</a>`;
+        const message = `Design Base Rate: ${formatPercent(expected)}\nActual Base Rate: ${formatPercent(actual)}\nDifference: ${formatPercent(difference)}\np-value: ${pValue.toFixed(4)}\n\nWhy it matters: we powered the test assuming ${formatPercent(expected)}. Starting from ${formatPercent(actual)} means the lift and power calculations are off, so treat wins with caution until you recalibrate.\n\n<a href="base-rate-mismatch.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Deep dive on base rate mismatches →</a>`;
         this.addWarningToCell(baseRateCell, message);
     },
 
@@ -891,13 +891,13 @@ const UIController = {
 
         // Check base variant
         if (actualBase < requiredSampleSize) {
-            const message = `Insufficient sample size (${actualBase.toLocaleString()} < ${requiredSampleSize.toLocaleString()})\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about sample size warnings →</a>`;
+            const message = `Insufficient sample size (${actualBase.toLocaleString()} < ${requiredSampleSize.toLocaleString()})\n\nWhy it matters: with fewer visitors than planned the test is underpowered. Extend the run or increase traffic before trusting a call.\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Sample size checklist →</a>`;
             this.addWarningToCell(document.getElementById('base-visitors'), message);
         }
 
         // Check variant
         if (actualVariant < requiredSampleSize) {
-            const message = `Insufficient sample size (${actualVariant.toLocaleString()} < ${requiredSampleSize.toLocaleString()})\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about sample size warnings →</a>`;
+            const message = `Insufficient sample size (${actualVariant.toLocaleString()} < ${requiredSampleSize.toLocaleString()})\n\nWhy it matters: with fewer visitors than planned the test is underpowered. Extend the run or increase traffic before trusting a call.\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Sample size checklist →</a>`;
             this.addWarningToCell(document.getElementById('variant-visitors'), message);
         }
 
@@ -907,7 +907,7 @@ const UIController = {
 
         if (totalVisitors < requiredTotal) {
             const completeTextElement = document.getElementById('exp-complete-text');
-            const message = `Runtime Complete but Insufficient sample size: ${totalVisitors.toLocaleString()} < ${requiredTotal.toLocaleString()}\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about sample size warnings →</a>`;
+            const message = `Runtime Complete but Insufficient sample size: ${totalVisitors.toLocaleString()} < ${requiredTotal.toLocaleString()}\n\nWhy it matters: even though time is up, traffic was light. Add more visitors or treat the outcome as exploratory only.\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Sample size checklist →</a>`;
 
             completeTextElement.textContent = '';
             completeTextElement.appendChild(this.createWarningIcon(message));
@@ -928,7 +928,7 @@ const UIController = {
         const visitorsHeader = document.querySelector('.metrics-table th:nth-child(2)');
         if (!visitorsHeader) return;
 
-        const message = `Sample Ratio Mismatch detected (p-value<0.0001)\n\n<a href="sample-ratio-mismatch.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about sample ratio mismatches →</a>`;
+        const message = `Sample Ratio Mismatch detected (p-value<0.0001)\n\nWhy it matters: traffic is not being split as planned, so one variant may be over/under represented. Investigate tracking, bucketing, or feature flags before trusting the lift.\n\n<a href="sample-ratio-mismatch.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Sample ratio mismatch guide →</a>`;
 
         visitorsHeader.textContent = '';
         visitorsHeader.appendChild(document.createTextNode('Visitors'));
@@ -966,7 +966,7 @@ const UIController = {
 
         const pValue = dataSource.simulation.pValue;
 
-        const message = `Twyman's Law detected: Suspiciously low p-value (p=${pValue.toFixed(10)}) and unusually large effect (more than 10 x the MRE)\n\n<a href="twymans-law.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about Twyman's Law →</a>`;
+        const message = `Twyman's Law detected: Suspiciously low p-value (p=${pValue.toFixed(10)}) and unusually large effect (more than 10 x the MRE)\n\nWhy it matters: extreme wins often mean a data bug, not a miracle. Double-check logging, audience filters, or experiment guardrails before celebrating.\n\n<a href="twymans-law.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Twyman's Law explainer →</a>`;
         // Use the proper warning cell helper function
         this.addWarningToCell(pValueElement, message);
     },
@@ -1014,7 +1014,7 @@ const UIController = {
             ? 'not significant'
             : 'n/a';
 
-        const message = `Lucky Day: Most of the total effect comes from ${dayLabel}.\nTotal effect after excluding it: ${effectPercentage}%, p-value: ${pValueText} (${significanceText})\n\n<a href="lucky-day-trap.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about lucky day traps →</a>`;
+        const message = `Lucky Day: Most of the total effect comes from ${dayLabel}.\nTotal effect after excluding it: ${effectPercentage}%, p-value: ${pValueText} (${significanceText})\n\nWhy it matters: a single outlier day is driving the win. Look for launch bugs, promos, or traffic spikes before trusting the lift.\n\n<a href="lucky-day-trap.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Lucky day trap explainer →</a>`;
 
         comparisonTab.appendChild(document.createTextNode(' '));
         const warningIcon = this.createWarningIcon(message, { type: 'lucky-day' });
@@ -1051,7 +1051,7 @@ const UIController = {
         const requiredSampleSize = originalExperiment?.experiment?.requiredSampleSizePerVariant || 0;
         const requiredTotalSampleSize = requiredSampleSize * 2;
         
-        const message = `Overdue Experiment: Planned for ${originalRuntime} days but ran for ${actualRuntime} days (${extraDays} extra days)\n\nSample Size:\n• Intended: ${requiredTotalSampleSize.toLocaleString()} total (${requiredSampleSize.toLocaleString()} per variant)\n• Actual: ${originalTotalVisitors.toLocaleString()} total (${originalBaseVisitors.toLocaleString()} base, ${originalVariantVisitors.toLocaleString()} variant)\n<a href="overdue-experiment.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about overdue experiments →</a>`;
+        const message = `Overdue Experiment: Planned for ${originalRuntime} days but ran for ${actualRuntime} days (${extraDays} extra days)\n\nSample Size:\n• Intended: ${requiredTotalSampleSize.toLocaleString()} total (${requiredSampleSize.toLocaleString()} per variant)\n• Actual: ${originalTotalVisitors.toLocaleString()} total (${originalBaseVisitors.toLocaleString()} base, ${originalVariantVisitors.toLocaleString()} variant)\n\nWhy it matters: running past plan can inflate false positives and wastes opportunity cost. Stop the test or reset expectations before interpreting the result.\n\n<a href="overdue-experiment.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Overdue experiment guide →</a>`;
 
         // Clear the element completely and rebuild it
         completeTextElement.innerHTML = '';
@@ -1123,7 +1123,7 @@ const UIController = {
 
         console.log('✅ Adding underpowered design alert!');
         
-        const message = `This sample size is not enough to reach the desired power of ${(underpoweredData.desiredPower * 100).toFixed(0)}% (power at this sample size is ${(underpoweredData.actualPower * 100).toFixed(0)}%)\n\nCorrect sample size to achieve ${(underpoweredData.desiredPower * 100).toFixed(0)}% power is  ${underpoweredData.correctSampleSize.toLocaleString()} per variant)\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about sample size calculations →</a>`;
+        const message = `This sample size is not enough to reach the desired power of ${(underpoweredData.desiredPower * 100).toFixed(0)}% (power at this sample size is ${(underpoweredData.actualPower * 100).toFixed(0)}%)\n\nCorrect sample size to achieve ${(underpoweredData.desiredPower * 100).toFixed(0)}% power is  ${underpoweredData.correctSampleSize.toLocaleString()} per variant)\n\nWhy it matters: without enough power you're likely to miss real improvements or chase noise. Re-plan the sample size or lower your minimum detectable effect.\n\n<a href="sample-size-warning.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Sample size calculator tips →</a>`;
 
         // Clear the element and rebuild it with warning icon
         sampleSizeElement.textContent = '';
@@ -1673,8 +1673,9 @@ const UIController = {
                     <span class="tooltip-trigger">
                         Conversion Rate ⚠️
                         <span class="tooltip-content">
-                            Data loss detected in experiment data
-                            <br><a href="data-loss-alert.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Learn more about data loss →</a>
+                            Data loss detected in experiment data. Missing events can flip the sign of a result—pause and
+                            investigate before you act.
+                            <br><a href="data-loss-alert.html" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-700">Data loss troubleshooting →</a>
                         </span>
                     </span>
                 `;
