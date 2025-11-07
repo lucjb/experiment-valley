@@ -484,48 +484,32 @@ select:focus {
     flex-wrap: wrap;
 }
 
-.decision-timer-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    color: #d1d5db;
-    transition: color 0.3s ease, transform 0.3s ease;
-    flex: 0 0 100%;
-}
-
-.decision-timer-label {
-    font-size: 0.75rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    font-weight: 600;
-}
-
 .decision-timer-value {
     font-family: 'Inter', 'Roboto Mono', monospace;
     font-weight: 600;
-    font-size: 1.2rem;
-    background: rgba(31, 41, 55, 0.92);
-    padding: 0.35rem 0.85rem;
-    border-radius: 9999px;
-    border: 1px solid rgba(148, 163, 184, 0.3);
-    min-width: 4.5rem;
-    text-align: center;
+    font-size: 1.05rem;
+    background: rgba(15, 23, 42, 0.85);
+    padding: 0.2rem 0.45rem;
+    border-radius: 0.375rem;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    min-width: 2.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     color: #f9fafb;
-    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.25);
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.25);
 }
 
-#decision-timer-container.timer-warning .decision-timer-value {
+.submit-btn-custom.timer-warning .decision-timer-value {
     background: #b45309;
     border-color: #f97316;
     box-shadow: 0 0 14px rgba(249, 115, 22, 0.35);
 }
 
-#decision-timer-container.timer-expired .decision-timer-value {
+.submit-btn-custom.timer-expired .decision-timer-value {
     background: #991b1b;
     border-color: #f87171;
     box-shadow: 0 0 16px rgba(248, 113, 113, 0.45);
-    animation: timerPulse 1s ease-in-out infinite;
 }
 
 @keyframes timerPulse {
@@ -563,12 +547,6 @@ select:focus {
     justify-content: center;
 }
 
-#submit-decision {
-    width: 4rem !important;
-    max-width: 4rem !important;
-    min-width: 4rem !important;
-}
-
 .submit-btn-custom {
     display: inline-flex;
     align-items: center;
@@ -584,6 +562,12 @@ select:focus {
     cursor: pointer;
     box-shadow: 0 6px 16px rgba(59, 130, 246, 0.28);
     outline: 2px solid rgba(124, 58, 237, 0.0); /* hidden by default */
+    gap: 0.4rem;
+    padding: 0 0.75rem;
+}
+
+#submit-decision {
+    min-width: 5.5rem;
 }
 
 .submit-btn-custom:hover {
@@ -596,6 +580,37 @@ select:focus {
 .submit-btn-custom:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.submit-btn-custom.timer-active:disabled {
+    opacity: 1;
+}
+
+.submit-btn-custom.timer-active {
+    padding-right: 0.85rem;
+}
+
+.submit-btn-custom.timer-warning {
+    background: linear-gradient(90deg, #ea580c, #f59e0b);
+    box-shadow: 0 0 14px rgba(249, 115, 22, 0.35);
+}
+
+.submit-btn-custom.timer-expired {
+    background: linear-gradient(90deg, #dc2626, #b91c1c);
+    box-shadow: 0 0 16px rgba(248, 113, 113, 0.45);
+    animation: timerPulse 1s ease-in-out infinite;
+}
+
+#submit-decision svg {
+    transition: transform 0.2s ease;
+}
+
+.submit-btn-custom.timer-active svg {
+    transform: translateX(0.05rem);
+}
+
+.submit-btn-custom.timer-expired svg {
+    transform: translateX(0);
 }
 
 /* Make the submit title subtly highlighted */
