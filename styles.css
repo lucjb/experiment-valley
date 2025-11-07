@@ -500,6 +500,15 @@ select:focus {
     box-shadow: 0 6px 14px rgba(15, 23, 42, 0.25);
 }
 
+.decision-timer-value.timer-intro-hidden {
+    opacity: 0;
+    transform: scale(0.7);
+}
+
+.decision-timer-value.timer-intro-reveal {
+    animation: timerIntroReveal 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
 .submit-btn-custom.timer-warning .decision-timer-value {
     background: #b45309;
     border-color: #f97316;
@@ -512,6 +521,30 @@ select:focus {
     box-shadow: 0 0 16px rgba(248, 113, 113, 0.45);
 }
 
+.timer-intro-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 11000;
+}
+
+.timer-intro-ghost {
+    font-family: 'Inter', 'Roboto Mono', monospace;
+    font-weight: 700;
+    font-size: clamp(4rem, 12vw, 8rem);
+    line-height: 1;
+    background: radial-gradient(circle at center, rgba(30, 64, 175, 0.9), rgba(15, 23, 42, 0.95));
+    padding: clamp(1rem, 4vw, 2rem) clamp(1.5rem, 6vw, 3rem);
+    border-radius: 1.25rem;
+    border: 3px solid rgba(191, 219, 254, 0.7);
+    color: #f8fafc;
+    box-shadow: 0 30px 60px rgba(15, 23, 42, 0.45);
+    text-shadow: 0 20px 35px rgba(15, 23, 42, 0.55);
+}
+
 @keyframes timerPulse {
     0%, 100% {
         transform: scale(1);
@@ -519,6 +552,40 @@ select:focus {
     50% {
         transform: scale(1.05);
     }
+}
+
+@keyframes timerIntroReveal {
+    0% {
+        transform: scale(0.65);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.18);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes timerButtonCatch {
+    0% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+    40% {
+        transform: scale(1.05);
+        filter: brightness(1.08);
+    }
+    100% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+}
+
+.submit-btn-custom.timer-intro-catch {
+    animation: timerButtonCatch 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .decision-section {
