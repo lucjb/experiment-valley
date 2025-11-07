@@ -365,6 +365,7 @@ const UIController = {
         this.state.currentCompetitor = null;
         this.state.selectedCompetitor = null;
         this.state.roundResults = [];
+        this.state.decisionTimerIntroPlayed = false;
 
         // Reset UI elements
         this.updateRoundDisplay();
@@ -2396,7 +2397,6 @@ const UIController = {
 
     resetDecisions() {
         this.clearDecisionTimer();
-        this.state.decisionTimerIntroPlayed = false;
         // Reset all decision buttons
         document.querySelectorAll('.decision-btn').forEach(button => {
             button.style.opacity = '0.7';
