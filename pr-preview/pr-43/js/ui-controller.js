@@ -26,7 +26,8 @@ const UIController = {
         decisionTimerId: null,
         decisionTimeRemaining: null,
         decisionTimeLimit: null,
-        decisionTimedOut: false
+        decisionTimedOut: false,
+        decisionTimerIntroPlayed: false
     },
 
     init() {
@@ -2067,6 +2068,8 @@ const UIController = {
         timerDisplay.classList.remove('hidden');
         timerDisplay.textContent = this.formatCountdownTime(timeLimit);
 
+        this.triggerDecisionTimerIntro();
+
         this.state.decisionTimerId = window.setInterval(() => {
             if (typeof this.state.decisionTimeRemaining !== 'number') {
                 return;
@@ -2081,6 +2084,81 @@ const UIController = {
         }, 1000);
 
         this.updateDecisionTimerDisplay();
+    },
+
+    triggerDecisionTimerIntro() {
+        if (this.state.decisionTimerIntroPlayed) {
+            return;
+        }
+
+        const submitButton = document.getElementById('submit-decision');
+        const timerDisplay = document.getElementById('decision-timer');
+        if (!submitButton || !timerDisplay) {
+            return;
+        }
+
+        this.state.decisionTimerIntroPlayed = true;
+
+        const countdownValue = timerDisplay.textContent || this.formatCountdownTime(this.state.decisionTimeLimit || 0);
+        const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (prefersReducedMotion) {
+            return;
+        }
+
+        timerDisplay.classList.add('timer-intro-hidden');
+        submitButton.classList.add('timer-intro-catch');
+
+        const overlay = document.createElement('div');
+        overlay.className = 'timer-intro-overlay';
+
+        const ghost = document.createElement('span');
+        ghost.className = 'timer-intro-ghost';
+        ghost.textContent = countdownValue;
+        overlay.appendChild(ghost);
+
+        document.body.appendChild(overlay);
+
+        const buttonRect = submitButton.getBoundingClientRect();
+        const viewportCenterX = window.innerWidth / 2;
+        const viewportCenterY = window.innerHeight / 2;
+        const targetX = buttonRect.left + buttonRect.width / 2 - viewportCenterX;
+        const targetY = buttonRect.top + buttonRect.height / 2 - viewportCenterY;
+
+        const finalizeIntro = () => {
+            timerDisplay.classList.remove('timer-intro-hidden');
+            timerDisplay.classList.add('timer-intro-reveal');
+            overlay.remove();
+            window.setTimeout(cleanupButtonCatch, 650);
+        };
+
+        const cleanupButtonCatch = () => {
+            submitButton.classList.remove('timer-intro-catch');
+        };
+
+        timerDisplay.addEventListener('animationend', () => {
+            timerDisplay.classList.remove('timer-intro-reveal');
+        }, { once: true });
+
+        submitButton.addEventListener('animationend', cleanupButtonCatch, { once: true });
+
+        if (typeof ghost.animate !== 'function') {
+            finalizeIntro();
+            cleanupButtonCatch();
+            return;
+        }
+
+        const animation = ghost.animate([
+            { transform: 'translate(0, 0) scale(0.25)', opacity: 0 },
+            { transform: 'translate(0, 0) scale(1.2)', opacity: 1, offset: 0.45 },
+            { transform: `translate(${targetX}px, ${targetY}px) scale(0.25)`, opacity: 0 }
+        ], {
+            duration: 900,
+            easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+        });
+
+        animation.addEventListener('finish', finalizeIntro, { once: true });
+        animation.addEventListener('cancel', finalizeIntro, { once: true });
     },
 
     updateDecisionTimerDisplay() {
@@ -2206,6 +2284,7 @@ const UIController = {
 
     resetDecisions() {
         this.clearDecisionTimer();
+        this.state.decisionTimerIntroPlayed = false;
         // Reset all decision buttons
         document.querySelectorAll('.decision-btn').forEach(button => {
             button.style.opacity = '0.7';
