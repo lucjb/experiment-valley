@@ -2050,9 +2050,9 @@ const UIController = {
     },
 
     startDecisionTimer(timeLimit) {
-        const timerContainer = document.getElementById('decision-timer-container');
+        const submitButton = document.getElementById('submit-decision');
         const timerDisplay = document.getElementById('decision-timer');
-        if (!timerContainer || !timerDisplay) {
+        if (!submitButton || !timerDisplay) {
             return;
         }
 
@@ -2062,7 +2062,9 @@ const UIController = {
         this.state.decisionTimeRemaining = timeLimit;
         this.state.decisionTimedOut = false;
 
-        timerContainer.classList.remove('hidden', 'timer-warning', 'timer-expired');
+        submitButton.classList.add('timer-active');
+        submitButton.classList.remove('timer-warning', 'timer-expired');
+        timerDisplay.classList.remove('hidden');
         timerDisplay.textContent = this.formatCountdownTime(timeLimit);
 
         this.state.decisionTimerId = window.setInterval(() => {
@@ -2082,9 +2084,9 @@ const UIController = {
     },
 
     updateDecisionTimerDisplay() {
-        const timerContainer = document.getElementById('decision-timer-container');
+        const submitButton = document.getElementById('submit-decision');
         const timerDisplay = document.getElementById('decision-timer');
-        if (!timerContainer || !timerDisplay) {
+        if (!submitButton || !timerDisplay) {
             return;
         }
 
@@ -2095,23 +2097,24 @@ const UIController = {
         timerDisplay.textContent = this.formatCountdownTime(this.state.decisionTimeRemaining);
 
         if (this.state.decisionTimedOut) {
-            timerContainer.classList.add('timer-expired');
-            timerContainer.classList.remove('timer-warning');
+            submitButton.classList.add('timer-expired', 'timer-active');
+            submitButton.classList.remove('timer-warning');
             return;
         }
 
+        submitButton.classList.remove('timer-expired');
+
         if (this.state.decisionTimeRemaining <= 10) {
-            timerContainer.classList.add('timer-warning');
+            submitButton.classList.add('timer-warning');
         } else {
-            timerContainer.classList.remove('timer-warning');
+            submitButton.classList.remove('timer-warning');
         }
     },
 
     formatCountdownTime(totalSeconds) {
         const safeSeconds = Math.max(0, Math.floor(totalSeconds));
-        const minutes = Math.floor(safeSeconds / 60);
-        const seconds = safeSeconds % 60;
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        const clampedSeconds = Math.min(99, safeSeconds);
+        return clampedSeconds.toString().padStart(2, '0');
     },
 
     clearDecisionTimer({ keepDisplay = false } = {}) {
@@ -2122,20 +2125,28 @@ const UIController = {
         this.state.decisionTimeRemaining = null;
         this.state.decisionTimeLimit = null;
 
-        const timerContainer = document.getElementById('decision-timer-container');
+        const submitButton = document.getElementById('submit-decision');
+        const timerDisplay = document.getElementById('decision-timer');
         if (!keepDisplay) {
             this.state.decisionTimedOut = false;
         }
 
-        if (!timerContainer) {
-            return;
+        if (submitButton) {
+            if (keepDisplay) {
+                submitButton.classList.add('timer-active');
+                submitButton.classList.remove('timer-warning');
+            } else {
+                submitButton.classList.remove('timer-active', 'timer-warning', 'timer-expired');
+            }
         }
 
-        if (keepDisplay) {
-            timerContainer.classList.remove('timer-warning');
-        } else {
-            timerContainer.classList.add('hidden');
-            timerContainer.classList.remove('timer-warning', 'timer-expired');
+        if (timerDisplay) {
+            if (keepDisplay) {
+                timerDisplay.classList.remove('hidden');
+            } else {
+                timerDisplay.classList.add('hidden');
+                timerDisplay.textContent = '';
+            }
         }
     },
 
@@ -2153,15 +2164,16 @@ const UIController = {
 
         this.clearDecisionTimer({ keepDisplay: true });
 
-        const timerContainer = document.getElementById('decision-timer-container');
+        const submitButton = document.getElementById('submit-decision');
         const timerDisplay = document.getElementById('decision-timer');
 
-        if (timerContainer) {
-            timerContainer.classList.remove('hidden', 'timer-warning');
-            timerContainer.classList.add('timer-expired');
+        if (submitButton) {
+            submitButton.classList.remove('timer-warning');
+            submitButton.classList.add('timer-expired', 'timer-active');
         }
         if (timerDisplay) {
-            timerDisplay.textContent = '00:00';
+            timerDisplay.classList.remove('hidden');
+            timerDisplay.textContent = '00';
         }
 
         this.autoFillDecisions();
