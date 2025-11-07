@@ -367,7 +367,7 @@
                 } else if (key === 'e') {
                     document.querySelector('button[name="decision"][value="KEEP_RUNNING"]')?.click();
                 }
-                // Follow up: z = Celebrate, x = Iterate, c = Validate, v = Fix & Rerun, n = None
+                // Follow up: z = Celebrate, x = Iterate, c = Validate, v = Fix issues & rerun, n = None
                 else if (key === 'z') {
                     document.querySelector('button[name="follow_up"][value="CELEBRATE"]')?.click();
                 } else if (key === 'x') {
@@ -440,11 +440,31 @@
                     </p>
                 </div>
 
-            </div>
-        </div>
+                <section id="quick-start" class="mt-12">
+                    <div class="bg-white bg-opacity-90 rounded-xl shadow-xl border border-orange-200 p-6">
+                        <h2 class="text-2xl md:text-3xl font-semibold text-gray-800 text-center mb-6">Quick rules before you press play</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="p-4 rounded-lg border border-orange-100 bg-orange-50 bg-opacity-80">
+                                <h3 class="text-lg font-semibold text-orange-700 mb-2">1. Read the brief</h3>
+                                <p class="text-sm text-gray-700 leading-relaxed">Every challenge gives you an experiment design card and live results. Scan the traps, check the progress bar and note the business goal.</p>
+                            </div>
+                            <div class="p-4 rounded-lg border border-orange-100 bg-orange-50 bg-opacity-80">
+                                <h3 class="text-lg font-semibold text-orange-700 mb-2">2. Make three calls</h3>
+                                <p class="text-sm text-gray-700 leading-relaxed">Judge trustworthiness, pick the best product decision, then choose the follow-up. Two correct calls lock in the win.</p>
+                            </div>
+                            <div class="p-4 rounded-lg border border-orange-100 bg-orange-50 bg-opacity-80">
+                                <h3 class="text-lg font-semibold text-orange-700 mb-2">3. Score impact</h3>
+                                <p class="text-sm text-gray-700 leading-relaxed">Impact is measured in conversions per day (cpd). Even perfect decisions can net zero if the test truly had no lift—just like the real world.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
-        <!-- Play Modal -->
-        <div id="play-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        </div>
+    </div>
+
+    <!-- Play Modal -->
+    <div id="play-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
             <div class="bg-gray-900 rounded-lg shadow-xl p-8 max-w-md w-full mx-4"
                 style="background-color: rgba(17, 24, 39, 0.7);">
                 <h2 class="text-2xl font-bold text-white mb-6 text-center">Start Your Journey</h2>
@@ -466,9 +486,10 @@
                             <div class="flex items-center">
                                 <input type="radio" name="opponent" value="HiPPO" class="mr-3" id="opponent-hippo">
                                 <div>
+                                    <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold uppercase tracking-wide bg-gray-700 bg-opacity-60 rounded-full mb-1">Easy</span>
                                     <label for="opponent-hippo"
-                                        class="font-medium text-white cursor-pointer">HiPPO</label>
-                                    <p class="text-sm text-gray-300">Makes decisions based on personal opinion</p>
+                                        class="font-medium text-white cursor-pointer block">HiPPO</label>
+                                    <p class="text-sm text-gray-300">Gut-feel leader who ignores data. Expect easy wins but big lessons.</p>
                                 </div>
                             </div>
                         </div>
@@ -477,9 +498,10 @@
                             <div class="flex items-center">
                                 <input type="radio" name="opponent" value="Random" class="mr-3" id="opponent-random">
                                 <div>
+                                    <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold uppercase tracking-wide bg-gray-700 bg-opacity-60 rounded-full mb-1">Unpredictable</span>
                                     <label for="opponent-random"
-                                        class="font-medium text-white cursor-pointer">Random</label>
-                                    <p class="text-sm text-gray-300">Makes decisions randomly</p>
+                                        class="font-medium text-white cursor-pointer block">Random</label>
+                                    <p class="text-sm text-gray-300">Flips a coin for every choice. Sometimes brilliant, often disastrous.</p>
                                 </div>
                             </div>
                         </div>
@@ -488,9 +510,10 @@
                             <div class="flex items-center">
                                 <input type="radio" name="opponent" value="Naive" class="mr-3" id="opponent-naive">
                                 <div>
+                                    <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold uppercase tracking-wide bg-gray-700 bg-opacity-60 rounded-full mb-1">Intermediate</span>
                                     <label for="opponent-naive"
-                                        class="font-medium text-white cursor-pointer">Naive</label>
-                                    <p class="text-sm text-gray-300">Chooses highest conversion rate at day 14</p>
+                                        class="font-medium text-white cursor-pointer block">Naive</label>
+                                    <p class="text-sm text-gray-300">Ships whichever line looks best today, even when it isn’t significant.</p>
                                 </div>
                             </div>
                         </div>
@@ -499,9 +522,10 @@
                             <div class="flex items-center">
                                 <input type="radio" name="opponent" value="Peek-a-boo" class="mr-3" id="opponent-peek">
                                 <div>
+                                    <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold uppercase tracking-wide bg-gray-700 bg-opacity-60 rounded-full mb-1">Advanced</span>
                                     <label for="opponent-peek"
-                                        class="font-medium text-white cursor-pointer">Peek-a-boo</label>
-                                    <p class="text-sm text-gray-300">Still not significant… maybe tomorrow!</p>
+                                        class="font-medium text-white cursor-pointer block">Peek-a-boo</label>
+                                    <p class="text-sm text-gray-300">Peeks daily and jumps the gun. Outsmart them by trusting the confidence intervals.</p>
                                 </div>
                             </div>
                         </div>
@@ -580,30 +604,37 @@
             <div class="mb-8">
                 <h2 class="text-xl font-semibold mb-4 text-white">Choose Your Opponent</h2>
                 <p class="text-gray-300 mb-4">Progressing through rounds proves your skills, but the real measure of
-                    success is your impact on conversion rates. Compare your performance against different
-                    decision-making approaches to see how your choices stack up in real-world scenarios:</p>
+                    success is your impact on conversion rates. Opponents below are ordered from warm-up to
+                    advanced—each simulates a common decision-making anti-pattern so you can see how your approach
+                    stacks up.</p>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="competitor-card p-4 rounded-lg cursor-pointer transition-colors text-white"
                         style="background-color: #f97316;" data-competitor="HiPPO">
-                        <h3 class="font-bold text-lg mb-2">HiPPO</h3>
-                        <p class="text-white opacity-90">Makes decisions based on personal opinion, ignoring statistical
-                            significance and data quality</p>
+                        <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold uppercase tracking-wide bg-black bg-opacity-30 rounded-full mb-2">Easy</span>
+                        <h3 class="font-bold text-lg mb-1">HiPPO</h3>
+                        <p class="text-white opacity-90 text-sm">Acts on gut instinct and pet projects. Great for warming up
+                            and seeing the cost of ignoring evidence.</p>
                     </div>
                     <div class="competitor-card p-4 rounded-lg cursor-pointer transition-colors text-white"
                         style="background-color: #f97316;" data-competitor="Random">
-                        <h3 class="font-bold text-lg mb-2">Random</h3>
-                        <p class="text-white opacity-90">Makes decisions randomly, without analyzing the data</p>
+                        <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold uppercase tracking-wide bg-black bg-opacity-30 rounded-full mb-2">Unpredictable</span>
+                        <h3 class="font-bold text-lg mb-1">Random</h3>
+                        <p class="text-white opacity-90 text-sm">Flips coins for every choice. Expect swings in cpd—use it to
+                            see whether your process beats pure luck.</p>
                     </div>
                     <div class="competitor-card p-4 rounded-lg cursor-pointer transition-colors text-white"
                         style="background-color: #f97316;" data-competitor="Naive">
-                        <h3 class="font-bold text-lg mb-2">Naive</h3>
-                        <p class="text-white opacity-90">Chooses the variant with the highest conversion rate at day 14,
-                            ignoring confidence intervals and p-values</p>
+                        <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold uppercase tracking-wide bg-black bg-opacity-30 rounded-full mb-2">Intermediate</span>
+                        <h3 class="font-bold text-lg mb-1">Naive</h3>
+                        <p class="text-white opacity-90 text-sm">Chooses whichever variant is ahead on day 14, even if the
+                            confidence interval screams "wait." Teaches patience.</p>
                     </div>
                     <div class="competitor-card p-4 rounded-lg cursor-pointer transition-colors text-white"
                         style="background-color: #f97316;" data-competitor="Peek-a-boo">
-                        <h3 class="font-bold text-lg mb-2">Peek-a-boo</h3>
-                        <p class="text-white opacity-90">Peek-a-boo! Still not significant… maybe tomorrow!</p>
+                        <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold uppercase tracking-wide bg-black bg-opacity-30 rounded-full mb-2">Advanced</span>
+                        <h3 class="font-bold text-lg mb-1">Peek-a-boo</h3>
+                        <p class="text-white opacity-90 text-sm">Falls for peeking traps—always tempted to stop early. Can you
+                            beat them by trusting the math?</p>
                     </div>
                 </div>
             </div>
@@ -618,6 +649,76 @@
                     <a href="leaderboard.html" class="text-blue-600 hover:underline">View Leaderboards</a>
                 </div>
             </div>
+            <section id="concept-glossary" class="mt-12 px-4">
+                <div class="max-w-6xl mx-auto">
+                    <h2 class="text-3xl font-semibold text-white mb-4">Concept quick reference</h2>
+                    <p class="text-gray-200 mb-6">Hovering tooltips now link here so you can keep learning without
+                        leaving the page. Open any card for a refresher, then dive back into the challenge.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <article id="concept-null-hypothesis"
+                            class="bg-white bg-opacity-90 border border-gray-200 rounded-xl p-4 shadow">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Null hypothesis</h3>
+                            <p class="text-sm text-gray-700 mb-3">Start every analysis believing there is no difference
+                                between base and variant. Only abandon that belief when the evidence clears the
+                                significance bar.</p>
+                            <a href="https://en.wikipedia.org/wiki/Null_hypothesis" target="_blank"
+                                rel="noreferrer"
+                                class="text-orange-500 hover:text-orange-600 text-sm">Optional deep dive →</a>
+                        </article>
+                        <article id="concept-test-type"
+                            class="bg-white bg-opacity-90 border border-gray-200 rounded-xl p-4 shadow">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Two-sided test</h3>
+                            <p class="text-sm text-gray-700 mb-3">We care about lifts or drops. A two-sided test asks
+                                whether the variant is simply different, not just better.</p>
+                            <a href="https://en.wikipedia.org/wiki/One-_and_two-tailed_tests" target="_blank"
+                                rel="noreferrer"
+                                class="text-orange-500 hover:text-orange-600 text-sm">Optional deep dive →</a>
+                        </article>
+                        <article id="concept-significance"
+                            class="bg-white bg-opacity-90 border border-gray-200 rounded-xl p-4 shadow">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Significance level (α)</h3>
+                            <p class="text-sm text-gray-700 mb-3">The risk you accept of calling a fluke a win. Smaller α
+                                means more skepticism and longer experiments.</p>
+                            <a href="https://en.wikipedia.org/wiki/Statistical_significance" target="_blank"
+                                rel="noreferrer"
+                                class="text-orange-500 hover:text-orange-600 text-sm">Optional deep dive →</a>
+                        </article>
+                        <article id="concept-power"
+                            class="bg-white bg-opacity-90 border border-gray-200 rounded-xl p-4 shadow">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Power (1-β)</h3>
+                            <p class="text-sm text-gray-700 mb-3">The chance you will spot a real effect. Higher power
+                                protects you from missing winning ideas but often requires more traffic.</p>
+                            <a href="https://en.wikipedia.org/wiki/Power_(statistics)" target="_blank"
+                                rel="noreferrer"
+                                class="text-orange-500 hover:text-orange-600 text-sm">Optional deep dive →</a>
+                        </article>
+                        <article id="concept-mre"
+                            class="bg-white bg-opacity-90 border border-gray-200 rounded-xl p-4 shadow">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Minimum relevant effect</h3>
+                            <p class="text-sm text-gray-700 mb-3">Your definition of "worth it." If the lift is smaller
+                                than this value, shipping the change likely isn’t worth the effort.</p>
+                            <a href="https://en.wikipedia.org/wiki/Effect_size" target="_blank" rel="noreferrer"
+                                class="text-orange-500 hover:text-orange-600 text-sm">Optional deep dive →</a>
+                        </article>
+                        <article id="concept-pvalue"
+                            class="bg-white bg-opacity-90 border border-gray-200 rounded-xl p-4 shadow">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">p-value</h3>
+                            <p class="text-sm text-gray-700 mb-3">The likelihood of seeing results this extreme if the
+                                null hypothesis is true. Compare it with α to decide whether to believe the
+                                variant.</p>
+                            <a href="https://en.wikipedia.org/wiki/P-value" target="_blank" rel="noreferrer"
+                                class="text-orange-500 hover:text-orange-600 text-sm">Optional deep dive →</a>
+                        </article>
+                        <article id="concept-cpd"
+                            class="bg-white bg-opacity-90 border border-gray-200 rounded-xl p-4 shadow">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Conversions per day (cpd)</h3>
+                            <p class="text-sm text-gray-700 mb-3">Our scoreboard metric. It converts lift percentages into
+                                a daily count of extra (or lost) conversions so you can compare strategies on a
+                                common scale.</p>
+                        </article>
+                    </div>
+                </div>
+            </section>
         </div>
 
         <div id="challenge-container" class="hidden">
@@ -638,21 +739,32 @@
                             <span id="accuracy" class="text-xl md:text-2xl font-bold score-value">0%</span>
                         </div>
                         <div>
-                            <span class="font-medium text-white">Your <span class="tooltip-trigger">Impact<span
-                                        class="tooltip-content">The incremental number of conversions per day as a
-                                        result of your decisions</span></span>: </span>
-                            <span id="user-impact" class="text-xl md:text-2xl font-bold score-value text-green-500">0
-                                cpd</span>
+                            <div class="tooltip-trigger inline-flex items-baseline gap-2">
+                                <span class="font-medium text-white">Your Impact:</span>
+                                <span id="user-impact"
+                                    class="text-xl md:text-2xl font-bold score-value text-green-500">0 cpd</span>
+                                <span class="tooltip-content">Conversions per day (cpd) gained or lost because of your
+                                    decisions in this session. If the true lift is zero, your impact can stay at 0 cpd
+                                    even with perfect calls—that mirrors real experiment outcomes.<br><a
+                                        href="#concept-cpd" class="text-orange-500 hover:text-orange-600">Open quick
+                                        reference →</a></span>
+                            </div>
                         </div>
                         <div>
-                            <span class="font-medium text-white"><span id="competitor-name">Opponent</span> <span
-                                    class="tooltip-trigger">Impact<span class="tooltip-content">The incremental number
-                                        of conversions per day as a result of your opponent's decisions</span></span>:
-                            </span>
-                            <span id="opponent-impact" class="text-xl md:text-2xl font-bold score-value text-red-500">0
-                                cpd</span>
+                            <div class="tooltip-trigger inline-flex items-baseline gap-2">
+                                <span class="font-medium text-white"><span id="competitor-name">Opponent</span>
+                                    Impact:</span>
+                                <span id="opponent-impact"
+                                    class="text-xl md:text-2xl font-bold score-value text-red-500">0 cpd</span>
+                                <span class="tooltip-content">Each opponent follows a fixed strategy. Their cpd shows the
+                                    conversions per day that strategy would have generated on the same experiments—so
+                                    you can compare approaches at a glance.<br><a href="#concept-cpd"
+                                        class="text-orange-500 hover:text-orange-600">Open quick reference →</a></span>
+                            </div>
                         </div>
                     </div>
+                    <p class="text-xs text-gray-300 mt-1">Tip: Hover the impact numbers to see how we calculate them and
+                        why they might be zero or even negative.</p>
                     <div class="flex items-center space-x-2">
                         <div class="flex space-x-1">
                             <div id="exp-dot-1"
@@ -738,7 +850,14 @@
                             <span class="font-medium text-white tooltip-trigger">
                                 What's your Follow Up?
                                 <span class="tooltip-content">
-                                    Choose next steps.
+                                    Decide what to do after making your call:
+                                    <ul class="list-disc list-inside mt-1 space-y-1 text-left">
+                                        <li><strong>Celebrate</strong>: Ship, share the win and monitor rollout.</li>
+                                        <li><strong>Iterate</strong>: Plan a new experiment that builds on the idea.</li>
+                                        <li><strong>Validate</strong>: Run confirmatory analysis or a holdout to double-check.</li>
+                                        <li><strong>Fix issues &amp; rerun</strong>: Resolve data quality or implementation bugs, then restart.</li>
+                                        <li><strong>None</strong>: Log learnings and pivot to a different hypothesis.</li>
+                                    </ul>
                                 </span>
                             </span>
                         </div>
@@ -753,7 +872,7 @@
                                 Validate
                             </button>
                             <button type="button" name="follow_up" value="RERUN" class="decision-btn">
-                                Fix & Rerun
+                                Fix issues &amp; rerun
                             </button>
                             <button type="button" name="follow_up" value="DO_NOTHING" class="decision-btn">
                                 None
@@ -859,20 +978,21 @@
                         <div class="flex justify-between items-center py-1 text-sm">
                             <span class="font-medium text-gray-700">Null Hypothesis</span>
                             <span class="font-semibold text-gray-900">
-                                <span class="tooltip-trigger">No difference<span class="tooltip-content">We assume that
-                                        there is no difference between the base and variant versions, and look for
-                                        evidence against it<br><a href="https://en.wikipedia.org/wiki/Null_hypothesis"
-                                            target="_blank" class="text-blue-500 hover:text-blue-700">Learn more
+                                <span class="tooltip-trigger">No difference<span class="tooltip-content">We assume there
+                                        is no difference until the data provides strong evidence otherwise. Use it as
+                                        your baseline when judging every metric.<br><a
+                                            href="#concept-null-hypothesis"
+                                            class="text-orange-500 hover:text-orange-600">Open quick reference
                                             →</a></span></span>
                             </span>
                         </div>
                         <div class="flex justify-between items-center py-1 text-sm">
                             <span class="font-medium text-gray-700">Experiment Type</span>
                             <span class="font-semibold text-gray-900">
-                                <span class="tooltip-trigger">2-sided Test<span class="tooltip-content">Tests for any
-                                        difference between variants, whether positive or negative<br><a
-                                            href="https://en.wikipedia.org/wiki/One-_and_two-tailed_tests"
-                                            target="_blank" class="text-blue-500 hover:text-blue-700">Learn more
+                                <span class="tooltip-trigger">2-sided Test<span class="tooltip-content">Checks for either
+                                        positive or negative changes. You're looking for meaningful movement in
+                                        <em>any</em> direction.<br><a href="#concept-test-type"
+                                            class="text-orange-500 hover:text-orange-600">Open quick reference
                                             →</a></span></span>
                             </span>
                         </div>
@@ -889,11 +1009,10 @@
                                 <span class="tooltip-trigger">
                                     Significance
                                     <span class="tooltip-content">
-                                        The probability threshold (α) used to determine if a result is statistically
-                                        significant. A lower value (e.g., 0.05) means we require stronger evidence
-                                        to reject the null hypothesis.
-                                        <a href="https://en.wikipedia.org/wiki/Statistical_significance" target="_blank"
-                                            class="text-blue-500 hover:text-blue-700">Learn more
+                                        The probability threshold (α) for calling a result "real". Smaller α demands
+                                        stronger evidence before we stop believing the null hypothesis.<br><a
+                                            href="#concept-significance"
+                                            class="text-orange-500 hover:text-orange-600">Open quick reference
                                             →</a>
                                     </span>
                                 </span>
@@ -905,11 +1024,9 @@
                                 <span class="tooltip-trigger">
                                     Power
                                     <span class="tooltip-content">
-                                        The probability (1-β) of correctly detecting a true effect when it exists. A
-                                        higher power (e.g., 0.80) means we're more likely to detect meaningful
-                                        differences between variants.
-                                        <a href="https://en.wikipedia.org/wiki/Power_(statistics)" target="_blank"
-                                            class="text-blue-500 hover:text-blue-700">Learn more →</a>
+                                        The probability (1-β) of catching a real effect when it exists. Higher power
+                                        keeps you from missing true winners.<br><a href="#concept-power"
+                                            class="text-orange-500 hover:text-orange-600">Open quick reference →</a>
                                     </span>
                                 </span>
                             </span>
@@ -936,10 +1053,8 @@
                         <div class="flex justify-between items-center py-1 text-sm">
                             <span class="font-medium text-gray-700">
                                 <span class="tooltip-trigger">Minimum Relevant Effect<span class="tooltip-content">The
-                                        smallest effect size (absolute) that would be considered practically meaningful
-                                        for your business<br><a href="https://en.wikipedia.org/wiki/Effect_size"
-                                            target="_blank" class="text-blue-500 hover:text-blue-700">Learn more
-                                            →</a></span></span>
+                                        smallest lift worth caring about for this metric. Anything smaller is noise for
+                                        the business.<br><a href="#concept-mre" class="text-orange-500 hover:text-orange-600">Open quick reference →</a></span></span>
                             </span>
                             <span id="exp-min-effect" class="font-semibold text-gray-900"></span>
                         </div>
@@ -1098,16 +1213,19 @@
                     </div>
 
                     <div class="mt-0 p-3 bg-gray-50 rounded-lg">
+                        <div class="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900 flex items-start gap-3">
+                            <span class="font-semibold text-amber-700">CI 101</span>
+                            <p class="leading-relaxed">Each bar marks the range of conversion rates that are plausible given the data. The solid marker is the best estimate; the thin grey "0%" line marks no change. When the bar crosses that line, treat the result as inconclusive until more data lands.</p>
+                        </div>
                         <div class="flex items-center space-x-2">
                             <span class="text-lg font-medium">
                                 <span class="tooltip-trigger">
                                     p-value
                                     <span class="tooltip-content">
-                                        The probability of observing the observed difference (or a more extreme one) if
-                                        there is no real difference between variants. A p-value below the significance
-                                        level (α) suggests the difference is statistically significant.
-                                        <a href="https://en.wikipedia.org/wiki/P-value" target="_blank"
-                                            class="text-blue-500 hover:text-blue-700">Learn more →</a>
+                                        The probability of seeing data this extreme (or more) if the null hypothesis is
+                                        true. Compare it to α to decide if the lift is trustworthy.<br><a
+                                            href="#concept-pvalue" class="text-orange-500 hover:text-orange-600">Open
+                                            quick reference →</a>
                                     </span>
                                 </span>:
                             </span>
