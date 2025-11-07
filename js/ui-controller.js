@@ -2114,20 +2114,25 @@ const UIController = {
             timerDisplay.classList.remove('timer-intro-reveal');
         };
 
+        const introDurations = {
+            hold: 1500,
+            shrink: 500
+        };
+
         timerDisplay.classList.add('timer-intro-hidden');
         submitButton.classList.add('timer-intro-catch');
 
         timerDisplay.addEventListener('animationend', removeRevealClass, { once: true });
         submitButton.addEventListener('animationend', cleanupButtonCatch, { once: true });
 
-        if (this.runRoundStyleTimerIntro(countdownValue, submitButton, timerDisplay, cleanupButtonCatch)) {
+        if (this.runRoundStyleTimerIntro(countdownValue, submitButton, timerDisplay, cleanupButtonCatch, introDurations)) {
             return;
         }
 
-        this.runFallbackTimerIntro(countdownValue, submitButton, timerDisplay, cleanupButtonCatch);
+        this.runFallbackTimerIntro(countdownValue, submitButton, timerDisplay, cleanupButtonCatch, introDurations);
     },
 
-    runRoundStyleTimerIntro(countdownValue, submitButton, timerDisplay, cleanupButtonCatch) {
+    runRoundStyleTimerIntro(countdownValue, submitButton, timerDisplay, cleanupButtonCatch, introDurations) {
         const splash = document.getElementById('round-splash');
         const overlay = document.getElementById('round-splash-overlay');
         if (!splash || !overlay || typeof splash.animate !== 'function' || overlay.classList.contains('active') || splash.classList.contains('show')) {
@@ -2135,6 +2140,7 @@ const UIController = {
         }
 
         const originalContent = splash.innerHTML;
+        const { hold, shrink } = introDurations;
 
         const revealTimer = () => {
             timerDisplay.classList.remove('timer-intro-hidden');
@@ -2157,9 +2163,6 @@ const UIController = {
         const targetX = buttonRect.left + buttonRect.width / 2 - viewportCenterX;
         const targetY = buttonRect.top + buttonRect.height / 2 - viewportCenterY;
 
-        const shrinkDuration = 650;
-        const holdDuration = 900;
-
         let finalized = false;
 
         const finalizeIntro = () => {
@@ -2175,7 +2178,7 @@ const UIController = {
             overlay.classList.remove('active');
             overlay.style.opacity = '';
 
-            window.setTimeout(cleanupButtonCatch, 650);
+            window.setTimeout(cleanupButtonCatch, shrink);
             revealTimer();
         };
 
@@ -2187,7 +2190,7 @@ const UIController = {
                     opacity: 0
                 }
             ], {
-                duration: shrinkDuration,
+                duration: shrink,
                 easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
                 fill: 'forwards'
             });
@@ -2200,7 +2203,7 @@ const UIController = {
                     { opacity: 1 },
                     { opacity: 0 }
                 ], {
-                    duration: shrinkDuration,
+                    duration: shrink,
                     easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
                     fill: 'forwards'
                 });
@@ -2214,17 +2217,17 @@ const UIController = {
             } else {
                 window.setTimeout(() => {
                     overlay.style.opacity = '';
-                }, shrinkDuration);
+                }, shrink);
             }
         };
 
-        window.setTimeout(startCollapse, holdDuration);
-        window.setTimeout(finalizeIntro, holdDuration + shrinkDuration + 100);
+        window.setTimeout(startCollapse, hold);
+        window.setTimeout(finalizeIntro, hold + shrink + 120);
 
         return true;
     },
 
-    runFallbackTimerIntro(countdownValue, submitButton, timerDisplay, cleanupButtonCatch) {
+    runFallbackTimerIntro(countdownValue, submitButton, timerDisplay, cleanupButtonCatch, introDurations) {
         const overlay = document.createElement('div');
         overlay.className = 'timer-intro-overlay';
 
@@ -2241,11 +2244,14 @@ const UIController = {
         const targetX = buttonRect.left + buttonRect.width / 2 - viewportCenterX;
         const targetY = buttonRect.top + buttonRect.height / 2 - viewportCenterY;
 
+        const { hold, shrink } = introDurations;
+        const totalDuration = hold + shrink;
+
         const finalizeIntro = () => {
             timerDisplay.classList.remove('timer-intro-hidden');
             timerDisplay.classList.add('timer-intro-reveal');
             overlay.remove();
-            window.setTimeout(cleanupButtonCatch, 650);
+            window.setTimeout(cleanupButtonCatch, shrink);
         };
 
         if (typeof ghost.animate !== 'function') {
@@ -2254,11 +2260,12 @@ const UIController = {
         }
 
         const animation = ghost.animate([
-            { transform: 'translate(0, 0) scale(0.25)', opacity: 0 },
-            { transform: 'translate(0, 0) scale(1.2)', opacity: 1, offset: 0.45 },
+            { transform: 'translate(0, 0) scale(0.45)', opacity: 0 },
+            { transform: 'translate(0, 0) scale(1)', opacity: 1, offset: 0.25 },
+            { transform: 'translate(0, 0) scale(1)', opacity: 1, offset: hold / totalDuration },
             { transform: `translate(${targetX}px, ${targetY}px) scale(0.25)`, opacity: 0 }
         ], {
-            duration: 900,
+            duration: totalDuration,
             easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
         });
 
