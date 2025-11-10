@@ -2199,7 +2199,10 @@ const UIController = {
 
         splash.classList.remove('show');
         splash.classList.add('timer-intro-splash');
-        splash.innerHTML = `<div class="timer-intro-splash-content">${countdownValue}</div>`;
+        splash.innerHTML = `
+            <div class="timer-intro-splash-heading">Time out Mode!</div>
+            <div class="timer-intro-splash-content">${countdownValue}</div>
+        `;
         splash.style.display = 'block';
 
         void splash.offsetWidth;
@@ -2282,7 +2285,10 @@ const UIController = {
 
         const ghost = document.createElement('span');
         ghost.className = 'timer-intro-ghost';
-        ghost.textContent = countdownValue;
+        ghost.innerHTML = `
+            <span class="timer-intro-ghost-heading">Time out Mode!</span>
+            <span class="timer-intro-ghost-value">${countdownValue}</span>
+        `;
         overlay.appendChild(ghost);
 
         document.body.appendChild(overlay);
