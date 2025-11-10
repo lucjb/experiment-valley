@@ -695,7 +695,8 @@
                             <span class="font-medium text-white tooltip-trigger">
                                 Is it Trustworthy?
                                 <span class="tooltip-content">
-                                    Can the experiment be trusted to make a decision right now?
+                                    <strong>Yes:</strong> The experiment can be trusted to make a decision. No data quality issues, design is correct, and execution is consistent with the design.<br><br>
+                                    <strong>No:</strong> The experiment cannot be trusted. There may be data quality issues (e.g. sample ratio mismatch, data loss, base rate mismatch), design problems (underpowered, overdue), or suspicious results (Twyman's Law, lucky day) that make the data unreliable.
                                 </span>
                             </span>
                         </div>
@@ -715,7 +716,9 @@
                             <span class="font-medium text-white tooltip-trigger">
                                 Decision
                                 <span class="tooltip-content">
-                                    Keep base, ship variant or continue running the experiment.
+                                    <strong>Keep Base:</strong> Keep the original version. The default decision unless the experiment is trustworthy and shows evidence in favor of variant.<br><br>
+                                    <strong>Keep Variant:</strong> Ship the variant version. Use when the experiment is trustworthy and results are statistically significant in favor of the variant.<br><br>
+                                    <strong>Keep Running:</strong> Continue running the experiment. Use when the experiment hasn't reached the proper sample size or when there are temporal biases.
                                 </span>
                             </span>
                         </div>
@@ -738,7 +741,11 @@
                             <span class="font-medium text-white tooltip-trigger">
                                 What's your Follow Up?
                                 <span class="tooltip-content">
-                                    Choose next steps.
+                                    <strong>Celebrate:</strong> Ship the win and plan a new experiment. Use when results are trustworthy and statistically significant in favor of the variant.<br><br>
+                                    <strong>Iterate:</strong> Refine the hypothesis, treatment, or experiment design. Use when results are trustworthy and either inconclusive or statistically significant in favor of base.<br><br>
+                                    <strong>Validate:</strong> Try to replicate the results with a new experiment, same hypothesis, same treatment. Use when results seem suspicious or need confirmation.<br><br>
+                                    <strong>Fix & Rerun:</strong> Fix execution issues (sample ratio mismatch, data loss, base rate mismatch) and rerun the experiment. Use when data quality problems make results unreliable.<br><br>
+                                    <strong>None:</strong> No follow-up action needed. Use when the experiment is not yet completed.
                                 </span>
                             </span>
                         </div>
