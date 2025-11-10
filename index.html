@@ -440,6 +440,31 @@
                     </p>
                 </div>
 
+                <div class="mt-10 max-w-3xl mx-auto bg-gray-900 bg-opacity-80 text-white p-6 rounded-2xl border shadow-xl"
+                    style="border-color: rgba(249, 115, 22, 0.4);">
+                    <h2 class="text-2xl font-semibold mb-4 text-orange-300">Quick rules</h2>
+                    <ol class="list-decimal list-inside space-y-2 text-gray-200 text-left">
+                        <li>Work through each experiment in order: judge if the data is trustworthy, pick the best
+                            decision, then choose the follow-up ritual.</li>
+                        <li>Your score is measured in conversions per day gained from shipping variants. Playing it safe
+                            keeps impact at 0, so look for trustworthy wins.</li>
+                        <li>Every three experiments make a round. Get 2 out of 3 right to advance and unlock harder
+                            scenarios.</li>
+                    </ol>
+                    <div class="mt-4 p-4 rounded-xl border border-gray-700 bg-gray-800 bg-opacity-70"
+                        style="background-color: rgba(31, 41, 55, 0.75);">
+                        <h3 class="text-lg font-semibold text-orange-200 mb-2">Opponent cheat sheet</h3>
+                        <ul class="space-y-1 text-sm text-gray-200">
+                            <li><strong>HiPPO</strong> – Follows gut feel. Great for spotting why opinions go wrong.</li>
+                            <li><strong>Random</strong> – Flips a coin. Baseline to beat.</li>
+                            <li><strong>Naive</strong> – Ships whatever looks highest today, ignores uncertainty.</li>
+                            <li><strong>Peek-a-boo</strong> – Keeps peeking and delaying until significance shows up.</li>
+                        </ul>
+                        <p class="mt-3 text-xs text-gray-300">Opponents are ordered from easiest to trickiest. The more
+                            disciplined you are, the bigger the gap you'll open.</p>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -638,19 +663,31 @@
                             <span id="accuracy" class="text-xl md:text-2xl font-bold score-value">0%</span>
                         </div>
                         <div>
-                            <span class="font-medium text-white">Your <span class="tooltip-trigger">Impact<span
-                                        class="tooltip-content">The incremental number of conversions per day as a
-                                        result of your decisions</span></span>: </span>
-                            <span id="user-impact" class="text-xl md:text-2xl font-bold score-value text-green-500">0
-                                cpd</span>
+                            <span
+                                class="tooltip-trigger inline-flex flex-wrap items-baseline gap-1 font-medium text-white">
+                                <span>Your Impact:</span>
+                                <span id="user-impact"
+                                    class="text-xl md:text-2xl font-bold score-value text-green-500">0 cpd</span>
+                                <span class="tooltip-content">
+                                    Impact measures the conversions per day you would add by shipping the variant right
+                                    now. Sticking with the base or keeping the test running keeps this at 0 because the
+                                    customer experience doesn't change. Use it to learn how confident calls translate
+                                    into business outcomes.
+                                </span>
+                            </span>
                         </div>
                         <div>
-                            <span class="font-medium text-white"><span id="competitor-name">Opponent</span> <span
-                                    class="tooltip-trigger">Impact<span class="tooltip-content">The incremental number
-                                        of conversions per day as a result of your opponent's decisions</span></span>:
+                            <span
+                                class="tooltip-trigger inline-flex flex-wrap items-baseline gap-1 font-medium text-white">
+                                <span><span id="competitor-name">Opponent</span> Impact:</span>
+                                <span id="opponent-impact"
+                                    class="text-xl md:text-2xl font-bold score-value text-red-500">0 cpd</span>
+                                <span class="tooltip-content">
+                                    Each opponent follows their own playbook when deciding whether to ship. Their impact
+                                    jumps when they roll out a variant— even if you pass—so you can see how reliable
+                                    your strategy is compared with theirs.
+                                </span>
                             </span>
-                            <span id="opponent-impact" class="text-xl md:text-2xl font-bold score-value text-red-500">0
-                                cpd</span>
                         </div>
                     </div>
                     <div class="flex items-center space-x-2">
@@ -738,7 +775,12 @@
                             <span class="font-medium text-white tooltip-trigger">
                                 What's your Follow Up?
                                 <span class="tooltip-content">
-                                    Choose next steps.
+                                    Choose what you'll do with the insight:
+                                    <br><strong>Celebrate</strong> – Ship the change and tell the story.
+                                    <br><strong>Iterate</strong> – Improve this idea before rolling out.
+                                    <br><strong>Validate</strong> – Double-check with QA, guardrail metrics, or a holdout.
+                                    <br><strong>Fix &amp; Rerun</strong> – Resolve data or setup issues, then restart the test.
+                                    <br><strong>None</strong> – Close this chapter and move on to a new hypothesis.
                                 </span>
                             </span>
                         </div>
@@ -758,6 +800,10 @@
                             <button type="button" name="follow_up" value="DO_NOTHING" class="decision-btn">
                                 None
                             </button>
+                        </div>
+                        <div class="mt-2 text-xs text-gray-300 text-center">
+                            Follow-up choices are about learning cadence&mdash;they won't change your score directly, but
+                            they'll teach you what great experiment hygiene looks like.
                         </div>
                     </div>
 
@@ -861,8 +907,8 @@
                             <span class="font-semibold text-gray-900">
                                 <span class="tooltip-trigger">No difference<span class="tooltip-content">We assume that
                                         there is no difference between the base and variant versions, and look for
-                                        evidence against it<br><a href="https://en.wikipedia.org/wiki/Null_hypothesis"
-                                            target="_blank" class="text-blue-500 hover:text-blue-700">Learn more
+                                        evidence against it.<br><a href="https://en.wikipedia.org/wiki/Null_hypothesis"
+                                            target="_blank" class="text-blue-500 hover:text-blue-700">Read on Wikipedia
                                             →</a></span></span>
                             </span>
                         </div>
@@ -870,9 +916,9 @@
                             <span class="font-medium text-gray-700">Experiment Type</span>
                             <span class="font-semibold text-gray-900">
                                 <span class="tooltip-trigger">2-sided Test<span class="tooltip-content">Tests for any
-                                        difference between variants, whether positive or negative<br><a
+                                        difference between variants, whether positive or negative.<br><a
                                             href="https://en.wikipedia.org/wiki/One-_and_two-tailed_tests"
-                                            target="_blank" class="text-blue-500 hover:text-blue-700">Learn more
+                                            target="_blank" class="text-blue-500 hover:text-blue-700">Read on Wikipedia
                                             →</a></span></span>
                             </span>
                         </div>
@@ -893,7 +939,7 @@
                                         significant. A lower value (e.g., 0.05) means we require stronger evidence
                                         to reject the null hypothesis.
                                         <a href="https://en.wikipedia.org/wiki/Statistical_significance" target="_blank"
-                                            class="text-blue-500 hover:text-blue-700">Learn more
+                                            class="text-blue-500 hover:text-blue-700">Read on Wikipedia
                                             →</a>
                                     </span>
                                 </span>
@@ -909,7 +955,7 @@
                                         higher power (e.g., 0.80) means we're more likely to detect meaningful
                                         differences between variants.
                                         <a href="https://en.wikipedia.org/wiki/Power_(statistics)" target="_blank"
-                                            class="text-blue-500 hover:text-blue-700">Learn more →</a>
+                                            class="text-blue-500 hover:text-blue-700">Read on Wikipedia →</a>
                                     </span>
                                 </span>
                             </span>
@@ -937,9 +983,9 @@
                             <span class="font-medium text-gray-700">
                                 <span class="tooltip-trigger">Minimum Relevant Effect<span class="tooltip-content">The
                                         smallest effect size (absolute) that would be considered practically meaningful
-                                        for your business<br><a href="https://en.wikipedia.org/wiki/Effect_size"
-                                            target="_blank" class="text-blue-500 hover:text-blue-700">Learn more
-                                            →</a></span></span>
+                                        for your business.<br><a href="https://en.wikipedia.org/wiki/Effect_size"
+                                            target="_blank" class="text-blue-500 hover:text-blue-700">Read on
+                                            Wikipedia →</a></span></span>
                             </span>
                             <span id="exp-min-effect" class="font-semibold text-gray-900"></span>
                         </div>
@@ -1095,6 +1141,12 @@
                                 </tr>
                             </tbody>
                         </table>
+                        <div class="mt-3 text-xs text-gray-600 leading-relaxed bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <strong>How to read these bars:</strong> the colored band marks the confidence interval for the
+                            lift. The thin line in the middle is the best estimate, while the light gray marker at 0% is
+                            "no change." If the band crosses 0% the result is still compatible with no impact, so tread
+                            carefully. When the entire bar sits on one side of 0%, the data supports a real movement.
+                        </div>
                     </div>
 
                     <div class="mt-0 p-3 bg-gray-50 rounded-lg">
@@ -1107,7 +1159,7 @@
                                         there is no real difference between variants. A p-value below the significance
                                         level (α) suggests the difference is statistically significant.
                                         <a href="https://en.wikipedia.org/wiki/P-value" target="_blank"
-                                            class="text-blue-500 hover:text-blue-700">Learn more →</a>
+                                            class="text-blue-500 hover:text-blue-700">Read on Wikipedia →</a>
                                     </span>
                                 </span>:
                             </span>

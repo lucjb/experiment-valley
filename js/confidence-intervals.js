@@ -175,7 +175,7 @@ function updateConfidenceIntervals(challenge) {
         
         // Add Twyman's Law alert if detected
         if (hasTwymansLaw) {
-            const message = `Twyman's Law detected: Suspiciously low p-value (p=${pValue.toFixed(10)}) and unusually large effect (more than 10 x the MRE)\n\n<a href=\"twymans-law.html\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-blue-500 hover:text-blue-700\">Learn more about Twyman's Law →</a>`;
+            const message = `Twyman's Law detected: Suspiciously low p-value (p=${pValue.toFixed(10)}) and unusually large effect (more than 10 x the MRE)\n\nWhy it matters: extreme wins often point to instrumentation problems. Pause and verify the data before acting.\n\n<a href=\"twymans-law.html\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-blue-500 hover:text-blue-700\">Twyman's Law explainer →</a>`;
             
             // Store the original text content
             const originalText = pValueElement.textContent;
