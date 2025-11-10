@@ -572,7 +572,7 @@ const UIController = {
             }
             // challengeDesign = luckyDayTrap();
 
-            const shouldEnableTimeout = this.state.currentRound >= 3;
+            const shouldEnableTimeout = this.state.currentRound >= 5;
             const hasExplicitTimeLimit = typeof challengeDesign.timeLimitSeconds === 'number' && challengeDesign.timeLimitSeconds > 0;
             const timeLimitOptedOut = challengeDesign.timeLimitDisabled === true;
             if (shouldEnableTimeout && !hasExplicitTimeLimit && !timeLimitOptedOut) {
@@ -2090,6 +2090,8 @@ const UIController = {
             this.updateDecisionTimerDisplay();
         };
 
+        // Show timer display immediately (already visible from line 2069-2070)
+        // But wait for splash animation to complete before starting countdown
         const introPromise = this.triggerDecisionTimerIntro();
         if (introPromise && typeof introPromise.then === 'function') {
             introPromise.then(() => {
@@ -2124,28 +2126,17 @@ const UIController = {
         }
 
         const introDurations = {
-            hold: 1500,
-            shrink: 500
+            hold: 5000,
+            shrink: 150
         };
 
-        timerDisplay.classList.add('timer-intro-hidden');
         submitButton.classList.add('timer-intro-catch');
 
         const cleanupButtonCatch = () => {
             submitButton.classList.remove('timer-intro-catch');
         };
 
-        const removeRevealClass = () => {
-            timerDisplay.classList.remove('timer-intro-reveal');
-        };
-
-        timerDisplay.addEventListener('animationend', removeRevealClass, { once: true });
         submitButton.addEventListener('animationend', cleanupButtonCatch, { once: true });
-
-        const revealTimer = () => {
-            timerDisplay.classList.remove('timer-intro-hidden');
-            timerDisplay.classList.add('timer-intro-reveal');
-        };
 
         return new Promise((resolve) => {
             let resolved = false;
@@ -2157,14 +2148,9 @@ const UIController = {
                 resolve();
             };
 
-            const wrappedReveal = () => {
-                revealTimer();
-                finalizeResolve();
-            };
-
             const runCompletedIntro = () => {
                 window.setTimeout(cleanupButtonCatch, introDurations.shrink);
-                wrappedReveal();
+                finalizeResolve();
             };
 
             const handled = this.runRoundStyleTimerIntro({
@@ -2243,7 +2229,7 @@ const UIController = {
                 }
             ], {
                 duration: shrink,
-                easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                easing: 'cubic-bezier(0.5, 0, 0.75, 1)',
                 fill: 'forwards'
             });
 
@@ -2256,7 +2242,7 @@ const UIController = {
                     { opacity: 0 }
                 ], {
                     duration: shrink,
-                    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                    easing: 'cubic-bezier(0.5, 0, 0.75, 1)',
                     fill: 'forwards'
                 });
 
@@ -2274,7 +2260,6 @@ const UIController = {
         };
 
         window.setTimeout(startCollapse, hold);
-        window.setTimeout(finalizeIntro, hold + shrink + 120);
 
         return true;
     },
@@ -2398,7 +2383,7 @@ const UIController = {
         this.clearDecisionTimer({ keepDisplay });
     },
 
-    handleDecisionTimeout() {
+    async handleDecisionTimeout() {
         if (this.state.decisionTimedOut || this.state.hasSubmitted) {
             return;
         }
@@ -2419,8 +2404,71 @@ const UIController = {
             timerDisplay.textContent = '00';
         }
 
+        // Animate randomization by cycling through buttons
+        await this.animateRandomization();
+
         this.autoFillDecisions();
+        
+        // Wait a bit so user can see the random choice that was made
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         this.evaluateDecision();
+    },
+
+    async animateRandomization() {
+        const allButtons = Array.from(document.querySelectorAll('.decision-btn')).filter(btn => {
+            // Only include buttons that are not disabled and not the submit button
+            return !btn.disabled && btn.getAttribute('name') !== 'submit';
+        });
+
+        if (allButtons.length === 0) {
+            return;
+        }
+
+        const rounds = 2 + Math.floor(Math.random() * 2); // 2 or 3 rounds
+        const highlightDuration = 150; // milliseconds per button
+        const highlightClass = 'randomizing-highlight';
+
+        // Add CSS class for highlighting if it doesn't exist
+        if (!document.getElementById('randomization-styles')) {
+            const style = document.createElement('style');
+            style.id = 'randomization-styles';
+            style.textContent = `
+                .decision-btn.randomizing-highlight {
+                    background-color: #fbbf24 !important;
+                    transform: scale(1.1);
+                    box-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+                    transition: all 0.1s ease;
+                    z-index: 10;
+                    position: relative;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        for (let round = 0; round < rounds; round++) {
+            for (let i = 0; i < allButtons.length; i++) {
+                // Remove highlight from previous button
+                if (i > 0) {
+                    allButtons[i - 1].classList.remove(highlightClass);
+                } else if (round > 0) {
+                    // Remove highlight from last button of previous round
+                    allButtons[allButtons.length - 1].classList.remove(highlightClass);
+                }
+
+                // Add highlight to current button
+                allButtons[i].classList.add(highlightClass);
+
+                // Wait before moving to next button
+                await new Promise(resolve => setTimeout(resolve, highlightDuration));
+            }
+
+            // Remove highlight from last button of this round
+            allButtons[allButtons.length - 1].classList.remove(highlightClass);
+        }
+
+        // Small pause before final selection
+        await new Promise(resolve => setTimeout(resolve, 200));
     },
 
     autoFillDecisions() {
