@@ -22,7 +22,12 @@ const UIController = {
         roundResults: [], // Store results for each experiment in the current round
         sessionStartPersonalBest: null, // Store personal best data at session start
         sessionStartRoundsRank: null, // Store starting rounds rank
-        sessionStartImpactRank: null // Store starting impact rank
+        sessionStartImpactRank: null, // Store starting impact rank
+        decisionTimerId: null,
+        decisionTimeRemaining: null,
+        decisionTimeLimit: null,
+        decisionTimedOut: false,
+        decisionTimerIntroPlayed: false
     },
 
     init() {
@@ -360,6 +365,7 @@ const UIController = {
         this.state.currentCompetitor = null;
         this.state.selectedCompetitor = null;
         this.state.roundResults = [];
+        this.state.decisionTimerIntroPlayed = false;
 
         // Reset UI elements
         this.updateRoundDisplay();
@@ -566,6 +572,13 @@ const UIController = {
             }
             // challengeDesign = luckyDayTrap();
 
+            const shouldEnableTimeout = this.state.currentRound >= 3;
+            const hasExplicitTimeLimit = typeof challengeDesign.timeLimitSeconds === 'number' && challengeDesign.timeLimitSeconds > 0;
+            const timeLimitOptedOut = challengeDesign.timeLimitDisabled === true;
+            if (shouldEnableTimeout && !hasExplicitTimeLimit && !timeLimitOptedOut) {
+                challengeDesign = challengeDesign.withTimeLimit(30);
+            }
+
             // Generate the challenge from the design
             window.currentExperiment = challengeDesign.generate();
             this.state.challenge = window.currentExperiment;
@@ -590,6 +603,7 @@ const UIController = {
 
             // Reset decisions
             this.resetDecisions();
+            this.initializeDecisionTimer();
             if (this.debugMode()) {
                 this.addDebugAlerts();
             }
@@ -2021,7 +2035,420 @@ const UIController = {
         }
     },
 
+    initializeDecisionTimer() {
+        const challenge = this.state.challenge;
+        if (!challenge || !challenge.meta || !challenge.meta.timeOutMode) {
+            this.clearDecisionTimer();
+            return;
+        }
+
+        const timeLimit = challenge.meta.timeLimitSeconds;
+        if (typeof timeLimit !== 'number' || timeLimit <= 0) {
+            this.clearDecisionTimer();
+            return;
+        }
+
+        this.startDecisionTimer(timeLimit);
+    },
+
+    startDecisionTimer(timeLimit) {
+        const submitButton = document.getElementById('submit-decision');
+        const timerDisplay = document.getElementById('decision-timer');
+        if (!submitButton || !timerDisplay) {
+            return;
+        }
+
+        this.clearDecisionTimer();
+
+        this.state.decisionTimeLimit = timeLimit;
+        this.state.decisionTimeRemaining = timeLimit;
+        this.state.decisionTimedOut = false;
+
+        submitButton.classList.add('timer-active');
+        submitButton.classList.remove('timer-warning', 'timer-expired');
+        timerDisplay.classList.remove('hidden');
+        timerDisplay.textContent = this.formatCountdownTime(timeLimit);
+
+        const beginCountdown = () => {
+            if (this.state.decisionTimerId || this.state.decisionTimeRemaining === null) {
+                return;
+            }
+
+            this.state.decisionTimerId = window.setInterval(() => {
+                if (typeof this.state.decisionTimeRemaining !== 'number') {
+                    return;
+                }
+
+                this.state.decisionTimeRemaining = Math.max(0, this.state.decisionTimeRemaining - 1);
+                this.updateDecisionTimerDisplay();
+
+                if (this.state.decisionTimeRemaining === 0) {
+                    this.handleDecisionTimeout();
+                }
+            }, 1000);
+
+            this.updateDecisionTimerDisplay();
+        };
+
+        const introPromise = this.triggerDecisionTimerIntro();
+        if (introPromise && typeof introPromise.then === 'function') {
+            introPromise.then(() => {
+                if (this.state.decisionTimeRemaining === null || this.state.decisionTimedOut) {
+                    return;
+                }
+                beginCountdown();
+            });
+        } else {
+            beginCountdown();
+        }
+    },
+
+    triggerDecisionTimerIntro() {
+        if (this.state.decisionTimerIntroPlayed) {
+            return Promise.resolve();
+        }
+
+        const submitButton = document.getElementById('submit-decision');
+        const timerDisplay = document.getElementById('decision-timer');
+        if (!submitButton || !timerDisplay) {
+            return Promise.resolve();
+        }
+
+        this.state.decisionTimerIntroPlayed = true;
+
+        const countdownValue = timerDisplay.textContent || this.formatCountdownTime(this.state.decisionTimeLimit || 0);
+        const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (prefersReducedMotion) {
+            return Promise.resolve();
+        }
+
+        const introDurations = {
+            hold: 1500,
+            shrink: 500
+        };
+
+        timerDisplay.classList.add('timer-intro-hidden');
+        submitButton.classList.add('timer-intro-catch');
+
+        const cleanupButtonCatch = () => {
+            submitButton.classList.remove('timer-intro-catch');
+        };
+
+        const removeRevealClass = () => {
+            timerDisplay.classList.remove('timer-intro-reveal');
+        };
+
+        timerDisplay.addEventListener('animationend', removeRevealClass, { once: true });
+        submitButton.addEventListener('animationend', cleanupButtonCatch, { once: true });
+
+        const revealTimer = () => {
+            timerDisplay.classList.remove('timer-intro-hidden');
+            timerDisplay.classList.add('timer-intro-reveal');
+        };
+
+        return new Promise((resolve) => {
+            let resolved = false;
+            const finalizeResolve = () => {
+                if (resolved) {
+                    return;
+                }
+                resolved = true;
+                resolve();
+            };
+
+            const wrappedReveal = () => {
+                revealTimer();
+                finalizeResolve();
+            };
+
+            const runCompletedIntro = () => {
+                window.setTimeout(cleanupButtonCatch, introDurations.shrink);
+                wrappedReveal();
+            };
+
+            const handled = this.runRoundStyleTimerIntro({
+                countdownValue,
+                submitButton,
+                introDurations,
+                onComplete: runCompletedIntro
+            });
+
+            if (handled) {
+                return;
+            }
+
+            this.runFallbackTimerIntro({
+                countdownValue,
+                submitButton,
+                introDurations,
+                onComplete: runCompletedIntro
+            });
+        });
+    },
+
+    runRoundStyleTimerIntro({ countdownValue, submitButton, introDurations, onComplete }) {
+        const splash = document.getElementById('round-splash');
+        const overlay = document.getElementById('round-splash-overlay');
+        if (!splash || !overlay || typeof splash.animate !== 'function' || overlay.classList.contains('active') || splash.classList.contains('show')) {
+            return false;
+        }
+
+        const originalContent = splash.innerHTML;
+        const { hold, shrink } = introDurations;
+
+        splash.classList.remove('show');
+        splash.classList.add('timer-intro-splash');
+        splash.innerHTML = `
+            <div class="timer-intro-splash-heading">Time out Mode!</div>
+            <div class="timer-intro-splash-content">${countdownValue}</div>
+        `;
+        splash.style.display = 'block';
+
+        void splash.offsetWidth;
+
+        overlay.classList.add('active');
+        splash.classList.add('show');
+
+        const buttonRect = submitButton.getBoundingClientRect();
+        const viewportCenterX = window.innerWidth / 2;
+        const viewportCenterY = window.innerHeight / 2;
+        const targetX = buttonRect.left + buttonRect.width / 2 - viewportCenterX;
+        const targetY = buttonRect.top + buttonRect.height / 2 - viewportCenterY;
+
+        let finalized = false;
+
+        const finalizeIntro = () => {
+            if (finalized) {
+                return;
+            }
+            finalized = true;
+
+            splash.classList.remove('show', 'timer-intro-splash');
+            splash.innerHTML = originalContent;
+            splash.style.display = 'none';
+
+            overlay.classList.remove('active');
+            overlay.style.opacity = '';
+
+            onComplete();
+        };
+
+        const startCollapse = () => {
+            const collapse = splash.animate([
+                { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+                {
+                    transform: `translate(calc(-50% + ${targetX}px), calc(-50% + ${targetY}px)) scale(0.12)`,
+                    opacity: 0
+                }
+            ], {
+                duration: shrink,
+                easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                fill: 'forwards'
+            });
+
+            collapse.addEventListener('finish', finalizeIntro, { once: true });
+            collapse.addEventListener('cancel', finalizeIntro, { once: true });
+
+            if (typeof overlay.animate === 'function') {
+                const fade = overlay.animate([
+                    { opacity: 1 },
+                    { opacity: 0 }
+                ], {
+                    duration: shrink,
+                    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                    fill: 'forwards'
+                });
+
+                const resetOverlayOpacity = () => {
+                    overlay.style.opacity = '';
+                };
+
+                fade.addEventListener('finish', resetOverlayOpacity, { once: true });
+                fade.addEventListener('cancel', resetOverlayOpacity, { once: true });
+            } else {
+                window.setTimeout(() => {
+                    overlay.style.opacity = '';
+                }, shrink);
+            }
+        };
+
+        window.setTimeout(startCollapse, hold);
+        window.setTimeout(finalizeIntro, hold + shrink + 120);
+
+        return true;
+    },
+
+    runFallbackTimerIntro({ countdownValue, submitButton, introDurations, onComplete }) {
+        const overlay = document.createElement('div');
+        overlay.className = 'timer-intro-overlay';
+
+        const ghost = document.createElement('span');
+        ghost.className = 'timer-intro-ghost';
+        ghost.innerHTML = `
+            <span class="timer-intro-ghost-heading">Time out Mode!</span>
+            <span class="timer-intro-ghost-value">${countdownValue}</span>
+        `;
+        overlay.appendChild(ghost);
+
+        document.body.appendChild(overlay);
+
+        const buttonRect = submitButton.getBoundingClientRect();
+        const viewportCenterX = window.innerWidth / 2;
+        const viewportCenterY = window.innerHeight / 2;
+        const targetX = buttonRect.left + buttonRect.width / 2 - viewportCenterX;
+        const targetY = buttonRect.top + buttonRect.height / 2 - viewportCenterY;
+
+        const { hold, shrink } = introDurations;
+        const totalDuration = hold + shrink;
+
+        const finalizeIntro = () => {
+            overlay.remove();
+            onComplete();
+        };
+
+        if (typeof ghost.animate !== 'function') {
+            finalizeIntro();
+            return;
+        }
+
+        const animation = ghost.animate([
+            { transform: 'translate(0, 0) scale(0.45)', opacity: 0 },
+            { transform: 'translate(0, 0) scale(1)', opacity: 1, offset: 0.25 },
+            { transform: 'translate(0, 0) scale(1)', opacity: 1, offset: hold / totalDuration },
+            { transform: `translate(${targetX}px, ${targetY}px) scale(0.25)`, opacity: 0 }
+        ], {
+            duration: totalDuration,
+            easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+        });
+
+        animation.addEventListener('finish', finalizeIntro, { once: true });
+        animation.addEventListener('cancel', finalizeIntro, { once: true });
+    },
+
+    updateDecisionTimerDisplay() {
+        const submitButton = document.getElementById('submit-decision');
+        const timerDisplay = document.getElementById('decision-timer');
+        if (!submitButton || !timerDisplay) {
+            return;
+        }
+
+        if (typeof this.state.decisionTimeRemaining !== 'number') {
+            return;
+        }
+
+        timerDisplay.textContent = this.formatCountdownTime(this.state.decisionTimeRemaining);
+
+        if (this.state.decisionTimedOut) {
+            submitButton.classList.add('timer-expired', 'timer-active');
+            submitButton.classList.remove('timer-warning');
+            return;
+        }
+
+        submitButton.classList.remove('timer-expired');
+
+        if (this.state.decisionTimeRemaining <= 10) {
+            submitButton.classList.add('timer-warning');
+        } else {
+            submitButton.classList.remove('timer-warning');
+        }
+    },
+
+    formatCountdownTime(totalSeconds) {
+        const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+        const clampedSeconds = Math.min(99, safeSeconds);
+        return clampedSeconds.toString().padStart(2, '0');
+    },
+
+    clearDecisionTimer({ keepDisplay = false } = {}) {
+        if (this.state.decisionTimerId) {
+            clearInterval(this.state.decisionTimerId);
+        }
+        this.state.decisionTimerId = null;
+        this.state.decisionTimeRemaining = null;
+        this.state.decisionTimeLimit = null;
+
+        const submitButton = document.getElementById('submit-decision');
+        const timerDisplay = document.getElementById('decision-timer');
+        if (!keepDisplay) {
+            this.state.decisionTimedOut = false;
+        }
+
+        if (submitButton) {
+            if (keepDisplay) {
+                submitButton.classList.add('timer-active');
+                submitButton.classList.remove('timer-warning');
+            } else {
+                submitButton.classList.remove('timer-active', 'timer-warning', 'timer-expired');
+            }
+        }
+
+        if (timerDisplay) {
+            if (keepDisplay) {
+                timerDisplay.classList.remove('hidden');
+            } else {
+                timerDisplay.classList.add('hidden');
+                timerDisplay.textContent = '';
+            }
+        }
+    },
+
+    stopDecisionTimer() {
+        const keepDisplay = this.state.decisionTimedOut;
+        this.clearDecisionTimer({ keepDisplay });
+    },
+
+    handleDecisionTimeout() {
+        if (this.state.decisionTimedOut || this.state.hasSubmitted) {
+            return;
+        }
+
+        this.state.decisionTimedOut = true;
+
+        this.clearDecisionTimer({ keepDisplay: true });
+
+        const submitButton = document.getElementById('submit-decision');
+        const timerDisplay = document.getElementById('decision-timer');
+
+        if (submitButton) {
+            submitButton.classList.remove('timer-warning');
+            submitButton.classList.add('timer-expired', 'timer-active');
+        }
+        if (timerDisplay) {
+            timerDisplay.classList.remove('hidden');
+            timerDisplay.textContent = '00';
+        }
+
+        this.autoFillDecisions();
+        this.evaluateDecision();
+    },
+
+    autoFillDecisions() {
+        const decisionGroups = [
+            { name: 'trust', stateKey: 'trustDecision' },
+            { name: 'decision', stateKey: 'implementDecision' },
+            { name: 'follow_up', stateKey: 'followUpDecision' }
+        ];
+
+        decisionGroups.forEach(({ name, stateKey }) => {
+            if (this.state[stateKey]) {
+                return;
+            }
+
+            const buttons = Array.from(document.querySelectorAll(`.decision-btn[name="${name}"]`)).filter(btn => !btn.disabled);
+            if (buttons.length === 0) {
+                return;
+            }
+
+            const randomButton = buttons[Math.floor(Math.random() * buttons.length)];
+            if (randomButton) {
+                randomButton.click();
+            }
+        });
+    },
+
     resetDecisions() {
+        this.clearDecisionTimer();
         // Reset all decision buttons
         document.querySelectorAll('.decision-btn').forEach(button => {
             button.style.opacity = '0.7';
@@ -2047,6 +2474,8 @@ const UIController = {
         if (!this.state.trustDecision || !this.state.implementDecision) {
             return;
         }
+
+        this.stopDecisionTimer();
 
         try {
             // If this is a subsequent click, just show the feedback dialog
