@@ -642,7 +642,7 @@
                                         class="tooltip-content">The incremental number of conversions per day as a
                                         result of your decisions</span></span>: </span>
                             <span id="user-impact" class="text-xl md:text-2xl font-bold score-value text-green-500">0
-                                cpd</span>
+                                <span class="tooltip-trigger">cpd<span class="tooltip-content">Conversions Per Day</span></span></span>
                         </div>
                         <div>
                             <span class="font-medium text-white"><span id="competitor-name">Opponent</span> <span
@@ -650,7 +650,7 @@
                                         of conversions per day as a result of your opponent's decisions</span></span>:
                             </span>
                             <span id="opponent-impact" class="text-xl md:text-2xl font-bold score-value text-red-500">0
-                                cpd</span>
+                                <span class="tooltip-trigger">cpd<span class="tooltip-content">Conversions Per Day</span></span></span>
                         </div>
                     </div>
                     <div class="flex items-center space-x-2">
@@ -692,12 +692,17 @@
                     <!-- Trustworthy Section -->
                     <div class="decision-section trustworthy mb-2">
                         <div class="text-center mb-2">
-                            <span class="font-medium text-white tooltip-trigger">
+                            <span class="font-medium text-white">
                                 Is it Trustworthy?
-                                <span class="tooltip-content">
-                                    <strong>Yes:</strong> The experiment can be trusted to make a decision. No data quality issues, design is correct, and execution is consistent with the design.<br><br>
-                                    <strong>No:</strong> The experiment cannot be trusted. There may be data quality issues (e.g. sample ratio mismatch, data loss, base rate mismatch), design problems (underpowered, overdue), or suspicious results (Twyman's Law, lucky day) that make the data unreliable.
-                                </span>
+                                <button type="button" class="info-icon-btn tooltip-trigger-click" aria-label="Show explanation">
+                                    <svg fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="tooltip-content">
+                                        <strong>Yes:</strong> The experiment can be trusted to make a decision. No data quality issues, design is correct, and execution is consistent with the design.<br><br>
+                                        <strong>No:</strong> The experiment cannot be trusted. There may be data quality issues (e.g. sample ratio mismatch, data loss, base rate mismatch), design problems (underpowered, overdue), or suspicious results (Twyman's Law, lucky day) that make the data unreliable.
+                                    </span>
+                                </button>
                             </span>
                         </div>
                         <div class="decision-btn-group">
@@ -713,13 +718,18 @@
                     <!-- Decision Section -->
                     <div class="decision-section decision mb-2">
                         <div class="text-center mb-2">
-                            <span class="font-medium text-white tooltip-trigger">
+                            <span class="font-medium text-white">
                                 Decision
-                                <span class="tooltip-content">
-                                    <strong>Keep Base:</strong> Keep the original version. The default decision unless the experiment is trustworthy and shows evidence in favor of variant.<br><br>
-                                    <strong>Keep Variant:</strong> Ship the variant version. Use when the experiment is trustworthy and results are statistically significant in favor of the variant.<br><br>
-                                    <strong>Keep Running:</strong> Continue running the experiment. Use when the experiment hasn't reached the proper sample size or when there are temporal biases.
-                                </span>
+                                <button type="button" class="info-icon-btn tooltip-trigger-click" aria-label="Show explanation">
+                                    <svg fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="tooltip-content">
+                                        <strong>Keep Base:</strong> Keep the original version. The default decision unless the experiment is trustworthy and shows evidence in favor of variant.<br><br>
+                                        <strong>Keep Variant:</strong> Ship the variant version. Use when the experiment is trustworthy and results are statistically significant in favor of the variant.<br><br>
+                                        <strong>Keep Running:</strong> Continue running the experiment. Use when the experiment hasn't reached the proper sample size or when there are temporal biases.
+                                    </span>
+                                </button>
                             </span>
                         </div>
                         <div class="decision-btn-group">
@@ -738,15 +748,20 @@
                     <!-- Follow Up Section -->
                     <div class="decision-section follow-up">
                         <div class="text-center mb-2">
-                            <span class="font-medium text-white tooltip-trigger">
+                            <span class="font-medium text-white">
                                 What's your Follow Up?
-                                <span class="tooltip-content">
-                                    <strong>Celebrate:</strong> Ship the win and plan a new experiment. Use when results are trustworthy and statistically significant in favor of the variant.<br><br>
-                                    <strong>Iterate:</strong> Refine the hypothesis, treatment, or experiment design. Use when results are trustworthy and either inconclusive or statistically significant in favor of base.<br><br>
-                                    <strong>Validate:</strong> Try to replicate the results with a new experiment, same hypothesis, same treatment. Use when results seem suspicious or need confirmation.<br><br>
-                                    <strong>Fix & Rerun:</strong> Fix execution issues (sample ratio mismatch, data loss, base rate mismatch) and rerun the experiment. Use when data quality problems make results unreliable.<br><br>
-                                    <strong>None:</strong> No follow-up action needed. Use when the experiment is not yet completed.
-                                </span>
+                                <button type="button" class="info-icon-btn tooltip-trigger-click" aria-label="Show explanation">
+                                    <svg fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="tooltip-content">
+                                        <strong>Celebrate:</strong> Ship the win and plan a new experiment. Use when results are trustworthy and statistically significant in favor of the variant.<br><br>
+                                        <strong>Iterate:</strong> Refine the hypothesis, treatment, or experiment design. Use when results are trustworthy and either inconclusive or statistically significant in favor of base.<br><br>
+                                        <strong>Validate:</strong> Try to replicate the results with a new experiment, same hypothesis, same treatment. Use when results seem suspicious or need confirmation.<br><br>
+                                        <strong>Fix & Rerun:</strong> Fix execution issues (sample ratio mismatch, data loss, base rate mismatch) and rerun the experiment. Use when data quality problems make results unreliable.<br><br>
+                                        <strong>None:</strong> No follow-up action needed. Use when the experiment is not yet completed.
+                                    </span>
+                                </button>
                             </span>
                         </div>
                         <div class="decision-btn-group">
@@ -1654,6 +1669,68 @@
         document.addEventListener('DOMContentLoaded', function () {
             // Initialize global tooltips with consistent clickable behavior
             UIController.initializeGlobalTooltips();
+            
+            // Initialize click-triggered tooltips
+            document.querySelectorAll('.tooltip-trigger-click').forEach(trigger => {
+                const tooltip = trigger.querySelector('.tooltip-content');
+                if (!tooltip) return;
+                
+                // Toggle tooltip on click
+                trigger.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const isActive = trigger.classList.contains('active');
+                    
+                    // Close all other click-triggered tooltips
+                    document.querySelectorAll('.tooltip-trigger-click.active').forEach(other => {
+                        if (other !== trigger) {
+                            other.classList.remove('active');
+                            other.querySelector('.tooltip-content')?.classList.remove('active');
+                        }
+                    });
+                    
+                    // Toggle this tooltip
+                    if (isActive) {
+                        trigger.classList.remove('active');
+                        tooltip.classList.remove('active');
+                    } else {
+                        trigger.classList.add('active');
+                        tooltip.classList.add('active');
+                        
+                        // Position tooltip
+                        const rect = trigger.getBoundingClientRect();
+                        const tipHeight = tooltip.offsetHeight || tooltip.scrollHeight;
+                        const tipWidth = tooltip.offsetWidth || tooltip.scrollWidth || 300;
+                        
+                        let left = rect.left + (rect.width / 2) - (tipWidth / 2);
+                        if (left < 10) left = 10;
+                        if (left + tipWidth > window.innerWidth - 10) {
+                            left = window.innerWidth - tipWidth - 10;
+                        }
+                        
+                        const spaceAbove = rect.top;
+                        const spaceBelow = window.innerHeight - rect.bottom;
+                        let top;
+                        if (spaceAbove >= tipHeight + 10) {
+                            top = rect.top - tipHeight - 10;
+                        } else {
+                            top = rect.bottom + 10;
+                        }
+                        
+                        tooltip.style.left = left + 'px';
+                        tooltip.style.top = top + 'px';
+                    }
+                });
+            });
+            
+            // Close tooltips when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.tooltip-trigger-click') && !e.target.closest('.tooltip-content')) {
+                    document.querySelectorAll('.tooltip-trigger-click.active').forEach(trigger => {
+                        trigger.classList.remove('active');
+                        trigger.querySelector('.tooltip-content')?.classList.remove('active');
+                    });
+                }
+            });
         });
     </script>
 </body>

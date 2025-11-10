@@ -3772,10 +3772,56 @@ const UIController = {
         const opponentImpactElement = document.getElementById('opponent-impact');
         
         if (userImpactElement) {
-            userImpactElement.textContent = `${this.state.userCumulativeEffect} cpd`;
+            // Preserve tooltip structure when updating
+            const tooltipSpan = userImpactElement.querySelector('.tooltip-trigger');
+            if (tooltipSpan) {
+                // Update only the number part, keep the tooltip
+                const textNode = userImpactElement.childNodes[0];
+                if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+                    textNode.textContent = `${this.state.userCumulativeEffect} `;
+                } else {
+                    // If structure is different, rebuild it
+                    userImpactElement.innerHTML = `${this.state.userCumulativeEffect} <span class="tooltip-trigger">cpd<span class="tooltip-content">Conversions Per Day</span></span>`;
+                    // Re-initialize tooltip
+                    const newTooltip = userImpactElement.querySelector('.tooltip-trigger');
+                    if (newTooltip) {
+                        this.initializeTooltip(newTooltip);
+                    }
+                }
+            } else {
+                // No tooltip exists, add it
+                userImpactElement.innerHTML = `${this.state.userCumulativeEffect} <span class="tooltip-trigger">cpd<span class="tooltip-content">Conversions Per Day</span></span>`;
+                const newTooltip = userImpactElement.querySelector('.tooltip-trigger');
+                if (newTooltip) {
+                    this.initializeTooltip(newTooltip);
+                }
+            }
         }
         if (opponentImpactElement) {
-            opponentImpactElement.textContent = `${this.state.competitorCumulativeEffect} cpd`;
+            // Preserve tooltip structure when updating
+            const tooltipSpan = opponentImpactElement.querySelector('.tooltip-trigger');
+            if (tooltipSpan) {
+                // Update only the number part, keep the tooltip
+                const textNode = opponentImpactElement.childNodes[0];
+                if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+                    textNode.textContent = `${this.state.competitorCumulativeEffect} `;
+                } else {
+                    // If structure is different, rebuild it
+                    opponentImpactElement.innerHTML = `${this.state.competitorCumulativeEffect} <span class="tooltip-trigger">cpd<span class="tooltip-content">Conversions Per Day</span></span>`;
+                    // Re-initialize tooltip
+                    const newTooltip = opponentImpactElement.querySelector('.tooltip-trigger');
+                    if (newTooltip) {
+                        this.initializeTooltip(newTooltip);
+                    }
+                }
+            } else {
+                // No tooltip exists, add it
+                opponentImpactElement.innerHTML = `${this.state.competitorCumulativeEffect} <span class="tooltip-trigger">cpd<span class="tooltip-content">Conversions Per Day</span></span>`;
+                const newTooltip = opponentImpactElement.querySelector('.tooltip-trigger');
+                if (newTooltip) {
+                    this.initializeTooltip(newTooltip);
+                }
+            }
         }
     },
 
