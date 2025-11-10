@@ -173,6 +173,17 @@ button:disabled {
     text-shadow: 0 25px 45px rgba(15, 23, 42, 0.6);
 }
 
+.round-splash.timer-intro-splash .timer-intro-splash-heading {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.5rem, 5vw, 3rem);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: clamp(0.75rem, 2.5vw, 1.5rem);
+    color: rgba(219, 234, 254, 0.85);
+}
+
 .round-splash.timer-intro-splash .timer-intro-splash-content {
     display: block;
     font-size: inherit;
@@ -555,9 +566,13 @@ select:focus {
 }
 
 .timer-intro-ghost {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(0.75rem, 2.5vw, 1.5rem);
+    font-size: 1rem;
     font-family: 'Inter', 'Roboto Mono', monospace;
     font-weight: 700;
-    font-size: clamp(4rem, 12vw, 8rem);
     line-height: 1;
     background: radial-gradient(circle at center, rgba(30, 64, 175, 0.9), rgba(15, 23, 42, 0.95));
     padding: clamp(1rem, 4vw, 2rem) clamp(1.5rem, 6vw, 3rem);
@@ -566,6 +581,22 @@ select:focus {
     color: #f8fafc;
     box-shadow: 0 30px 60px rgba(15, 23, 42, 0.45);
     text-shadow: 0 20px 35px rgba(15, 23, 42, 0.55);
+}
+
+.timer-intro-ghost-heading {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.25rem, 4vw, 2.75rem);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(248, 250, 252, 0.85);
+}
+
+.timer-intro-ghost-value {
+    font-family: 'Inter', 'Roboto Mono', monospace;
+    font-weight: 700;
+    font-size: clamp(4rem, 12vw, 8rem);
+    letter-spacing: 0.08em;
 }
 
 @keyframes timerPulse {
