@@ -2069,33 +2069,49 @@ const UIController = {
         timerDisplay.classList.remove('hidden');
         timerDisplay.textContent = this.formatCountdownTime(timeLimit);
 
-        this.triggerDecisionTimerIntro();
-
-        this.state.decisionTimerId = window.setInterval(() => {
-            if (typeof this.state.decisionTimeRemaining !== 'number') {
+        const beginCountdown = () => {
+            if (this.state.decisionTimerId || this.state.decisionTimeRemaining === null) {
                 return;
             }
 
-            this.state.decisionTimeRemaining = Math.max(0, this.state.decisionTimeRemaining - 1);
+            this.state.decisionTimerId = window.setInterval(() => {
+                if (typeof this.state.decisionTimeRemaining !== 'number') {
+                    return;
+                }
+
+                this.state.decisionTimeRemaining = Math.max(0, this.state.decisionTimeRemaining - 1);
+                this.updateDecisionTimerDisplay();
+
+                if (this.state.decisionTimeRemaining === 0) {
+                    this.handleDecisionTimeout();
+                }
+            }, 1000);
+
             this.updateDecisionTimerDisplay();
+        };
 
-            if (this.state.decisionTimeRemaining === 0) {
-                this.handleDecisionTimeout();
-            }
-        }, 1000);
-
-        this.updateDecisionTimerDisplay();
+        const introPromise = this.triggerDecisionTimerIntro();
+        if (introPromise && typeof introPromise.then === 'function') {
+            introPromise.then(() => {
+                if (this.state.decisionTimeRemaining === null || this.state.decisionTimedOut) {
+                    return;
+                }
+                beginCountdown();
+            });
+        } else {
+            beginCountdown();
+        }
     },
 
     triggerDecisionTimerIntro() {
         if (this.state.decisionTimerIntroPlayed) {
-            return;
+            return Promise.resolve();
         }
 
         const submitButton = document.getElementById('submit-decision');
         const timerDisplay = document.getElementById('decision-timer');
         if (!submitButton || !timerDisplay) {
-            return;
+            return Promise.resolve();
         }
 
         this.state.decisionTimerIntroPlayed = true;
@@ -2104,16 +2120,8 @@ const UIController = {
         const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         if (prefersReducedMotion) {
-            return;
+            return Promise.resolve();
         }
-
-        const cleanupButtonCatch = () => {
-            submitButton.classList.remove('timer-intro-catch');
-        };
-
-        const removeRevealClass = () => {
-            timerDisplay.classList.remove('timer-intro-reveal');
-        };
 
         const introDurations = {
             hold: 1500,
@@ -2123,17 +2131,63 @@ const UIController = {
         timerDisplay.classList.add('timer-intro-hidden');
         submitButton.classList.add('timer-intro-catch');
 
+        const cleanupButtonCatch = () => {
+            submitButton.classList.remove('timer-intro-catch');
+        };
+
+        const removeRevealClass = () => {
+            timerDisplay.classList.remove('timer-intro-reveal');
+        };
+
         timerDisplay.addEventListener('animationend', removeRevealClass, { once: true });
         submitButton.addEventListener('animationend', cleanupButtonCatch, { once: true });
 
-        if (this.runRoundStyleTimerIntro(countdownValue, submitButton, timerDisplay, cleanupButtonCatch, introDurations)) {
-            return;
-        }
+        const revealTimer = () => {
+            timerDisplay.classList.remove('timer-intro-hidden');
+            timerDisplay.classList.add('timer-intro-reveal');
+        };
 
-        this.runFallbackTimerIntro(countdownValue, submitButton, timerDisplay, cleanupButtonCatch, introDurations);
+        return new Promise((resolve) => {
+            let resolved = false;
+            const finalizeResolve = () => {
+                if (resolved) {
+                    return;
+                }
+                resolved = true;
+                resolve();
+            };
+
+            const wrappedReveal = () => {
+                revealTimer();
+                finalizeResolve();
+            };
+
+            const runCompletedIntro = () => {
+                window.setTimeout(cleanupButtonCatch, introDurations.shrink);
+                wrappedReveal();
+            };
+
+            const handled = this.runRoundStyleTimerIntro({
+                countdownValue,
+                submitButton,
+                introDurations,
+                onComplete: runCompletedIntro
+            });
+
+            if (handled) {
+                return;
+            }
+
+            this.runFallbackTimerIntro({
+                countdownValue,
+                submitButton,
+                introDurations,
+                onComplete: runCompletedIntro
+            });
+        });
     },
 
-    runRoundStyleTimerIntro(countdownValue, submitButton, timerDisplay, cleanupButtonCatch, introDurations) {
+    runRoundStyleTimerIntro({ countdownValue, submitButton, introDurations, onComplete }) {
         const splash = document.getElementById('round-splash');
         const overlay = document.getElementById('round-splash-overlay');
         if (!splash || !overlay || typeof splash.animate !== 'function' || overlay.classList.contains('active') || splash.classList.contains('show')) {
@@ -2142,11 +2196,6 @@ const UIController = {
 
         const originalContent = splash.innerHTML;
         const { hold, shrink } = introDurations;
-
-        const revealTimer = () => {
-            timerDisplay.classList.remove('timer-intro-hidden');
-            timerDisplay.classList.add('timer-intro-reveal');
-        };
 
         splash.classList.remove('show');
         splash.classList.add('timer-intro-splash');
@@ -2179,8 +2228,7 @@ const UIController = {
             overlay.classList.remove('active');
             overlay.style.opacity = '';
 
-            window.setTimeout(cleanupButtonCatch, shrink);
-            revealTimer();
+            onComplete();
         };
 
         const startCollapse = () => {
@@ -2228,7 +2276,7 @@ const UIController = {
         return true;
     },
 
-    runFallbackTimerIntro(countdownValue, submitButton, timerDisplay, cleanupButtonCatch, introDurations) {
+    runFallbackTimerIntro({ countdownValue, submitButton, introDurations, onComplete }) {
         const overlay = document.createElement('div');
         overlay.className = 'timer-intro-overlay';
 
@@ -2249,10 +2297,8 @@ const UIController = {
         const totalDuration = hold + shrink;
 
         const finalizeIntro = () => {
-            timerDisplay.classList.remove('timer-intro-hidden');
-            timerDisplay.classList.add('timer-intro-reveal');
             overlay.remove();
-            window.setTimeout(cleanupButtonCatch, shrink);
+            onComplete();
         };
 
         if (typeof ghost.animate !== 'function') {

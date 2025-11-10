@@ -167,6 +167,10 @@ button:disabled {
     font-size: clamp(4rem, 12vw, 8rem);
     line-height: 1;
     padding: clamp(2rem, 6vw, 4rem);
+    background: radial-gradient(circle at center, rgba(37, 99, 235, 0.95), rgba(15, 23, 42, 0.95));
+    border-color: rgba(191, 219, 254, 0.85);
+    color: #dbeafe;
+    text-shadow: 0 25px 45px rgba(15, 23, 42, 0.6);
 }
 
 .round-splash.timer-intro-splash .timer-intro-splash-content {
@@ -174,6 +178,8 @@ button:disabled {
     font-size: inherit;
     font-weight: 700;
     line-height: 1;
+    font-family: 'Inter', 'Roboto Mono', monospace;
+    letter-spacing: 0.08em;
 }
 
 .round-splash.show {
