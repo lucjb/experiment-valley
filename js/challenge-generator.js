@@ -1003,7 +1003,8 @@ class ChallengeDesign {
         twymanFabrication = false,
         overdue = false,
         underpoweredDesign = false,
-        luckyDayTrap = false
+        luckyDayTrap = false,
+        decisionTimer = null
     } = {}) {
         this.timeProgress = timeProgress;
         this.baseRateMismatch = baseRateMismatch;
@@ -1016,6 +1017,7 @@ class ChallengeDesign {
         this.overdue = overdue;
         this.underpoweredDesign = underpoweredDesign;
         this.luckyDayTrap = luckyDayTrap;
+        this.decisionTimer = decisionTimer;
     }
 
     generate() {
@@ -1030,7 +1032,8 @@ class ChallengeDesign {
             this.twymanFabrication,
             this.overdue,
             this.underpoweredDesign,
-            this.luckyDayTrap
+            this.luckyDayTrap,
+            this.decisionTimer
         );
     }
 
@@ -1095,6 +1098,16 @@ class ChallengeDesign {
 
     withLuckyDayTrap() {
         this.luckyDayTrap = true;
+        return this;
+    }
+
+    withTimeout(seconds = 30) {
+        const parsedSeconds = Number.isFinite(seconds) ? Math.floor(seconds) : 30;
+        const clampedSeconds = Math.max(1, parsedSeconds);
+        this.decisionTimer = {
+            enabled: true,
+            seconds: clampedSeconds
+        };
         return this;
     }
 
@@ -1261,7 +1274,8 @@ function generateABTestChallenge(
     twymanFabrication = false,
     overdue = false,
     underpoweredDesign = false,
-    luckyDayTrap = false) {
+    luckyDayTrap = false,
+    decisionTimer = null) {
 
     // Predefined options for each parameter ,
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
@@ -1418,6 +1432,16 @@ function generateABTestChallenge(
     const dataQualityAlpha = 0.0001; // 99.99% confidence level for data quality checks
     const priorEstimateCI = computePriorEstimateConfidenceInterval(BASE_CONVERSION_RATE, BUSINESS_CYCLE_DAYS, VISITORS_PER_DAY, dataQualityAlpha);
 
+    const decisionTimerSettings = (decisionTimer && decisionTimer.enabled)
+        ? {
+            enabled: true,
+            seconds: Math.max(1, Math.floor(Number(decisionTimer.seconds) || 30))
+        }
+        : {
+            enabled: false,
+            seconds: 0
+        };
+
     return {
         experiment: {
             alpha: ALPHA,
@@ -1454,6 +1478,9 @@ function generateABTestChallenge(
             visitorUplift: visitorUplift,
             conversionUplift: conversionUplift,
             luckyDayTrap: luckyDayTrap
+        },
+        gameplay: {
+            decisionTimer: decisionTimerSettings
         }
     };
 }
