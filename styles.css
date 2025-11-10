@@ -509,6 +509,38 @@ select:focus {
     justify-content: center;
 }
 
+.decision-timer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    color: #d1d5db;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.decision-timer .timer-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(209, 213, 219, 0.75);
+}
+
+.decision-timer .timer-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #f9fafb;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.decision-timer.timer-warning .timer-value {
+    color: #facc15;
+}
+
+.decision-timer.timer-expired .timer-value {
+    color: #f87171;
+}
+
 #submit-decision {
     width: 4rem !important;
     max-width: 4rem !important;

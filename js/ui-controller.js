@@ -22,7 +22,11 @@ const UIController = {
         roundResults: [], // Store results for each experiment in the current round
         sessionStartPersonalBest: null, // Store personal best data at session start
         sessionStartRoundsRank: null, // Store starting rounds rank
-        sessionStartImpactRank: null // Store starting impact rank
+        sessionStartImpactRank: null, // Store starting impact rank
+        timerIntervalId: null,
+        timerDeadline: null,
+        timeLimitSeconds: null,
+        timeExpired: false
     },
 
     init() {
@@ -293,6 +297,8 @@ const UIController = {
     },
 
     async exitGame() {
+        this.stopChallengeTimer();
+
         try {
             // Save session summary with opponent data before ending session
             if (typeof Backend !== 'undefined' && Backend.isInitialized()) {
@@ -341,6 +347,8 @@ const UIController = {
     },
 
     resetGameState() {
+        this.stopChallengeTimer();
+
         // Reset all state variables
         this.state.totalAttempts = 0;
         this.state.totalDecisions = 0;
@@ -360,6 +368,10 @@ const UIController = {
         this.state.currentCompetitor = null;
         this.state.selectedCompetitor = null;
         this.state.roundResults = [];
+        this.state.timerIntervalId = null;
+        this.state.timerDeadline = null;
+        this.state.timeLimitSeconds = null;
+        this.state.timeExpired = false;
 
         // Reset UI elements
         this.updateRoundDisplay();
@@ -521,6 +533,8 @@ const UIController = {
                 window.scrollTo(0, 0);
             }
 
+            this.stopChallengeTimer();
+
             if (typeof generateABTestChallenge !== 'function') {
                 throw new Error("generateABTestChallenge function is not defined");
             }
@@ -536,7 +550,11 @@ const UIController = {
                 1: [winner(), inconclusive(), partialLoser()],
                 2: [partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch(), fastLoserWithPartialWeek()],
                 3: [slowCompletion(), fastWinner(), partialLoser().withBaseRateMismatch()],
-                4: [luckyDayTrap(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
+                4: [
+                    luckyDayTrap().withTimeLimit(30),
+                    fastLoserWithPartialWeek().withSampleRatioMismatch().withTimeLimit(30),
+                    loser().withTimeLimit(30)
+                ],
                 5: [partialWinner(), winner().withLowerIsBetter(), inconclusive()],
                 6: [twymansLawTrap(), inconclusive(), bigLoser().withLowerIsBetter().withLuckyDayTrap()],
                 7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()],
@@ -590,6 +608,7 @@ const UIController = {
 
             // Reset decisions
             this.resetDecisions();
+            this.configureChallengeTimer();
             if (this.debugMode()) {
                 this.addDebugAlerts();
             }
@@ -2036,6 +2055,9 @@ const UIController = {
         this.state.implementDecision = null;
         this.state.followUpDecision = null;
         this.state.hasSubmitted = false;
+        this.state.timeExpired = false;
+
+        this.hideTimerDisplay();
 
         // Reset submit button
         const submitButton = document.getElementById('submit-decision');
@@ -2043,10 +2065,135 @@ const UIController = {
         submitButton.classList.add('opacity-50', 'cursor-not-allowed');
     },
 
+    getTimerElements() {
+        const container = document.getElementById('decision-timer');
+        const value = document.getElementById('decision-timer-value');
+        return { container, value };
+    },
+
+    hideTimerDisplay() {
+        const { container, value } = this.getTimerElements();
+        if (container) {
+            container.classList.add('hidden');
+            container.classList.remove('timer-warning', 'timer-expired');
+        }
+        if (value) {
+            value.textContent = '';
+        }
+    },
+
+    configureChallengeTimer() {
+        const { container, value } = this.getTimerElements();
+        const limit = this.state.challenge?.timeLimitSeconds;
+
+        this.state.timeLimitSeconds = limit || null;
+        this.state.timeExpired = false;
+
+        if (!container || !value) {
+            return;
+        }
+
+        if (!limit || limit <= 0) {
+            this.stopChallengeTimer();
+            return;
+        }
+
+        this.stopChallengeTimer({ keepVisible: true });
+
+        container.classList.remove('hidden', 'timer-warning', 'timer-expired');
+        value.textContent = this.formatTimerValue(limit);
+
+        this.state.timerDeadline = Date.now() + limit * 1000;
+
+        this.updateTimerDisplay();
+        this.state.timerIntervalId = setInterval(() => this.updateTimerDisplay(), 200);
+    },
+
+    stopChallengeTimer({ keepVisible = false } = {}) {
+        if (this.state.timerIntervalId) {
+            clearInterval(this.state.timerIntervalId);
+            this.state.timerIntervalId = null;
+        }
+
+        this.state.timerDeadline = null;
+
+        if (!keepVisible) {
+            this.hideTimerDisplay();
+        }
+    },
+
+    updateTimerDisplay() {
+        const { container, value } = this.getTimerElements();
+        if (!container || !value || !this.state.timerDeadline) {
+            return;
+        }
+
+        const remainingMs = this.state.timerDeadline - Date.now();
+
+        if (remainingMs <= 0) {
+            container.classList.remove('timer-warning');
+            container.classList.add('timer-expired');
+            value.textContent = '00:00';
+
+            if (!this.state.timeExpired) {
+                this.state.timeExpired = true;
+                this.stopChallengeTimer({ keepVisible: true });
+                this.handleTimeExpired();
+            }
+            return;
+        }
+
+        const totalSeconds = Math.ceil(remainingMs / 1000);
+        value.textContent = this.formatTimerValue(totalSeconds);
+
+        if (totalSeconds <= 10) {
+            container.classList.add('timer-warning');
+        } else {
+            container.classList.remove('timer-warning');
+        }
+    },
+
+    formatTimerValue(totalSeconds) {
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    },
+
+    handleTimeExpired() {
+        if (this.state.hasSubmitted) {
+            return;
+        }
+
+        const ensureSelection = (name, currentValue) => {
+            if (currentValue) return;
+            const options = Array.from(document.querySelectorAll(`.decision-btn[name="${name}"]`));
+            if (options.length === 0) return;
+            const selectable = options.filter(btn => !btn.disabled);
+            const pool = selectable.length > 0 ? selectable : options;
+            const randomButton = pool[Math.floor(Math.random() * pool.length)];
+            if (randomButton) {
+                randomButton.click();
+            }
+        };
+
+        ensureSelection('trust', this.state.trustDecision);
+        ensureSelection('decision', this.state.implementDecision);
+        ensureSelection('follow_up', this.state.followUpDecision);
+
+        this.checkDecisions();
+
+        const submitButton = document.getElementById('submit-decision');
+        if (submitButton && !submitButton.disabled) {
+            submitButton.click();
+        }
+    },
+
     async evaluateDecision() {
         if (!this.state.trustDecision || !this.state.implementDecision) {
             return;
         }
+
+        this.stopChallengeTimer();
 
         try {
             // If this is a subsequent click, just show the feedback dialog
@@ -2663,6 +2810,7 @@ const UIController = {
     },
 
     async handleNextChallenge() {
+        this.stopChallengeTimer();
 
         const feedbackModal = document.getElementById('feedback-modal');
         const nextChallengeBtn = document.getElementById('next-challenge-btn');
@@ -2952,6 +3100,8 @@ const UIController = {
     },
 
     async showCompletionModal() {
+        this.stopChallengeTimer();
+
         const experimentContainer = document.getElementById('challenge-container');
         const completionModal = document.getElementById('completion-modal');
         const feedbackModal = document.getElementById('feedback-modal');
@@ -3089,6 +3239,8 @@ const UIController = {
     },
 
     startNewSession() {
+        this.stopChallengeTimer();
+
         const completionModal = document.getElementById('completion-modal');
         const gameMenu = document.getElementById('game-menu');
 
@@ -3114,6 +3266,10 @@ const UIController = {
         // Keep the selected competitor for the new session
         // this.state.selectedCompetitor = null;
         this.state.roundResults = []; // Reset round results
+        this.state.timerIntervalId = null;
+        this.state.timerDeadline = null;
+        this.state.timeLimitSeconds = null;
+        this.state.timeExpired = false;
         this.updateExperimentDots(); // Update experiment dots for new session
 
         // Update displays only if elements exist (they might not be visible during game over)
