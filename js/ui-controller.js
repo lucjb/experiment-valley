@@ -542,8 +542,8 @@ const UIController = {
                 1: [winner(), inconclusive(), partialLoser()],
                 2: [partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch(), fastLoserWithPartialWeek()],
                 3: [slowCompletion(), fastWinner(), partialLoser().withBaseRateMismatch()],
-                4: [luckyDayTrap(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
-                5: [partialWinner(), winner().withLowerIsBetter(), inconclusive()],
+                4: [luckyDayTrap(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser().asStopped(EXPERIMENT_DECISION.KEEP_BASE)],
+                5: [partialWinner(), winner().withLowerIsBetter(), winner().asStopped(EXPERIMENT_DECISION.KEEP_VARIANT)],
                 6: [twymansLawTrap(), inconclusive(), bigLoser().withLowerIsBetter().withLuckyDayTrap()],
                 7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()],
                 8: [partialLoser().withSampleRatioMismatch(), winner(), loser().withLowerIsBetter()],
@@ -603,6 +603,7 @@ const UIController = {
 
             // Reset decisions
             this.resetDecisions();
+            this.applyStatusDecisionState();
             this.initializeDecisionTimer();
             if (this.debugMode()) {
                 this.addDebugAlerts();
@@ -1672,6 +1673,29 @@ const UIController = {
         const direction = challenge.experiment.improvementDirection === window.IMPROVEMENT_DIRECTION.LOWER ? 'Lower is Better' : 'Higher is Better';
         document.getElementById('exp-improvement-direction').textContent = direction;
 
+        const statusValue = challenge.experiment.status || window.EXPERIMENT_STATUS.RUNNING;
+        const statusElement = document.getElementById('exp-status-display');
+        const statusDetailElement = document.getElementById('exp-status-detail');
+        const baseClasses = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold';
+        const trafficAllocation = challenge.experiment.trafficAllocation || { base: 0.5, variant: 0.5 };
+        const basePct = Math.round((trafficAllocation.base || 0) * 100);
+        const variantPct = Math.round((trafficAllocation.variant || 0) * 100);
+
+        if (statusElement) {
+            if (statusValue === window.EXPERIMENT_STATUS.STOPPED) {
+                const keptLabel = challenge.experiment.keptVariantDecision === EXPERIMENT_DECISION.KEEP_BASE ? 'Base' : 'Variant';
+                statusElement.className = `${baseClasses} bg-red-100 text-red-800`;
+                statusElement.textContent = `Stopped – ${keptLabel} kept`;
+            } else {
+                statusElement.className = `${baseClasses} bg-green-100 text-green-800`;
+                statusElement.textContent = 'Running';
+            }
+        }
+
+        if (statusDetailElement) {
+            statusDetailElement.textContent = `Traffic Split: Base ${basePct}% / Variant ${variantPct}%`;
+        }
+
         // Update tooltip with prior estimate explanation and CI from experiment data
         const priorCI = challenge.experiment.priorEstimateCI;
         const [ciLow, ciHigh] = priorCI.confidenceInterval;
@@ -2009,6 +2033,9 @@ const UIController = {
         if (decisionType === 'trust') {
             this.state.trustDecision = value;
         } else if (decisionType === 'decision') {
+            if (this.isDecisionLocked()) {
+                return;
+            }
             this.state.implementDecision = value;
         } else if (decisionType === 'follow_up') {
             this.state.followUpDecision = value;
@@ -2022,7 +2049,8 @@ const UIController = {
 
         // Check if any button in each group is selected
         const trustSelected = Array.from(document.querySelectorAll('.decision-btn[name="trust"]')).some(btn => btn.classList.contains('selected'));
-        const decisionSelected = Array.from(document.querySelectorAll('.decision-btn[name="decision"]')).some(btn => btn.classList.contains('selected'));
+        const isLockedDecision = this.isDecisionLocked();
+        const decisionSelected = isLockedDecision || Array.from(document.querySelectorAll('.decision-btn[name="decision"]')).some(btn => btn.classList.contains('selected'));
         const followUpSelected = Array.from(document.querySelectorAll('.decision-btn[name="follow_up"]')).some(btn => btn.classList.contains('selected'));
 
 
@@ -2512,10 +2540,64 @@ const UIController = {
         this.state.followUpDecision = null;
         this.state.hasSubmitted = false;
 
+        const decisionStatusNote = document.getElementById('decision-status-note');
+        if (decisionStatusNote) {
+            decisionStatusNote.textContent = '';
+            decisionStatusNote.classList.add('hidden');
+        }
+
         // Reset submit button
         const submitButton = document.getElementById('submit-decision');
         submitButton.disabled = true;
         submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+    },
+
+    isDecisionLocked() {
+        const status = this.state.challenge?.experiment?.status || window.EXPERIMENT_STATUS?.RUNNING;
+        return status === window.EXPERIMENT_STATUS?.STOPPED;
+    },
+
+    applyStatusDecisionState() {
+        const challenge = this.state.challenge;
+        const decisionButtons = document.querySelectorAll('.decision-btn[name="decision"]');
+        const decisionStatusNote = document.getElementById('decision-status-note');
+
+        if (decisionStatusNote) {
+            decisionStatusNote.textContent = '';
+            decisionStatusNote.classList.add('hidden');
+        }
+
+        decisionButtons.forEach(button => {
+            button.disabled = false;
+            button.style.cursor = 'pointer';
+        });
+
+        if (!challenge) {
+            return;
+        }
+
+        const status = challenge.experiment?.status || window.EXPERIMENT_STATUS.RUNNING;
+        if (status === window.EXPERIMENT_STATUS.STOPPED) {
+            const lockedDecision = challenge.experiment.keptVariantDecision || EXPERIMENT_DECISION.KEEP_BASE;
+            decisionButtons.forEach(button => {
+                button.disabled = true;
+                button.style.cursor = 'not-allowed';
+                button.classList.remove('selected');
+                button.style.opacity = '0.7';
+                if (button.value === lockedDecision) {
+                    button.classList.add('selected');
+                    button.style.opacity = '1';
+                }
+            });
+            this.state.implementDecision = lockedDecision;
+            if (decisionStatusNote) {
+                const keptLabel = lockedDecision === EXPERIMENT_DECISION.KEEP_BASE ? 'Base' : 'Variant';
+                decisionStatusNote.textContent = `Experiment stopped. ${keptLabel} was kept and now receives 100% of the traffic.`;
+                decisionStatusNote.classList.remove('hidden');
+            }
+        }
+
+        this.checkDecisions();
     },
 
     async evaluateDecision() {
@@ -2573,10 +2655,20 @@ const UIController = {
 
 
             // Calculate decision comparison once for all uses
-            const totalChoices = 3;
+            const experimentStatus = experiment.experiment.status || window.EXPERIMENT_STATUS.RUNNING;
+            const isStoppedExperiment = experimentStatus === window.EXPERIMENT_STATUS.STOPPED;
+            const lockedDecision = isStoppedExperiment
+                ? (experiment.experiment.keptVariantDecision || EXPERIMENT_DECISION.KEEP_BASE)
+                : null;
+
+            if (isStoppedExperiment && !this.state.implementDecision) {
+                this.state.implementDecision = lockedDecision;
+            }
+
+            const totalChoices = 2 + (isStoppedExperiment ? 0 : 1);
             const correctChoices = (analysis.decision?.trustworthy === this.state.trustDecision ? 1 : 0)
-                + (analysis.decision?.decision === this.state.implementDecision ? 1 : 0)
-                + (analysis.decision?.followUp === this.state.followUpDecision ? 1 : 0);
+                + (analysis.decision?.followUp === this.state.followUpDecision ? 1 : 0)
+                + (isStoppedExperiment ? 0 : (analysis.decision?.decision === this.state.implementDecision ? 1 : 0));
 
             // Store for use in feedback modal and backend logging
             this.state.currentExperimentCorrectChoices = correctChoices;
@@ -2613,7 +2705,9 @@ const UIController = {
             }
 
             // Get competitor's decision
-            const competitorDecision = this.state.currentCompetitor.makeDecision(experiment);
+            const competitorDecision = isStoppedExperiment
+                ? { decision: lockedDecision, followUp: analysis.decision.followUp, trust: analysis.decision.trustworthy }
+                : this.state.currentCompetitor.makeDecision(experiment);
             let competitorImpact = 0;
             let competitorChoice = "None";
 

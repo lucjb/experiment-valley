@@ -732,6 +732,7 @@
                                 </button>
                             </span>
                         </div>
+                        <p id="decision-status-note" class="text-xs text-yellow-200 text-center mb-2 hidden"></p>
                         <div class="decision-btn-group">
                             <button type="button" name="decision" value="KEEP_BASE" class="decision-btn">
                                 Keep Base
@@ -877,6 +878,29 @@
             <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 mb-4">
                 <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Experiment Design</h2>
                 <div id="experiment-card" class="experiment-grid">
+                    <div class="col-span-full flex flex-col gap-1 border-b border-gray-200 pb-2 mb-2">
+                        <div class="flex items-center justify-between">
+                            <span class="font-medium text-gray-700 flex items-center space-x-2">
+                                <span>Experiment Status</span>
+                                <span class="tooltip-trigger text-gray-500 cursor-help">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd"
+                                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                    <span class="tooltip-content">
+                                        <strong>Running:</strong> The experiment is live and traffic is split between base and
+                                        variant (currently 50/50).<br><br>
+                                        <strong>Stopped:</strong> The experiment ended in the past and 100% of the traffic now
+                                        goes to the variant that was kept. Decisions about which variant to keep are locked.
+                                    </span>
+                                </span>
+                            </span>
+                            <span id="exp-status-display"
+                                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Running</span>
+                        </div>
+                        <p id="exp-status-detail" class="text-xs text-gray-500"></p>
+                    </div>
                     <!-- Column 1: Null Hypothesis, Experiment Type, Improvement Direction -->
                     <div class="space-y-1 border-r-2 border-gray-300 pr-4">
                         <div class="flex justify-between items-center py-1 text-sm">
