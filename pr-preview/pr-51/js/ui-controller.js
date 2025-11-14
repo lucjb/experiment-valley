@@ -693,8 +693,9 @@ const UIController = {
     // Helper function to create a warning icon with tooltip
     createWarningIcon(message, options = {}) {
         const warningIcon = document.createElement('span');
-        warningIcon.className = 'text-yellow-500 cursor-help tooltip-trigger text-sm';
+        warningIcon.className = 'text-yellow-500 cursor-help tooltip-trigger text-sm inline-block';
         warningIcon.textContent = '⚠️';
+        warningIcon.setAttribute('aria-label', 'Warning');
 
         if (options.type) {
             warningIcon.dataset.alertType = options.type;
@@ -802,6 +803,10 @@ const UIController = {
         cell.textContent = '';
         cell.appendChild(visitorsSpan);
 
+        // Add a space between the value and the warning icon
+        const spacer = document.createTextNode(' ');
+        cell.appendChild(spacer);
+
         const warningIcon = this.createWarningIcon(message);
         cell.appendChild(warningIcon);
         
@@ -814,6 +819,12 @@ const UIController = {
         const baseRateCell = document.getElementById('base-rate');
         if (baseRateCell) {
             baseRateCell.textContent = baseRateCell.textContent.replace(/⚠️.*$/, '').trim();
+        }
+        
+        // Clear early stopping alert from variant rate (same pattern as base-rate)
+        const variantRateCell = document.getElementById('variant-rate');
+        if (variantRateCell) {
+            variantRateCell.textContent = variantRateCell.textContent.replace(/⚠️.*$/, '').trim();
         }
         
         // Clear sample size warnings
@@ -1475,7 +1486,10 @@ const UIController = {
         
         if (variantVisitorsElement) variantVisitorsElement.textContent = point.variant.cumulativeVisitors.toLocaleString();
         if (variantConversionsElement) variantConversionsElement.textContent = point.variant.cumulativeConversions.toLocaleString();
-        if (variantRateElement) variantRateElement.textContent = (point.variant.cumulativeRate * 100).toFixed(2) + '%';
+        if (variantRateElement) {
+            // Clear any existing content (alerts will be re-added by addDebugAlerts)
+            variantRateElement.textContent = (point.variant.cumulativeRate * 100).toFixed(2) + '%';
+        }
         
         // Update difference metrics
         const differenceElement = document.getElementById('difference');
