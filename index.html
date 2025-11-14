@@ -732,6 +732,7 @@
                                 </button>
                             </span>
                         </div>
+                        <div id="decision-status-message" class="text-xs text-amber-300 text-center mb-2 hidden"></div>
                         <div class="decision-btn-group">
                             <button type="button" name="decision" value="KEEP_BASE" class="decision-btn">
                                 Keep Base
@@ -902,6 +903,17 @@
                         <div class="flex justify-between items-center py-1 text-sm">
                             <span class="font-medium text-gray-700">Improvement Direction</span>
                             <span class="font-semibold text-gray-900" id="exp-improvement-direction"></span>
+                        </div>
+                        <div class="flex justify-between items-center py-1 text-sm">
+                            <span class="font-medium text-gray-700">Status</span>
+                            <span class="font-semibold text-gray-900">
+                                <span class="tooltip-trigger" id="exp-status">
+                                    <span id="exp-status-value">Running</span>
+                                    <span class="tooltip-content" id="exp-status-tooltip">
+                                        Running experiments split traffic roughly 50/50 between Base and Variant.
+                                    </span>
+                                </span>
+                            </span>
                         </div>
                     </div>
 

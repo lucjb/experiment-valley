@@ -69,6 +69,23 @@ button:disabled {
     cursor: not-allowed;
 }
 
+.decision-btn.locked-decision {
+    border: 1px dashed #fbbf24;
+    opacity: 0.9;
+    position: relative;
+}
+
+.decision-btn.locked-decision::after {
+    content: 'Locked';
+    position: absolute;
+    bottom: 0.25rem;
+    right: 0.35rem;
+    font-size: 0.55rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #fbbf24;
+}
+
 /* Chart styles */
 .chart-container {
     position: relative;
