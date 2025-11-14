@@ -1019,6 +1019,8 @@ class ChallengeDesign {
         this.luckyDayTrap = luckyDayTrap;
         this.timeLimitSeconds = timeLimitSeconds;
         this.timeLimitDisabled = false;
+        this.status = EXPERIMENT_STATUS.RUNNING;
+        this.keptVariantDecision = null;
     }
 
     generate() {
@@ -1033,7 +1035,9 @@ class ChallengeDesign {
             this.twymanFabrication,
             this.overdue,
             this.underpoweredDesign,
-            this.luckyDayTrap
+            this.luckyDayTrap,
+            this.status,
+            this.keptVariantDecision
         );
 
         const hasTimeLimit = !this.timeLimitDisabled && typeof this.timeLimitSeconds === 'number' && this.timeLimitSeconds > 0;
@@ -1048,6 +1052,12 @@ class ChallengeDesign {
 
     withBaseRateMismatch() {
         this.baseRateMismatch = BASE_RATE_MISMATCH.YES;
+        return this;
+    }
+
+    asStopped(keptDecision = EXPERIMENT_DECISION.KEEP_VARIANT) {
+        this.status = EXPERIMENT_STATUS.STOPPED;
+        this.keptVariantDecision = keptDecision;
         return this;
     }
 
@@ -1272,6 +1282,7 @@ const EFFECT_SIZE = { NONE: 0, SMALL_IMPROVEMENT: 0.05, IMPROVEMENT: 0.85, LARGE
 const SAMPLE_RATIO_MISMATCH = { NO: 0.5, LARGE: 0.4, SMALL: 0.47 };
 const VISITORS_LOSS = { NO: false, YES: true };
 const IMPROVEMENT_DIRECTION = { HIGHER: 'HIGHER_IS_BETTER', LOWER: 'LOWER_IS_BETTER' };
+const EXPERIMENT_STATUS = { RUNNING: 'RUNNING', STOPPED: 'STOPPED' };
 const MAX_RATE_RATIO = 2.5;
 
 function generateABTestChallenge(
@@ -1285,7 +1296,9 @@ function generateABTestChallenge(
     twymanFabrication = false,
     overdue = false,
     underpoweredDesign = false,
-    luckyDayTrap = false) {
+    luckyDayTrap = false,
+    status = EXPERIMENT_STATUS.RUNNING,
+    keptVariantDecision = null) {
 
     // Predefined options for each parameter ,
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
@@ -1442,6 +1455,18 @@ function generateABTestChallenge(
     const dataQualityAlpha = 0.0001; // 99.99% confidence level for data quality checks
     const priorEstimateCI = computePriorEstimateConfidenceInterval(BASE_CONVERSION_RATE, BUSINESS_CYCLE_DAYS, VISITORS_PER_DAY, dataQualityAlpha);
 
+    const normalizedKeptDecision = status === EXPERIMENT_STATUS.STOPPED
+        ? (keptVariantDecision === EXPERIMENT_DECISION.KEEP_BASE
+            ? EXPERIMENT_DECISION.KEEP_BASE
+            : EXPERIMENT_DECISION.KEEP_VARIANT)
+        : null;
+
+    const trafficAllocation = status === EXPERIMENT_STATUS.STOPPED
+        ? (normalizedKeptDecision === EXPERIMENT_DECISION.KEEP_BASE
+            ? { base: 1, variant: 0 }
+            : { base: 0, variant: 1 })
+        : { base: 0.5, variant: 0.5 };
+
     return {
         experiment: {
             alpha: ALPHA,
@@ -1454,7 +1479,10 @@ function generateABTestChallenge(
             requiredRuntimeDays: requiredRuntimeDays,
             improvementDirection: improvementDirection,
             priorEstimateCI: priorEstimateCI,
-            dataQualityAlpha: dataQualityAlpha
+            dataQualityAlpha: dataQualityAlpha,
+            status: status,
+            keptVariantDecision: normalizedKeptDecision,
+            trafficAllocation: trafficAllocation
         },
         simulation: {
             actualBaseConversionRate: actualBaseConversionRate,
@@ -2133,7 +2161,9 @@ function analyzeExperiment(experiment) {
             requiredRuntimeDays,
             improvementDirection,
             minimumRelevantEffect,
-            dataQualityAlpha
+            dataQualityAlpha,
+            status = EXPERIMENT_STATUS.RUNNING,
+            keptVariantDecision = null
         }
     } = experiment;
 
@@ -2451,6 +2481,15 @@ function analyzeExperiment(experiment) {
         }
     }
 
+    if (status === EXPERIMENT_STATUS.STOPPED) {
+        const lockedDecision = keptVariantDecision || EXPERIMENT_DECISION.KEEP_BASE;
+        const keptLabel = lockedDecision === EXPERIMENT_DECISION.KEEP_BASE ? 'Base' : 'Variant';
+        decision = lockedDecision;
+        const lockedReason = `Experiment already stopped. ${keptLabel} was previously kept and now receives 100% of the traffic.`;
+        decisionReason = `${lockedReason} ${decisionReason || ''}`.trim();
+        summary = `Experiment already stopped — ${keptLabel} is live at 100% traffic. ${summary || ''}`.trim();
+    }
+
     return {
         decision: {
             trustworthy: trustworthy,
@@ -2459,7 +2498,9 @@ function analyzeExperiment(experiment) {
             decisionReason: decisionReason,
             followUp: followUp,
             followUpReason: followUpReason,
-            summary: summary
+            summary: summary,
+            status: status,
+            keptVariantDecision: keptVariantDecision
         },
         analysis: {
             hasSignificantRatioMismatch: hasSampleRatioMismatch,
@@ -2535,3 +2576,4 @@ function analyzeExperiment(experiment) {
 window.generateABTestChallenge = generateABTestChallenge;
 window.analyzeExperiment = analyzeExperiment;
 window.IMPROVEMENT_DIRECTION = IMPROVEMENT_DIRECTION;
+window.EXPERIMENT_STATUS = EXPERIMENT_STATUS;
