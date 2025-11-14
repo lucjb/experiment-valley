@@ -2418,17 +2418,17 @@ function analyzeExperiment(experiment) {
 
     // Check for early stopping scenario - takes precedence over most other checks
     if (hasEarlyStopping && !mismatch) {
-        trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
+        trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
         decision = EXPERIMENT_DECISION.KEEP_BASE;
         followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
         
         const probFlipping = earlyStoppingTest.probabilityOfFlipping;
         const probPercent = probFlipping !== null ? (probFlipping * 100).toFixed(2) : '0.00';
         
-        trustworthyReason = `Early stopping scenario detected. The treatment shows an extremely negative effect in a very short time (day 3). The probability of observing new data that would make the result conclusive positive (assuming true effect is MDE) is ${probPercent}%, which is less than 1%. The experiment is not trustworthy and should be stopped early.`;
-        decisionReason = `Variant shows extremely negative effect early (day 3). Probability of flipping to positive result is ${probPercent}% (< 1%). Stop the experiment and keep base.`;
+        trustworthyReason = `No issues. Design is correct and execution is consistent with design, data is reliable. Early stopping scenario detected: the treatment shows an extremely negative effect in a very short time (day 3).`;
+        decisionReason = `Variant shows extremely negative effect early (day 3). Probability of flipping to positive result is ${probPercent}% (< 1%), even assuming true effect is more than twice the MDE (2x MDE). Stop the experiment and keep base.`;
         followUpReason = 'Investigate why the variant is performing so poorly and iterate on the hypothesis, treatment, and/or experiment design.';
-        summary = 'Early stopping scenario: variant shows extremely negative effect at day 3. Probability of flipping to positive is less than 1%. Stop experiment, keep base, and iterate.';
+        summary = 'Early stopping scenario: variant shows extremely negative effect at day 3. Probability of flipping to positive is less than 1%, even assuming true effect is more than twice the MDE. Stop experiment, keep base, and iterate.';
     } else if (mismatch) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
         decision = EXPERIMENT_DECISION.KEEP_BASE;
