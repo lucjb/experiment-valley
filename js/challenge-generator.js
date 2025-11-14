@@ -1004,7 +1004,9 @@ class ChallengeDesign {
         overdue = false,
         underpoweredDesign = false,
         luckyDayTrap = false,
-        timeLimitSeconds = null
+        timeLimitSeconds = null,
+        status = EXPERIMENT_STATUS.RUNNING,
+        keptVariant = null
     } = {}) {
         this.timeProgress = timeProgress;
         this.baseRateMismatch = baseRateMismatch;
@@ -1019,6 +1021,8 @@ class ChallengeDesign {
         this.luckyDayTrap = luckyDayTrap;
         this.timeLimitSeconds = timeLimitSeconds;
         this.timeLimitDisabled = false;
+        this.status = status;
+        this.keptVariant = keptVariant;
     }
 
     generate() {
@@ -1033,7 +1037,9 @@ class ChallengeDesign {
             this.twymanFabrication,
             this.overdue,
             this.underpoweredDesign,
-            this.luckyDayTrap
+            this.luckyDayTrap,
+            this.status,
+            this.keptVariant
         );
 
         const hasTimeLimit = !this.timeLimitDisabled && typeof this.timeLimitSeconds === 'number' && this.timeLimitSeconds > 0;
@@ -1122,6 +1128,12 @@ class ChallengeDesign {
         return this;
     }
 
+    withStoppedStatus(decision = EXPERIMENT_DECISION.KEEP_VARIANT) {
+        this.status = EXPERIMENT_STATUS.STOPPED;
+        this.keptVariant = decision;
+        return this;
+    }
+
 }
 
 function winner() {
@@ -1190,6 +1202,14 @@ function partialLoser() {
         sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
         sampleProgress: SAMPLE_PROGRESS.PARTIAL
     });
+}
+
+function stoppedVariantRollout() {
+    return winner().withStoppedStatus(EXPERIMENT_DECISION.KEEP_VARIANT);
+}
+
+function stoppedBaseRollout() {
+    return loser().withStoppedStatus(EXPERIMENT_DECISION.KEEP_BASE);
 }
 
 function fastWinner() {
@@ -1266,6 +1286,7 @@ function underpoweredTrap() {
 
 
 const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY", PARTIAL_WEEKS: "PARTIAL_WEEKS" };
+const EXPERIMENT_STATUS = { RUNNING: 'RUNNING', STOPPED: 'STOPPED' };
 const SAMPLE_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", TIME: "TIME" };
 const BASE_RATE_MISMATCH = { NO: 1, YES: 0.1 };
 const EFFECT_SIZE = { NONE: 0, SMALL_IMPROVEMENT: 0.05, IMPROVEMENT: 0.85, LARGE_IMPROVEMENT: 2, DEGRADATION: -0.8, SMALL_DEGRADATION: -0.05, LARGE_DEGRADATION: -2 };
@@ -1285,7 +1306,9 @@ function generateABTestChallenge(
     twymanFabrication = false,
     overdue = false,
     underpoweredDesign = false,
-    luckyDayTrap = false) {
+    luckyDayTrap = false,
+    status = EXPERIMENT_STATUS.RUNNING,
+    keptVariant = null) {
 
     // Predefined options for each parameter ,
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
@@ -1442,6 +1465,10 @@ function generateABTestChallenge(
     const dataQualityAlpha = 0.0001; // 99.99% confidence level for data quality checks
     const priorEstimateCI = computePriorEstimateConfidenceInterval(BASE_CONVERSION_RATE, BUSINESS_CYCLE_DAYS, VISITORS_PER_DAY, dataQualityAlpha);
 
+    const lockedDecision = status === EXPERIMENT_STATUS.STOPPED
+        ? (keptVariant || EXPERIMENT_DECISION.KEEP_BASE)
+        : null;
+
     return {
         experiment: {
             alpha: ALPHA,
@@ -1454,7 +1481,9 @@ function generateABTestChallenge(
             requiredRuntimeDays: requiredRuntimeDays,
             improvementDirection: improvementDirection,
             priorEstimateCI: priorEstimateCI,
-            dataQualityAlpha: dataQualityAlpha
+            dataQualityAlpha: dataQualityAlpha,
+            status,
+            keptVariant: lockedDecision
         },
         simulation: {
             actualBaseConversionRate: actualBaseConversionRate,
@@ -2133,7 +2162,9 @@ function analyzeExperiment(experiment) {
             requiredRuntimeDays,
             improvementDirection,
             minimumRelevantEffect,
-            dataQualityAlpha
+            dataQualityAlpha,
+            status: experimentStatus = EXPERIMENT_STATUS.RUNNING,
+            keptVariant
         }
     } = experiment;
 
@@ -2451,6 +2482,19 @@ function analyzeExperiment(experiment) {
         }
     }
 
+    if (experimentStatus === EXPERIMENT_STATUS.STOPPED) {
+        const lockedChoice = keptVariant || decision;
+        const lockedLabel = lockedChoice === EXPERIMENT_DECISION.KEEP_VARIANT
+            ? 'Variant'
+            : lockedChoice === EXPERIMENT_DECISION.KEEP_BASE
+                ? 'Base'
+                : 'Experiment';
+        const statusNote = `Experiment already stopped. ${lockedLabel} receives 100% of traffic.`;
+        decision = lockedChoice;
+        decisionReason = decisionReason ? `${statusNote} ${decisionReason}` : statusNote;
+        summary = summary ? `${summary} ${statusNote}` : statusNote;
+    }
+
     return {
         decision: {
             trustworthy: trustworthy,
@@ -2527,7 +2571,9 @@ function analyzeExperiment(experiment) {
                 conversionsDifference: luckyDayInfo.conversionsDifference,
                 conversionsBase: luckyDayInfo.conversionsBase,
                 conversionsVariant: luckyDayInfo.conversionsVariant
-            } : null
+            } : null,
+            experimentStatus,
+            keptVariant: keptVariant || decision
         }
     };
 }
@@ -2535,3 +2581,4 @@ function analyzeExperiment(experiment) {
 window.generateABTestChallenge = generateABTestChallenge;
 window.analyzeExperiment = analyzeExperiment;
 window.IMPROVEMENT_DIRECTION = IMPROVEMENT_DIRECTION;
+window.EXPERIMENT_STATUS = EXPERIMENT_STATUS;
