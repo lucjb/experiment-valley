@@ -27,7 +27,8 @@ const UIController = {
         decisionTimeRemaining: null,
         decisionTimeLimit: null,
         decisionTimedOut: false,
-        decisionTimerIntroPlayed: false
+        decisionTimerIntroPlayed: false,
+        currentExperimentDecisionLocked: false
     },
 
     init() {
@@ -40,6 +41,11 @@ const UIController = {
 
     debugMode() {
         return document.getElementById('debug-mode').checked;
+    },
+
+    isDecisionLocked() {
+        const status = this.state.challenge?.experiment?.status;
+        return status?.state === window.EXPERIMENT_STATUS?.STOPPED;
     },
 
     // Initialize all tooltips globally with consistent clickable behavior
@@ -543,7 +549,7 @@ const UIController = {
                 2: [partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch(), fastLoserWithPartialWeek()],
                 3: [slowCompletion(), fastWinner(), partialLoser().withBaseRateMismatch()],
                 4: [luckyDayTrap(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
-                5: [partialWinner(), winner().withLowerIsBetter(), inconclusive()],
+                5: [partialWinner(), winner().withLowerIsBetter(), stoppedVariantReview()],
                 6: [twymansLawTrap(), inconclusive(), bigLoser().withLowerIsBetter().withLuckyDayTrap()],
                 7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()],
                 8: [partialLoser().withSampleRatioMismatch(), winner(), loser().withLowerIsBetter()],
@@ -1672,6 +1678,26 @@ const UIController = {
         const direction = challenge.experiment.improvementDirection === window.IMPROVEMENT_DIRECTION.LOWER ? 'Lower is Better' : 'Higher is Better';
         document.getElementById('exp-improvement-direction').textContent = direction;
 
+        const status = challenge.experiment.status || { state: window.EXPERIMENT_STATUS.RUNNING };
+        const statusValueEl = document.getElementById('exp-status-value');
+        const statusTooltipEl = document.getElementById('exp-status-tooltip');
+        if (statusValueEl) {
+            if (status.state === window.EXPERIMENT_STATUS.STOPPED) {
+                const keptLabel = status.keptVariant === window.EXPERIMENT_DECISION.KEEP_VARIANT ? 'Variant kept' : 'Base kept';
+                statusValueEl.textContent = `Stopped · ${keptLabel}`;
+            } else {
+                statusValueEl.textContent = 'Running';
+            }
+        }
+        if (statusTooltipEl) {
+            if (status.state === window.EXPERIMENT_STATUS.STOPPED) {
+                const keptLabel = status.keptVariant === window.EXPERIMENT_DECISION.KEEP_VARIANT ? 'Variant' : 'Base';
+                statusTooltipEl.textContent = `${keptLabel} now receives 100% of traffic because the experiment was already stopped.`;
+            } else {
+                statusTooltipEl.textContent = 'Running experiments split traffic roughly 50/50 between Base and Variant.';
+            }
+        }
+
         // Update tooltip with prior estimate explanation and CI from experiment data
         const priorCI = challenge.experiment.priorEstimateCI;
         const [ciLow, ciHigh] = priorCI.confidenceInterval;
@@ -2474,7 +2500,7 @@ const UIController = {
     autoFillDecisions() {
         const decisionGroups = [
             { name: 'trust', stateKey: 'trustDecision' },
-            { name: 'decision', stateKey: 'implementDecision' },
+            ...(this.isDecisionLocked() ? [] : [{ name: 'decision', stateKey: 'implementDecision' }]),
             { name: 'follow_up', stateKey: 'followUpDecision' }
         ];
 
@@ -2495,6 +2521,52 @@ const UIController = {
         });
     },
 
+    configureDecisionSectionForStatus() {
+        const decisionButtons = document.querySelectorAll('.decision-btn[name="decision"]');
+        const statusMessage = document.getElementById('decision-status-message');
+
+        if (statusMessage) {
+            statusMessage.classList.add('hidden');
+            statusMessage.textContent = '';
+        }
+
+        if (!this.state.challenge || decisionButtons.length === 0) {
+            return;
+        }
+
+        if (!this.isDecisionLocked()) {
+            return;
+        }
+
+        const keptDecision = this.state.challenge.experiment.status?.keptVariant || window.EXPERIMENT_DECISION.KEEP_BASE;
+        this.state.implementDecision = keptDecision;
+        this.state.currentExperimentDecisionLocked = true;
+
+        decisionButtons.forEach(button => {
+            const value = button.getAttribute('value');
+            button.disabled = true;
+            button.classList.add('locked-decision');
+            button.style.cursor = 'not-allowed';
+            if (value === keptDecision) {
+                button.classList.add('selected');
+                button.style.opacity = '1';
+                button.style.transform = 'scale(1.05)';
+            } else {
+                button.classList.remove('selected');
+                button.style.opacity = '0.5';
+                button.style.transform = 'scale(1)';
+            }
+        });
+
+        if (statusMessage) {
+            const keptLabel = keptDecision === window.EXPERIMENT_DECISION.KEEP_VARIANT ? 'Variant' : 'Base';
+            statusMessage.textContent = `Decision locked: ${keptLabel} was kept when the experiment stopped. Focus on trustworthiness and follow-up.`;
+            statusMessage.classList.remove('hidden');
+        }
+
+        this.checkDecisions();
+    },
+
     resetDecisions() {
         this.clearDecisionTimer();
         // Reset all decision buttons
@@ -2504,6 +2576,7 @@ const UIController = {
             button.classList.remove('selected');
             button.disabled = false; // Enable the buttons
             button.style.cursor = 'pointer'; // Reset cursor
+            button.classList.remove('locked-decision');
         });
 
         // Reset state
@@ -2511,15 +2584,19 @@ const UIController = {
         this.state.implementDecision = null;
         this.state.followUpDecision = null;
         this.state.hasSubmitted = false;
+        this.state.currentExperimentDecisionLocked = false;
 
         // Reset submit button
         const submitButton = document.getElementById('submit-decision');
         submitButton.disabled = true;
         submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+
+        this.configureDecisionSectionForStatus();
     },
 
     async evaluateDecision() {
-        if (!this.state.trustDecision || !this.state.implementDecision) {
+        const decisionLocked = this.isDecisionLocked();
+        if (!this.state.trustDecision || (!decisionLocked && !this.state.implementDecision)) {
             return;
         }
 
@@ -2536,6 +2613,7 @@ const UIController = {
             this.state.hasSubmitted = true;
 
             this.state.totalAttempts++;
+            this.state.currentExperimentDecisionLocked = decisionLocked;
 
             // Check if this is the last experiment of the round BEFORE incrementing
             const isLastExperiment = this.state.experimentsInCurrentRound === this.state.EXPERIMENTS_PER_SESSION - 1;
@@ -2573,9 +2651,9 @@ const UIController = {
 
 
             // Calculate decision comparison once for all uses
-            const totalChoices = 3;
+            const totalChoices = 2 + (decisionLocked ? 0 : 1);
             const correctChoices = (analysis.decision?.trustworthy === this.state.trustDecision ? 1 : 0)
-                + (analysis.decision?.decision === this.state.implementDecision ? 1 : 0)
+                + (decisionLocked ? 0 : (analysis.decision?.decision === this.state.implementDecision ? 1 : 0))
                 + (analysis.decision?.followUp === this.state.followUpDecision ? 1 : 0);
 
             // Store for use in feedback modal and backend logging
@@ -2601,28 +2679,41 @@ const UIController = {
                 return Math.round(effectSize * expectedDailyVisitors);
             };
 
+            const userImplementDecision = decisionLocked
+                ? (this.state.challenge?.experiment?.status?.keptVariant || window.EXPERIMENT_DECISION.KEEP_BASE)
+                : this.state.implementDecision;
+
             // Record user's chosen option
             let userImpact = 0;
             let userChoice = "None";
-            if (this.state.implementDecision === "KEEP_VARIANT") {
-                userChoice = "Variant";
-            } else if (this.state.implementDecision === "KEEP_BASE") {
-                userChoice = "Base";
-            } else if (this.state.implementDecision === "KEEP_RUNNING") {
-                userChoice = "Keep Running";
+            if (!decisionLocked) {
+                if (userImplementDecision === window.EXPERIMENT_DECISION.KEEP_VARIANT) {
+                    userChoice = "Variant";
+                } else if (userImplementDecision === window.EXPERIMENT_DECISION.KEEP_BASE) {
+                    userChoice = "Base";
+                } else if (userImplementDecision === window.EXPERIMENT_DECISION.KEEP_RUNNING) {
+                    userChoice = "Keep Running";
+                }
+            } else {
+                userChoice = userImplementDecision === window.EXPERIMENT_DECISION.KEEP_VARIANT
+                    ? "Variant (locked)"
+                    : "Base (locked)";
             }
 
             // Get competitor's decision
-            const competitorDecision = this.state.currentCompetitor.makeDecision(experiment);
+            let competitorDecision = { decision: null };
             let competitorImpact = 0;
             let competitorChoice = "None";
 
-            if (competitorDecision.decision === "KEEP_VARIANT") {
-                competitorChoice = "Variant";
-            } else if (competitorDecision.decision === "KEEP_BASE") {
-                competitorChoice = "Base";
-            } else if (competitorDecision.decision === "KEEP_RUNNING") {
-                competitorChoice = "Keep Running";
+            if (!decisionLocked) {
+                competitorDecision = this.state.currentCompetitor.makeDecision(experiment);
+                if (competitorDecision.decision === window.EXPERIMENT_DECISION.KEEP_VARIANT) {
+                    competitorChoice = "Variant";
+                } else if (competitorDecision.decision === window.EXPERIMENT_DECISION.KEEP_BASE) {
+                    competitorChoice = "Base";
+                } else if (competitorDecision.decision === window.EXPERIMENT_DECISION.KEEP_RUNNING) {
+                    competitorChoice = "Keep Running";
+                }
             }
 
             // Determine which variant is better based on improvement direction
@@ -2639,17 +2730,17 @@ const UIController = {
 
             // Impacts shown in the table should reflect the signed true effect
             let userImpactDisplay = 0;
-            if (this.state.implementDecision === "KEEP_VARIANT") {
+            if (!decisionLocked && userImplementDecision === window.EXPERIMENT_DECISION.KEEP_VARIANT) {
                 userImpactDisplay = actualImpactCpd;
             }
 
             let competitorImpactDisplay = 0;
-            if (competitorDecision.decision === "KEEP_VARIANT") {
+            if (!decisionLocked && competitorDecision.decision === window.EXPERIMENT_DECISION.KEEP_VARIANT) {
                 competitorImpactDisplay = actualImpactCpd;
             }
 
             // Calculate impact for user
-            if (this.state.implementDecision === "KEEP_VARIANT") {
+            if (!decisionLocked && userImplementDecision === window.EXPERIMENT_DECISION.KEEP_VARIANT) {
                 // User chose variant: impact depends on whether variant is better
                 if (variantBetter) {
                     userImpact = effectMagnitude; // Positive impact for good variant
@@ -2657,20 +2748,18 @@ const UIController = {
                     userImpact = -effectMagnitude; // Negative impact for bad variant
                 }
             } else {
-                // User chose base or keep running: always 0 impact (no change from baseline)
+                // User chose base/keep running or decision was locked: no new impact
                 userImpact = 0;
             }
 
             // Calculate impact for competitor
-            if (competitorDecision.decision === "KEEP_VARIANT") {
-                // Competitor chose variant: impact depends on whether variant is better
+            if (!decisionLocked && competitorDecision.decision === window.EXPERIMENT_DECISION.KEEP_VARIANT) {
                 if (variantBetter) {
-                    competitorImpact = effectMagnitude; // Positive impact for good variant
+                    competitorImpact = effectMagnitude;
                 } else {
-                    competitorImpact = -effectMagnitude; // Negative impact for bad variant
+                    competitorImpact = -effectMagnitude;
                 }
             } else {
-                // Competitor chose base or keep running: always 0 impact (no change from baseline)
                 competitorImpact = 0;
             }
 
@@ -2686,8 +2775,8 @@ const UIController = {
                     // Use the values calculated once above
                     const correctChoices = this.state.currentExperimentCorrectChoices;
                     const totalChoices = this.state.currentExperimentTotalChoices;
-                    const isPerfect = (correctChoices === totalChoices);
-                    const isGood = (correctChoices === totalChoices - 1);
+                    const isPerfect = totalChoices === 0 ? true : (correctChoices === totalChoices);
+                    const isGood = !isPerfect && correctChoices >= Math.max(1, totalChoices - 1);
                     await Backend.logEvent({
                         eventType: 'experiment',
                         roundNumber: this.state.currentRound,
@@ -2722,7 +2811,6 @@ const UIController = {
             const bestVariant = variantBetter ? "Variant" : "Base";
 
             // Determine if user made the correct decision
-            const userImplementDecision = this.state.implementDecision;
             const correctDecision = analysis.decision.decision;
             const userMadeCorrectDecision = (userImplementDecision === correctDecision);
 
@@ -2756,7 +2844,19 @@ const UIController = {
             }
 
             // Construct message based on true effect and choices
-            if (actualEffectCpd === 0) {
+            if (decisionLocked) {
+                impactMessage = 'Decision already made earlier. This review does not change impact.';
+
+                const opponentChoiceElement = document.getElementById('modal-opponent-choice');
+                if (opponentChoiceElement) {
+                    opponentChoiceElement.textContent = '';
+                }
+
+                const impactLineElement = document.getElementById('modal-impact-line');
+                if (impactLineElement) {
+                    impactLineElement.innerHTML = 'Your focus is on trustworthiness and follow-up. No new impact applied.';
+                }
+            } else if (actualEffectCpd === 0) {
                 // Line 1: Prefix and true effect
                 impactMessage = `No difference between base and variant.`;
 
@@ -2908,12 +3008,13 @@ const UIController = {
             const userTrustDisplay = userTrust ? "Yes" : "No";
 
             // Check decision
-            const userDecision = this.state.implementDecision;
+            const userDecision = userImplementDecision;
             const analysisDecision = analysis.decision.decision;
             const displayDecision = analysisDecision === "KEEP_VARIANT" ? "Keep Variant" :
                 analysisDecision === "KEEP_BASE" ? "Keep Base" : "Keep Running";
-            const userDecisionDisplay = userDecision === "KEEP_VARIANT" ? "Keep Variant" :
+            const baseDecisionDisplay = userDecision === "KEEP_VARIANT" ? "Keep Variant" :
                 userDecision === "KEEP_BASE" ? "Keep Base" : "Keep Running";
+            const userDecisionDisplay = decisionLocked ? `${baseDecisionDisplay} (locked)` : baseDecisionDisplay;
 
             // Check follow-up
             const userFollowUp = this.state.followUpDecision;
@@ -2929,16 +3030,18 @@ const UIController = {
 
             // Build table rows with optional tooltips
             const trustExplanation = userTrust === analysisTrust ? '' : this.getTrustExplanation(analysis);
-            const decisionExplanation = userDecision === analysisDecision ? '' : this.getDecisionExplanation(analysis);
+            const decisionExplanation = (!decisionLocked && userDecision !== analysisDecision)
+                ? this.getDecisionExplanation(analysis)
+                : '';
             const followUpExplanation = userFollowUp === analysisFollowUp ? '' : this.getFollowUpExplanation(analysis);
 
             const trustIcon = userTrust === analysisTrust ?
                 '<svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
                 `<span class="tooltip-trigger"><svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg><span class="tooltip-content">${trustExplanation}</span></span>`;
 
-            const decisionIcon = userDecision === analysisDecision ?
+            const decisionIcon = decisionLocked ? '' : (userDecision === analysisDecision ?
                 '<svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
-                `<span class="tooltip-trigger"><svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg><span class="tooltip-content">${decisionExplanation}</span></span>`;
+                `<span class="tooltip-trigger"><svg class="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg><span class="tooltip-content">${decisionExplanation}</span></span>`);
 
             const followUpIcon = userFollowUp === analysisFollowUp ?
                 '<svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' :
@@ -2949,6 +3052,22 @@ const UIController = {
             const feedbackTotalChoices = this.state.currentExperimentTotalChoices;
 
             // Create table format
+            const decisionRowHtml = decisionLocked ? `
+                            <tr class="border-b border-gray-100">
+                                <td class="py-1 px-2 flex items-center space-x-2 whitespace-nowrap">
+                                    <span class="font-medium text-gray-700">Decision</span>
+                                </td>
+                                <td class="py-1 px-2 text-blue-600 whitespace-nowrap" colspan="2">${userDecisionDisplay}</td>
+                            </tr>` : `
+                            <tr class="border-b border-gray-100">
+                                <td class="py-1 px-2 flex items-center space-x-2 whitespace-nowrap">
+                                    ${decisionIcon}
+                                    <span class="font-medium text-gray-700">Decision</span>
+                                </td>
+                                <td class="py-1 px-2 ${userDecision === analysisDecision ? 'text-green-600' : 'text-red-600'} whitespace-nowrap">${userDecisionDisplay}</td>
+                                <td class="py-1 px-2 text-gray-600 whitespace-nowrap">${displayDecision}</td>
+                            </tr>`;
+
             feedbackMessage = `
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm border-collapse">
@@ -2968,14 +3087,7 @@ const UIController = {
                                 <td class="py-1 px-2 ${userTrust === analysisTrust ? 'text-green-600' : 'text-red-600'} whitespace-nowrap">${userTrustDisplay}</td>
                                 <td class="py-1 px-2 text-gray-600 whitespace-nowrap">${displayTrust}</td>
                             </tr>
-                            <tr class="border-b border-gray-100">
-                                <td class="py-1 px-2 flex items-center space-x-2 whitespace-nowrap">
-                                    ${decisionIcon}
-                                    <span class="font-medium text-gray-700">Decision</span>
-                                </td>
-                                <td class="py-1 px-2 ${userDecision === analysisDecision ? 'text-green-600' : 'text-red-600'} whitespace-nowrap">${userDecisionDisplay}</td>
-                                <td class="py-1 px-2 text-gray-600 whitespace-nowrap">${displayDecision}</td>
-                            </tr>
+                            ${decisionRowHtml}
                             <tr>
                                 <td class="py-1 px-2 flex items-center space-x-2 whitespace-nowrap">
                                     ${followUpIcon}
@@ -2990,8 +3102,8 @@ const UIController = {
             `;
 
             // Calculate performance
-            const isPerfect = (feedbackCorrectChoices === feedbackTotalChoices);
-            const isGood = (feedbackCorrectChoices >= 2);
+            const isPerfect = feedbackTotalChoices === 0 ? true : (feedbackCorrectChoices === feedbackTotalChoices);
+            const isGood = !isPerfect && feedbackCorrectChoices >= Math.max(1, feedbackTotalChoices - 1);
 
             // Store the result for this experiment in the round
             const experimentResult = {
@@ -3035,9 +3147,12 @@ const UIController = {
 
                 // Update results display for perfect performance
                 resultsDisplay.className = 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-2 mt-2';
+                const perfectLabel = feedbackTotalChoices === 3
+                    ? 'Perfect! All 3 decisions correct!'
+                    : 'Perfect! All decisions correct!';
                 resultsDisplay.innerHTML = `
                     <p class="text-xs text-gray-600 leading-tight text-center">
-                        <span class="text-green-700 font-semibold">Perfect! All 3 decisions correct!</span>
+                        <span class="text-green-700 font-semibold">${perfectLabel}</span>
                     </p>
                 `;
 
@@ -3052,7 +3167,7 @@ const UIController = {
                 resultsDisplay.className = 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-2 mt-2';
                 resultsDisplay.innerHTML = `
                     <p class="text-xs text-gray-600 leading-tight text-center">
-                        <span class="text-blue-700 font-semibold">Good Job! You got ${feedbackCorrectChoices} out of 3 right!</span>
+                        <span class="text-blue-700 font-semibold">Good Job! You got ${feedbackCorrectChoices} out of ${feedbackTotalChoices} right!</span>
                     </p>
                 `;
 
