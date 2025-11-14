@@ -743,6 +743,7 @@
                                 Keep Running
                             </button>
                         </div>
+                        <p id="decision-lock-message" class="decision-lock-message hidden"></p>
                     </div>
 
                     <!-- Follow Up Section -->
@@ -875,7 +876,19 @@
 
             <!-- Experiment Design Section -->
             <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 mb-4">
-                <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Experiment Design</h2>
+                <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-3">
+                    <div>
+                        <h2 class="text-xl md:text-2xl font-semibold text-gray-800">Experiment Design</h2>
+                    </div>
+                    <div class="experiment-status-block text-sm">
+                        <span class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Status</span>
+                        <div id="experiment-status-pill" class="experiment-status-pill status-running tooltip-trigger">
+                            <span id="experiment-status-label">Running</span>
+                            <span id="experiment-status-tooltip" class="tooltip-content">Experiment is live. Traffic is split 50/50 between Base and Variant while data is collected.</span>
+                        </div>
+                        <p id="experiment-status-description" class="text-xs text-gray-500 mt-1">Traffic evenly split between Base and Variant until a decision is applied.</p>
+                    </div>
+                </div>
                 <div id="experiment-card" class="experiment-grid">
                     <!-- Column 1: Null Hypothesis, Experiment Type, Improvement Direction -->
                     <div class="space-y-1 border-r-2 border-gray-300 pr-4">
