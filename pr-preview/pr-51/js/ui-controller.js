@@ -571,7 +571,7 @@ const UIController = {
                 const allScenarios = Object.values(challengeSequences).flat();
                 challengeDesign = allScenarios[Math.floor(Math.random() * allScenarios.length)];
             }
-            // challengeDesign = luckyDayTrap();
+            challengeDesign = earlyStoppingScenario();
 
             const shouldEnableTimeout = this.state.currentRound >= 5;
             const hasExplicitTimeLimit = typeof challengeDesign.timeLimitSeconds === 'number' && challengeDesign.timeLimitSeconds > 0;
@@ -1189,9 +1189,9 @@ const UIController = {
         
         const message = `Early Stopping Scenario Detected\n\n` +
             `The variant shows an extremely negative effect at day 3.\n` +
-            `Probability of flipping to positive result: ${probPercent}% (< 1%)\n\n` +
-            `Note: This check is conducted only once during the whole lifetime of the experiment (at day 3).\n\n` +
-            `This indicates the variant is performing so poorly that continuing the experiment may not be worthwhile.`;
+            `Probability of flipping to positive result if the true effect were more than twice the design MDE: ${probPercent}% (< 1%)\n\n` +
+            `This indicates the variant is performing so poorly that continuing the experiment may not be worthwhile.\n\n` +
+            `Note: This check is conducted only once during the whole lifetime of the experiment (at day 3).`;
 
         this.addWarningToCell(variantRateCell, message);
     },
