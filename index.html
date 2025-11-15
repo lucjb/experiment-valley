@@ -359,13 +359,26 @@
                 } else if (key === '2') {
                     document.querySelector('button[name="trust"][value="UNTRUSTWORTHY"]')?.click();
                 }
-                // Decision: q = Keep Base, w = Keep Variant, e = Keep Running
-                else if (key === 'q') {
-                    document.querySelector('button[name="decision"][value="KEEP_BASE"]')?.click();
-                } else if (key === 'w') {
-                    document.querySelector('button[name="decision"][value="KEEP_VARIANT"]')?.click();
-                } else if (key === 'e') {
-                    document.querySelector('button[name="decision"][value="KEEP_RUNNING"]')?.click();
+                // Decision shortcuts adapt to experiment status
+                else if (key === 'q' || key === 'w' || key === 'e') {
+                    const statusValue = window.currentExperiment?.status?.state || (window.EXPERIMENT_STATUS ? window.EXPERIMENT_STATUS.RUNNING : 'RUNNING');
+                    const stoppedState = window.EXPERIMENT_STATUS ? window.EXPERIMENT_STATUS.STOPPED : 'STOPPED';
+                    const isStopped = statusValue === stoppedState;
+                    if (!isStopped) {
+                        if (key === 'q') {
+                            document.querySelector('button[name="decision"][value="KEEP_BASE"]')?.click();
+                        } else if (key === 'w') {
+                            document.querySelector('button[name="decision"][value="KEEP_VARIANT"]')?.click();
+                        } else if (key === 'e') {
+                            document.querySelector('button[name="decision"][value="KEEP_RUNNING"]')?.click();
+                        }
+                    } else {
+                        if (key === 'q') {
+                            document.querySelector('button[name="decision"][value="KEEP_DEPLOYED_VARIANT"]')?.click();
+                        } else {
+                            document.querySelector('button[name="decision"][value="RESTART_EXPERIMENT"]')?.click();
+                        }
+                    }
                 }
                 // Follow up: z = Celebrate, x = Iterate, c = Validate, v = Fix & Rerun, n = None
                 else if (key === 'z') {
@@ -733,13 +746,13 @@
                             </span>
                         </div>
                         <div class="decision-btn-group">
-                            <button type="button" name="decision" value="KEEP_BASE" class="decision-btn">
+                            <button type="button" name="decision" value="KEEP_BASE" class="decision-btn" data-decision-option="base">
                                 Keep Base
                             </button>
-                            <button type="button" name="decision" value="KEEP_VARIANT" class="decision-btn">
+                            <button type="button" name="decision" value="KEEP_VARIANT" class="decision-btn" data-decision-option="variant">
                                 Keep Variant
                             </button>
-                            <button type="button" name="decision" value="KEEP_RUNNING" class="decision-btn">
+                            <button type="button" name="decision" value="KEEP_RUNNING" class="decision-btn" data-decision-option="running">
                                 Keep Running
                             </button>
                         </div>
@@ -806,9 +819,27 @@
                 </div>
             </div>
 
-            <!-- Execution Section -->
+            <!-- Status Section -->
             <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 md:p-4 mb-4">
-                <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Execution</h2>
+                <div class="mb-3">
+                    <h2 class="text-xl md:text-2xl font-semibold text-gray-800">Status</h2>
+                    <div class="mt-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-600">Experiment Status:</span>
+                            <span id="experiment-status-badge" class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Running</span>
+                            <span id="experiment-status-tooltip" class="tooltip-trigger text-gray-500 cursor-help">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01"></path>
+                                </svg>
+                                <span class="tooltip-content" id="experiment-status-tooltip-content">The experiment is running and traffic is split between Base and Variant.</span>
+                            </span>
+                        </div>
+                        <div id="experiment-deployed-row" class="hidden items-center gap-2">
+                            <span class="text-sm text-gray-600">Deployed Variant:</span>
+                            <span id="experiment-deployed-value" class="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">Variant</span>
+                        </div>
+                    </div>
+                </div>
                 <div>
                     <div class="mt-2">
                         <!-- Execution Bar Container -->
