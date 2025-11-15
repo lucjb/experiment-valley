@@ -1,4 +1,27 @@
 // Virtual Competitors
+function normalizeDecisionForStatus(decision, experiment) {
+    const status = experiment.status || { state: EXPERIMENT_STATUS.RUNNING, deployedVariant: null };
+    if (status.state !== EXPERIMENT_STATUS.STOPPED) {
+        return decision;
+    }
+
+    const deployedVariant = status.deployedVariant || DEPLOYED_VARIANT.BASE;
+    if (decision === EXPERIMENT_DECISION.KEEP_RUNNING) {
+        return EXPERIMENT_DECISION.RESTART_EXPERIMENT;
+    }
+    if (decision === EXPERIMENT_DECISION.KEEP_BASE) {
+        return deployedVariant === DEPLOYED_VARIANT.BASE
+            ? EXPERIMENT_DECISION.KEEP_DEPLOYED_VARIANT
+            : EXPERIMENT_DECISION.RESTART_EXPERIMENT;
+    }
+    if (decision === EXPERIMENT_DECISION.KEEP_VARIANT) {
+        return deployedVariant === DEPLOYED_VARIANT.VARIANT
+            ? EXPERIMENT_DECISION.KEEP_DEPLOYED_VARIANT
+            : EXPERIMENT_DECISION.RESTART_EXPERIMENT;
+    }
+    return decision;
+}
+
 const VirtualCompetitors = {
     // HiPPO (Highest Paid Person's Opinion) - Makes decisions based on personal opinion, ignoring data
     HiPPO: {
@@ -29,9 +52,10 @@ const VirtualCompetitors = {
             decision = random < directionBias ? EXPERIMENT_DECISION.KEEP_VARIANT : EXPERIMENT_DECISION.KEEP_BASE;
             const followUp = decision === EXPERIMENT_DECISION.KEEP_VARIANT ? EXPERIMENT_FOLLOW_UP.CELEBRATE : EXPERIMENT_FOLLOW_UP.ITERATE;
             
+            const normalizedDecision = normalizeDecisionForStatus(decision, experiment);
             return {
                 trust: EXPERIMENT_TRUSTWORTHY.YES, // HiPPO doesn't care about data quality
-                decision: decision,
+                decision: normalizedDecision,
                 followUp: followUp
             };
         }
@@ -70,9 +94,10 @@ const VirtualCompetitors = {
                 decision = decisions[Math.floor(Math.random() * decisions.length)];
             }
             
+            const normalizedDecision = normalizeDecisionForStatus(decision, experiment);
             return {
                 trust: trusts[Math.floor(Math.random() * trusts.length)],
-                decision: decision,
+                decision: normalizedDecision,
                 followUp: followUps[Math.floor(Math.random() * followUps.length)]
             };
         }
@@ -97,20 +122,20 @@ const VirtualCompetitors = {
                 if (cumulativeDiff > 0) {
                     return {
                         trust: EXPERIMENT_TRUSTWORTHY.YES,
-                        decision: EXPERIMENT_DECISION.KEEP_VARIANT,
+                        decision: normalizeDecisionForStatus(EXPERIMENT_DECISION.KEEP_VARIANT, experiment),
                         followUp: EXPERIMENT_FOLLOW_UP.CELEBRATE
                     };
                 } else {
                     return {
                         trust: EXPERIMENT_TRUSTWORTHY.YES,
-                        decision: EXPERIMENT_DECISION.KEEP_BASE,
+                        decision: normalizeDecisionForStatus(EXPERIMENT_DECISION.KEEP_BASE, experiment),
                         followUp: EXPERIMENT_FOLLOW_UP.ITERATE
                     };
                 }
             } else {
                 return {
                     trust: EXPERIMENT_TRUSTWORTHY.YES,
-                    decision: EXPERIMENT_DECISION.KEEP_RUNNING,
+                    decision: normalizeDecisionForStatus(EXPERIMENT_DECISION.KEEP_RUNNING, experiment),
                     followUp: EXPERIMENT_FOLLOW_UP.DO_NOTHING
                 };
             }
@@ -132,7 +157,7 @@ const VirtualCompetitors = {
             if (currentRuntimeDays < 7) {
                 return {
                     trust: EXPERIMENT_TRUSTWORTHY.YES,
-                    decision: EXPERIMENT_DECISION.KEEP_RUNNING,
+                    decision: normalizeDecisionForStatus(EXPERIMENT_DECISION.KEEP_RUNNING, experiment),
                     followUp: EXPERIMENT_FOLLOW_UP.DO_NOTHING
                 };
             }
@@ -158,16 +183,16 @@ const VirtualCompetitors = {
             if (hasSignificantEffect) {
                 return {
                     trust: EXPERIMENT_TRUSTWORTHY.YES,
-                    decision: EXPERIMENT_DECISION.KEEP_VARIANT,
+                    decision: normalizeDecisionForStatus(EXPERIMENT_DECISION.KEEP_VARIANT, experiment),
                     followUp: EXPERIMENT_FOLLOW_UP.CELEBRATE
                 };
             } else {
                 return {
                     trust: EXPERIMENT_TRUSTWORTHY.YES,
-                    decision: EXPERIMENT_DECISION.KEEP_BASE,
+                    decision: normalizeDecisionForStatus(EXPERIMENT_DECISION.KEEP_BASE, experiment),
                     followUp: EXPERIMENT_FOLLOW_UP.ITERATE
                 };
             }
         }
     }
-}; 
+};
