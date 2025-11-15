@@ -571,6 +571,14 @@ const UIController = {
                 const allScenarios = Object.values(challengeSequences).flat();
                 challengeDesign = allScenarios[Math.floor(Math.random() * allScenarios.length)];
             }
+
+            if (this.state.currentRound > 1) {
+                const variants = window.DEPLOYED_VARIANT || { BASE: 'BASE', VARIANT: 'VARIANT' };
+                const randomVariant = Math.random() < 0.5 ? variants.BASE : variants.VARIANT;
+                challengeDesign = challengeDesign.withStatusStopped(randomVariant);
+            } else {
+                challengeDesign = challengeDesign.withStatusRunning();
+            }
             //challengeDesign = earlyStoppingScenario();
 
             const shouldEnableTimeout = this.state.currentRound >= 5;
@@ -1852,8 +1860,34 @@ const UIController = {
 
     updateExecutionSection() {
         const challenge = this.state.challenge;
+        if (!challenge) {
+            return;
+        }
         const currentDate = new Date();
-        
+
+        const status = challenge.status || { state: window.EXPERIMENT_STATUS?.RUNNING || 'RUNNING', deployedVariant: null };
+        this.updateDecisionButtonsForStatus(status);
+
+        const statusPill = document.getElementById('experiment-status-pill');
+        const deployedWrapper = document.getElementById('experiment-deployed-variant');
+        const deployedLabel = document.getElementById('experiment-deployed-variant-label');
+        const isStopped = status.state === window.EXPERIMENT_STATUS?.STOPPED;
+        if (statusPill) {
+            const baseClasses = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold';
+            statusPill.className = `${baseClasses} ${isStopped ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`;
+            statusPill.textContent = isStopped ? 'Stopped' : 'Running';
+        }
+        if (deployedWrapper && deployedLabel) {
+            if (isStopped) {
+                const deployedVariant = status.deployedVariant === (window.DEPLOYED_VARIANT?.VARIANT || 'VARIANT') ? 'Variant' : 'Base';
+                deployedLabel.textContent = deployedVariant;
+                deployedWrapper.classList.remove('hidden');
+            } else {
+                deployedLabel.textContent = '';
+                deployedWrapper.classList.add('hidden');
+            }
+        }
+
         // For overdue experiments, use original experiment data for display
         const displayChallenge = window.currentAnalysis?.originalExperiment || challenge;
         const daysElapsed = displayChallenge.simulation.timeline.currentRuntimeDays;
@@ -2015,6 +2049,37 @@ const UIController = {
 
         // Add tooltip to progress bar
         this.addExecutionBarTooltip(progressBar, hasEnoughSampleSize, daysElapsed, totalDays);
+    },
+
+    updateDecisionButtonsForStatus(status) {
+        const baseBtn = document.querySelector('button[name="decision"][data-decision-option="base"]');
+        const variantBtn = document.querySelector('button[name="decision"][data-decision-option="variant"]');
+        const tertiaryBtn = document.querySelector('button[name="decision"][data-decision-option="tertiary"]');
+        if (!baseBtn || !variantBtn || !tertiaryBtn) {
+            return;
+        }
+
+        const statusState = status?.state || window.EXPERIMENT_STATUS?.RUNNING || 'RUNNING';
+        const deployedVariant = status?.deployedVariant || window.DEPLOYED_VARIANT?.BASE || 'BASE';
+        const isStopped = statusState === window.EXPERIMENT_STATUS?.STOPPED;
+
+        baseBtn.value = window.EXPERIMENT_DECISION?.KEEP_BASE || 'KEEP_BASE';
+        variantBtn.value = window.EXPERIMENT_DECISION?.KEEP_VARIANT || 'KEEP_VARIANT';
+
+        if (!isStopped) {
+            baseBtn.textContent = 'Keep Base';
+            variantBtn.textContent = 'Keep Variant';
+            tertiaryBtn.textContent = 'Keep Running';
+            tertiaryBtn.value = window.EXPERIMENT_DECISION?.KEEP_RUNNING || 'KEEP_RUNNING';
+            return;
+        }
+
+        const baseIsLive = deployedVariant === (window.DEPLOYED_VARIANT?.BASE || 'BASE');
+        const variantIsLive = deployedVariant === (window.DEPLOYED_VARIANT?.VARIANT || 'VARIANT');
+        baseBtn.textContent = baseIsLive ? 'Keep Base' : 'Switch to Base';
+        variantBtn.textContent = variantIsLive ? 'Keep Variant' : 'Switch to Variant';
+        tertiaryBtn.textContent = 'Reset';
+        tertiaryBtn.value = window.EXPERIMENT_DECISION?.RESET || 'RESET';
     },
 
     updateMetricsTable() {
@@ -2650,6 +2715,8 @@ const UIController = {
                 userChoice = "Variant";
             } else if (this.state.implementDecision === "KEEP_BASE") {
                 userChoice = "Base";
+            } else if (this.state.implementDecision === "RESET") {
+                userChoice = "Reset";
             } else if (this.state.implementDecision === "KEEP_RUNNING") {
                 userChoice = "Keep Running";
             }
@@ -2663,6 +2730,8 @@ const UIController = {
                 competitorChoice = "Variant";
             } else if (competitorDecision.decision === "KEEP_BASE") {
                 competitorChoice = "Base";
+            } else if (competitorDecision.decision === "RESET") {
+                competitorChoice = "Reset";
             } else if (competitorDecision.decision === "KEEP_RUNNING") {
                 competitorChoice = "Keep Running";
             }
@@ -2816,7 +2885,7 @@ const UIController = {
             } else {
                 const isCorrect = userChoseBest || actualEffectCpd === 0;
                 var prefix = isCorrect ? "Correct!" : "Oops!";
-                if (userImplementDecision === "KEEP_RUNNING") {
+                if (userImplementDecision === "KEEP_RUNNING" || userImplementDecision === "RESET") {
                     prefix = "";
                 }
 
@@ -2825,6 +2894,8 @@ const UIController = {
                     opponentChoiceText = "variant";
                 } else if (competitorDecision.decision === "KEEP_BASE") {
                     opponentChoiceText = "base";
+                } else if (competitorDecision.decision === "RESET") {
+                    opponentChoiceText = "reset";
                 } else {
                     opponentChoiceText = "keep running";
                 }
@@ -2953,9 +3024,11 @@ const UIController = {
             const userDecision = this.state.implementDecision;
             const analysisDecision = analysis.decision.decision;
             const displayDecision = analysisDecision === "KEEP_VARIANT" ? "Keep Variant" :
-                analysisDecision === "KEEP_BASE" ? "Keep Base" : "Keep Running";
+                analysisDecision === "KEEP_BASE" ? "Keep Base" :
+                    analysisDecision === "RESET" ? "Reset" : "Keep Running";
             const userDecisionDisplay = userDecision === "KEEP_VARIANT" ? "Keep Variant" :
-                userDecision === "KEEP_BASE" ? "Keep Base" : "Keep Running";
+                userDecision === "KEEP_BASE" ? "Keep Base" :
+                    userDecision === "RESET" ? "Reset" : "Keep Running";
 
             // Check follow-up
             const userFollowUp = this.state.followUpDecision;
