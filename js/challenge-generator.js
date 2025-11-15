@@ -1004,6 +1004,7 @@ class ChallengeDesign {
         overdue = false,
         underpoweredDesign = false,
         luckyDayTrap = false,
+        earlyStopping = false,
         timeLimitSeconds = null
     } = {}) {
         this.timeProgress = timeProgress;
@@ -1017,6 +1018,7 @@ class ChallengeDesign {
         this.overdue = overdue;
         this.underpoweredDesign = underpoweredDesign;
         this.luckyDayTrap = luckyDayTrap;
+        this.earlyStopping = earlyStopping;
         this.timeLimitSeconds = timeLimitSeconds;
         this.timeLimitDisabled = false;
     }
@@ -1033,7 +1035,8 @@ class ChallengeDesign {
             this.twymanFabrication,
             this.overdue,
             this.underpoweredDesign,
-            this.luckyDayTrap
+            this.luckyDayTrap,
+            this.earlyStopping
         );
 
         const hasTimeLimit = !this.timeLimitDisabled && typeof this.timeLimitSeconds === 'number' && this.timeLimitSeconds > 0;
@@ -1263,9 +1266,20 @@ function underpoweredTrap() {
     });
 }
 
+function earlyStoppingScenario() {
+    return new ChallengeDesign({
+        timeProgress: TIME_PROGRESS.EARLY_STOPPING,
+        baseRateMismatch: BASE_RATE_MISMATCH.NO,
+        effectSize: EFFECT_SIZE.LARGE_DEGRADATION,
+        sampleRatioMismatch: SAMPLE_RATIO_MISMATCH.NO,
+        sampleProgress: SAMPLE_PROGRESS.FULL,
+        earlyStopping: true
+    });
+}
 
 
-const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY", PARTIAL_WEEKS: "PARTIAL_WEEKS" };
+
+const TIME_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", EARLY: "EARLY", PARTIAL_WEEKS: "PARTIAL_WEEKS", EARLY_STOPPING: "EARLY_STOPPING" };
 const SAMPLE_PROGRESS = { FULL: "FULL", PARTIAL: "PARTIAL", TIME: "TIME" };
 const BASE_RATE_MISMATCH = { NO: 1, YES: 0.1 };
 const EFFECT_SIZE = { NONE: 0, SMALL_IMPROVEMENT: 0.05, IMPROVEMENT: 0.85, LARGE_IMPROVEMENT: 2, DEGRADATION: -0.8, SMALL_DEGRADATION: -0.05, LARGE_DEGRADATION: -2 };
@@ -1285,7 +1299,8 @@ function generateABTestChallenge(
     twymanFabrication = false,
     overdue = false,
     underpoweredDesign = false,
-    luckyDayTrap = false) {
+    luckyDayTrap = false,
+    earlyStopping = false) {
 
     // Predefined options for each parameter ,
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
@@ -1322,6 +1337,8 @@ function generateABTestChallenge(
         }
     } else if (timeProgress === TIME_PROGRESS.EARLY) {
         currentRuntimeDays = 5;
+    } else if (timeProgress === TIME_PROGRESS.EARLY_STOPPING) {
+        currentRuntimeDays = 3;
     } else if (timeProgress === TIME_PROGRESS.PARTIAL_WEEKS) {
         if (requiredRuntimeDays > 7) {
             currentRuntimeDays = requiredRuntimeDays - (requiredRuntimeDays % 7 || 7);
@@ -1348,7 +1365,9 @@ function generateABTestChallenge(
     }
 
     // Calculate effect size as a relative change instead of absolute
-    const actualRelativeEffectSize = effectSize * MRE / actualBaseConversionRate //sampleNormalDistribution(MRE / BASE_CONVERSION_RATE, MRE / (10 * BASE_CONVERSION_RATE));
+    // For early stopping scenarios, use 2x the effect size
+    const effectSizeMultiplier = earlyStopping ? 2 : 1;
+    const actualRelativeEffectSize = effectSize * effectSizeMultiplier * MRE / actualBaseConversionRate //sampleNormalDistribution(MRE / BASE_CONVERSION_RATE, MRE / (10 * BASE_CONVERSION_RATE));
 
     // Apply effect size as a relative change, ensuring we don't go below 20% of base rate
     let actualVariantConversionRate = actualBaseConversionRate * (1 + actualRelativeEffectSize);
@@ -2036,6 +2055,153 @@ function filterUnderpoweredDesignData(experiment, correctSampleSize) {
     return filteredExperiment;
 }
 
+/**
+ * Compute the probability of flipping test for early stopping detection.
+ * This test considers only data until day 3 and computes the probability
+ * of observing new data that would make the result conclusive positive,
+ * assuming the true effect is the MDE used for power calculation.
+ * 
+ * @param {Object} experiment - The experiment object
+ * @returns {Object} - Object with probabilityOfFlipping and shouldStopEarly flags
+ */
+function computeProbabilityOfFlipping(experiment) {
+    const {
+        simulation: {
+            timeline: { currentRuntimeDays, timePoints }
+        },
+        experiment: {
+            alpha,
+            baseConversionRate,
+            minimumRelevantEffect,
+            improvementDirection,
+            requiredSampleSizePerVariant,
+            visitorsPerDay
+        }
+    } = experiment;
+
+    // Only check if we're at day 3 or earlier
+    if (currentRuntimeDays > 3) {
+        return { probabilityOfFlipping: null, shouldStopEarly: false };
+    }
+
+    // Get data up to day 3 (find the last time point at or before day 3)
+    const day3Point = timePoints.filter(tp => tp.period.endDay <= 3)
+        .sort((a, b) => b.period.endDay - a.period.endDay)[0];
+    if (!day3Point) {
+        return { probabilityOfFlipping: null, shouldStopEarly: false };
+    }
+
+    const baseVisitors = day3Point.base.cumulativeVisitors;
+    const variantVisitors = day3Point.variant.cumulativeVisitors;
+    const baseConversions = day3Point.base.cumulativeConversions;
+    const variantConversions = day3Point.variant.cumulativeConversions;
+
+    if (baseVisitors === 0 || variantVisitors === 0) {
+        return { probabilityOfFlipping: null, shouldStopEarly: false };
+    }
+
+    const baseRate = baseConversions / baseVisitors;
+    const variantRate = variantConversions / variantVisitors;
+    const directionFactor = improvementDirection === IMPROVEMENT_DIRECTION.LOWER ? -1 : 1;
+    const currentEffect = directionFactor * (variantRate - baseRate);
+
+    // If current effect is already positive, no need for early stopping
+    if (currentEffect > 0) {
+        return { probabilityOfFlipping: null, shouldStopEarly: false };
+    }
+
+    // Calculate how many more conversions we'd need in variant to make it significant and positive
+    // We need to find the minimum variant conversions that would make p-value < alpha and effect positive
+    
+    // Assume true effect is 2x MDE (positive) for early stopping detection
+    const trueVariantRate = baseConversionRate + 2 * minimumRelevantEffect;
+    const trueVariantRateBounded = Math.max(0.001, Math.min(0.999, trueVariantRate));
+
+    // Calculate remaining visitors we expect to get (from day 3 to full experiment)
+    // Use a conservative estimate: remaining days * visitors per day
+    const remainingDays = Math.max(1, Math.ceil((requiredSampleSizePerVariant * 2) / visitorsPerDay) - 3);
+    const expectedRemainingVisitors = remainingDays * visitorsPerDay;
+    const expectedRemainingBaseVisitors = Math.floor(expectedRemainingVisitors * 0.5);
+    const expectedRemainingVariantVisitors = Math.floor(expectedRemainingVisitors * 0.5);
+
+    // We need to find the minimum additional variant conversions that would:
+    // 1. Make the final p-value < alpha (significant)
+    // 2. Make the effect positive (variant better than base)
+    
+    // Total visitors and conversions if we continue
+    const totalBaseVisitors = baseVisitors + expectedRemainingBaseVisitors;
+    const totalVariantVisitors = variantVisitors + expectedRemainingVariantVisitors;
+    
+    // Expected conversions if true effect is MDE
+    const expectedBaseConversions = expectedRemainingBaseVisitors * baseConversionRate;
+    const expectedVariantConversions = expectedRemainingVariantVisitors * trueVariantRateBounded;
+    
+    const finalBaseConversions = baseConversions + expectedBaseConversions;
+    const finalVariantConversions = variantConversions + expectedVariantConversions;
+    
+    // Calculate final rates and test
+    const finalBaseRate = finalBaseConversions / totalBaseVisitors;
+    const finalVariantRate = finalVariantConversions / totalVariantVisitors;
+    const finalEffect = directionFactor * (finalVariantRate - finalBaseRate);
+    
+    // Check if this would be significant and positive
+    const { pValue: finalPValue } = computeTTest(
+        finalBaseConversions, totalBaseVisitors,
+        finalVariantConversions, totalVariantVisitors
+    );
+    
+    const wouldBeSignificantAndPositive = finalPValue < alpha && finalEffect > 0;
+    
+    if (!wouldBeSignificantAndPositive) {
+        // Even with expected conversions, it wouldn't flip - probability is very low
+        return { probabilityOfFlipping: 0, shouldStopEarly: true };
+    }
+    
+    // Calculate probability using binomial distribution
+    // P(getting at least the required conversions) = 1 - P(getting fewer)
+    // We need at least (expectedVariantConversions) conversions in expectedRemainingVariantVisitors trials
+    // with success probability trueVariantRateBounded
+    
+    // Use normal approximation for binomial when sample size is large
+    const n = expectedRemainingVariantVisitors;
+    const p = trueVariantRateBounded;
+    
+    if (n === 0 || p <= 0 || p >= 1) {
+        return { probabilityOfFlipping: 0, shouldStopEarly: true };
+    }
+    
+    // Mean and variance of binomial
+    const mean = n * p;
+    const variance = n * p * (1 - p);
+    const stdDev = Math.sqrt(variance);
+    
+    // We need at least expectedVariantConversions conversions
+    // Using continuity correction
+    const requiredConversions = expectedVariantConversions - 0.5;
+    
+    if (stdDev === 0) {
+        return { probabilityOfFlipping: requiredConversions <= mean ? 1 : 0, shouldStopEarly: requiredConversions > mean };
+    }
+    
+    // Z-score
+    const zScore = (requiredConversions - mean) / stdDev;
+    
+    // Probability of getting at least requiredConversions
+    // P(X >= required) = 1 - P(X < required) = 1 - Φ(z)
+    const probabilityOfFlipping = 1 - jStat.normal.cdf(zScore, 0, 1);
+    
+    // Early stopping if probability < 1%
+    const shouldStopEarly = probabilityOfFlipping < 0.01;
+    
+    return {
+        probabilityOfFlipping,
+        shouldStopEarly,
+        currentEffect,
+        expectedFinalEffect: finalEffect,
+        expectedFinalPValue: finalPValue
+    };
+}
+
 function filterOverdueExperimentData(experiment) {
     const {
         simulation: {
@@ -2225,6 +2391,10 @@ function analyzeExperiment(experiment) {
     var hasLuckyDay = false;
     const luckyDayInfo =  detectLuckyDayTrap(experiment, directionFactor, alpha, significant)
 
+    // Check for early stopping scenario: probability of flipping test
+    const earlyStoppingTest = computeProbabilityOfFlipping(experiment);
+    const hasEarlyStopping = earlyStoppingTest.shouldStopEarly;
+
     // Check for Twyman's Law trap: extremely low p-value AND unusually large effect size
     const pValueString = pValue.toFixed(10);
     const suspiciousPValue = pValueString.includes('0.000000') || pValue < 0.000001;
@@ -2246,7 +2416,20 @@ function analyzeExperiment(experiment) {
     var summary = ''
     var trustworthyYesReason = 'No issues. Design is correct and execution is consistent with design, data is reliable.';
 
-    if (mismatch) {
+    // Check for early stopping scenario - takes precedence over most other checks
+    if (hasEarlyStopping && !mismatch) {
+        trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
+        decision = EXPERIMENT_DECISION.KEEP_BASE;
+        followUp = EXPERIMENT_FOLLOW_UP.ITERATE;
+        
+        const probFlipping = earlyStoppingTest.probabilityOfFlipping;
+        const probPercent = probFlipping !== null ? (probFlipping * 100).toFixed(2) : '0.00';
+        
+        trustworthyReason = `No issues. Design is correct and execution is consistent with design, data is reliable. Early stopping scenario detected: the treatment shows an extremely negative effect in a very short time (day 3).`;
+        decisionReason = `Variant shows extremely negative effect early (day 3). Probability of flipping to positive result is ${probPercent}% (< 1%), even assuming true effect is more than twice the MDE (2x MDE). Stop the experiment and keep base.`;
+        followUpReason = 'Investigate why the variant is performing so poorly and iterate on the hypothesis, treatment, and/or experiment design.';
+        summary = 'Early stopping scenario: variant shows extremely negative effect at day 3. Probability of flipping to positive is less than 1%, even assuming true effect is more than twice the MDE. Stop experiment, keep base, and iterate.';
+    } else if (mismatch) {
         trustworthy = EXPERIMENT_TRUSTWORTHY.NO;
         decision = EXPERIMENT_DECISION.KEEP_BASE;
         followUp = EXPERIMENT_FOLLOW_UP.RERUN;
@@ -2470,6 +2653,7 @@ function analyzeExperiment(experiment) {
             dataLossIndex: dataLossIndex,
             hasTwymansLaw: hasTwymansLaw,
             hasLuckyDayTrap: !!luckyDayInfo,
+            hasEarlyStopping: hasEarlyStopping,
             hasUnderpoweredDesign: hasUnderpoweredDesign,
             underpoweredDesign: {
                 requiredSampleSize: requiredSampleSizePerVariant,
@@ -2527,6 +2711,13 @@ function analyzeExperiment(experiment) {
                 conversionsDifference: luckyDayInfo.conversionsDifference,
                 conversionsBase: luckyDayInfo.conversionsBase,
                 conversionsVariant: luckyDayInfo.conversionsVariant
+            } : null,
+            earlyStopping: hasEarlyStopping ? {
+                probabilityOfFlipping: earlyStoppingTest.probabilityOfFlipping,
+                shouldStopEarly: earlyStoppingTest.shouldStopEarly,
+                currentEffect: earlyStoppingTest.currentEffect,
+                expectedFinalEffect: earlyStoppingTest.expectedFinalEffect,
+                expectedFinalPValue: earlyStoppingTest.expectedFinalPValue
             } : null
         }
     };

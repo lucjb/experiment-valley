@@ -539,16 +539,17 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [winner(), inconclusive(), partialLoser()],
-                2: [partialLoser().withVisitorsLoss(), partialLoser().withSampleRatioMismatch(), fastLoserWithPartialWeek()],
-                3: [slowCompletion(), fastWinner(), partialLoser().withBaseRateMismatch()],
+                1: [winner().withSampleRatioMismatch(), inconclusive(), partialLoser()],
+                2: [partialLoser().withVisitorsLoss(), winner(), fastLoserWithPartialWeek()],
+                3: [fastWinner(), slowCompletion(),  partialLoser().withBaseRateMismatch()],
                 4: [luckyDayTrap(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
-                5: [partialWinner(), winner().withLowerIsBetter(), inconclusive()],
-                6: [twymansLawTrap(), inconclusive(), bigLoser().withLowerIsBetter().withLuckyDayTrap()],
+                5: [twymansLawTrap(), winner().withLowerIsBetter(), inconclusive()],
+                6: [partialWinner(), earlyStoppingScenario(), bigLoser().withLowerIsBetter().withLuckyDayTrap()],
                 7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()],
                 8: [partialLoser().withSampleRatioMismatch(), winner(), loser().withLowerIsBetter()],
                 9: [inconclusive().withOverdue(), winner(), inconclusive().withLuckyDayTrap()],
-                10: [winner().withUnderpoweredDesign(), winner(), twymansLawTrap().withBaseRateMismatch().withUnderpoweredDesign().withOverdue()]
+                10: [winner().withUnderpoweredDesign(), winner(), twymansLawTrap().withBaseRateMismatch().withUnderpoweredDesign().withOverdue()],
+                11: [earlyStoppingScenario(), winner(), partialLoser()]
             };
 
             // Reset visitors header
@@ -570,7 +571,7 @@ const UIController = {
                 const allScenarios = Object.values(challengeSequences).flat();
                 challengeDesign = allScenarios[Math.floor(Math.random() * allScenarios.length)];
             }
-            // challengeDesign = luckyDayTrap();
+            //challengeDesign = earlyStoppingScenario();
 
             const shouldEnableTimeout = this.state.currentRound >= 5;
             const hasExplicitTimeLimit = typeof challengeDesign.timeLimitSeconds === 'number' && challengeDesign.timeLimitSeconds > 0;
@@ -692,8 +693,9 @@ const UIController = {
     // Helper function to create a warning icon with tooltip
     createWarningIcon(message, options = {}) {
         const warningIcon = document.createElement('span');
-        warningIcon.className = 'text-yellow-500 cursor-help tooltip-trigger text-sm';
+        warningIcon.className = 'text-yellow-500 cursor-help tooltip-trigger text-sm inline-block';
         warningIcon.textContent = '⚠️';
+        warningIcon.setAttribute('aria-label', 'Warning');
 
         if (options.type) {
             warningIcon.dataset.alertType = options.type;
@@ -801,6 +803,10 @@ const UIController = {
         cell.textContent = '';
         cell.appendChild(visitorsSpan);
 
+        // Add a space between the value and the warning icon
+        const spacer = document.createTextNode(' ');
+        cell.appendChild(spacer);
+
         const warningIcon = this.createWarningIcon(message);
         cell.appendChild(warningIcon);
         
@@ -813,6 +819,12 @@ const UIController = {
         const baseRateCell = document.getElementById('base-rate');
         if (baseRateCell) {
             baseRateCell.textContent = baseRateCell.textContent.replace(/⚠️.*$/, '').trim();
+        }
+        
+        // Clear early stopping alert from variant rate (same pattern as base-rate)
+        const variantRateCell = document.getElementById('variant-rate');
+        if (variantRateCell) {
+            variantRateCell.textContent = variantRateCell.textContent.replace(/⚠️.*$/, '').trim();
         }
         
         // Clear sample size warnings
@@ -866,6 +878,7 @@ const UIController = {
         this.addLuckyDayTrapAlert();
         this.addOverdueAlert();
         this.addUnderpoweredDesignAlert();
+        this.addEarlyStoppingAlert();
     },
 
     addBaseConversionRateMissmatchAlert() {
@@ -1155,6 +1168,32 @@ const UIController = {
         this.initializeTooltip(warningIcon);
         
         console.log('✅ Underpowered design alert added successfully!');
+    },
+
+    addEarlyStoppingAlert() {
+        // Use time-filtered analysis if available, otherwise fall back to original analysis
+        const analysis = window.currentTimeFilteredAnalysis || window.currentAnalysis;
+        if (!analysis || !analysis.analysis) return;
+
+        const hasEarlyStopping = analysis.analysis.hasEarlyStopping;
+        if (!hasEarlyStopping) return;
+
+        const earlyStoppingData = analysis.analysis.earlyStopping;
+        if (!earlyStoppingData) return;
+
+        const variantRateCell = document.getElementById('variant-rate');
+        if (!variantRateCell) return;
+
+        const probFlipping = earlyStoppingData.probabilityOfFlipping;
+        const probPercent = probFlipping !== null ? (probFlipping * 100).toFixed(2) : '0.00';
+        
+        const message = `Early Stopping Scenario Detected\n\n` +
+            `The variant shows an extremely negative effect at day 3.\n` +
+            `Probability of flipping to positive result if the true effect were more than twice the design MDE: ${probPercent}% (< 1%)\n\n` +
+            `This indicates the variant is performing so poorly that continuing the experiment may not be worthwhile.\n\n` +
+            `Note: This check is conducted only once during the whole lifetime of the experiment (at day 3).`;
+
+        this.addWarningToCell(variantRateCell, message);
     },
 
     initializeTimeSlider(displayChallenge) {
@@ -1447,7 +1486,10 @@ const UIController = {
         
         if (variantVisitorsElement) variantVisitorsElement.textContent = point.variant.cumulativeVisitors.toLocaleString();
         if (variantConversionsElement) variantConversionsElement.textContent = point.variant.cumulativeConversions.toLocaleString();
-        if (variantRateElement) variantRateElement.textContent = (point.variant.cumulativeRate * 100).toFixed(2) + '%';
+        if (variantRateElement) {
+            // Clear any existing content (alerts will be re-added by addDebugAlerts)
+            variantRateElement.textContent = (point.variant.cumulativeRate * 100).toFixed(2) + '%';
+        }
         
         // Update difference metrics
         const differenceElement = document.getElementById('difference');
@@ -3215,7 +3257,8 @@ const UIController = {
             6: "SRM: Because math hates you.",
             7: "Inconclusive? Call it a learning.",
             8: "Correlation is faster than causation.",
-            9: "One does not simply report observed effects."
+            9: "One does not simply report observed effects.",
+            10: "Fact: Guardrail metrics reduce Power"
         };
 
         const caption = roundCaptions[this.state.currentRound] || "";
