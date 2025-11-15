@@ -1322,7 +1322,8 @@ function generateABTestChallenge(
     overdue = false,
     underpoweredDesign = false,
     luckyDayTrap = false,
-    earlyStopping = false) {
+    earlyStopping = false,
+    statusConfig = null) {
 
     // Predefined options for each parameter ,
     const ALPHA_OPTIONS = [0.1, 0.05, 0.01];
