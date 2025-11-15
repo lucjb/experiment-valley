@@ -241,6 +241,26 @@ button:disabled {
     display: none;
 }
 
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.status-pill.status-running {
+    background: linear-gradient(90deg, #2563eb, #3b82f6);
+    color: #ffffff;
+}
+
+.status-pill.status-stopped {
+    background: linear-gradient(90deg, #b91c1c, #f97316);
+    color: #ffffff;
+}
+
 /* Fade animations */
 .fade-in {
     animation: fadeIn 0.5s ease-in;
