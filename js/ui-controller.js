@@ -582,6 +582,20 @@ const UIController = {
                 const allScenarios = Object.values(challengeSequences).flat();
                 challengeDesign = allScenarios[Math.floor(Math.random() * allScenarios.length)];
             }
+
+            const shouldForceStoppedStatus = this.state.currentRound > 2;
+            if (shouldForceStoppedStatus) {
+                const experimentStatus = window.EXPERIMENT_STATUS;
+                const deployedVariants = window.DEPLOYED_VARIANT;
+                const isAlreadyStopped = experimentStatus && challengeDesign.status === experimentStatus.STOPPED;
+
+                if (!isAlreadyStopped) {
+                    const randomVariant = Math.random() < 0.5
+                        ? (deployedVariants?.BASE || 'BASE')
+                        : (deployedVariants?.VARIANT || 'VARIANT');
+                    challengeDesign = challengeDesign.withStoppedStatus(randomVariant);
+                }
+            }
             //challengeDesign = earlyStoppingScenario();
 
             const shouldEnableTimeout = this.state.currentRound >= 5;
