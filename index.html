@@ -365,7 +365,7 @@
                 } else if (key === 'w') {
                     document.querySelector('button[name="decision"][value="KEEP_VARIANT"]')?.click();
                 } else if (key === 'e') {
-                    document.querySelector('button[name="decision"][value="KEEP_RUNNING"]')?.click();
+                    document.querySelector('button[name="decision"][data-decision-option="running"]')?.click();
                 }
                 // Follow up: z = Celebrate, x = Iterate, c = Validate, v = Fix & Rerun, n = None
                 else if (key === 'z') {
@@ -727,19 +727,21 @@
                                     <span class="tooltip-content">
                                         <strong>Keep Base:</strong> Keep the original version. The default decision unless the experiment is trustworthy and shows evidence in favor of variant.<br><br>
                                         <strong>Keep Variant:</strong> Ship the variant version. Use when the experiment is trustworthy and results are statistically significant in favor of the variant.<br><br>
-                                        <strong>Keep Running:</strong> Continue running the experiment. Use when the experiment hasn't reached the proper sample size or when there are temporal biases.
+                                        <strong>Keep Running:</strong> Continue running the experiment. Use when the experiment hasn't reached the proper sample size or when there are temporal biases.<br><br>
+                                        <strong>Reset:</strong> When a stopped experiment isn't trustworthy or needs more data, reset it to rerun from the beginning.<br><br>
+                                        <em>When an experiment is stopped, buttons may say "Switch to" or "Keep" depending on which experience is currently deployed.</em>
                                     </span>
                                 </button>
                             </span>
                         </div>
                         <div class="decision-btn-group">
-                            <button type="button" name="decision" value="KEEP_BASE" class="decision-btn">
+                            <button type="button" name="decision" value="KEEP_BASE" class="decision-btn" data-decision-option="base">
                                 Keep Base
                             </button>
-                            <button type="button" name="decision" value="KEEP_VARIANT" class="decision-btn">
+                            <button type="button" name="decision" value="KEEP_VARIANT" class="decision-btn" data-decision-option="variant">
                                 Keep Variant
                             </button>
-                            <button type="button" name="decision" value="KEEP_RUNNING" class="decision-btn">
+                            <button type="button" name="decision" value="KEEP_RUNNING" class="decision-btn" data-decision-option="running">
                                 Keep Running
                             </button>
                         </div>
@@ -806,9 +808,21 @@
                 </div>
             </div>
 
-            <!-- Execution Section -->
+            <!-- Status Section -->
             <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 md:p-4 mb-4">
-                <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Execution</h2>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3">
+                    <h2 class="text-xl md:text-2xl font-semibold text-gray-800">Status</h2>
+                    <div class="flex items-center space-x-2">
+                        <span id="experiment-status-badge" class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Running</span>
+                        <button type="button" class="info-icon-btn tooltip-trigger" aria-label="Experiment status info">
+                            <svg fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="tooltip-content" id="experiment-status-tooltip">Running experiments split traffic between Base and Variant.</span>
+                        </button>
+                    </div>
+                </div>
+                <p id="experiment-status-detail" class="text-sm text-gray-600 mb-3">Traffic split: Base 50% / Variant 50%</p>
                 <div>
                     <div class="mt-2">
                         <!-- Execution Bar Container -->

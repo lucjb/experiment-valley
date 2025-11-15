@@ -1021,6 +1021,7 @@ class ChallengeDesign {
         this.earlyStopping = earlyStopping;
         this.timeLimitSeconds = timeLimitSeconds;
         this.timeLimitDisabled = false;
+        this.status = { state: EXPERIMENT_STATUS.RUNNING, deployedVariant: null };
     }
 
     generate() {
@@ -1036,7 +1037,8 @@ class ChallengeDesign {
             this.overdue,
             this.underpoweredDesign,
             this.luckyDayTrap,
-            this.earlyStopping
+            this.earlyStopping,
+            this.status
         );
 
         const hasTimeLimit = !this.timeLimitDisabled && typeof this.timeLimitSeconds === 'number' && this.timeLimitSeconds > 0;
@@ -1122,6 +1124,26 @@ class ChallengeDesign {
     withoutTimeLimit() {
         this.timeLimitSeconds = null;
         this.timeLimitDisabled = true;
+        return this;
+    }
+
+    withStatusStopped(deployedVariant = null) {
+        const normalizedVariant = deployedVariant === DEPLOYED_VARIANT.VARIANT
+            ? DEPLOYED_VARIANT.VARIANT
+            : deployedVariant === DEPLOYED_VARIANT.BASE
+                ? DEPLOYED_VARIANT.BASE
+                : (Math.random() < 0.5 ? DEPLOYED_VARIANT.BASE : DEPLOYED_VARIANT.VARIANT);
+
+        this.status = {
+            state: EXPERIMENT_STATUS.STOPPED,
+            deployedVariant: normalizedVariant
+        };
+
+        return this;
+    }
+
+    withStatusRunning() {
+        this.status = { state: EXPERIMENT_STATUS.RUNNING, deployedVariant: null };
         return this;
     }
 
@@ -1461,7 +1483,38 @@ function generateABTestChallenge(
     const dataQualityAlpha = 0.0001; // 99.99% confidence level for data quality checks
     const priorEstimateCI = computePriorEstimateConfidenceInterval(BASE_CONVERSION_RATE, BUSINESS_CYCLE_DAYS, VISITORS_PER_DAY, dataQualityAlpha);
 
+    const totalObservedVisitors = observedVisitorsBase + observedVisitorsVariant;
+    const statusState = statusConfig?.state === EXPERIMENT_STATUS.STOPPED
+        ? EXPERIMENT_STATUS.STOPPED
+        : EXPERIMENT_STATUS.RUNNING;
+    const deployedVariant = statusConfig?.deployedVariant === DEPLOYED_VARIANT.VARIANT
+        ? DEPLOYED_VARIANT.VARIANT
+        : DEPLOYED_VARIANT.BASE;
+    const normalizedStatus = statusState === EXPERIMENT_STATUS.STOPPED
+        ? {
+            state: statusState,
+            deployedVariant,
+            trafficSplit: deployedVariant === DEPLOYED_VARIANT.BASE
+                ? { base: 100, variant: 0 }
+                : { base: 0, variant: 100 }
+        }
+        : {
+            state: statusState,
+            deployedVariant: null,
+            trafficSplit: (() => {
+                if (totalObservedVisitors === 0) {
+                    return { base: 50, variant: 50 };
+                }
+                const baseShare = Math.min(100, Math.max(0, Math.round((observedVisitorsBase / totalObservedVisitors) * 100)));
+                return {
+                    base: baseShare,
+                    variant: Math.min(100, Math.max(0, 100 - baseShare))
+                };
+            })()
+        };
+
     return {
+        status: normalizedStatus,
         experiment: {
             alpha: ALPHA,
             beta: BETA,
@@ -1524,6 +1577,16 @@ function checkSampleRatioMismatch(baseVisitors, variantVisitors) {
 }
 
 // Constants for analyzeExperiment outputs
+const EXPERIMENT_STATUS = {
+    RUNNING: 'RUNNING',
+    STOPPED: 'STOPPED'
+};
+
+const DEPLOYED_VARIANT = {
+    BASE: 'BASE',
+    VARIANT: 'VARIANT'
+};
+
 const EXPERIMENT_TRUSTWORTHY = {
     YES: 'TRUSTWORTHY',
     NO: 'UNTRUSTWORTHY'
@@ -1532,7 +1595,8 @@ const EXPERIMENT_TRUSTWORTHY = {
 const EXPERIMENT_DECISION = {
     KEEP_BASE: "KEEP_BASE",
     KEEP_VARIANT: "KEEP_VARIANT",
-    KEEP_RUNNING: "KEEP_RUNNING"
+    KEEP_RUNNING: "KEEP_RUNNING",
+    RESET_EXPERIMENT: "RESET_EXPERIMENT"
 };
 
 const EXPERIMENT_FOLLOW_UP = {
@@ -2303,6 +2367,8 @@ function analyzeExperiment(experiment) {
         }
     } = experiment;
 
+    const statusInfo = experiment.status || { state: EXPERIMENT_STATUS.RUNNING, deployedVariant: null };
+
     let trustworthy = EXPERIMENT_TRUSTWORTHY.YES;
     let decision = EXPERIMENT_DECISION.KEEP_RUNNING;
     let followUp = EXPERIMENT_FOLLOW_UP.DO_NOTHING;
@@ -2634,7 +2700,7 @@ function analyzeExperiment(experiment) {
         }
     }
 
-    return {
+    const result = {
         decision: {
             trustworthy: trustworthy,
             trustworthyReason: trustworthyReason,
@@ -2721,8 +2787,79 @@ function analyzeExperiment(experiment) {
             } : null
         }
     };
+
+    if (statusInfo.state === EXPERIMENT_STATUS.STOPPED) {
+        result.decision = adjustDecisionForStopped(result.decision, statusInfo);
+    }
+
+    return result;
+}
+
+function adjustDecisionForStopped(normalDecision, statusInfo) {
+    const normalizedDecision = { ...normalDecision };
+    const deployedVariant = statusInfo.deployedVariant === DEPLOYED_VARIANT.VARIANT
+        ? DEPLOYED_VARIANT.VARIANT
+        : DEPLOYED_VARIANT.BASE;
+    const deployedDecision = deployedVariant === DEPLOYED_VARIANT.VARIANT
+        ? EXPERIMENT_DECISION.KEEP_VARIANT
+        : EXPERIMENT_DECISION.KEEP_BASE;
+    const recommendedDecision = normalizedDecision.decision;
+    const isTrustworthy = normalizedDecision.trustworthy === EXPERIMENT_TRUSTWORTHY.YES;
+
+    const appendReason = (note) => {
+        if (!note) return;
+        normalizedDecision.decisionReason = normalizedDecision.decisionReason
+            ? `${normalizedDecision.decisionReason} ${note}`.trim()
+            : note;
+    };
+
+    const appendSummary = (note) => {
+        if (!note) return;
+        normalizedDecision.summary = normalizedDecision.summary
+            ? `${normalizedDecision.summary} ${note}`.trim()
+            : note;
+    };
+
+    if (isTrustworthy) {
+        if (recommendedDecision === EXPERIMENT_DECISION.KEEP_RUNNING) {
+            normalizedDecision.decision = EXPERIMENT_DECISION.RESET_EXPERIMENT;
+            appendReason('Restart the experiment to continue collecting trustworthy data.');
+            appendSummary('Reset the experiment to keep collecting trustworthy data.');
+            return normalizedDecision;
+        }
+
+        if (recommendedDecision !== deployedDecision) {
+            const currentLabel = deployedVariant === DEPLOYED_VARIANT.VARIANT ? 'variant' : 'base';
+            const targetLabel = recommendedDecision === EXPERIMENT_DECISION.KEEP_VARIANT ? 'variant' : 'base';
+            appendReason(`Switch from the ${currentLabel} to the ${targetLabel} because the experiment stopped with the wrong experience live.`);
+        }
+
+        return normalizedDecision;
+    }
+
+    if (recommendedDecision === EXPERIMENT_DECISION.KEEP_RUNNING) {
+        normalizedDecision.decision = EXPERIMENT_DECISION.RESET_EXPERIMENT;
+        appendReason('Reset the experiment so you can rerun it and gather trustworthy data.');
+        appendSummary('Reset and rerun the experiment to collect valid data.');
+        return normalizedDecision;
+    }
+
+    if (recommendedDecision === deployedDecision) {
+        return normalizedDecision;
+    }
+
+    normalizedDecision.decision = EXPERIMENT_DECISION.RESET_EXPERIMENT;
+    const desiredLabel = recommendedDecision === EXPERIMENT_DECISION.KEEP_VARIANT ? 'variant' : 'base';
+    appendReason(`The ${desiredLabel} is recommended, but the opposite experience is live while the data is not trustworthy. Reset before redeploying.`);
+    appendSummary('Reset the experiment before launching the correct experience.');
+    return normalizedDecision;
 }
 
 window.generateABTestChallenge = generateABTestChallenge;
 window.analyzeExperiment = analyzeExperiment;
 window.IMPROVEMENT_DIRECTION = IMPROVEMENT_DIRECTION;
+window.EXPERIMENT_STATUS = EXPERIMENT_STATUS;
+window.DEPLOYED_VARIANT = DEPLOYED_VARIANT;
+window.EXPERIMENT_DECISION = EXPERIMENT_DECISION;
+window.EXPERIMENT_TRUSTWORTHY = EXPERIMENT_TRUSTWORTHY;
+window.EXPERIMENT_FOLLOW_UP = EXPERIMENT_FOLLOW_UP;

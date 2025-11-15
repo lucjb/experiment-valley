@@ -573,6 +573,12 @@ const UIController = {
             }
             //challengeDesign = earlyStoppingScenario();
 
+            if (this.state.currentRound > 1 && typeof challengeDesign.withStatusStopped === 'function') {
+                challengeDesign = challengeDesign.withStatusStopped();
+            } else if (this.state.currentRound <= 1 && typeof challengeDesign.withStatusRunning === 'function') {
+                challengeDesign = challengeDesign.withStatusRunning();
+            }
+
             const shouldEnableTimeout = this.state.currentRound >= 5;
             const hasExplicitTimeLimit = typeof challengeDesign.timeLimitSeconds === 'number' && challengeDesign.timeLimitSeconds > 0;
             const timeLimitOptedOut = challengeDesign.timeLimitDisabled === true;
@@ -688,6 +694,100 @@ const UIController = {
     formatUplift(value) {
         const sign = value > 0 ? '+' : '';
         return `${sign}${(value * 100).toFixed(2)}%`;
+    },
+
+    getStatusInfo(challenge = this.state.challenge) {
+        const fallbackState = window.EXPERIMENT_STATUS ? window.EXPERIMENT_STATUS.RUNNING : 'RUNNING';
+        const status = challenge?.status || {};
+        return {
+            state: status.state || fallbackState,
+            deployedVariant: status.deployedVariant || null,
+            trafficSplit: status.trafficSplit || null
+        };
+    },
+
+    deriveTrafficSplit(challenge = this.state.challenge, statusInfo = this.getStatusInfo(challenge)) {
+        const stoppedValue = window.EXPERIMENT_STATUS ? window.EXPERIMENT_STATUS.STOPPED : 'STOPPED';
+        const deployments = window.DEPLOYED_VARIANT || {};
+        if (statusInfo.state === stoppedValue) {
+            const deployedVariant = statusInfo.deployedVariant || deployments.BASE || 'BASE';
+            return deployedVariant === (deployments.VARIANT || 'VARIANT')
+                ? { base: 0, variant: 100 }
+                : { base: 100, variant: 0 };
+        }
+
+        const baseVisitors = challenge?.simulation?.actualVisitorsBase || 0;
+        const variantVisitors = challenge?.simulation?.actualVisitorsVariant || 0;
+        const total = baseVisitors + variantVisitors;
+        if (total === 0) {
+            return { base: 50, variant: 50 };
+        }
+        const baseShare = Math.min(100, Math.max(0, Math.round((baseVisitors / total) * 100)));
+        return { base: baseShare, variant: Math.min(100, Math.max(0, 100 - baseShare)) };
+    },
+
+    updateStatusDisplay(challenge = this.state.challenge) {
+        if (!challenge) {
+            return;
+        }
+        const badge = document.getElementById('experiment-status-badge');
+        const tooltipContent = document.getElementById('experiment-status-tooltip');
+        const detail = document.getElementById('experiment-status-detail');
+        if (!badge || !tooltipContent || !detail) {
+            return;
+        }
+
+        const statusInfo = this.getStatusInfo(challenge);
+        const statusValues = window.EXPERIMENT_STATUS || {};
+        const deployments = window.DEPLOYED_VARIANT || {};
+        const stoppedValue = statusValues.STOPPED || 'STOPPED';
+        const isStopped = statusInfo.state === stoppedValue;
+        const deployedVariant = statusInfo.deployedVariant || (isStopped ? (deployments.BASE || 'BASE') : null);
+        const deployedLabel = deployedVariant === (deployments.VARIANT || 'VARIANT') ? 'Variant' : 'Base';
+
+        badge.textContent = isStopped ? `Stopped • ${deployedLabel} deployed` : 'Running';
+        badge.className = `px-2 py-1 rounded-full text-xs font-semibold ${isStopped ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`;
+
+        const split = statusInfo.trafficSplit || this.deriveTrafficSplit(challenge, statusInfo);
+        detail.textContent = `Traffic split: Base ${split.base}% / Variant ${split.variant}%`;
+
+        tooltipContent.textContent = isStopped
+            ? `${deployedLabel} now receives 100% of traffic because the experiment was already stopped.`
+            : 'Running experiments continue splitting traffic between Base and Variant while collecting data.';
+    },
+
+    updateDecisionButtonsForStatus(statusInfo = this.getStatusInfo()) {
+        const baseBtn = document.querySelector('button[name="decision"][data-decision-option="base"]');
+        const variantBtn = document.querySelector('button[name="decision"][data-decision-option="variant"]');
+        const runningBtn = document.querySelector('button[name="decision"][data-decision-option="running"]');
+        if (!baseBtn || !variantBtn || !runningBtn) {
+            return;
+        }
+
+        const decisions = window.EXPERIMENT_DECISION || {};
+        const deployments = window.DEPLOYED_VARIANT || {};
+        const statusValues = window.EXPERIMENT_STATUS || {};
+        const stoppedValue = statusValues.STOPPED || 'STOPPED';
+        const isStopped = statusInfo.state === stoppedValue;
+
+        if (isStopped) {
+            const deployedVariant = statusInfo.deployedVariant || deployments.BASE || 'BASE';
+            const baseLabel = deployedVariant === (deployments.BASE || 'BASE') ? 'Keep Base' : 'Switch to Base';
+            const variantLabel = deployedVariant === (deployments.VARIANT || 'VARIANT') ? 'Keep Variant' : 'Switch to Variant';
+            baseBtn.textContent = baseLabel;
+            baseBtn.value = decisions.KEEP_BASE || 'KEEP_BASE';
+            variantBtn.textContent = variantLabel;
+            variantBtn.value = decisions.KEEP_VARIANT || 'KEEP_VARIANT';
+            runningBtn.textContent = 'Reset';
+            runningBtn.value = decisions.RESET_EXPERIMENT || 'RESET_EXPERIMENT';
+        } else {
+            baseBtn.textContent = 'Keep Base';
+            baseBtn.value = decisions.KEEP_BASE || 'KEEP_BASE';
+            variantBtn.textContent = 'Keep Variant';
+            variantBtn.value = decisions.KEEP_VARIANT || 'KEEP_VARIANT';
+            runningBtn.textContent = 'Keep Running';
+            runningBtn.value = decisions.KEEP_RUNNING || 'KEEP_RUNNING';
+        }
     },
 
     // Helper function to create a warning icon with tooltip
@@ -1737,6 +1837,8 @@ const UIController = {
             }
         }
 
+        this.updateDecisionButtonsForStatus(this.getStatusInfo(challenge));
+
     },
 
     // Helper function to measure text width
@@ -1852,6 +1954,7 @@ const UIController = {
 
     updateExecutionSection() {
         const challenge = this.state.challenge;
+        this.updateStatusDisplay(challenge);
         const currentDate = new Date();
         
         // For overdue experiments, use original experiment data for display
@@ -2594,6 +2697,7 @@ const UIController = {
                 // Create a proper experiment object with the filtered data for scoring
                 experiment = {
                     experiment: window.currentExperiment.experiment,
+                    status: window.currentExperiment.status,
                     simulation: {
                         actualVisitorsBase: analysis.simulation?.actualVisitorsBase || window.currentExperiment.simulation.actualVisitorsBase,
                         actualVisitorsVariant: analysis.simulation?.actualVisitorsVariant || window.currentExperiment.simulation.actualVisitorsVariant,
@@ -2652,6 +2756,8 @@ const UIController = {
                 userChoice = "Base";
             } else if (this.state.implementDecision === "KEEP_RUNNING") {
                 userChoice = "Keep Running";
+            } else if (this.state.implementDecision === "RESET_EXPERIMENT") {
+                userChoice = "Reset";
             }
 
             // Get competitor's decision
@@ -2665,6 +2771,8 @@ const UIController = {
                 competitorChoice = "Base";
             } else if (competitorDecision.decision === "KEEP_RUNNING") {
                 competitorChoice = "Keep Running";
+            } else if (competitorDecision.decision === "RESET_EXPERIMENT") {
+                competitorChoice = "Reset";
             }
 
             // Determine which variant is better based on improvement direction
@@ -2816,7 +2924,7 @@ const UIController = {
             } else {
                 const isCorrect = userChoseBest || actualEffectCpd === 0;
                 var prefix = isCorrect ? "Correct!" : "Oops!";
-                if (userImplementDecision === "KEEP_RUNNING") {
+                if (userImplementDecision === "KEEP_RUNNING" || userImplementDecision === "RESET_EXPERIMENT") {
                     prefix = "";
                 }
 
@@ -2825,6 +2933,8 @@ const UIController = {
                     opponentChoiceText = "variant";
                 } else if (competitorDecision.decision === "KEEP_BASE") {
                     opponentChoiceText = "base";
+                } else if (competitorDecision.decision === "RESET_EXPERIMENT") {
+                    opponentChoiceText = "reset";
                 } else {
                     opponentChoiceText = "keep running";
                 }
@@ -2953,9 +3063,11 @@ const UIController = {
             const userDecision = this.state.implementDecision;
             const analysisDecision = analysis.decision.decision;
             const displayDecision = analysisDecision === "KEEP_VARIANT" ? "Keep Variant" :
-                analysisDecision === "KEEP_BASE" ? "Keep Base" : "Keep Running";
+                analysisDecision === "KEEP_BASE" ? "Keep Base" :
+                    analysisDecision === "RESET_EXPERIMENT" ? "Reset" : "Keep Running";
             const userDecisionDisplay = userDecision === "KEEP_VARIANT" ? "Keep Variant" :
-                userDecision === "KEEP_BASE" ? "Keep Base" : "Keep Running";
+                userDecision === "KEEP_BASE" ? "Keep Base" :
+                    userDecision === "RESET_EXPERIMENT" ? "Reset" : "Keep Running";
 
             // Check follow-up
             const userFollowUp = this.state.followUpDecision;
