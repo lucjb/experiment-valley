@@ -28,11 +28,13 @@ const VirtualCompetitors = {
             
             decision = random < directionBias ? EXPERIMENT_DECISION.KEEP_VARIANT : EXPERIMENT_DECISION.KEEP_BASE;
             const followUp = decision === EXPERIMENT_DECISION.KEEP_VARIANT ? EXPERIMENT_FOLLOW_UP.CELEBRATE : EXPERIMENT_FOLLOW_UP.ITERATE;
-            
+
+            const adjusted = adjustDecisionForStatus(decision, followUp, experiment);
+
             return {
                 trust: EXPERIMENT_TRUSTWORTHY.YES, // HiPPO doesn't care about data quality
-                decision: decision,
-                followUp: followUp
+                decision: adjusted.decision,
+                followUp: adjusted.followUp
             };
         }
     },
@@ -59,7 +61,7 @@ const VirtualCompetitors = {
             const random = Math.random();
             if (cumulativeDiff > 0.005) {
                 // Slight bias towards variant when it appears better
-                decision = random < 0.6 ? EXPERIMENT_DECISION.KEEP_VARIANT : 
+                decision = random < 0.6 ? EXPERIMENT_DECISION.KEEP_VARIANT :
                          random < 0.8 ? EXPERIMENT_DECISION.KEEP_BASE : EXPERIMENT_DECISION.KEEP_RUNNING;
             } else if (cumulativeDiff < -0.005) {
                 // Slight bias towards base when variant appears worse
@@ -70,10 +72,12 @@ const VirtualCompetitors = {
                 decision = decisions[Math.floor(Math.random() * decisions.length)];
             }
             
+            const adjusted = adjustDecisionForStatus(decision, followUps[Math.floor(Math.random() * followUps.length)], experiment);
+
             return {
                 trust: trusts[Math.floor(Math.random() * trusts.length)],
-                decision: decision,
-                followUp: followUps[Math.floor(Math.random() * followUps.length)]
+                decision: adjusted.decision,
+                followUp: adjusted.followUp
             };
         }
     },
@@ -95,23 +99,26 @@ const VirtualCompetitors = {
             
             if (daysElapsed >= 14) {
                 if (cumulativeDiff > 0) {
+                    const adjusted = adjustDecisionForStatus(EXPERIMENT_DECISION.KEEP_VARIANT, EXPERIMENT_FOLLOW_UP.CELEBRATE, experiment);
                     return {
                         trust: EXPERIMENT_TRUSTWORTHY.YES,
-                        decision: EXPERIMENT_DECISION.KEEP_VARIANT,
-                        followUp: EXPERIMENT_FOLLOW_UP.CELEBRATE
+                        decision: adjusted.decision,
+                        followUp: adjusted.followUp
                     };
                 } else {
+                    const adjusted = adjustDecisionForStatus(EXPERIMENT_DECISION.KEEP_BASE, EXPERIMENT_FOLLOW_UP.ITERATE, experiment);
                     return {
                         trust: EXPERIMENT_TRUSTWORTHY.YES,
-                        decision: EXPERIMENT_DECISION.KEEP_BASE,
-                        followUp: EXPERIMENT_FOLLOW_UP.ITERATE
+                        decision: adjusted.decision,
+                        followUp: adjusted.followUp
                     };
                 }
             } else {
+                const adjusted = adjustDecisionForStatus(EXPERIMENT_DECISION.KEEP_RUNNING, EXPERIMENT_FOLLOW_UP.DO_NOTHING, experiment);
                 return {
                     trust: EXPERIMENT_TRUSTWORTHY.YES,
-                    decision: EXPERIMENT_DECISION.KEEP_RUNNING,
-                    followUp: EXPERIMENT_FOLLOW_UP.DO_NOTHING
+                    decision: adjusted.decision,
+                    followUp: adjusted.followUp
                 };
             }
         }
@@ -130,10 +137,11 @@ const VirtualCompetitors = {
 
             // Wait at least one week
             if (currentRuntimeDays < 7) {
+                const adjusted = adjustDecisionForStatus(EXPERIMENT_DECISION.KEEP_RUNNING, EXPERIMENT_FOLLOW_UP.DO_NOTHING, experiment);
                 return {
                     trust: EXPERIMENT_TRUSTWORTHY.YES,
-                    decision: EXPERIMENT_DECISION.KEEP_RUNNING,
-                    followUp: EXPERIMENT_FOLLOW_UP.DO_NOTHING
+                    decision: adjusted.decision,
+                    followUp: adjusted.followUp
                 };
             }
 
@@ -156,18 +164,35 @@ const VirtualCompetitors = {
             });
 
             if (hasSignificantEffect) {
+                const adjusted = adjustDecisionForStatus(EXPERIMENT_DECISION.KEEP_VARIANT, EXPERIMENT_FOLLOW_UP.CELEBRATE, experiment);
                 return {
                     trust: EXPERIMENT_TRUSTWORTHY.YES,
-                    decision: EXPERIMENT_DECISION.KEEP_VARIANT,
-                    followUp: EXPERIMENT_FOLLOW_UP.CELEBRATE
+                    decision: adjusted.decision,
+                    followUp: adjusted.followUp
                 };
             } else {
+                const adjusted = adjustDecisionForStatus(EXPERIMENT_DECISION.KEEP_BASE, EXPERIMENT_FOLLOW_UP.ITERATE, experiment);
                 return {
                     trust: EXPERIMENT_TRUSTWORTHY.YES,
-                    decision: EXPERIMENT_DECISION.KEEP_BASE,
-                    followUp: EXPERIMENT_FOLLOW_UP.ITERATE
+                    decision: adjusted.decision,
+                    followUp: adjusted.followUp
                 };
             }
         }
     }
-}; 
+};
+
+function adjustDecisionForStatus(decision, followUp, experiment) {
+    if (!experiment || experiment.status !== (EXPERIMENT_STATUS && EXPERIMENT_STATUS.STOPPED)) {
+        return { decision, followUp };
+    }
+
+    if (decision === EXPERIMENT_DECISION.KEEP_RUNNING) {
+        return {
+            decision: EXPERIMENT_DECISION.RESET_EXPERIMENT || 'RESET_EXPERIMENT',
+            followUp: followUp === EXPERIMENT_FOLLOW_UP.DO_NOTHING ? EXPERIMENT_FOLLOW_UP.RERUN : followUp
+        };
+    }
+
+    return { decision, followUp };
+}
