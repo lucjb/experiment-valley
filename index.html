@@ -353,6 +353,8 @@
                 if (typing || otherModalOpen) return;
 
                 const key = e.key.toLowerCase();
+                const stoppedDecisionGroup = document.getElementById('decision-options-stopped');
+                const isStoppedDecisionMode = stoppedDecisionGroup && !stoppedDecisionGroup.classList.contains('hidden');
                 // Trustworthy: 1 = Yes, 2 = No
                 if (key === '1') {
                     document.querySelector('button[name="trust"][value="TRUSTWORTHY"]')?.click();
@@ -361,10 +363,18 @@
                 }
                 // Decision: q = Keep Base, w = Keep Variant, e = Keep Running
                 else if (key === 'q') {
-                    document.querySelector('button[name="decision"][value="KEEP_BASE"]')?.click();
+                    if (isStoppedDecisionMode) {
+                        document.querySelector('button[name="decision"][value="KEEP_DEPLOYED_VARIANT"]')?.click();
+                    } else {
+                        document.querySelector('button[name="decision"][value="KEEP_BASE"]')?.click();
+                    }
                 } else if (key === 'w') {
-                    document.querySelector('button[name="decision"][value="KEEP_VARIANT"]')?.click();
-                } else if (key === 'e') {
+                    if (isStoppedDecisionMode) {
+                        document.querySelector('button[name="decision"][value="RESET_EXPERIMENT"]')?.click();
+                    } else {
+                        document.querySelector('button[name="decision"][value="KEEP_VARIANT"]')?.click();
+                    }
+                } else if (!isStoppedDecisionMode && key === 'e') {
                     document.querySelector('button[name="decision"][value="KEEP_RUNNING"]')?.click();
                 }
                 // Follow up: z = Celebrate, x = Iterate, c = Validate, v = Fix & Rerun, n = None
@@ -727,12 +737,15 @@
                                     <span class="tooltip-content">
                                         <strong>Keep Base:</strong> Keep the original version. The default decision unless the experiment is trustworthy and shows evidence in favor of variant.<br><br>
                                         <strong>Keep Variant:</strong> Ship the variant version. Use when the experiment is trustworthy and results are statistically significant in favor of the variant.<br><br>
-                                        <strong>Keep Running:</strong> Continue running the experiment. Use when the experiment hasn't reached the proper sample size or when there are temporal biases.
+                                        <strong>Keep Running:</strong> Continue running the experiment. Use when the experiment hasn't reached the proper sample size or when there are temporal biases.<br><br>
+                                        <strong>Keep Deployed:</strong> When the experiment is stopped, stick with the deployed Base/Variant if the data supports it.<br><br>
+                                        <strong>Restart Experiment:</strong> When a stopped experiment picked the wrong variant, restart to collect balanced data again.
                                     </span>
                                 </button>
                             </span>
                         </div>
-                        <div class="decision-btn-group">
+                        <p id="decision-status-message" class="hidden text-xs text-yellow-200 text-center mb-2"></p>
+                        <div id="decision-options-running" class="decision-btn-group">
                             <button type="button" name="decision" value="KEEP_BASE" class="decision-btn">
                                 Keep Base
                             </button>
@@ -741,6 +754,15 @@
                             </button>
                             <button type="button" name="decision" value="KEEP_RUNNING" class="decision-btn">
                                 Keep Running
+                            </button>
+                        </div>
+                        <div id="decision-options-stopped" class="decision-btn-group hidden">
+                            <button type="button" name="decision" value="KEEP_DEPLOYED_VARIANT" class="decision-btn"
+                                id="keep-deployed-decision-btn">
+                                Keep Variant
+                            </button>
+                            <button type="button" name="decision" value="RESET_EXPERIMENT" class="decision-btn">
+                                Restart Experiment
                             </button>
                         </div>
                     </div>
@@ -806,9 +828,29 @@
                 </div>
             </div>
 
-            <!-- Execution Section -->
+            <!-- Status Section -->
             <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 md:p-4 mb-4">
-                <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Execution</h2>
+                <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Status</h2>
+                <div class="flex flex-col gap-2 mb-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-medium text-gray-600">Experiment Status</span>
+                            <span id="exp-status-pill"
+                                class="tooltip-trigger inline-flex items-center px-3 py-1 rounded-full border text-sm font-semibold">
+                                <span id="exp-status-label">Running</span>
+                                <span id="exp-status-tooltip" class="tooltip-content">Running experiments split traffic roughly
+                                    50/50 between Base and Variant.</span>
+                            </span>
+                        </div>
+                        <div id="exp-deployment-container" class="text-sm text-gray-600 hidden">
+                            Deployed Variant:
+                            <span id="exp-deployment-value" class="font-semibold text-gray-900 ml-1">Variant</span>
+                        </div>
+                    </div>
+                    <p id="exp-status-description" class="text-xs text-gray-500">
+                        Traffic is currently split evenly between Base and Variant while the experiment runs.
+                    </p>
+                </div>
                 <div>
                     <div class="mt-2">
                         <!-- Execution Bar Container -->
