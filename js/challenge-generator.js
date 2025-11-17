@@ -2849,10 +2849,10 @@ function adjustDecisionForStopped(normalDecision, statusInfo) {
         return normalizedDecision;
     }
 
-    normalizedDecision.decision = EXPERIMENT_DECISION.RESET_EXPERIMENT;
+    normalizedDecision.decision = recommendedDecision;
     const desiredLabel = recommendedDecision === EXPERIMENT_DECISION.KEEP_VARIANT ? 'variant' : 'base';
-    appendReason(`The ${desiredLabel} is recommended, but the opposite experience is live while the data is not trustworthy. Reset before redeploying.`);
-    appendSummary('Reset the experiment before launching the correct experience.');
+    const currentLabel = desiredLabel === 'variant' ? 'base' : 'variant';
+    appendReason(`Switch to the ${desiredLabel} because the ${currentLabel} was live when the experiment stopped with untrustworthy data.`);
     return normalizedDecision;
 }
 
