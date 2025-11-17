@@ -733,7 +733,7 @@ const UIController = {
         const badge = document.getElementById('experiment-status-badge');
         const tooltipContent = document.getElementById('experiment-status-tooltip');
         const detail = document.getElementById('experiment-status-detail');
-        if (!badge || !tooltipContent || !detail) {
+        if (!badge || !tooltipContent) {
             return;
         }
 
@@ -748,8 +748,9 @@ const UIController = {
         badge.textContent = isStopped ? `Stopped • ${deployedLabel} deployed` : 'Running';
         badge.className = `px-2 py-1 rounded-full text-xs font-semibold ${isStopped ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`;
 
-        const split = statusInfo.trafficSplit || this.deriveTrafficSplit(challenge, statusInfo);
-        detail.textContent = `Traffic split: Base ${split.base}% / Variant ${split.variant}%`;
+        if (detail) {
+            detail.textContent = '';
+        }
 
         tooltipContent.textContent = isStopped
             ? `${deployedLabel} now receives 100% of traffic because the experiment was already stopped.`
