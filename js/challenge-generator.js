@@ -1309,6 +1309,7 @@ const SAMPLE_RATIO_MISMATCH = { NO: 0.5, LARGE: 0.4, SMALL: 0.47 };
 const VISITORS_LOSS = { NO: false, YES: true };
 const IMPROVEMENT_DIRECTION = { HIGHER: 'HIGHER_IS_BETTER', LOWER: 'LOWER_IS_BETTER' };
 const MAX_RATE_RATIO = 2.5;
+const STOPPED_STATUS_DAYS_AGO = 2;
 
 function generateABTestChallenge(
     timeProgress = TIME_PROGRESS.FULL,
@@ -1491,13 +1492,18 @@ function generateABTestChallenge(
     const deployedVariant = statusConfig?.deployedVariant === DEPLOYED_VARIANT.VARIANT
         ? DEPLOYED_VARIANT.VARIANT
         : DEPLOYED_VARIANT.BASE;
+    const rawStoppedDays = typeof statusConfig?.stoppedDaysAgo === 'number'
+        ? statusConfig.stoppedDaysAgo
+        : STOPPED_STATUS_DAYS_AGO;
+    const normalizedStoppedDaysAgo = Math.max(0, rawStoppedDays);
     const normalizedStatus = statusState === EXPERIMENT_STATUS.STOPPED
         ? {
             state: statusState,
             deployedVariant,
             trafficSplit: deployedVariant === DEPLOYED_VARIANT.BASE
                 ? { base: 100, variant: 0 }
-                : { base: 0, variant: 100 }
+                : { base: 0, variant: 100 },
+            stoppedDaysAgo: normalizedStoppedDaysAgo
         }
         : {
             state: statusState,
@@ -1511,7 +1517,8 @@ function generateABTestChallenge(
                     base: baseShare,
                     variant: Math.min(100, Math.max(0, 100 - baseShare))
                 };
-            })()
+            })(),
+            stoppedDaysAgo: 0
         };
 
     return {
@@ -2832,7 +2839,11 @@ function adjustDecisionForStopped(normalDecision, statusInfo) {
         if (recommendedDecision !== deployedDecision) {
             const currentLabel = deployedVariant === DEPLOYED_VARIANT.VARIANT ? 'variant' : 'base';
             const targetLabel = recommendedDecision === EXPERIMENT_DECISION.KEEP_VARIANT ? 'variant' : 'base';
-            appendReason(`Switch from the ${currentLabel} to the ${targetLabel} because the experiment stopped with the wrong experience live.`);
+            if (targetLabel === 'base' && currentLabel === 'variant') {
+                appendReason('Rollback to the base because the variant was live when the experiment stopped.');
+            } else {
+                appendReason(`Switch from the ${currentLabel} to the ${targetLabel} because the experiment stopped with the wrong experience live.`);
+            }
         }
 
         return normalizedDecision;
@@ -2852,7 +2863,11 @@ function adjustDecisionForStopped(normalDecision, statusInfo) {
     normalizedDecision.decision = recommendedDecision;
     const desiredLabel = recommendedDecision === EXPERIMENT_DECISION.KEEP_VARIANT ? 'variant' : 'base';
     const currentLabel = desiredLabel === 'variant' ? 'base' : 'variant';
-    appendReason(`Switch to the ${desiredLabel} because the ${currentLabel} was live when the experiment stopped with untrustworthy data.`);
+    if (desiredLabel === 'base') {
+        appendReason('Rollback to the base because the variant was live when the experiment stopped with untrustworthy data.');
+    } else {
+        appendReason(`Switch to the ${desiredLabel} because the ${currentLabel} was live when the experiment stopped with untrustworthy data.`);
+    }
     return normalizedDecision;
 }
 

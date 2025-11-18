@@ -724,12 +724,12 @@
                                     <svg fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
                                     </svg>
-                                    <span class="tooltip-content">
+                                    <span class="tooltip-content" id="decision-tooltip">
                                         <strong>Keep Base:</strong> Keep the original version. The default decision unless the experiment is trustworthy and shows evidence in favor of variant.<br><br>
                                         <strong>Keep Variant:</strong> Ship the variant version. Use when the experiment is trustworthy and results are statistically significant in favor of the variant.<br><br>
                                         <strong>Keep Running:</strong> Continue running the experiment. Use when the experiment hasn't reached the proper sample size or when there are temporal biases.<br><br>
                                         <strong>Reset:</strong> When a stopped experiment isn't trustworthy or needs more data, reset it to rerun from the beginning.<br><br>
-                                        <em>When an experiment is stopped, buttons may say "Switch to" or "Keep" depending on which experience is currently deployed.</em>
+                                        <em>When an experiment is stopped, buttons may say "Keep", "Switch to", or "Rollback to" depending on which experience is currently deployed.</em>
                                     </span>
                                 </button>
                             </span>

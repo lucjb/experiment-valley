@@ -702,8 +702,93 @@ const UIController = {
         return {
             state: status.state || fallbackState,
             deployedVariant: status.deployedVariant || null,
-            trafficSplit: status.trafficSplit || null
+            trafficSplit: status.trafficSplit || null,
+            stoppedDaysAgo: typeof status.stoppedDaysAgo === 'number' ? status.stoppedDaysAgo : 0
         };
+    },
+
+    getDecisionActionLabel(decisionValue, statusInfo = this.getStatusInfo()) {
+        if (!decisionValue) {
+            return '';
+        }
+
+        const decisions = window.EXPERIMENT_DECISION || {};
+        const deployments = window.DEPLOYED_VARIANT || {};
+        const statusValues = window.EXPERIMENT_STATUS || {};
+        const stoppedValue = statusValues.STOPPED || 'STOPPED';
+        const isStopped = statusInfo.state === stoppedValue;
+        const deployedVariant = statusInfo.deployedVariant || deployments.BASE || 'BASE';
+
+        const keepBaseValue = decisions.KEEP_BASE || 'KEEP_BASE';
+        const keepVariantValue = decisions.KEEP_VARIANT || 'KEEP_VARIANT';
+        const keepRunningValue = decisions.KEEP_RUNNING || 'KEEP_RUNNING';
+        const resetValue = decisions.RESET_EXPERIMENT || 'RESET_EXPERIMENT';
+
+        if (decisionValue === keepBaseValue) {
+            if (isStopped && deployedVariant === (deployments.VARIANT || 'VARIANT')) {
+                return 'Rollback to Base';
+            }
+            return 'Keep Base';
+        }
+
+        if (decisionValue === keepVariantValue) {
+            if (isStopped && deployedVariant !== (deployments.VARIANT || 'VARIANT')) {
+                return 'Switch to Variant';
+            }
+            return 'Keep Variant';
+        }
+
+        if (decisionValue === resetValue) {
+            return 'Reset';
+        }
+
+        if (decisionValue === keepRunningValue) {
+            return isStopped ? 'Reset' : 'Keep Running';
+        }
+
+        return decisionValue;
+    },
+
+    getDecisionTooltipContent(statusInfo = this.getStatusInfo()) {
+        const decisions = window.EXPERIMENT_DECISION || {};
+        const deployments = window.DEPLOYED_VARIANT || {};
+        const statusValues = window.EXPERIMENT_STATUS || {};
+        const stoppedValue = statusValues.STOPPED || 'STOPPED';
+        const isStopped = statusInfo.state === stoppedValue;
+        const keepBaseValue = decisions.KEEP_BASE || 'KEEP_BASE';
+        const keepVariantValue = decisions.KEEP_VARIANT || 'KEEP_VARIANT';
+        const keepRunningValue = decisions.KEEP_RUNNING || 'KEEP_RUNNING';
+        const resetValue = decisions.RESET_EXPERIMENT || 'RESET_EXPERIMENT';
+        const baseLabel = this.getDecisionActionLabel(keepBaseValue, statusInfo) || 'Keep Base';
+        const variantLabel = this.getDecisionActionLabel(keepVariantValue, statusInfo) || 'Keep Variant';
+
+        if (isStopped) {
+            const deployedVariant = statusInfo.deployedVariant || deployments.BASE || 'BASE';
+            const baseDescription = deployedVariant === (deployments.VARIANT || 'VARIANT')
+                ? 'Rollback all traffic to Base to undo the variant that was deployed when the experiment stopped.'
+                : 'Keep the original Base experience that is already live.';
+            const variantDescription = deployedVariant === (deployments.VARIANT || 'VARIANT')
+                ? 'Keep the deployed variant running while you follow the analysis recommendations.'
+                : 'Switch the live experience to the tested variant even though the experiment already stopped.';
+            const resetDescription = 'Start a fresh run so you can gather trustworthy data before making another deployment.';
+
+            return `
+                <strong>${baseLabel}:</strong> ${baseDescription}<br><br>
+                <strong>${variantLabel}:</strong> ${variantDescription}<br><br>
+                <strong>${this.getDecisionActionLabel(resetValue, statusInfo) || 'Reset'}:</strong> ${resetDescription}<br><br>
+                <em>Stopped experiments no longer split traffic&mdash;100% goes to the deployed experience.</em>
+            `.trim();
+        }
+
+        const runningLabel = this.getDecisionActionLabel(keepRunningValue, statusInfo) || 'Keep Running';
+        const resetLabel = this.getDecisionActionLabel(resetValue, statusInfo) || 'Reset';
+        return `
+            <strong>${baseLabel}:</strong> Keep the original version unless the experiment is trustworthy and shows evidence in favor of the variant.<br><br>
+            <strong>${variantLabel}:</strong> Ship the variant when the analysis is trustworthy and statistically significant in favor of the change.<br><br>
+            <strong>${runningLabel}:</strong> Continue running the experiment until it reaches the required sample size or clears temporal biases.<br><br>
+            <strong>${resetLabel}:</strong> Once an experiment is stopped, reset it to rerun from the beginning if you need fresh data.<br><br>
+            <em>When an experiment is stopped, buttons may say "Keep", "Switch to", or "Rollback to" depending on which experience is currently deployed.</em>
+        `.trim();
     },
 
     deriveTrafficSplit(challenge = this.state.challenge, statusInfo = this.getStatusInfo(challenge)) {
@@ -744,8 +829,12 @@ const UIController = {
         const isStopped = statusInfo.state === stoppedValue;
         const deployedVariant = statusInfo.deployedVariant || (isStopped ? (deployments.BASE || 'BASE') : null);
         const deployedLabel = deployedVariant === (deployments.VARIANT || 'VARIANT') ? 'Variant' : 'Base';
+        const stoppedDays = typeof statusInfo.stoppedDaysAgo === 'number' ? statusInfo.stoppedDaysAgo : 0;
+        const stoppedText = stoppedDays <= 0
+            ? 'today'
+            : (stoppedDays === 1 ? '1 day ago' : `${stoppedDays} days ago`);
 
-        badge.textContent = isStopped ? `Stopped • ${deployedLabel} deployed` : 'Running';
+        badge.textContent = isStopped ? `Stopped ${stoppedText} - ${deployedLabel} Deployed` : 'Running';
         badge.className = `px-2 py-1 rounded-full text-xs font-semibold ${isStopped ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`;
 
         if (detail) {
@@ -753,7 +842,7 @@ const UIController = {
         }
 
         tooltipContent.textContent = isStopped
-            ? `${deployedLabel} now receives 100% of traffic because the experiment was already stopped.`
+            ? `${deployedLabel} now receives 100% of traffic. The experiment was stopped ${stoppedText}.`
             : 'Running experiments continue splitting traffic between Base and Variant while collecting data.';
     },
 
@@ -766,28 +855,30 @@ const UIController = {
         }
 
         const decisions = window.EXPERIMENT_DECISION || {};
-        const deployments = window.DEPLOYED_VARIANT || {};
         const statusValues = window.EXPERIMENT_STATUS || {};
         const stoppedValue = statusValues.STOPPED || 'STOPPED';
         const isStopped = statusInfo.state === stoppedValue;
+        const keepBaseValue = decisions.KEEP_BASE || 'KEEP_BASE';
+        const keepVariantValue = decisions.KEEP_VARIANT || 'KEEP_VARIANT';
+        const keepRunningValue = decisions.KEEP_RUNNING || 'KEEP_RUNNING';
+        const resetValue = decisions.RESET_EXPERIMENT || 'RESET_EXPERIMENT';
+
+        baseBtn.textContent = this.getDecisionActionLabel(keepBaseValue, statusInfo) || 'Keep Base';
+        baseBtn.value = keepBaseValue;
+        variantBtn.textContent = this.getDecisionActionLabel(keepVariantValue, statusInfo) || 'Keep Variant';
+        variantBtn.value = keepVariantValue;
 
         if (isStopped) {
-            const deployedVariant = statusInfo.deployedVariant || deployments.BASE || 'BASE';
-            const baseLabel = deployedVariant === (deployments.BASE || 'BASE') ? 'Keep Base' : 'Switch to Base';
-            const variantLabel = deployedVariant === (deployments.VARIANT || 'VARIANT') ? 'Keep Variant' : 'Switch to Variant';
-            baseBtn.textContent = baseLabel;
-            baseBtn.value = decisions.KEEP_BASE || 'KEEP_BASE';
-            variantBtn.textContent = variantLabel;
-            variantBtn.value = decisions.KEEP_VARIANT || 'KEEP_VARIANT';
-            runningBtn.textContent = 'Reset';
-            runningBtn.value = decisions.RESET_EXPERIMENT || 'RESET_EXPERIMENT';
+            runningBtn.textContent = this.getDecisionActionLabel(resetValue, statusInfo) || 'Reset';
+            runningBtn.value = resetValue;
         } else {
-            baseBtn.textContent = 'Keep Base';
-            baseBtn.value = decisions.KEEP_BASE || 'KEEP_BASE';
-            variantBtn.textContent = 'Keep Variant';
-            variantBtn.value = decisions.KEEP_VARIANT || 'KEEP_VARIANT';
-            runningBtn.textContent = 'Keep Running';
-            runningBtn.value = decisions.KEEP_RUNNING || 'KEEP_RUNNING';
+            runningBtn.textContent = this.getDecisionActionLabel(keepRunningValue, statusInfo) || 'Keep Running';
+            runningBtn.value = keepRunningValue;
+        }
+
+        const tooltipContent = document.getElementById('decision-tooltip');
+        if (tooltipContent) {
+            tooltipContent.innerHTML = this.getDecisionTooltipContent(statusInfo);
         }
     },
 
@@ -1957,12 +2048,16 @@ const UIController = {
         const challenge = this.state.challenge;
         this.updateStatusDisplay(challenge);
         const currentDate = new Date();
-        
+
         // For overdue experiments, use original experiment data for display
         const displayChallenge = window.currentAnalysis?.originalExperiment || challenge;
+        const statusInfo = this.getStatusInfo(displayChallenge);
+        const statusValues = window.EXPERIMENT_STATUS || {};
+        const stoppedValue = statusValues.STOPPED || 'STOPPED';
+        const stoppedOffsetDays = statusInfo.state === stoppedValue ? (statusInfo.stoppedDaysAgo || 0) : 0;
         const daysElapsed = displayChallenge.simulation.timeline.currentRuntimeDays;
         const totalDays = displayChallenge.experiment.requiredRuntimeDays;
-        
+
         // Initialize time slider
         this.initializeTimeSlider(displayChallenge);
         const daysRemaining = totalDays - daysElapsed;
@@ -1970,7 +2065,7 @@ const UIController = {
 
         // Calculate dates
         const startDate = new Date(currentDate);
-        startDate.setDate(startDate.getDate() - daysElapsed);
+        startDate.setDate(startDate.getDate() - daysElapsed - stoppedOffsetDays);
 
         const finishDate = new Date(currentDate);
         finishDate.setDate(finishDate.getDate() + daysRemaining);
@@ -2718,6 +2813,8 @@ const UIController = {
                 };
             }
 
+            const statusInfo = this.getStatusInfo(experiment);
+
 
             // Calculate decision comparison once for all uses
             const totalChoices = 3;
@@ -2775,6 +2872,11 @@ const UIController = {
             } else if (competitorDecision.decision === "RESET_EXPERIMENT") {
                 competitorChoice = "Reset";
             }
+
+            const userChoiceLabel = this.state.implementDecision
+                ? (this.getDecisionActionLabel(this.state.implementDecision, statusInfo) || userChoice)
+                : userChoice;
+            const competitorChoiceLabel = this.getDecisionActionLabel(competitorDecision.decision, statusInfo) || competitorChoice;
 
             // Determine which variant is better based on improvement direction
             const actualEffectCpd = calculateConversionImpact(actualEffect);
@@ -2929,16 +3031,7 @@ const UIController = {
                     prefix = "";
                 }
 
-                let opponentChoiceText;
-                if (competitorDecision.decision === "KEEP_VARIANT") {
-                    opponentChoiceText = "variant";
-                } else if (competitorDecision.decision === "KEEP_BASE") {
-                    opponentChoiceText = "base";
-                } else if (competitorDecision.decision === "RESET_EXPERIMENT") {
-                    opponentChoiceText = "reset";
-                } else {
-                    opponentChoiceText = "keep running";
-                }
+                const opponentChoiceText = (this.getDecisionActionLabel(competitorDecision.decision, statusInfo) || competitorChoice).toLowerCase();
 
                 // Line 1: Prefix and true effect
                 const isLowerBetter = experiment.experiment.improvementDirection === window.IMPROVEMENT_DIRECTION.LOWER;
@@ -2993,9 +3086,9 @@ const UIController = {
 
             const modalElements = {
                 'modal-best-variant': impactMessage,
-                'modal-user-choice': userChoice,
+                'modal-user-choice': userChoiceLabel,
                 'modal-user-impact': userImpactDisplay,
-                'modal-competitor-choice': competitorChoice,
+                'modal-competitor-choice': competitorChoiceLabel,
                 'modal-competitor-impact': competitorImpactDisplay,
                 'modal-user-icon': userIcon,
                 'modal-competitor-icon': competitorIcon
@@ -3063,12 +3156,18 @@ const UIController = {
             // Check decision
             const userDecision = this.state.implementDecision;
             const analysisDecision = analysis.decision.decision;
-            const displayDecision = analysisDecision === "KEEP_VARIANT" ? "Keep Variant" :
+            const defaultAnalysisLabel = analysisDecision === "KEEP_VARIANT" ? "Keep Variant" :
                 analysisDecision === "KEEP_BASE" ? "Keep Base" :
                     analysisDecision === "RESET_EXPERIMENT" ? "Reset" : "Keep Running";
-            const userDecisionDisplay = userDecision === "KEEP_VARIANT" ? "Keep Variant" :
+            const displayDecision = analysisDecision
+                ? (this.getDecisionActionLabel(analysisDecision, statusInfo) || defaultAnalysisLabel)
+                : '—';
+            const defaultUserLabel = userDecision === "KEEP_VARIANT" ? "Keep Variant" :
                 userDecision === "KEEP_BASE" ? "Keep Base" :
                     userDecision === "RESET_EXPERIMENT" ? "Reset" : "Keep Running";
+            const userDecisionDisplay = userDecision
+                ? (this.getDecisionActionLabel(userDecision, statusInfo) || defaultUserLabel)
+                : '—';
 
             // Check follow-up
             const userFollowUp = this.state.followUpDecision;
