@@ -2828,11 +2828,21 @@ function adjustDecisionForStopped(normalDecision, statusInfo) {
             : note;
     };
 
+    const replaceReason = (note) => {
+        if (!note) return;
+        normalizedDecision.decisionReason = note;
+    };
+
+    const replaceSummary = (note) => {
+        if (!note) return;
+        normalizedDecision.summary = note;
+    };
+
     if (isTrustworthy) {
         if (recommendedDecision === EXPERIMENT_DECISION.KEEP_RUNNING) {
             normalizedDecision.decision = EXPERIMENT_DECISION.RESET_EXPERIMENT;
-            appendReason('Restart the experiment to continue collecting trustworthy data.');
-            appendSummary('Reset the experiment to keep collecting trustworthy data.');
+            replaceReason('Restart the experiment to continue collecting trustworthy data.');
+            replaceSummary('Reset the experiment to keep collecting trustworthy data.');
             return normalizedDecision;
         }
 
@@ -2851,8 +2861,8 @@ function adjustDecisionForStopped(normalDecision, statusInfo) {
 
     if (recommendedDecision === EXPERIMENT_DECISION.KEEP_RUNNING) {
         normalizedDecision.decision = EXPERIMENT_DECISION.RESET_EXPERIMENT;
-        appendReason('Reset the experiment so you can rerun it and gather trustworthy data.');
-        appendSummary('Reset and rerun the experiment to collect valid data.');
+        replaceReason('Reset the experiment so you can rerun it and gather trustworthy data.');
+        replaceSummary('Reset and rerun the experiment to collect valid data.');
         return normalizedDecision;
     }
 
