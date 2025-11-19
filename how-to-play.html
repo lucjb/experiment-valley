@@ -44,6 +44,7 @@
                         <ul class="list-disc list-inside ml-4 mt-1">
                             <li><b>Experiment Design</b>: Details about the experiment design, such as alpha, beta,
                                 sample size, etc.</li>
+                            <li><b>Experiment Status</b>: Whether the challenge is still running (traffic split between Base and Variant) or has been stopped (all traffic routed to the deployed variant)</li>
                             <li><b>Experiment Progress</b>: How much data has been collected and how much is left to
                                 collect</li>
                             <li><b>Experiment Results</b>: Full results of the experiment including metrics, daily
@@ -62,6 +63,16 @@
                     <li>Each round consists of 3 unique experiments.</li>
                     <li>Correctly analyse 2 or 3 experiments and advance to the next round!</li>
                     <li>One experiment is correctly analyzed if 2 or 3 decisions are correct.</li>
+                </ul>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold mb-2" style="color: #f97316;">Running vs. stopped experiments</h3>
+                <p class="text-gray-300 mb-4">Beginning in round 2, some challenges arrive in a <strong>Stopped</strong> status where one variant has already been deployed. Keep an eye on the Status panel:</p>
+                <ul class="list-disc list-inside space-y-2 text-gray-300">
+                    <li><strong>Running:</strong> The experiment is still collecting data, splitting traffic according to the design. Your decision options remain <em>Keep Base</em>, <em>Keep Variant</em>, or <em>Keep Running</em>.</li>
+                    <li><strong>Stopped:</strong> 100% of traffic goes to the deployed variant. The decision buttons adapt to the deployment so you can <em>Keep (or Switch to) Base</em>, <em>Switch to (or Keep) Variant</em>, or choose <em>Reset</em> to restart the test when the live variant is wrong.</li>
+                    <li>Trustworthiness and Follow-up answers are still determined by the underlying statistics. The twist is validating whether the deployed variant matches the statistically recommended choice.</li>
                 </ul>
             </div>
 

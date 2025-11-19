@@ -1,3 +1,16 @@
+function normalizeDecisionForStatus(decision, experiment) {
+    const status = experiment.status || { state: window.EXPERIMENT_STATUS?.RUNNING || 'RUNNING' };
+    if (status.state !== (window.EXPERIMENT_STATUS?.STOPPED || 'STOPPED')) {
+        return decision;
+    }
+
+    if (decision === EXPERIMENT_DECISION.KEEP_RUNNING) {
+        return EXPERIMENT_DECISION.RESET;
+    }
+
+    return decision;
+}
+
 // Virtual Competitors
 const VirtualCompetitors = {
     // HiPPO (Highest Paid Person's Opinion) - Makes decisions based on personal opinion, ignoring data
@@ -31,7 +44,7 @@ const VirtualCompetitors = {
             
             return {
                 trust: EXPERIMENT_TRUSTWORTHY.YES, // HiPPO doesn't care about data quality
-                decision: decision,
+                decision: normalizeDecisionForStatus(decision, experiment),
                 followUp: followUp
             };
         }
@@ -72,7 +85,7 @@ const VirtualCompetitors = {
             
             return {
                 trust: trusts[Math.floor(Math.random() * trusts.length)],
-                decision: decision,
+                decision: normalizeDecisionForStatus(decision, experiment),
                 followUp: followUps[Math.floor(Math.random() * followUps.length)]
             };
         }
@@ -97,20 +110,20 @@ const VirtualCompetitors = {
                 if (cumulativeDiff > 0) {
                     return {
                         trust: EXPERIMENT_TRUSTWORTHY.YES,
-                        decision: EXPERIMENT_DECISION.KEEP_VARIANT,
+                        decision: normalizeDecisionForStatus(EXPERIMENT_DECISION.KEEP_VARIANT, experiment),
                         followUp: EXPERIMENT_FOLLOW_UP.CELEBRATE
                     };
                 } else {
                     return {
                         trust: EXPERIMENT_TRUSTWORTHY.YES,
-                        decision: EXPERIMENT_DECISION.KEEP_BASE,
+                        decision: normalizeDecisionForStatus(EXPERIMENT_DECISION.KEEP_BASE, experiment),
                         followUp: EXPERIMENT_FOLLOW_UP.ITERATE
                     };
                 }
             } else {
                 return {
                     trust: EXPERIMENT_TRUSTWORTHY.YES,
-                    decision: EXPERIMENT_DECISION.KEEP_RUNNING,
+                    decision: normalizeDecisionForStatus(EXPERIMENT_DECISION.KEEP_RUNNING, experiment),
                     followUp: EXPERIMENT_FOLLOW_UP.DO_NOTHING
                 };
             }
@@ -132,7 +145,7 @@ const VirtualCompetitors = {
             if (currentRuntimeDays < 7) {
                 return {
                     trust: EXPERIMENT_TRUSTWORTHY.YES,
-                    decision: EXPERIMENT_DECISION.KEEP_RUNNING,
+                    decision: normalizeDecisionForStatus(EXPERIMENT_DECISION.KEEP_RUNNING, experiment),
                     followUp: EXPERIMENT_FOLLOW_UP.DO_NOTHING
                 };
             }
@@ -158,16 +171,16 @@ const VirtualCompetitors = {
             if (hasSignificantEffect) {
                 return {
                     trust: EXPERIMENT_TRUSTWORTHY.YES,
-                    decision: EXPERIMENT_DECISION.KEEP_VARIANT,
+                    decision: normalizeDecisionForStatus(EXPERIMENT_DECISION.KEEP_VARIANT, experiment),
                     followUp: EXPERIMENT_FOLLOW_UP.CELEBRATE
                 };
             } else {
                 return {
                     trust: EXPERIMENT_TRUSTWORTHY.YES,
-                    decision: EXPERIMENT_DECISION.KEEP_BASE,
+                    decision: normalizeDecisionForStatus(EXPERIMENT_DECISION.KEEP_BASE, experiment),
                     followUp: EXPERIMENT_FOLLOW_UP.ITERATE
                 };
             }
         }
     }
-}; 
+};

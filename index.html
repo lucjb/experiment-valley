@@ -359,13 +359,13 @@
                 } else if (key === '2') {
                     document.querySelector('button[name="trust"][value="UNTRUSTWORTHY"]')?.click();
                 }
-                // Decision: q = Keep Base, w = Keep Variant, e = Keep Running
+                // Decision: q = Base, w = Variant, e = third option (Keep Running/Reset)
                 else if (key === 'q') {
                     document.querySelector('button[name="decision"][value="KEEP_BASE"]')?.click();
                 } else if (key === 'w') {
                     document.querySelector('button[name="decision"][value="KEEP_VARIANT"]')?.click();
                 } else if (key === 'e') {
-                    document.querySelector('button[name="decision"][value="KEEP_RUNNING"]')?.click();
+                    document.querySelector('button[name="decision"][data-decision-option="tertiary"]')?.click();
                 }
                 // Follow up: z = Celebrate, x = Iterate, c = Validate, v = Fix & Rerun, n = None
                 else if (key === 'z') {
@@ -725,21 +725,21 @@
                                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
                                     </svg>
                                     <span class="tooltip-content">
-                                        <strong>Keep Base:</strong> Keep the original version. The default decision unless the experiment is trustworthy and shows evidence in favor of variant.<br><br>
-                                        <strong>Keep Variant:</strong> Ship the variant version. Use when the experiment is trustworthy and results are statistically significant in favor of the variant.<br><br>
-                                        <strong>Keep Running:</strong> Continue running the experiment. Use when the experiment hasn't reached the proper sample size or when there are temporal biases.
+                                        <strong>Keep/Switch to Base:</strong> Stick with Base when it's already live or switch back to Base when a stopped experiment is serving Variant and the data favors Base.<br><br>
+                                        <strong>Keep/Switch to Variant:</strong> Ship Variant when it's already deployed or switch to it when a stopped experiment is serving Base and the data supports Variant.<br><br>
+                                        <strong>Keep Running / Reset:</strong> While status is <em>Running</em>, keep collecting data until the design conditions are met. When status is <em>Stopped</em>, reset the experiment to relaunch with a clean 50/50 split.
                                     </span>
                                 </button>
                             </span>
                         </div>
                         <div class="decision-btn-group">
-                            <button type="button" name="decision" value="KEEP_BASE" class="decision-btn">
+                            <button type="button" name="decision" value="KEEP_BASE" class="decision-btn" data-decision-option="base">
                                 Keep Base
                             </button>
-                            <button type="button" name="decision" value="KEEP_VARIANT" class="decision-btn">
+                            <button type="button" name="decision" value="KEEP_VARIANT" class="decision-btn" data-decision-option="variant">
                                 Keep Variant
                             </button>
-                            <button type="button" name="decision" value="KEEP_RUNNING" class="decision-btn">
+                            <button type="button" name="decision" value="KEEP_RUNNING" class="decision-btn" data-decision-option="tertiary">
                                 Keep Running
                             </button>
                         </div>
@@ -806,10 +806,31 @@
                 </div>
             </div>
 
-            <!-- Execution Section -->
+            <!-- Status Section -->
             <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 md:p-4 mb-4">
-                <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Execution</h2>
+                <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-3">Status</h2>
                 <div>
+                    <div class="flex flex-col gap-2">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-gray-700">Experiment Status</span>
+                                <span id="experiment-status-pill" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Running</span>
+                                <button type="button" class="info-icon-btn tooltip-trigger" aria-label="Status help">
+                                    <svg fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="tooltip-content">
+                                        <strong>Running:</strong> The experiment is still collecting data and traffic is split according to the design.
+                                        <br><br>
+                                        <strong>Stopped:</strong> Data collection has ended and 100% of traffic goes to one variant. Decisions focus on keeping the current deployment, switching, or resetting the test.
+                                    </span>
+                                </button>
+                            </div>
+                            <div id="experiment-deployed-variant" class="text-sm text-gray-600 hidden">
+                                Traffic is currently routed to: <span id="experiment-deployed-variant-label" class="font-semibold"></span>
+                            </div>
+                        </div>
+                    </div>
                     <div class="mt-2">
                         <!-- Execution Bar Container -->
                         <div class="flex items-center space-x-2">
