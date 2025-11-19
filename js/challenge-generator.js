@@ -2861,8 +2861,15 @@ function adjustDecisionForStopped(normalDecision, statusInfo) {
 
     if (recommendedDecision === EXPERIMENT_DECISION.KEEP_RUNNING) {
         normalizedDecision.decision = EXPERIMENT_DECISION.RESET_EXPERIMENT;
-        replaceReason('Reset the experiment so you can rerun it and gather trustworthy data.');
-        replaceSummary('Reset and rerun the experiment to collect valid data.');
+        const originalReason = normalizedDecision.decisionReason
+            ? `Original guidance: ${normalizedDecision.decisionReason.trim()}`
+            : 'Original guidance: keep the experiment running to collect more data.';
+        const originalSummary = normalizedDecision.summary
+            ? normalizedDecision.summary.trim()
+            : 'Keep running to gather the right amount of data.';
+
+        replaceReason(`${originalReason} Because the test is already stopped, reset it to continue collecting the data needed to make a trustworthy decision.`);
+        replaceSummary(`The analysis recommended keeping the experiment running ("${originalSummary}"), but the test was stopped. Reset and rerun the experiment to gather valid data.`);
         return normalizedDecision;
     }
 
