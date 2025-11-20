@@ -29,11 +29,11 @@ const VirtualCompetitors = {
             decision = random < directionBias ? EXPERIMENT_DECISION.KEEP_VARIANT : EXPERIMENT_DECISION.KEEP_BASE;
             const followUp = decision === EXPERIMENT_DECISION.KEEP_VARIANT ? EXPERIMENT_FOLLOW_UP.CELEBRATE : EXPERIMENT_FOLLOW_UP.ITERATE;
             
-            return {
+            return withStatusAwareDecision({
                 trust: EXPERIMENT_TRUSTWORTHY.YES, // HiPPO doesn't care about data quality
                 decision: decision,
                 followUp: followUp
-            };
+            }, experiment);
         }
     },
 
@@ -70,11 +70,11 @@ const VirtualCompetitors = {
                 decision = decisions[Math.floor(Math.random() * decisions.length)];
             }
             
-            return {
+            return withStatusAwareDecision({
                 trust: trusts[Math.floor(Math.random() * trusts.length)],
                 decision: decision,
                 followUp: followUps[Math.floor(Math.random() * followUps.length)]
-            };
+            }, experiment);
         }
     },
 
@@ -95,24 +95,24 @@ const VirtualCompetitors = {
             
             if (daysElapsed >= 14) {
                 if (cumulativeDiff > 0) {
-                    return {
+                    return withStatusAwareDecision({
                         trust: EXPERIMENT_TRUSTWORTHY.YES,
                         decision: EXPERIMENT_DECISION.KEEP_VARIANT,
                         followUp: EXPERIMENT_FOLLOW_UP.CELEBRATE
-                    };
+                    }, experiment);
                 } else {
-                    return {
+                    return withStatusAwareDecision({
                         trust: EXPERIMENT_TRUSTWORTHY.YES,
                         decision: EXPERIMENT_DECISION.KEEP_BASE,
                         followUp: EXPERIMENT_FOLLOW_UP.ITERATE
-                    };
+                    }, experiment);
                 }
             } else {
-                return {
+                return withStatusAwareDecision({
                     trust: EXPERIMENT_TRUSTWORTHY.YES,
                     decision: EXPERIMENT_DECISION.KEEP_RUNNING,
                     followUp: EXPERIMENT_FOLLOW_UP.DO_NOTHING
-                };
+                }, experiment);
             }
         }
     },
@@ -130,11 +130,11 @@ const VirtualCompetitors = {
 
             // Wait at least one week
             if (currentRuntimeDays < 7) {
-                return {
+                return withStatusAwareDecision({
                     trust: EXPERIMENT_TRUSTWORTHY.YES,
                     decision: EXPERIMENT_DECISION.KEEP_RUNNING,
                     followUp: EXPERIMENT_FOLLOW_UP.DO_NOTHING
-                };
+                }, experiment);
             }
 
             // After a week, check confidence intervals
@@ -156,18 +156,34 @@ const VirtualCompetitors = {
             });
 
             if (hasSignificantEffect) {
-                return {
+                return withStatusAwareDecision({
                     trust: EXPERIMENT_TRUSTWORTHY.YES,
                     decision: EXPERIMENT_DECISION.KEEP_VARIANT,
                     followUp: EXPERIMENT_FOLLOW_UP.CELEBRATE
-                };
+                }, experiment);
             } else {
-                return {
+                return withStatusAwareDecision({
                     trust: EXPERIMENT_TRUSTWORTHY.YES,
                     decision: EXPERIMENT_DECISION.KEEP_BASE,
                     followUp: EXPERIMENT_FOLLOW_UP.ITERATE
-                };
+                }, experiment);
             }
         }
     }
-}; 
+};
+
+function withStatusAwareDecision(result, experiment) {
+    const status = experiment?.experiment?.status;
+    if (status?.type === EXPERIMENT_STATUS.STOPPED) {
+        const deployedDecision = status.deployedVariant === DEPLOYED_VARIANT.VARIANT
+            ? EXPERIMENT_DECISION.KEEP_VARIANT
+            : EXPERIMENT_DECISION.KEEP_BASE;
+        const shouldKeep = result.decision === deployedDecision;
+        return {
+            ...result,
+            decision: shouldKeep ? EXPERIMENT_DECISION.KEEP_DEPLOYED_VARIANT : EXPERIMENT_DECISION.RESET_EXPERIMENT,
+            followUp: shouldKeep ? result.followUp : EXPERIMENT_FOLLOW_UP.DO_NOTHING
+        };
+    }
+    return result;
+}
