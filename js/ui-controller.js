@@ -549,7 +549,7 @@ const UIController = {
                 8: [partialLoser().withSampleRatioMismatch(), winner(), loser().withLowerIsBetter()],
                 9: [inconclusive().withOverdue(), winner(), inconclusive().withLuckyDayTrap()],
                 10: [winner().withUnderpoweredDesign(), winner(), twymansLawTrap().withBaseRateMismatch().withUnderpoweredDesign().withOverdue()],
-                11: [earlyStoppingScenario(), winner(), partialLoser()]
+                11: [earlyStoppingScenario(), stoppedExperimentScenario(), partialLoser()]
             };
 
             // Reset visitors header
@@ -604,6 +604,7 @@ const UIController = {
 
             // Reset decisions
             this.resetDecisions();
+            this.updateDecisionOptionsForStatus();
             this.initializeDecisionTimer();
             if (this.debugMode()) {
                 this.addDebugAlerts();
@@ -1695,6 +1696,136 @@ const UIController = {
         return analysis.decision.followUpReason || '';
     },
 
+    getExperimentStatus() {
+        const fallbackStatus = window.EXPERIMENT_STATUS ? window.EXPERIMENT_STATUS.RUNNING : 'RUNNING';
+        return this.state.challenge?.experiment?.status || fallbackStatus;
+    },
+
+    isStoppedExperiment() {
+        const stoppedValue = window.EXPERIMENT_STATUS ? window.EXPERIMENT_STATUS.STOPPED : 'STOPPED';
+        return this.getExperimentStatus() === stoppedValue;
+    },
+
+    getDeployedVariantLabel() {
+        const deployed = this.state.challenge?.experiment?.deployedVariant || 'VARIANT';
+        return deployed === 'BASE' ? 'Base' : 'Variant';
+    },
+
+    updateExperimentStatusDisplay() {
+        const statusPill = document.getElementById('experiment-status-pill');
+        const statusDescription = document.getElementById('experiment-status-description');
+        const runningTooltip = document.getElementById('status-tooltip-running');
+        const stoppedTooltip = document.getElementById('status-tooltip-stopped');
+        if (!statusPill) {
+            return;
+        }
+
+        const isStopped = this.isStoppedExperiment();
+        const deployedLabel = this.getDeployedVariantLabel();
+        statusPill.textContent = isStopped ? 'Stopped' : 'Running';
+        statusPill.classList.toggle('status-running', !isStopped);
+        statusPill.classList.toggle('status-stopped', isStopped);
+
+        if (statusDescription) {
+            statusDescription.textContent = isStopped
+                ? `Deployed Variant: ${deployedLabel} (100% traffic)`
+                : 'Collecting data with a 50/50 traffic split.';
+        }
+
+        if (runningTooltip && stoppedTooltip) {
+            runningTooltip.classList.toggle('hidden', isStopped);
+            stoppedTooltip.classList.toggle('hidden', !isStopped);
+        }
+    },
+
+    toggleDecisionGroupButtons(groupElement, enabled) {
+        if (!groupElement) return;
+        groupElement.classList.toggle('hidden', !enabled);
+        const buttons = groupElement.querySelectorAll('.decision-btn');
+        buttons.forEach(button => {
+            button.disabled = !enabled;
+            if (!enabled) {
+                button.classList.remove('selected');
+                button.style.opacity = '0.7';
+                button.style.transform = 'scale(1)';
+            }
+        });
+    },
+
+    updateDecisionOptionsForStatus() {
+        if (!this.state.challenge) return;
+        const runningGroup = document.getElementById('decision-options-running');
+        const stoppedGroup = document.getElementById('decision-options-stopped');
+        const runningTooltip = document.getElementById('decision-tooltip-running');
+        const stoppedTooltip = document.getElementById('decision-tooltip-stopped');
+        const keepDeployedBtn = document.querySelector('[data-action="keep-deployed"]');
+
+        const isStopped = this.isStoppedExperiment();
+        this.toggleDecisionGroupButtons(runningGroup, !isStopped);
+        this.toggleDecisionGroupButtons(stoppedGroup, isStopped);
+
+        if (runningTooltip && stoppedTooltip) {
+            runningTooltip.classList.toggle('hidden', isStopped);
+            stoppedTooltip.classList.toggle('hidden', !isStopped);
+        }
+
+        if (isStopped && keepDeployedBtn) {
+            keepDeployedBtn.textContent = `Keep ${this.getDeployedVariantLabel()}`;
+        }
+
+        this.checkDecisions();
+    },
+
+    getDecisionDisplayLabel(decisionValue, challenge = this.state.challenge) {
+        if (!decisionValue) return 'None';
+        switch (decisionValue) {
+            case EXPERIMENT_DECISION.KEEP_VARIANT:
+                return 'Keep Variant';
+            case EXPERIMENT_DECISION.KEEP_BASE:
+                return 'Keep Base';
+            case EXPERIMENT_DECISION.KEEP_RUNNING:
+                return 'Keep Running';
+            case EXPERIMENT_DECISION.KEEP_DEPLOYED_VARIANT: {
+                const deployed = challenge?.experiment?.deployedVariant === 'BASE' ? 'Base' : 'Variant';
+                return `Keep ${deployed}`;
+            }
+            case EXPERIMENT_DECISION.RESTART_EXPERIMENT:
+                return 'Restart Experiment';
+            default:
+                return 'None';
+        }
+    },
+
+    getVariantForDecision(decisionValue) {
+        if (!decisionValue) return null;
+        if (decisionValue === EXPERIMENT_DECISION.KEEP_VARIANT) return 'VARIANT';
+        if (decisionValue === EXPERIMENT_DECISION.KEEP_BASE) return 'BASE';
+        if (decisionValue === EXPERIMENT_DECISION.KEEP_DEPLOYED_VARIANT) {
+            return (this.state.challenge?.experiment?.deployedVariant || 'VARIANT').toUpperCase();
+        }
+        return null;
+    },
+
+    normalizeDecisionForStatus(decisionValue) {
+        if (!this.isStoppedExperiment()) {
+            return decisionValue;
+        }
+        if (decisionValue === EXPERIMENT_DECISION.RESTART_EXPERIMENT || decisionValue === EXPERIMENT_DECISION.KEEP_DEPLOYED_VARIANT) {
+            return decisionValue;
+        }
+        if (decisionValue === EXPERIMENT_DECISION.KEEP_RUNNING) {
+            return EXPERIMENT_DECISION.RESTART_EXPERIMENT;
+        }
+        if (decisionValue === EXPERIMENT_DECISION.KEEP_BASE || decisionValue === EXPERIMENT_DECISION.KEEP_VARIANT) {
+            const variantChoice = decisionValue === EXPERIMENT_DECISION.KEEP_BASE ? 'BASE' : 'VARIANT';
+            const deployed = (this.state.challenge?.experiment?.deployedVariant || 'VARIANT').toUpperCase();
+            return variantChoice === deployed
+                ? EXPERIMENT_DECISION.KEEP_DEPLOYED_VARIANT
+                : EXPERIMENT_DECISION.RESTART_EXPERIMENT;
+        }
+        return decisionValue;
+    },
+
     updateExperimentDisplay() {
         const challenge = this.state.challenge;
         const formatPercentage = (value) => {
@@ -1853,7 +1984,9 @@ const UIController = {
     updateExecutionSection() {
         const challenge = this.state.challenge;
         const currentDate = new Date();
-        
+
+        this.updateExperimentStatusDisplay();
+
         // For overdue experiments, use original experiment data for display
         const displayChallenge = window.currentAnalysis?.originalExperiment || challenge;
         const daysElapsed = displayChallenge.simulation.timeline.currentRuntimeDays;
@@ -2643,28 +2776,22 @@ const UIController = {
                 return Math.round(effectSize * expectedDailyVisitors);
             };
 
-            // Record user's chosen option
-            let userImpact = 0;
-            let userChoice = "None";
-            if (this.state.implementDecision === "KEEP_VARIANT") {
-                userChoice = "Variant";
-            } else if (this.state.implementDecision === "KEEP_BASE") {
-                userChoice = "Base";
-            } else if (this.state.implementDecision === "KEEP_RUNNING") {
-                userChoice = "Keep Running";
+            const userDecisionValue = this.state.implementDecision;
+            const userVariantChoice = this.getVariantForDecision(userDecisionValue);
+            let userChoice = this.getDecisionDisplayLabel(userDecisionValue);
+            if (!userChoice) {
+                userChoice = 'None';
             }
+            let userImpact = 0;
 
             // Get competitor's decision
             const competitorDecision = this.state.currentCompetitor.makeDecision(experiment);
+            competitorDecision.decision = this.normalizeDecisionForStatus(competitorDecision.decision);
+            const competitorVariantChoice = this.getVariantForDecision(competitorDecision.decision);
             let competitorImpact = 0;
-            let competitorChoice = "None";
-
-            if (competitorDecision.decision === "KEEP_VARIANT") {
-                competitorChoice = "Variant";
-            } else if (competitorDecision.decision === "KEEP_BASE") {
-                competitorChoice = "Base";
-            } else if (competitorDecision.decision === "KEEP_RUNNING") {
-                competitorChoice = "Keep Running";
+            let competitorChoice = this.getDecisionDisplayLabel(competitorDecision.decision);
+            if (!competitorChoice) {
+                competitorChoice = 'None';
             }
 
             // Determine which variant is better based on improvement direction
@@ -2681,38 +2808,26 @@ const UIController = {
 
             // Impacts shown in the table should reflect the signed true effect
             let userImpactDisplay = 0;
-            if (this.state.implementDecision === "KEEP_VARIANT") {
+            if (userVariantChoice === 'VARIANT') {
                 userImpactDisplay = actualImpactCpd;
             }
 
             let competitorImpactDisplay = 0;
-            if (competitorDecision.decision === "KEEP_VARIANT") {
+            if (competitorVariantChoice === 'VARIANT') {
                 competitorImpactDisplay = actualImpactCpd;
             }
 
             // Calculate impact for user
-            if (this.state.implementDecision === "KEEP_VARIANT") {
-                // User chose variant: impact depends on whether variant is better
-                if (variantBetter) {
-                    userImpact = effectMagnitude; // Positive impact for good variant
-                } else {
-                    userImpact = -effectMagnitude; // Negative impact for bad variant
-                }
+            if (userVariantChoice === 'VARIANT') {
+                userImpact = variantBetter ? effectMagnitude : -effectMagnitude;
             } else {
-                // User chose base or keep running: always 0 impact (no change from baseline)
                 userImpact = 0;
             }
 
             // Calculate impact for competitor
-            if (competitorDecision.decision === "KEEP_VARIANT") {
-                // Competitor chose variant: impact depends on whether variant is better
-                if (variantBetter) {
-                    competitorImpact = effectMagnitude; // Positive impact for good variant
-                } else {
-                    competitorImpact = -effectMagnitude; // Negative impact for bad variant
-                }
+            if (competitorVariantChoice === 'VARIANT') {
+                competitorImpact = variantBetter ? effectMagnitude : -effectMagnitude;
             } else {
-                // Competitor chose base or keep running: always 0 impact (no change from baseline)
                 competitorImpact = 0;
             }
 
@@ -2779,8 +2894,8 @@ const UIController = {
             const relativeImpact = userImpactValue - opponentImpactValue;
 
             // Determine if user made the optimal choice (chose the better variant)
-            const userChoseBest = (variantBetter && userImplementDecision === "KEEP_VARIANT") ||
-                (!variantBetter && userImplementDecision === "KEEP_BASE");
+            const userChoseBest = (variantBetter && userVariantChoice === 'VARIANT') ||
+                (!variantBetter && userVariantChoice === 'BASE');
 
             // Color coding based on relative impact
             if (relativeImpact > 0) {
@@ -2816,18 +2931,11 @@ const UIController = {
             } else {
                 const isCorrect = userChoseBest || actualEffectCpd === 0;
                 var prefix = isCorrect ? "Correct!" : "Oops!";
-                if (userImplementDecision === "KEEP_RUNNING") {
+                if (userImplementDecision === "KEEP_RUNNING" || userImplementDecision === EXPERIMENT_DECISION.RESTART_EXPERIMENT) {
                     prefix = "";
                 }
 
-                let opponentChoiceText;
-                if (competitorDecision.decision === "KEEP_VARIANT") {
-                    opponentChoiceText = "variant";
-                } else if (competitorDecision.decision === "KEEP_BASE") {
-                    opponentChoiceText = "base";
-                } else {
-                    opponentChoiceText = "keep running";
-                }
+                const opponentChoiceText = this.getDecisionDisplayLabel(competitorDecision.decision).toLowerCase();
 
                 // Line 1: Prefix and true effect
                 const isLowerBetter = experiment.experiment.improvementDirection === window.IMPROVEMENT_DIRECTION.LOWER;
@@ -2867,8 +2975,10 @@ const UIController = {
             }
 
             // Determine if user and competitor made correct choices
-            const userMadeCorrectChoice = (userChoice === bestVariant);
-            const competitorMadeCorrectChoice = (competitorChoice === bestVariant);
+            const userMadeCorrectChoice = (userVariantChoice === 'VARIANT' && bestVariant === 'Variant') ||
+                (userVariantChoice === 'BASE' && bestVariant === 'Base');
+            const competitorMadeCorrectChoice = (competitorVariantChoice === 'VARIANT' && bestVariant === 'Variant') ||
+                (competitorVariantChoice === 'BASE' && bestVariant === 'Base');
 
             // Create icons for impact table
             const userIcon = userMadeCorrectChoice ?
@@ -2952,10 +3062,8 @@ const UIController = {
             // Check decision
             const userDecision = this.state.implementDecision;
             const analysisDecision = analysis.decision.decision;
-            const displayDecision = analysisDecision === "KEEP_VARIANT" ? "Keep Variant" :
-                analysisDecision === "KEEP_BASE" ? "Keep Base" : "Keep Running";
-            const userDecisionDisplay = userDecision === "KEEP_VARIANT" ? "Keep Variant" :
-                userDecision === "KEEP_BASE" ? "Keep Base" : "Keep Running";
+            const displayDecision = this.getDecisionDisplayLabel(analysisDecision, this.state.challenge);
+            const userDecisionDisplay = this.getDecisionDisplayLabel(userDecision, this.state.challenge);
 
             // Check follow-up
             const userFollowUp = this.state.followUpDecision;
