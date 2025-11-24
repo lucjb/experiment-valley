@@ -144,7 +144,7 @@ const UIController = {
                 // Remove active state from all buttons in the same group
                 const name = button.getAttribute('name');
                 document.querySelectorAll(`.decision-btn[name="${name}"]`).forEach(btn => {
-                    btn.style.opacity = '0.7';
+                    btn.style.opacity = '';
                     btn.style.transform = 'scale(1)';
                     btn.classList.remove('selected');
                 });
@@ -166,7 +166,7 @@ const UIController = {
 
             button.addEventListener('mouseleave', () => {
                 if (!button.classList.contains('selected')) {
-                    button.style.opacity = '0.7';
+                    button.style.opacity = '';
                 }
             });
 
@@ -542,7 +542,7 @@ const UIController = {
                 1: [winner().withSampleRatioMismatch(), inconclusive(), partialLoser()],
                 2: [partialLoser().withVisitorsLoss(), winner(), fastLoserWithPartialWeek()],
                 3: [fastWinner(), slowCompletion(),  partialLoser().withBaseRateMismatch()],
-                4: [luckyDayTrap(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser()],
+                4: [luckyDayTrap(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser().withStatusStopped('VARIANT')],
                 5: [twymansLawTrap(), winner().withLowerIsBetter(), inconclusive()],
                 6: [partialWinner(), earlyStoppingScenario(), bigLoser().withLowerIsBetter().withLuckyDayTrap()],
                 7: [partialWinner().withLowerIsBetter(), bigLoser().withLowerIsBetter(), loser().withLowerIsBetter()],
@@ -572,12 +572,6 @@ const UIController = {
                 challengeDesign = allScenarios[Math.floor(Math.random() * allScenarios.length)];
             }
             //challengeDesign = earlyStoppingScenario();
-
-            if (this.state.currentRound > 1 && typeof challengeDesign.withStatusStopped === 'function') {
-                challengeDesign = challengeDesign.withStatusStopped();
-            } else if (this.state.currentRound <= 1 && typeof challengeDesign.withStatusRunning === 'function') {
-                challengeDesign = challengeDesign.withStatusRunning();
-            }
 
             const shouldEnableTimeout = this.state.currentRound >= 5;
             const hasExplicitTimeLimit = typeof challengeDesign.timeLimitSeconds === 'number' && challengeDesign.timeLimitSeconds > 0;
@@ -2740,7 +2734,7 @@ const UIController = {
         this.clearDecisionTimer();
         // Reset all decision buttons
         document.querySelectorAll('.decision-btn').forEach(button => {
-            button.style.opacity = '0.7';
+            button.style.opacity = '';
             button.style.transform = 'scale(1)';
             button.classList.remove('selected');
             button.disabled = false; // Enable the buttons
