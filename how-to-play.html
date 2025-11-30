@@ -12,15 +12,19 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
 </head>
 
-<body class="bg-gray-100" style="background-image: url('ev-bg.png'); background-size: cover; background-position: center top; background-repeat: no-repeat; background-attachment: fixed;">
+<body class="bg-gray-100"
+    style="background-image: url('ev-bg.png'); background-size: cover; background-position: center top; background-repeat: no-repeat; background-attachment: fixed;">
     <!-- Page Header - Full Width -->
     <div class="text-center mb-8 mt-6">
-        <h1 class="text-7xl font-bold text-white mb-4 tracking-wider" style="text-shadow: 0 0 20px rgba(255,255,255,0.5);">
+        <h1 class="text-7xl font-bold text-white mb-4 tracking-wider"
+            style="text-shadow: 0 0 20px rgba(255,255,255,0.5);">
             EXPERIMENT VALLEY
         </h1>
         <div class="flex justify-center space-x-8 text-xl">
-            <a href="index.html" class="text-white hover:text-yellow-300 transition-colors duration-200">Back to Game</a>
-            <a href="leaderboard.html" class="text-white hover:text-yellow-300 transition-colors duration-200">Rankings</a>
+            <a href="index.html" class="text-white hover:text-yellow-300 transition-colors duration-200">Back to
+                Game</a>
+            <a href="leaderboard.html"
+                class="text-white hover:text-yellow-300 transition-colors duration-200">Rankings</a>
             <a href="about.html" class="text-white hover:text-yellow-300 transition-colors duration-200">About</a>
         </div>
     </div>
@@ -34,9 +38,11 @@
                 <ol class="list-decimal list-inside space-y-2 text-gray-300">
                     <li>You will be challenged to analyze hypothetical experiments and make three critical decisions:
                         <ul class="list-disc list-inside ml-4 mt-1">
-                            <li><b>Evaluate</b> if the experiment is trustworthy</li>
-                            <li><b>Choose</b> the best decision based on the results</li>
-                            <li><b>Determine</b> the next steps to maximize impact</li>
+                            <li><b>Evaluate</b> if the experiment is trustworthy: is it ready to make a decision right
+                                now?</li>
+                            <li><b>Choose</b> the best decision based on the results: deploy a variant or keep it
+                                running.</li>
+                            <li><b>Determine</b> the next steps to maximize impact.</li>
                         </ul>
                     </li>
                     <li>Each experiment is based on a real-world scenario and is designed to test your decision-making
@@ -56,7 +62,7 @@
             </div>
 
             <div class="mb-6">
-                <h3 class="text-xl font-semibold mb-2" style="color: #f97316;">How far can you go?</h3>
+                <h3 class="text-xl font-semibold mb-2" style="color: #f97316;">Rounds</h3>
                 <p class="mb-4 text-gray-300">Climb up the ranks by progressing through rounds!<br />
                 <ul class="list-disc list-inside space-y-2 text-gray-300">
                     <li>Each round consists of 3 unique experiments.</li>
@@ -66,13 +72,32 @@
             </div>
 
             <div class="mb-6">
+                <h3 class="text-xl font-semibold mb-2" style="color: #f97316;">Impact</h3>
+                <p class="text-gray-300 mb-4">Making the <b>right decisions</b> with the data at hand is only a part of
+                    the
+                    story. Actual <b>impact on metrics</b> is the ultimate test. <br /> The Game knows exactly what is
+                    the <b>true impact</b>
+                    of your decisions, you will see your <b>cumulative incremental impact</b> as you progress through
+                    the
+                    rounds.<br /> Remeber: the <b>right choice</b> is not always the one with the highest impact, but
+                    the one that maximizes your <b>chances of success</b>. Be ready for uncertainty and surprises!</p>
+            </div>
+
+            <div class="mb-6">
                 <h3 class="text-xl font-semibold mb-2" style="color: #f97316;">Opponents</h3>
-                <p class="text-gray-300 mb-4">You'll compete against different decision-making approaches to see how your choices stack up in real-world scenarios:</p>
+                <p class="text-gray-300 mb-4">
+                    AB Testing is just one way to make decisions, in fact, there are many ways to do AB Testing. This
+                    game relies on frequentist approaches. How good is it? How good are <b>you</b>? To find out, you'll
+                    compete against different decision-making approaches. Who delivers the higehst actual impact? Prepeare for surprises!</p>
                 <ul class="list-disc list-inside space-y-2 text-gray-300">
-                    <li><strong>HiPPO:</strong> Makes decisions based on personal opinion, ignoring statistical significance and data quality</li>
-                    <li><strong>Random:</strong> Makes decisions randomly, without analyzing the data</li>
-                    <li><strong>Naive:</strong> Chooses the variant with the highest conversion rate at day 14, ignoring confidence intervals and p-values</li>
-                    <li><strong>Peek-a-boo:</strong> Still not significant… maybe tomorrow!</li>
+                    <li><strong>HiPPO:</strong> Makes decisions based on personal opinion, completely ignores the data.
+                        Chooses variant 90% of the time.</li>
+                    <li><strong>Random:</strong> Makes decisions randomly, completely ignores the data. Chooses variant
+                        50% of the time.</li>
+                    <li><strong>Naive:</strong> Chooses the variant with the highest conversion rate at day 14, ignoring
+                        statistical analyses and data quality.</li>
+                    <li><strong>Peek-a-boo:</strong> Checks everyday if the experiment is significant, ignores data
+                        quality. Chooses the variant as soon as it is significant.</li>
                 </ul>
             </div>
 
