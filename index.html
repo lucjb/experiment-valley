@@ -699,8 +699,7 @@
                                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
                                     </svg>
                                     <span class="tooltip-content">
-                                        <strong>Yes:</strong> The experiment can be trusted to make a decision. No data quality issues, design is correct, and execution is consistent with the design.<br><br>
-                                        <strong>No:</strong> The experiment cannot be trusted. There may be data quality issues (e.g. sample ratio mismatch, data loss, base rate mismatch), design problems (underpowered, overdue), or suspicious results (Twyman's Law, lucky day) that make the data unreliable.
+                                        <strong></strong>Can we make a trustworthy decision right now?</strong> <br/><br/><strong>Yes:</strong> The experiment design is correct, there are no data quality issues, the execution is consistent with the design and there is no reason to doubt the outcomes.<br><br>
                                     </span>
                                 </button>
                             </span>
@@ -719,17 +718,21 @@
                     <div class="decision-section decision mb-2">
                         <div class="text-center mb-2">
                             <span class="font-medium text-white">
-                                Decision
+                                Decisions
                                 <button type="button" class="info-icon-btn tooltip-trigger-click" aria-label="Show explanation">
                                     <svg fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
                                     </svg>
                                     <span class="tooltip-content" id="decision-tooltip">
-                                        <strong>Keep Base:</strong> Keep the original version. The default decision unless the experiment is trustworthy and shows evidence in favor of variant.<br><br>
-                                        <strong>Keep Variant:</strong> Ship the variant version. Use when the experiment is trustworthy and results are statistically significant in favor of the variant.<br><br>
-                                        <strong>Keep Running:</strong> Continue running the experiment. Use when the experiment hasn't reached the proper sample size or when there are temporal biases.<br><br>
-                                        <strong>Reset:</strong> When a stopped experiment isn't trustworthy or needs more data, reset it to rerun from the beginning.<br><br>
-                                        <em>When an experiment is stopped, buttons may say "Keep", "Switch to", or "Rollback to" depending on which experience is currently deployed.</em>
+                                        <span id="decision-tooltip-running">
+                                            <strong>Keep Base:</strong> Stop the experiment and keep the original version. Use when the experiment needs to be stopped and there is no evidence against base.<br><br>
+                                            <strong>Keep Variant:</strong> Stop the experiment and ship the variant version. Use when the experiment results show evidence against base.<br><br>
+                                            <strong>Keep Running:</strong> Continue running the experiment. Use when data collection needs to continue.<br><br>
+                                        </span>
+                                        <span id="decision-tooltip-stopped" class="hidden">
+                                            <strong>Keep / Switch to Base:</strong> Keep / Switch to the original version (no evidence against base).<br><br>
+                                            <strong>Keep / Switch to Variant:</strong> Keep / Ship the variant (evidence against base).<br><br>
+                                            <strong>Reset:</strong> Restart the experiment. Use when an experiment was stopped with the wrong decision. <br><br>                                        </span>
                                     </span>
                                 </button>
                             </span>

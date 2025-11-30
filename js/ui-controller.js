@@ -528,7 +528,7 @@ const UIController = {
 
             // Define challenge sequence for each round
             const challengeSequences = {
-                1: [winner().withSampleRatioMismatch(), inconclusive(), partialLoser()],
+                1: [winner().withSampleRatioMismatch(), inconclusive().withStatusStopped('VARIANT'), partialLoser().withStatusStopped('BASE')],
                 2: [partialLoser().withVisitorsLoss(), winner(), fastLoserWithPartialWeek()],
                 3: [fastWinner(), slowCompletion(),  partialLoser().withBaseRateMismatch()],
                 4: [luckyDayTrap(), fastLoserWithPartialWeek().withSampleRatioMismatch(), loser().withStatusStopped('VARIANT')],
@@ -733,45 +733,9 @@ const UIController = {
     },
 
     getDecisionTooltipContent(statusInfo = this.getStatusInfo()) {
-        const decisions = window.EXPERIMENT_DECISION || {};
-        const deployments = window.DEPLOYED_VARIANT || {};
-        const statusValues = window.EXPERIMENT_STATUS || {};
-        const stoppedValue = statusValues.STOPPED || 'STOPPED';
-        const isStopped = statusInfo.state === stoppedValue;
-        const keepBaseValue = decisions.KEEP_BASE || 'KEEP_BASE';
-        const keepVariantValue = decisions.KEEP_VARIANT || 'KEEP_VARIANT';
-        const keepRunningValue = decisions.KEEP_RUNNING || 'KEEP_RUNNING';
-        const resetValue = decisions.RESET_EXPERIMENT || 'RESET_EXPERIMENT';
-        const baseLabel = this.getDecisionActionLabel(keepBaseValue, statusInfo) || 'Keep Base';
-        const variantLabel = this.getDecisionActionLabel(keepVariantValue, statusInfo) || 'Keep Variant';
-
-        if (isStopped) {
-            const deployedVariant = statusInfo.deployedVariant || deployments.BASE || 'BASE';
-            const baseDescription = deployedVariant === (deployments.VARIANT || 'VARIANT')
-                ? 'Rollback all traffic to Base to undo the variant that was deployed when the experiment stopped.'
-                : 'Keep the original Base experience that is already live.';
-            const variantDescription = deployedVariant === (deployments.VARIANT || 'VARIANT')
-                ? 'Keep the deployed variant running while you follow the analysis recommendations.'
-                : 'Switch the live experience to the tested variant even though the experiment already stopped.';
-            const resetDescription = 'Start a fresh run so you can gather trustworthy data before making another deployment.';
-
-            return `
-                <strong>${baseLabel}:</strong> ${baseDescription}<br><br>
-                <strong>${variantLabel}:</strong> ${variantDescription}<br><br>
-                <strong>${this.getDecisionActionLabel(resetValue, statusInfo) || 'Reset'}:</strong> ${resetDescription}<br><br>
-                <em>Stopped experiments no longer split traffic&mdash;100% goes to the deployed experience.</em>
-            `.trim();
-        }
-
-        const runningLabel = this.getDecisionActionLabel(keepRunningValue, statusInfo) || 'Keep Running';
-        const resetLabel = this.getDecisionActionLabel(resetValue, statusInfo) || 'Reset';
-        return `
-            <strong>${baseLabel}:</strong> Keep the original version unless the experiment is trustworthy and shows evidence in favor of the variant.<br><br>
-            <strong>${variantLabel}:</strong> Ship the variant when the analysis is trustworthy and statistically significant in favor of the change.<br><br>
-            <strong>${runningLabel}:</strong> Continue running the experiment until it reaches the required sample size or clears temporal biases.<br><br>
-            <strong>${resetLabel}:</strong> Once an experiment is stopped, reset it to rerun from the beginning if you need fresh data.<br><br>
-            <em>When an experiment is stopped, buttons may say "Keep", "Switch to", or "Rollback to" depending on which experience is currently deployed.</em>
-        `.trim();
+        // This function is no longer needed as we use spans in HTML
+        // Keeping for backwards compatibility but it's not used
+        return '';
     },
 
     deriveTrafficSplit(challenge = this.state.challenge, statusInfo = this.getStatusInfo(challenge)) {
@@ -846,22 +810,34 @@ const UIController = {
         const keepRunningValue = decisions.KEEP_RUNNING || 'KEEP_RUNNING';
         const resetValue = decisions.RESET_EXPERIMENT || 'RESET_EXPERIMENT';
 
-        baseBtn.textContent = this.getDecisionActionLabel(keepBaseValue, statusInfo) || 'Keep Base';
+        const baseLabel = this.getDecisionActionLabel(keepBaseValue, statusInfo) || 'Keep Base';
+        const variantLabel = this.getDecisionActionLabel(keepVariantValue, statusInfo) || 'Keep Variant';
+        const runningLabel = this.getDecisionActionLabel(keepRunningValue, statusInfo) || 'Keep Running';
+        const resetLabel = this.getDecisionActionLabel(resetValue, statusInfo) || 'Reset';
+
+        baseBtn.textContent = baseLabel;
         baseBtn.value = keepBaseValue;
-        variantBtn.textContent = this.getDecisionActionLabel(keepVariantValue, statusInfo) || 'Keep Variant';
+        variantBtn.textContent = variantLabel;
         variantBtn.value = keepVariantValue;
 
         if (isStopped) {
-            runningBtn.textContent = this.getDecisionActionLabel(resetValue, statusInfo) || 'Reset';
+            runningBtn.textContent = resetLabel;
             runningBtn.value = resetValue;
         } else {
-            runningBtn.textContent = this.getDecisionActionLabel(keepRunningValue, statusInfo) || 'Keep Running';
+            runningBtn.textContent = runningLabel;
             runningBtn.value = keepRunningValue;
         }
 
-        const tooltipContent = document.getElementById('decision-tooltip');
-        if (tooltipContent) {
-            tooltipContent.innerHTML = this.getDecisionTooltipContent(statusInfo);
+        const runningTooltip = document.getElementById('decision-tooltip-running');
+        const stoppedTooltip = document.getElementById('decision-tooltip-stopped');
+        if (runningTooltip && stoppedTooltip) {
+            if (isStopped) {
+                runningTooltip.classList.add('hidden');
+                stoppedTooltip.classList.remove('hidden');
+            } else {
+                runningTooltip.classList.remove('hidden');
+                stoppedTooltip.classList.add('hidden');
+            }
         }
     },
 
