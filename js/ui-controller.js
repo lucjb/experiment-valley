@@ -220,9 +220,23 @@ const UIController = {
                 submitButton.classList.add('hover:opacity-90');
                 submitButton.innerHTML = '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style="pointer-events: none;"><polygon points="8,5 8,19 19,12"/></svg>';
 
-                // Update decision buttons in a single operation - disable them
+                // Update decision buttons - disable them but preserve selected state
+                // First, clear all selected states
                 decisionButtons.forEach(button => {
+                    button.classList.remove('selected');
                     button.disabled = true;
+                });
+                // Then, restore selected state based on submitted decisions
+                decisionButtons.forEach(button => {
+                    const buttonName = button.getAttribute('name');
+                    const buttonValue = button.getAttribute('value');
+                    if (buttonName === 'trust' && buttonValue === this.state.trustDecision) {
+                        button.classList.add('selected');
+                    } else if (buttonName === 'decision' && buttonValue === this.state.implementDecision) {
+                        button.classList.add('selected');
+                    } else if (buttonName === 'follow_up' && buttonValue === this.state.followUpDecision) {
+                        button.classList.add('selected');
+                    }
                 });
             });
         }
@@ -240,9 +254,23 @@ const UIController = {
                     submitButton.disabled = false;
                     submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
 
-                    // Update decision buttons in a single operation - disable them
+                    // Update decision buttons - disable them but preserve selected state
+                    // First, clear all selected states
                     decisionButtons.forEach(button => {
+                        button.classList.remove('selected');
                         button.disabled = true;
+                    });
+                    // Then, restore selected state based on submitted decisions
+                    decisionButtons.forEach(button => {
+                        const buttonName = button.getAttribute('name');
+                        const buttonValue = button.getAttribute('value');
+                        if (buttonName === 'trust' && buttonValue === this.state.trustDecision) {
+                            button.classList.add('selected');
+                        } else if (buttonName === 'decision' && buttonValue === this.state.implementDecision) {
+                            button.classList.add('selected');
+                        } else if (buttonName === 'follow_up' && buttonValue === this.state.followUpDecision) {
+                            button.classList.add('selected');
+                        }
                     });
                 }
             });
@@ -3313,9 +3341,19 @@ const UIController = {
                 nextButton.textContent = 'Next';
             }
 
-            // Disable all decision buttons after submission
+            // Disable all decision buttons after submission, but preserve selected state
             document.querySelectorAll('.decision-btn').forEach(button => {
                 button.disabled = true;
+                // Preserve selected state based on submitted decisions
+                const buttonName = button.getAttribute('name');
+                const buttonValue = button.getAttribute('value');
+                if (buttonName === 'trust' && buttonValue === this.state.trustDecision) {
+                    button.classList.add('selected');
+                } else if (buttonName === 'decision' && buttonValue === this.state.implementDecision) {
+                    button.classList.add('selected');
+                } else if (buttonName === 'follow_up' && buttonValue === this.state.followUpDecision) {
+                    button.classList.add('selected');
+                }
             });
 
         } catch (error) {
