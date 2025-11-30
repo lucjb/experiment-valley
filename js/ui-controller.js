@@ -138,41 +138,34 @@ const UIController = {
             });
         }
 
-        // Decision buttons
+        // Decision buttons - Toggle button behavior
         document.querySelectorAll('.decision-btn').forEach(button => {
             button.addEventListener('click', () => {
-                // Remove active state from all buttons in the same group
+                // Don't process clicks on disabled buttons
+                if (button.disabled) {
+                    return;
+                }
+
+                // Remove selected state from all buttons in the same group
                 const name = button.getAttribute('name');
                 document.querySelectorAll(`.decision-btn[name="${name}"]`).forEach(btn => {
-                    btn.style.opacity = '';
-                    btn.style.transform = 'scale(1)';
-                    btn.classList.remove('selected');
+                    if (!btn.disabled) {
+                        btn.classList.remove('selected');
+                    }
                 });
 
-                // Add active state to clicked button
-                button.style.opacity = '1';
-                button.style.transform = 'scale(1.05)';
+                // Toggle selected state on clicked button
                 button.classList.add('selected');
 
                 this.handleDecision(name, button.getAttribute('value'));
             });
 
-            // Add hover effects
-            button.addEventListener('mouseenter', () => {
-                if (!button.classList.contains('selected')) {
-                    button.style.opacity = '1';
-                }
-            });
-
-            button.addEventListener('mouseleave', () => {
-                if (!button.classList.contains('selected')) {
-                    button.style.opacity = '';
-                }
-            });
-
             // Add touch event listeners alongside click events
-            button.addEventListener('touchstart', () => {
-                this.handleDecision(button.getAttribute('name'), button.getAttribute('value'));
+            button.addEventListener('touchstart', (e) => {
+                if (!button.disabled) {
+                    e.preventDefault();
+                    button.click();
+                }
             });
         });
 
@@ -227,11 +220,9 @@ const UIController = {
                 submitButton.classList.add('hover:opacity-90');
                 submitButton.innerHTML = '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style="pointer-events: none;"><polygon points="8,5 8,19 19,12"/></svg>';
 
-                // Update decision buttons in a single operation
+                // Update decision buttons in a single operation - disable them
                 decisionButtons.forEach(button => {
                     button.disabled = true;
-                    button.style.opacity = '0.5';
-                    button.style.cursor = 'not-allowed';
                 });
             });
         }
@@ -249,11 +240,9 @@ const UIController = {
                     submitButton.disabled = false;
                     submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
 
-                    // Update decision buttons in a single operation
+                    // Update decision buttons in a single operation - disable them
                     decisionButtons.forEach(button => {
                         button.disabled = true;
-                        button.style.opacity = '0.5';
-                        button.style.cursor = 'not-allowed';
                     });
                 }
             });
@@ -2732,13 +2721,10 @@ const UIController = {
 
     resetDecisions() {
         this.clearDecisionTimer();
-        // Reset all decision buttons
+        // Reset all decision buttons - remove selected state and re-enable
         document.querySelectorAll('.decision-btn').forEach(button => {
-            button.style.opacity = '';
-            button.style.transform = 'scale(1)';
             button.classList.remove('selected');
             button.disabled = false; // Enable the buttons
-            button.style.cursor = 'pointer'; // Reset cursor
         });
 
         // Reset state
@@ -3354,8 +3340,6 @@ const UIController = {
             // Disable all decision buttons after submission
             document.querySelectorAll('.decision-btn').forEach(button => {
                 button.disabled = true;
-                button.style.opacity = '0.5';
-                button.style.cursor = 'not-allowed';
             });
 
         } catch (error) {
