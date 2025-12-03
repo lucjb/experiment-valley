@@ -1225,3 +1225,24 @@ select:focus {
         0 2px 4px rgba(0, 0, 0, 0.1),
         0 0 0 3px rgba(59, 130, 246, 0.2);
 }
+
+/* Round progress dot styles (experiment indicators in the top bar) */
+.round-progress-dot {
+    width: 1.65rem;
+    height: 1.65rem;
+    border-radius: 9999px;
+    box-shadow:
+        0 2px 6px rgba(15, 23, 42, 0.45),
+        0 0 0 1px rgba(15, 23, 42, 0.6);
+}
+
+.round-progress-dot-label {
+    pointer-events: none;
+}
+
+.round-progress-dot-current {
+    transform: scale(1.12);
+    box-shadow:
+        0 3px 10px rgba(129, 140, 248, 0.55),
+        0 0 0 2px rgba(129, 140, 248, 0.9);
+}

@@ -4099,10 +4099,15 @@ const UIController = {
         const dot3 = document.getElementById('exp-dot-3');
         const dots = [dot1, dot2, dot3];
 
-        // Reset all dots to gray
-        dots.forEach(dot => {
-            if (dot) {
-                dot.className = 'w-3 h-3 rounded-full bg-gray-400 transition-colors duration-300 tooltip-trigger';
+        // Reset all dots to base gray state with numeric labels
+        dots.forEach((dot, index) => {
+            if (!dot) return;
+            dot.className = 'round-progress-dot bg-gray-400 transition-colors duration-300 tooltip-trigger flex items-center justify-center text-xs font-semibold text-white';
+
+            const label = dot.querySelector('.round-progress-dot-label');
+            if (label) {
+                label.textContent = String(index + 1);
+                label.className = 'round-progress-dot-label';
             }
         });
 
@@ -4119,31 +4124,48 @@ const UIController = {
 
             // Update tooltip content
             const tooltipContent = dot.querySelector('.tooltip-content');
+            const label = dot.querySelector('.round-progress-dot-label');
 
             if (result) {
                 // Experiment is completed
                 if (result.isPerfect || result.isGood) {
-                    // Green for passed experiments
-                    dot.className = 'w-3 h-3 rounded-full bg-green-500 transition-colors duration-300 tooltip-trigger';
+                    // Past experiment with a pass: green background and checkmark
+                    dot.className = 'round-progress-dot bg-green-500 transition-colors duration-300 tooltip-trigger flex items-center justify-center text-xs font-semibold text-white';
+                    if (label) {
+                        label.textContent = '✓';
+                        label.className = 'round-progress-dot-label text-green-950';
+                    }
                     if (tooltipContent) {
                         tooltipContent.textContent = `Experiment ${experimentNumber}: Passed`;
                     }
                 } else {
-                    // Red for failed experiments
-                    dot.className = 'w-3 h-3 rounded-full bg-red-500 transition-colors duration-300 tooltip-trigger';
+                    // Past experiment with a fail: red background and cross
+                    dot.className = 'round-progress-dot bg-red-500 transition-colors duration-300 tooltip-trigger flex items-center justify-center text-xs font-semibold text-white';
+                    if (label) {
+                        label.textContent = '✕';
+                        label.className = 'round-progress-dot-label text-red-950';
+                    }
                     if (tooltipContent) {
                         tooltipContent.textContent = `Experiment ${experimentNumber}: Failed`;
                     }
                 }
             } else if (isCurrentExperiment) {
-                // Current experiment (not yet completed)
-                dot.className = 'w-3 h-3 rounded-full bg-gray-400 transition-colors duration-300 tooltip-trigger';
+                // Current experiment (not yet completed): highlight and show number
+                dot.className = 'round-progress-dot round-progress-dot-current bg-gray-400 transition-colors duration-300 tooltip-trigger flex items-center justify-center text-xs font-semibold text-white';
+                if (label) {
+                    label.textContent = String(experimentNumber);
+                    label.className = 'round-progress-dot-label';
+                }
                 if (tooltipContent) {
                     tooltipContent.textContent = `Experiment ${experimentNumber}: In progress`;
                 }
             } else if (isFutureExperiment) {
-                // Future experiments
-                dot.className = 'w-3 h-3 rounded-full bg-gray-400 transition-colors duration-300 tooltip-trigger';
+                // Future experiments: number only, muted gray
+                dot.className = 'round-progress-dot bg-gray-500 transition-colors duration-300 tooltip-trigger flex items-center justify-center text-xs font-semibold text-white';
+                if (label) {
+                    label.textContent = String(experimentNumber);
+                    label.className = 'round-progress-dot-label';
+                }
                 if (tooltipContent) {
                     tooltipContent.textContent = `Experiment ${experimentNumber}: Not started`;
                 }
