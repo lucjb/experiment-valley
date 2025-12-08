@@ -907,10 +907,19 @@ const UIController = {
                 left = window.innerWidth - tipWidth - 10;
             }
 
+            // Check if this tooltip is in the submit section to avoid overlapping with header buttons
+            const isSubmitTooltip = tooltipTrigger.closest('.submit-btn') !== null;
+            const headerHeight = 100; // Approximate header height to avoid overlap
+            
             const spaceAbove = rect.top;
             const spaceBelow = window.innerHeight - rect.bottom;
             let top;
-            if (spaceAbove >= tipHeight + 10) {
+            
+            // For submit button tooltip, always position below to avoid header overlap
+            if (isSubmitTooltip) {
+                top = rect.bottom + 10;
+            } else if (spaceAbove >= tipHeight + 10 && rect.top > headerHeight) {
+                // Only position above if there's enough space and we're not near the header
                 top = rect.top - tipHeight - 10;
             } else if (spaceBelow >= tipHeight + 10) {
                 top = rect.bottom + 10;
