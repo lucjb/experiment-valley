@@ -3249,8 +3249,8 @@ const UIController = {
             };
             this.state.roundResults[this.state.experimentsInCurrentRound - 1] = experimentResult;
 
-            // Update experiment dots
-            this.updateExperimentDots();
+            // Update the completed experiment dot (step 1: show green/red state)
+            this.updateCompletedExperimentDot();
 
             // Update feedback icon and title based on performance
             const feedbackIcon1 = document.getElementById('feedback-icon-1');
@@ -3448,6 +3448,8 @@ const UIController = {
                 this.showCompletionModal();
             }
         } else {
+            // Update top bar experiment dots when moving to next experiment
+            this.updateExperimentDots();
             this.resetDecisions();
             this.loadChallenge();
         }
@@ -4178,6 +4180,50 @@ const UIController = {
                 if (tooltipContent) {
                     tooltipContent.textContent = `Experiment ${experimentNumber}: Not started`;
                 }
+            }
+        }
+    },
+
+    updateCompletedExperimentDot() {
+        // Update only the dot for the experiment that just finished (step 1)
+        // This is called when submit is clicked, before moving to next experiment
+        const completedExperimentIndex = this.state.experimentsInCurrentRound - 1;
+        if (completedExperimentIndex < 0 || completedExperimentIndex >= 3) return;
+
+        const dots = [
+            document.getElementById('exp-dot-1'),
+            document.getElementById('exp-dot-2'),
+            document.getElementById('exp-dot-3')
+        ];
+        const dot = dots[completedExperimentIndex];
+        if (!dot) return;
+
+        const result = this.state.roundResults[completedExperimentIndex];
+        if (!result) return;
+
+        const experimentNumber = completedExperimentIndex + 1;
+        const tooltipContent = dot.querySelector('.tooltip-content');
+        const label = dot.querySelector('.round-progress-dot-label');
+
+        if (result.isPerfect || result.isGood) {
+            // Green checkmark for pass
+            dot.className = 'round-progress-dot bg-green-500 transition-colors duration-300 tooltip-trigger flex items-center justify-center text-xs font-semibold text-white';
+            if (label) {
+                label.textContent = '✓';
+                label.className = 'round-progress-dot-label text-green-950';
+            }
+            if (tooltipContent) {
+                tooltipContent.textContent = `Experiment ${experimentNumber}: Passed`;
+            }
+        } else {
+            // Red X for fail
+            dot.className = 'round-progress-dot bg-red-500 transition-colors duration-300 tooltip-trigger flex items-center justify-center text-xs font-semibold text-white';
+            if (label) {
+                label.textContent = '✕';
+                label.className = 'round-progress-dot-label text-red-950';
+            }
+            if (tooltipContent) {
+                tooltipContent.textContent = `Experiment ${experimentNumber}: Failed`;
             }
         }
     },
